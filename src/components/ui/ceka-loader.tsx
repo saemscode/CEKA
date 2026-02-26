@@ -45,7 +45,7 @@ export const CEKALoader: React.FC<CEKALoaderProps> = ({
     const [messageIndex, setMessageIndex] = useState(0);
     const { theme } = useTheme();
 
-    const logoSrc = theme === 'dark' ? '/logo-white.png' : '/logo-colored.png';
+    const logoSrc = theme === 'dark' ? '/logo-colored.png' : '/logo-white.png';
 
     useEffect(() => {
         if (!showProgressMessages) return;
