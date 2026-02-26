@@ -114,6 +114,10 @@ def generate_report(csv_url=None):
     # Also create a text summary
     summary_file = os.path.join(data_dir, "summary_report.txt")
     with open(summary_file, 'w', encoding='utf-8') as f:
+        f.write("=====================================================\n")
+        f.write("      CEKA CIVIC INTELLIGENCE - GO-HAM EDITION       \n")
+        f.write("      Official Analysis Report | (C) 2026 CEKA       \n")
+        f.write("=====================================================\n\n")
         f.write("HEALTHCARE FACILITIES ANALYSIS REPORT\n")
         f.write("=====================================\n\n")
         f.write(f"Report generated: {report['generated_date']}\n")
@@ -123,6 +127,8 @@ def generate_report(csv_url=None):
         f.write(f"Total allocation amount: KES {report['total_allocation_amount']:,.2f}\n")
         f.write(f"Average allocation: KES {report['average_allocation']:,.2f}\n")
         f.write(f"Median allocation: KES {report['median_allocation']:,.2f}\n\n")
+        f.write("DISCLAIMER: This data is compiled for civic oversight purposes.\n")
+        f.write("Vetting and verification of on-ground status recommended.\n\n")
         
         f.write("FACILITIES BY TYPE:\n")
         f.write("-------------------\n")

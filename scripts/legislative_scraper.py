@@ -321,6 +321,9 @@ class LegislativeScraper:
         if "Senate" in target['name'] or "senate" in title.lower():
             house = "Senate"
 
+        # Enhanced master-pack metadata
+        category = self._infer_category(title)
+        
         return {
             "title": title,
             "bill_no": bill_no,
@@ -332,15 +335,16 @@ class LegislativeScraper:
             "url": url,
             "pdf_url": url,
             "source": target['name'],
-            "category": self._infer_category(title),
+            "category": category,
             "summary": f"Legislative bill tracked from {target['name']}. Title: {title}.",
             "text_content": f"Automated neural crawl pending for content at: {url}",
             "analysis_status": "pending",
-            "history": [], # To be populated during sync if existing record found
+            "peoples_audit_eligible": category == "Finance" or "Bill" in title,
             "metadata": {
                 "scraped_at": datetime.now().isoformat(),
                 "original_target": target['name'],
-                "inferred_year": year
+                "inferred_year": year,
+                "master_pack_version": "2026.Q1.HAM"
             },
             "created_at": datetime.now().isoformat()
         }

@@ -13,7 +13,7 @@ import { translate } from '@/lib/utils';
 import { Navigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Camera, Save, LogOut, HandHelping, AlertTriangle, Check, KeyRound, Trash2 } from 'lucide-react';
+import { Camera, Save, LogOut, HandHelping, AlertTriangle, Check, KeyRound, Trash2, Shield, Zap } from 'lucide-react';
 import { CEKALoader } from '@/components/ui/ceka-loader';
 
 const AccountSettings = () => {
@@ -453,6 +453,58 @@ const AccountSettings = () => {
                 </DialogFooter>
               </DialogContent>
             </Dialog>
+          </CardContent>
+        </Card>
+
+        <Card className="rounded-[2.5rem] border-none shadow-ios-high overflow-hidden bg-white dark:bg-slate-900 p-6">
+          <CardHeader className="px-0 pt-0">
+            <CardTitle className="text-xl font-black flex items-center gap-2">
+              <Shield className="h-5 w-5 text-primary" />
+              Civic Monitor
+            </CardTitle>
+            <CardDescription>Manage your advocacy keywords and regional monitoring preferences.</CardDescription>
+          </CardHeader>
+          <CardContent className="px-0 pb-0 space-y-6">
+            <div className="space-y-2 text-sm">
+              <Label className="font-bold ml-1 uppercase text-[10px] tracking-widest text-muted-foreground">Alert Keywords</Label>
+              <Input
+                placeholder="Finance Bill, Education, Healthcare, corruption..."
+                className="rounded-2xl bg-slate-50 dark:bg-white/5 border-none h-12"
+              />
+            </div>
+            <div className="space-y-2 text-sm">
+              <Label className="font-bold ml-1 uppercase text-[10px] tracking-widest text-muted-foreground">Monitoring District/County</Label>
+              <Input
+                value={profile.county}
+                onChange={e => setProfile({ ...profile, county: e.target.value })}
+                onBlur={handleFieldBlur}
+                placeholder="e.g. Nairobi, Mombasa..."
+                className="rounded-2xl bg-slate-50 dark:bg-white/5 border-none h-12"
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="rounded-[2.5rem] border-none shadow-ios-high overflow-hidden bg-white dark:bg-slate-900 p-6">
+          <CardHeader className="px-0 pt-0">
+            <CardTitle className="text-xl font-black flex items-center gap-2">
+              <KeyRound className="h-5 w-5 text-amber-500" />
+              Developer Settings
+            </CardTitle>
+            <CardDescription>Access the Civic Data API with your personal keys.</CardDescription>
+          </CardHeader>
+          <CardContent className="px-0 pb-0 space-y-4">
+            <div className="p-4 rounded-2xl bg-slate-100 dark:bg-white/5 border-none flex items-center justify-between">
+              <div className="space-y-1">
+                <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Primary API Key</p>
+                <code className="text-[10px] font-mono opacity-60">ck_••••••••••••••••••••</code>
+              </div>
+              <Button size="sm" variant="ghost" className="rounded-xl h-8 text-[10px] font-bold">Copy Key</Button>
+            </div>
+            <Button variant="outline" className="w-full rounded-2xl font-bold gap-2 text-xs h-11">
+              <Zap className="h-4 w-4 text-amber-500" />
+              Generate New Key
+            </Button>
           </CardContent>
         </Card>
 

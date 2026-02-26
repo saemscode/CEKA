@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/componen
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
-import { Send, MessageCircle, Users, Hash, Shield, Search, MoreVertical, Paperclip, ChevronLeft } from 'lucide-react';
+import { Send, MessageCircle, Users, Hash, Shield, Search, MoreVertical, Paperclip, ChevronLeft, Radio } from 'lucide-react';
 import { format, isToday, isYesterday } from 'date-fns';
 import { useToast } from '@/components/ui/use-toast';
 import { Link, useSearchParams } from 'react-router-dom';
@@ -596,50 +596,79 @@ const CommunityChat = () => {
                 </CardFooter>
             </Card>
 
-            {/* Online Users Sidebar (Direct Messages Prep) */}
-            <Card className="hidden lg:flex lg:col-span-3 flex-col border-none shadow-ios-low rounded-[32px] overflow-hidden bg-white/60 dark:bg-black/40 backdrop-blur-xl">
-                <CardHeader className="pb-4 pt-6">
-                    <CardTitle className="text-sm font-bold uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2">
-                        Online <Badge variant="outline" className="h-5 px-1.5 text-[9px] bg-green-500/10 text-green-500 border-green-500/20">{onlineUsers.length}</Badge>
-                    </CardTitle>
-                </CardHeader>
-                <CardContent className="flex-1 p-2 space-y-1">
-                    {onlineUsers.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center h-40 opacity-40 grayscale">
-                            <Users className="h-8 w-8 mb-2" />
-                            <p className="text-[10px] font-bold uppercase tracking-widest">Watching the halls...</p>
+            {/* Right Sidebar: Audits & Online */}
+            <div className="hidden lg:flex lg:col-span-3 flex-col gap-6 h-full overflow-hidden">
+                {/* The Peoples Auditor - Active Audits */}
+                <Card className="flex flex-col flex-1 border-none shadow-ios-low rounded-[32px] overflow-hidden bg-primary/5 dark:bg-primary/10 backdrop-blur-xl border-l-4 border-primary/20 max-h-[400px]">
+                    <CardHeader className="pb-4 pt-6">
+                        <CardTitle className="text-sm font-bold uppercase tracking-[0.2em] text-primary flex items-center gap-2">
+                            <Radio className="h-4 w-4 animate-pulse" />
+                            Active Audits
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="flex-1 p-4 space-y-4 overflow-y-auto">
+                        <div className="p-4 rounded-2xl bg-white/60 dark:bg-black/40 shadow-sm space-y-3 transition-transform hover:scale-[1.02] cursor-pointer">
+                            <p className="text-xs font-bold leading-tight">Finance Bill 2024: Proposed VAT on Bread</p>
+                            <div className="space-y-2">
+                                <Button size="sm" className="w-full rounded-xl text-[10px] font-bold h-8 justify-between bg-kenya-red hover:bg-kenya-red/90">
+                                    Reject <span className="opacity-60">84%</span>
+                                </Button>
+                                <Button size="sm" variant="outline" className="w-full rounded-xl text-[10px] font-bold h-8 justify-between border-slate-200">
+                                    Support <span className="opacity-60">12%</span>
+                                </Button>
+                            </div>
                         </div>
-                    ) : (
-                        onlineUsers.filter(u => u.id !== user?.id).map(u => (
-                            <button
-                                key={u.id}
-                                onClick={() => { setSelectedPeer(u); setIsPrivate(true); }}
-                                className={cn(
-                                    "w-full flex items-center gap-3 p-3 rounded-[20px] hover:bg-white/40 dark:hover:bg-white/5 transition-all group",
-                                    selectedPeer?.id === u.id && isPrivate && "bg-white/60 dark:bg-white/10 ring-1 ring-primary/20"
-                                )}
-                            >
-                                <div className="relative">
-                                    <Avatar className="h-10 w-10 rounded-[14px] shadow-sm border-2 border-white dark:border-black/40 ring-1 ring-slate-200/50">
-                                        <AvatarImage src={u.avatar_url || ''} />
-                                        <AvatarFallback className="text-[10px] bg-slate-100 font-bold">{u.full_name?.charAt(0) || '?'}</AvatarFallback>
-                                    </Avatar>
-                                    <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-black ring-1 ring-black/10" />
-                                </div>
-                                <div className="flex-1 text-left">
-                                    <p className="text-sm font-bold truncate group-hover:text-primary transition-colors">{u.full_name || 'Anonymous'}</p>
-                                    <p className="text-[10px] text-muted-foreground/60 font-medium">Citizen Online</p>
-                                </div>
-                            </button>
-                        ))
-                    )}
-                </CardContent>
-                <div className="p-6 border-t border-slate-100 dark:border-white/5">
-                    <Button variant="outline" className="w-full rounded-2xl h-11 text-xs font-bold uppercase tracking-widest gap-2">
-                        <Shield className="h-3.5 w-3.5" /> Direct Messages
-                    </Button>
-                </div>
-            </Card>
+                        <Button variant="ghost" className="w-full rounded-xl h-10 text-[10px] font-bold uppercase tracking-widest text-primary hover:bg-primary/10">
+                            View All Audits
+                        </Button>
+                    </CardContent>
+                </Card>
+
+                {/* Online Users Sidebar */}
+                <Card className="flex flex-col flex-1 border-none shadow-ios-low rounded-[32px] overflow-hidden bg-white/60 dark:bg-black/40 backdrop-blur-xl">
+                    <CardHeader className="pb-4 pt-6">
+                        <CardTitle className="text-sm font-bold uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2">
+                            Online <Badge variant="outline" className="h-5 px-1.5 text-[9px] bg-green-500/10 text-green-500 border-green-500/20">{onlineUsers.length}</Badge>
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="flex-1 p-2 space-y-1">
+                        {onlineUsers.length === 0 ? (
+                            <div className="flex flex-col items-center justify-center h-40 opacity-40 grayscale">
+                                <Users className="h-8 w-8 mb-2" />
+                                <p className="text-[10px] font-bold uppercase tracking-widest">Watching the halls...</p>
+                            </div>
+                        ) : (
+                            onlineUsers.filter(u => u.id !== user?.id).map(u => (
+                                <button
+                                    key={u.id}
+                                    onClick={() => { setSelectedPeer(u); setIsPrivate(true); }}
+                                    className={cn(
+                                        "w-full flex items-center gap-3 p-3 rounded-[20px] hover:bg-white/40 dark:hover:bg-white/5 transition-all group",
+                                        selectedPeer?.id === u.id && isPrivate && "bg-white/60 dark:bg-white/10 ring-1 ring-primary/20"
+                                    )}
+                                >
+                                    <div className="relative">
+                                        <Avatar className="h-10 w-10 rounded-[14px] shadow-sm border-2 border-white dark:border-black/40 ring-1 ring-slate-200/50">
+                                            <AvatarImage src={u.avatar_url || ''} />
+                                            <AvatarFallback className="text-[10px] bg-slate-100 font-bold">{u.full_name?.charAt(0) || '?'}</AvatarFallback>
+                                        </Avatar>
+                                        <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-black ring-1 ring-black/10" />
+                                    </div>
+                                    <div className="flex-1 text-left">
+                                        <p className="text-sm font-bold truncate group-hover:text-primary transition-colors">{u.full_name || 'Anonymous'}</p>
+                                        <p className="text-[10px] text-muted-foreground/60 font-medium">Citizen Online</p>
+                                    </div>
+                                </button>
+                            ))
+                        )}
+                    </CardContent>
+                    <div className="p-6 border-t border-slate-100 dark:border-white/5">
+                        <Button variant="outline" className="w-full rounded-2xl h-11 text-xs font-bold uppercase tracking-widest gap-2">
+                            <Shield className="h-3.5 w-3.5" /> Direct Messages
+                        </Button>
+                    </div>
+                </Card>
+            </div>
         </div>
     );
 };
