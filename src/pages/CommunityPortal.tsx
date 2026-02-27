@@ -73,14 +73,21 @@ const CommunityPortal = () => {
       setCampaigns(campData || []);
 
       // 3. Fetch analytics (Real numbers from DB)
-      const { count: discCount } = await supabase.from('discussions' as any).select('*', { count: 'exact', head: true });
-      const { count: usersCount } = await supabase.from('profiles').select('*', { count: 'exact', head: true });
+      const { data: intel, error: intelError } = await supabase.rpc('get_community_intelligence');
 
-      setAnalytics({
-        totalDiscussions: discCount || 0,
-        activeUsers: usersCount || 0,
-        todayActivity: Math.floor(Math.random() * 50) + 20 // Placeholder for real activity metrics
-      });
+      if (!intelError && intel) {
+        setAnalytics(intel);
+      } else {
+        // Fallback to manual count if RPC fails
+        const { count: discCount } = await supabase.from('discussions' as any).select('*', { count: 'exact', head: true });
+        const { count: usersCount } = await supabase.from('profiles').select('*', { count: 'exact', head: true });
+
+        setAnalytics({
+          totalDiscussions: discCount || 0,
+          activeUsers: usersCount || 0,
+          todayActivity: 0
+        });
+      }
 
     } catch (err) {
       console.error('Portal data error:', err);
@@ -98,7 +105,7 @@ const CommunityPortal = () => {
   if (loading) return (
     <Layout>
       <div className="container py-24 flex flex-col items-center justify-center min-h-[60vh]">
-        <CEKALoader variant="scanning" size="lg" text="Synchronizing Community Pulse..." />
+        <CEKALoader variant="scanning" size="lg" text="Synchronizing Sovereign Pulse..." />
       </div>
     </Layout>
   );
@@ -109,7 +116,7 @@ const CommunityPortal = () => {
         <div className="max-w-4xl mx-auto mb-12">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
             <h1 className="text-4xl md:text-5xl font-black mb-4 tracking-tighter text-slate-900 dark:text-white">
-              {translate('Mwananchi', language)} <span className="text-primary">{translate('Assembly', language)}</span>
+              Sovereign <span className="text-primary">Assembly</span>
             </h1>
             <p className="text-xl text-slate-600 dark:text-slate-400 font-medium leading-relaxed">
               {translate('Join the heartbeat of Kenyan civic participation. Real-time updates, policy tracker, and community voices as we move towards 2027.', language)}
@@ -122,10 +129,10 @@ const CommunityPortal = () => {
             <div className="overflow-x-auto no-scrollbar pb-4 -mx-4 px-4 sm:mx-0 sm:px-0">
               <TabsList className="bg-slate-100 dark:bg-white/5 p-1.5 rounded-[24px] inline-flex h-14 shadow-inner min-w-max sm:min-w-0">
                 <TabsTrigger value="chat" className="rounded-2xl px-6 sm:px-8 h-full data-[state=active]:bg-white dark:data-[state=active]:bg-[#1C1C1E] data-[state=active]:shadow-lg gap-2 font-bold whitespace-nowrap">
-                  <MessageCircle className="h-4 w-4" /> {translate('Bunge Live', language)}
+                  <MessageCircle className="h-4 w-4" /> CEKA Chat
                 </TabsTrigger>
                 <TabsTrigger value="discussions" className="rounded-2xl px-6 sm:px-8 h-full data-[state=active]:bg-white dark:data-[state=active]:bg-[#1C1C1E] data-[state=active]:shadow-lg font-bold whitespace-nowrap">
-                  {translate('Discourse Threads', language)}
+                  CEKA Threads
                 </TabsTrigger>
                 <TabsTrigger value="campaigns" className="rounded-2xl px-6 sm:px-8 h-full data-[state=active]:bg-white dark:data-[state=active]:bg-[#1C1C1E] data-[state=active]:shadow-lg font-bold whitespace-nowrap">
                   {translate('Campaigns', language)}

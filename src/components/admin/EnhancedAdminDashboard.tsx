@@ -23,6 +23,7 @@ import BulkUploadManager from './BulkUploadManager';
 import EventManager from './EventManager';
 import LegislativeIntelligence from './LegislativeIntelligence';
 import BentoAnalyticsDashboard from './BentoAnalyticsDashboard';
+import PollManager from './PollManager';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -278,6 +279,10 @@ const EnhancedAdminDashboard = () => {
                             <Sparkles className="h-4 w-4 mr-2" />
                             Analytics
                         </TabsTrigger>
+                        <TabsTrigger value="polls" className="rounded-xl px-4 py-3 font-medium data-[state=active]:shadow-lg">
+                            <PieChart className="h-4 w-4 mr-2" />
+                            Polls
+                        </TabsTrigger>
                         <TabsTrigger value="appraisal" className="rounded-xl px-4 py-3 gap-2 font-medium data-[state=active]:shadow-lg">
                             <Eye className="h-4 w-4" />
                             Appraisal
@@ -491,6 +496,10 @@ const EnhancedAdminDashboard = () => {
 
                 <TabsContent value="analytics" className="space-y-6">
                     <BentoAnalyticsDashboard onTabChange={handleTabChange} />
+                </TabsContent>
+
+                <TabsContent value="polls">
+                    <PollManager />
                 </TabsContent>
 
                 <TabsContent value="appraisal">

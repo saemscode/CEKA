@@ -12,9 +12,12 @@ import { format, isToday, isYesterday } from 'date-fns';
 import { useToast } from '@/components/ui/use-toast';
 import { Link, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChatReactions } from './ChatReactions';
-import { ChatReplies } from './ChatReplies';
-import { InteractionLogger } from './InteractionLogger';
+import ChatReactions from './ChatReactions';
+import ChatReplies from './ChatReplies';
+import JoinRoomGuide from './JoinRoomGuide';
+import SidebarPolls from './SidebarPolls';
+import InteractionLogger from '../InteractionLogger';
+import { CEKALoader } from '../ui/ceka-loader';
 import { MentionSuggestions } from './MentionSuggestions';
 import { cn } from '@/lib/utils';
 import {
@@ -55,13 +58,8 @@ const CommunityChat = () => {
     const { toast } = useToast();
     const [params] = useSearchParams();
     const [messages, setMessages] = useState<ChatMessage[]>([]);
-    const [rooms, setRooms] = useState<Room[]>([
-        { id: 'general', name: 'Bunge Square', type: 'public' },
-        { id: 'legislation', name: 'Policy Watch 2024-2027', type: 'public' },
-        { id: 'mashinani', name: 'Mashinani Dialogue', type: 'public' },
-        { id: 'youth', name: 'Youth Pulse', type: 'public' }
-    ]);
-    const [activeRoom, setActiveRoom] = useState<string>(params.get('room') || 'general');
+    const [rooms, setRooms] = useState<Room[]>([]);
+    const [activeRoom, setActiveRoom] = useState<string>(params.get('room') || 'voter-hub');
     const [newMessage, setNewMessage] = useState('');
     const [loading, setLoading] = useState(true);
     const [loadingOlder, setLoadingOlder] = useState(false);
@@ -74,10 +72,52 @@ const CommunityChat = () => {
     const [isPrivate, setIsPrivate] = useState(false);
     const [selectedPeer, setSelectedPeer] = useState<any>(null);
     const [fetchError, setFetchError] = useState(false);
+    const [activeAudits, setActiveAudits] = useState<any[]>([]);
+    const [showGuide, setShowGuide] = useState(false);
+    const [hasSeenGuide, setHasSeenGuide] = useState<Record<string, boolean>>({});
 
     const scrollRef = useRef<HTMLDivElement>(null);
     const topSentinelRef = useRef<HTMLDivElement>(null);
     const isInitialLoad = useRef(true);
+
+    // Fetch dynamic rooms from sovereign table
+    const fetchRooms = useCallback(async () => {
+        const { data, error } = await supabase
+            .from('public_rooms' as any)
+            .select('*')
+            .eq('is_active', true);
+
+        if (!error && data) {
+            setRooms(data.map(r => ({
+                id: r.id,
+                name: r.name,
+                type: 'public'
+            })));
+        }
+    }, []);
+
+    // Fetch live audit actions
+    const fetchAudits = useCallback(async () => {
+        const { data, error } = await supabase
+            .from('peoples_audits' as any)
+            .select(`
+                id,
+                bill_id,
+                bills(title),
+                votes_for,
+                votes_against
+            `)
+            .limit(2);
+
+        if (!error && data) {
+            setActiveAudits(data);
+        }
+    }, []);
+
+    const closeGuide = () => {
+        setShowGuide(false);
+        setHasSeenGuide(prev => ({ ...prev, [activeRoom]: true }));
+    };
 
     // Fetch initial messages with keyset pagination
     const fetchMessages = useCallback(async (roomId: string, cursor?: string) => {
@@ -152,9 +192,14 @@ const CommunityChat = () => {
 
     // Handle Room Switching & Initial Load
     useEffect(() => {
+        fetchRooms();
+        fetchAudits();
+    }, [fetchRooms, fetchAudits]);
+
+    useEffect(() => {
         if (!session || !user) return;
 
-        let targetRoom = 'general';
+        let targetRoom = 'voter-hub';
 
         // Virtual DM handling: if a peer is selected, generate deterministic ID
         if (isPrivate && selectedPeer) {
@@ -162,8 +207,14 @@ const CommunityChat = () => {
             targetRoom = `vault:${ids[0]}:${ids[1]}`;
             setActiveRoom(targetRoom);
         } else {
-            targetRoom = params.get('room') || 'general';
-            setActiveRoom(targetRoom);
+            targetRoom = params.get('room') || 'voter-hub';
+            if (activeRoom !== targetRoom) {
+                setActiveRoom(targetRoom);
+                // Only show guide if the user hasn't seen it for this room in this session
+                if (!hasSeenGuide[targetRoom]) {
+                    setShowGuide(true);
+                }
+            }
         }
 
         fetchMessages(targetRoom);
@@ -607,20 +658,55 @@ const CommunityChat = () => {
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="flex-1 p-4 space-y-4 overflow-y-auto">
-                        <div className="p-4 rounded-2xl bg-white/60 dark:bg-black/40 shadow-sm space-y-3 transition-transform hover:scale-[1.02] cursor-pointer">
-                            <p className="text-xs font-bold leading-tight">Finance Bill 2024: Proposed VAT on Bread</p>
-                            <div className="space-y-2">
-                                <Button size="sm" className="w-full rounded-xl text-[10px] font-bold h-8 justify-between bg-kenya-red hover:bg-kenya-red/90">
-                                    Reject <span className="opacity-60">84%</span>
-                                </Button>
-                                <Button size="sm" variant="outline" className="w-full rounded-xl text-[10px] font-bold h-8 justify-between border-slate-200">
-                                    Support <span className="opacity-60">12%</span>
-                                </Button>
+                        {activeAudits.length > 0 ? (
+                            activeAudits.map(audit => (
+                                <div key={audit.id} className="p-4 rounded-2xl bg-white/60 dark:bg-black/40 shadow-sm space-y-3 transition-transform hover:scale-[1.02] cursor-pointer">
+                                    <p className="text-xs font-bold leading-tight">{audit.bills?.title}</p>
+                                    <div className="space-y-2">
+                                        <div className="flex justify-between text-[8px] font-black uppercase tracking-widest text-muted-foreground mb-1">
+                                            <span>Sovereign Will</span>
+                                            <span>{Math.round((audit.votes_against / (audit.votes_for + audit.votes_against || 1)) * 100)}% Rejection</span>
+                                        </div>
+                                        <div className="h-1.5 w-full bg-slate-200 dark:bg-white/10 rounded-full overflow-hidden flex">
+                                            <div
+                                                className="bg-kenya-red h-full"
+                                                style={{ width: `${(audit.votes_against / (audit.votes_for + audit.votes_against || 1)) * 100}%` }}
+                                            />
+                                            <div
+                                                className="bg-kenya-green h-full"
+                                                style={{ width: `${(audit.votes_for / (audit.votes_for + audit.votes_against || 1)) * 100}%` }}
+                                            />
+                                        </div>
+                                        <div className="flex gap-2">
+                                            <Button size="sm" variant="outline" className="flex-1 rounded-xl text-[9px] font-bold h-7 border-slate-200">
+                                                Audit Deep Dive
+                                            </Button>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))
+                        ) : (
+                            <div className="p-4 rounded-2xl bg-white/40 dark:bg-black/20 text-center py-8">
+                                <p className="text-[10px] font-bold text-muted-foreground">Monitoring legislative perimeter...</p>
                             </div>
-                        </div>
-                        <Button variant="ghost" className="w-full rounded-xl h-10 text-[10px] font-bold uppercase tracking-widest text-primary hover:bg-primary/10">
-                            View All Audits
+                        )}
+                        <Button variant="ghost" asChild className="w-full rounded-xl h-10 text-[10px] font-bold uppercase tracking-widest text-primary hover:bg-primary/10">
+                            <Link to="/audit">View All Audits</Link>
                         </Button>
+                    </CardContent>
+                </Card>
+
+                {/* Polls Tab */}
+                <Card className="flex flex-col flex-1 border-none shadow-ios-low rounded-[32px] overflow-hidden bg-white/60 dark:bg-black/20 backdrop-blur-xl relative">
+                    <CardHeader className="p-6 border-b border-slate-100 dark:border-white/5 flex flex-row items-center justify-between">
+                        <CardTitle className="text-sm font-bold uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2">
+                            <Radio className="h-4 w-4" />
+                            Polls
+                        </CardTitle>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full"><MoreVertical className="h-4 w-4" /></Button>
+                    </CardHeader>
+                    <CardContent className="flex-1 p-4 space-y-4 overflow-y-auto">
+                        <SidebarPolls />
                     </CardContent>
                 </Card>
 
@@ -633,9 +719,10 @@ const CommunityChat = () => {
                     </CardHeader>
                     <CardContent className="flex-1 p-2 space-y-1">
                         {onlineUsers.length === 0 ? (
-                            <div className="flex flex-col items-center justify-center h-40 opacity-40 grayscale">
-                                <Users className="h-8 w-8 mb-2" />
-                                <p className="text-[10px] font-bold uppercase tracking-widest">Watching the halls...</p>
+                            <div className="flex-1 flex flex-col min-w-0 max-h-screen relative">
+                                <div className="flex flex-col items-center justify-center h-40">
+                                    <CEKALoader variant="scanning" size="md" text="Synchronizing Intelligence..." />
+                                </div>
                             </div>
                         ) : (
                             onlineUsers.filter(u => u.id !== user?.id).map(u => (
