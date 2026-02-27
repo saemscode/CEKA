@@ -1,0 +1,71 @@
+
+> vite_react_shadcn_ts@0.0.0 build
+> vite build
+
+[ViteConfig] Mode: production
+[ViteConfig] CWD: D:\CEKA\ceka v010\CEKA
+[ViteConfig] Env keys loaded: [
+  'VITE_FIREBASE_API_KEY',
+  'VITE_FIREBASE_APP_ID',
+  'VITE_FIREBASE_AUTH_DOMAIN',
+  'VITE_FIREBASE_MEASUREMENT_ID',
+  'VITE_FIREBASE_MESSAGING_SENDER_ID',
+  'VITE_FIREBASE_PROJECT_ID',
+  'VITE_FIREBASE_STORAGE_BUCKET',
+  'VITE_FIREBASE_VAPID_KEY',
+  'VITE_SUPABASE_ANON_KEY',
+  'VITE_SUPABASE_SERVICE_ROLE_KEY',
+  'VITE_SUPABASE_PROJECT_ID',
+  'VITE_SUPABASE_PUBLISHABLE_KEY',
+  'VITE_SUPABASE_URL',
+  'VITE_STORAGE_PROVIDER',
+  'VITE_B2_KEY_ID',
+  'VITE_B2_APP_KEY',
+  'VITE_B2_BUCKET_NAME',
+  'VITE_B2_ENDPOINT',
+  'VITE_B2_REGION',
+  'VITE_GITHUB_TOKEN',
+  'VITE_SENTRY_DSN',
+  'VITE_GEMINI_API_KEY',
+  'VITE_APP_VERSION',
+  'VITE_APP_NAME',
+  'VITE_IEBC_OFFICES_GEOJSON_URL',
+  'VITE_RECALL_GEOJSON_URL'
+]
+[36mvite v5.4.21 [32mbuilding for production...[36m[39m
+transforming...
+node_modules/react-helmet-async/lib/index.module.js (1:7186): A comment
+
+"/*#__PURE__*/"
+
+in "node_modules/react-helmet-async/lib/index.module.js" contains an annotation that Rollup cannot interpret due to the position of the comment. The comment will be removed to avoid issues.
+node_modules/react-helmet-async/lib/index.module.js (1:13561): A comment
+
+"/*#__PURE__*/"
+
+in "node_modules/react-helmet-async/lib/index.module.js" contains an annotation that Rollup cannot interpret due to the position of the comment. The comment will be removed to avoid issues.
+
+/assets/bg-peek.jpg referenced in /assets/bg-peek.jpg didn't resolve at build time, it will remain unchanged to be resolved at runtime
+[32mΓ£ô[39m 4397 modules transformed.
+rendering chunks...
+[plugin:vite:reporter] [plugin vite:reporter] 
+(!) D:/CEKA/ceka v010/CEKA/src/components/DonationWidget.tsx is dynamically imported by D:/CEKA/ceka v010/CEKA/src/pages/SHAmbles.tsx but also statically imported by D:/CEKA/ceka v010/CEKA/src/components/layout/Layout.tsx, dynamic import will not move module into another chunk.
+
+computing gzip size...
+[2mdist/[22m[32mindex.html                             [39m[1m[2m   12.24 kB[22m[1m[22m[2m Γöé gzip:   3.82 kB[22m
+[2mdist/[22m[35massets/index-CWEWIfUV.css              [39m[1m[2m  290.43 kB[22m[1m[22m[2m Γöé gzip:  45.08 kB[22m
+[2mdist/[22m[36massets/BarChart-4WkuDX5y.js            [39m[1m[2m    0.30 kB[22m[1m[22m[2m Γöé gzip:   0.22 kB[22m
+[2mdist/[22m[36massets/index-OOdR3rmK.js               [39m[1m[2m    3.98 kB[22m[1m[22m[2m Γöé gzip:   1.65 kB[22m
+[2mdist/[22m[36massets/FacilityStatistics-Dmrz5MpW.js  [39m[1m[2m    4.51 kB[22m[1m[22m[2m Γöé gzip:   1.42 kB[22m
+[2mdist/[22m[36massets/ProcessingStatus-CC9a4VI_.js    [39m[1m[2m    4.84 kB[22m[1m[22m[2m Γöé gzip:   1.46 kB[22m
+[2mdist/[22m[36massets/AllocationAnalysis-C8ByGKtk.js  [39m[1m[2m    5.22 kB[22m[1m[22m[2m Γöé gzip:   1.55 kB[22m
+[2mdist/[22m[36massets/DataUploadWizard-D47no0xq.js    [39m[1m[2m    6.31 kB[22m[1m[22m[2m Γöé gzip:   1.81 kB[22m
+[2mdist/[22m[36massets/CountyComparison-DppK2eHP.js    [39m[1m[2m   17.88 kB[22m[1m[22m[2m Γöé gzip:   5.33 kB[22m
+[2mdist/[22m[36massets/DataProcessor-ax4IaYOH.js       [39m[1m[2m   49.96 kB[22m[1m[22m[2m Γöé gzip:  18.85 kB[22m
+[2mdist/[22m[36massets/index-v72uu8j4.js               [39m[1m[33m3,489.53 kB[39m[22m[2m Γöé gzip: 895.19 kB[22m
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+[32mΓ£ô built in 38.61s[39m

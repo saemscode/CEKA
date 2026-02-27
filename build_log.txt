@@ -1,0 +1,71 @@
+
+> vite_react_shadcn_ts@0.0.0 build
+> vite build
+
+[ViteConfig] Mode: production
+[ViteConfig] CWD: D:\CEKA\ceka v010\CEKA
+[ViteConfig] Env keys loaded: [
+  'VITE_FIREBASE_API_KEY',
+  'VITE_FIREBASE_APP_ID',
+  'VITE_FIREBASE_AUTH_DOMAIN',
+  'VITE_FIREBASE_MEASUREMENT_ID',
+  'VITE_FIREBASE_MESSAGING_SENDER_ID',
+  'VITE_FIREBASE_PROJECT_ID',
+  'VITE_FIREBASE_STORAGE_BUCKET',
+  'VITE_FIREBASE_VAPID_KEY',
+  'VITE_SUPABASE_ANON_KEY',
+  'VITE_SUPABASE_SERVICE_ROLE_KEY',
+  'VITE_SUPABASE_PROJECT_ID',
+  'VITE_SUPABASE_PUBLISHABLE_KEY',
+  'VITE_SUPABASE_URL',
+  'VITE_STORAGE_PROVIDER',
+  'VITE_B2_KEY_ID',
+  'VITE_B2_APP_KEY',
+  'VITE_B2_BUCKET_NAME',
+  'VITE_B2_ENDPOINT',
+  'VITE_B2_REGION',
+  'VITE_GITHUB_TOKEN',
+  'VITE_SENTRY_DSN',
+  'VITE_GEMINI_API_KEY',
+  'VITE_APP_VERSION',
+  'VITE_APP_NAME',
+  'VITE_IEBC_OFFICES_GEOJSON_URL',
+  'VITE_RECALL_GEOJSON_URL'
+]
+[36mvite v5.4.21 [32mbuilding for production...[36m[39m
+transforming...
+node_modules/react-helmet-async/lib/index.module.js (1:7186): A comment
+
+"/*#__PURE__*/"
+
+in "node_modules/react-helmet-async/lib/index.module.js" contains an annotation that Rollup cannot interpret due to the position of the comment. The comment will be removed to avoid issues.
+node_modules/react-helmet-async/lib/index.module.js (1:13561): A comment
+
+"/*#__PURE__*/"
+
+in "node_modules/react-helmet-async/lib/index.module.js" contains an annotation that Rollup cannot interpret due to the position of the comment. The comment will be removed to avoid issues.
+
+/assets/bg-peek.jpg referenced in /assets/bg-peek.jpg didn't resolve at build time, it will remain unchanged to be resolved at runtime
+[32mΓ£ô[39m 4397 modules transformed.
+x Build failed in 20.94s
+error during build:
+src/components/chat/CommunityChat.tsx (15:7): "default" is not exported by "src/components/chat/ChatReactions.tsx", imported by "src/components/chat/CommunityChat.tsx".
+file: D:/CEKA/ceka v010/CEKA/src/components/chat/CommunityChat.tsx:15:7
+
+13: import { Link, useSearchParams } from 'react-router-dom';
+14: import { motion, AnimatePresence } from 'framer-motion';
+15: import ChatReactions from './ChatReactions';
+           ^
+16: import ChatReplies from './ChatReplies';
+17: import JoinRoomGuide from './JoinRoomGuide';
+
+    at getRollupError (file:///D:/CEKA/ceka%20v010/CEKA/node_modules/rollup/dist/es/shared/parseAst.js:400:41)
+    at error (file:///D:/CEKA/ceka%20v010/CEKA/node_modules/rollup/dist/es/shared/parseAst.js:396:42)
+    at Module.error (file:///D:/CEKA/ceka%20v010/CEKA/node_modules/rollup/dist/es/shared/node-entry.js:17036:16)
+    at Module.traceVariable (file:///D:/CEKA/ceka%20v010/CEKA/node_modules/rollup/dist/es/shared/node-entry.js:17448:29)
+    at ModuleScope.findVariable (file:///D:/CEKA/ceka%20v010/CEKA/node_modules/rollup/dist/es/shared/node-entry.js:15066:39)
+    at ReturnValueScope.findVariable (file:///D:/CEKA/ceka%20v010/CEKA/node_modules/rollup/dist/es/shared/node-entry.js:5673:38)
+    at FunctionBodyScope.findVariable (file:///D:/CEKA/ceka%20v010/CEKA/node_modules/rollup/dist/es/shared/node-entry.js:5673:38)
+    at ReturnValueScope.findVariable (file:///D:/CEKA/ceka%20v010/CEKA/node_modules/rollup/dist/es/shared/node-entry.js:5673:38)
+    at FunctionBodyScope.findVariable (file:///D:/CEKA/ceka%20v010/CEKA/node_modules/rollup/dist/es/shared/node-entry.js:5673:38)
+    at Identifier.bind (file:///D:/CEKA/ceka%20v010/CEKA/node_modules/rollup/dist/es/shared/node-entry.js:5447:40)
