@@ -1,0 +1,60 @@
+{
+  "timestamp": "2026-02-27T00:45:52.884013",
+  "total_offices": 386,
+  "successful_geocodes": 0,
+  "enhanced_geocodes": 228,
+  "failed_geocodes": 158,
+  "success_rate": 0.0,
+  "enhanced_rate": 0.5906735751295337,
+  "overall_success_rate": 0.5906735751295337,
+  "high_accuracy_results": 12,
+  "provider_statistics": {
+    "tomtom": 69,
+    "constituency_center": 26,
+    "nominatim": 10,
+    "county_center": 78,
+    "locationiq": 11
+  },
+  "duplicate_coordinates_count": 17,
+  "quality_enhancement_metrics": {
+    "duplicates_resolved": 273,
+    "accuracy_improved": 0,
+    "nan_values_filled": 34,
+    "total_enhancements": 307
+  },
+  "accuracy_breakdown": {
+    "excellent_under_50m": 12,
+    "good_50_100m": 0,
+    "fair_100_500m": 0,
+    "reasonable_500_2000m": 18,
+    "approximate_over_2000m": 356,
+    "missing_accuracy": "0"
+  },
+  "confidence_breakdown": {
+    "high_confidence_over_0.8": 24,
+    "good_confidence_0.6_0.8": 73,
+    "medium_confidence_0.4_0.6": 36,
+    "low_confidence_under_0.4": 253,
+    "missing_confidence": "0"
+  },
+  "source_type_breakdown": {
+    "provider": 90,
+    "poi_direct": 0,
+    "poi_offset": 0,
+    "poi_distance": 0,
+    "hierarchical": 0,
+    "deepseek_context": 0,
+    "constituency_center": 43,
+    "county_center": 78,
+    "enhanced": 17,
+    "failed": 158
+  },
+  "cache_statistics": {
+    "total_cache_entries": 90,
+    "cache_hit_rate": "N/A"
+  },
+  "boundary_validation": {
+    "constituencies_with_boundaries": 0,
+    "boundary_validation_enabled": false
+  }
+}

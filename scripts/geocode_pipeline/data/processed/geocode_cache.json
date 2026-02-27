@@ -1,0 +1,4772 @@
+{
+  "36ef90d61e29d0955b52cd49f611569e9e2011be04ed2cbf303b17328eb856a7": {
+    "lat": -4.0169653,
+    "lon": 39.6086385,
+    "address": "Changamwe, Coast",
+    "confidence": 0.6193149089800001,
+    "accuracy_meters": 5898.184098127718,
+    "raw": {
+      "type": "Geography",
+      "id": "7gnlrusz27tx0_rFGzGQ4g",
+      "score": 6.1931490898,
+      "entityType": "Municipality",
+      "matchConfidence": {
+        "score": 0.7523409513433881
+      },
+      "address": {
+        "municipality": "Changamwe",
+        "countrySecondarySubdivision": "Mombasa",
+        "countrySubdivision": "Coast",
+        "countrySubdivisionName": "Coast",
+        "countryCode": "KE",
+        "country": "Kenya",
+        "countryCodeISO3": "KEN",
+        "freeformAddress": "Changamwe, Coast"
+      },
+      "position": {
+        "lat": -4.0169653,
+        "lon": 39.6086385
+      },
+      "viewport": {
+        "topLeftPoint": {
+          "lat": -3.99237,
+          "lon": 39.56196
+        },
+        "btmRightPoint": {
+          "lat": -4.05058,
+          "lon": 39.65087
+        }
+      },
+      "boundingBox": {
+        "topLeftPoint": {
+          "lat": -3.992372,
+          "lon": 39.561958
+        },
+        "btmRightPoint": {
+          "lat": -4.050575,
+          "lon": 39.650866
+        }
+      },
+      "dataSources": {
+        "geometry": {
+          "id": "af24b49e-7ce2-4368-adc4-29d07a6c6136"
+        }
+      }
+    },
+    "source_type": "provider",
+    "method": "tomtom",
+    "successful_query": "Changamwe, Mombasa County, Kenya",
+    "total_queries_tried": 1
+  },
+  "37dafcdaae060f8aef1d9e32445249c7deae5e236f94dfbe9aa2ff77d33ad4be": {
+    "lat": -4.0542845,
+    "lon": 39.6904348,
+    "address": "Nyali, Coast",
+    "confidence": 0.64365310669,
+    "accuracy_meters": 4434.760170296207,
+    "raw": {
+      "type": "Geography",
+      "id": "UZ3kgwWhq1FyKT39wso4HQ",
+      "score": 6.4365310669,
+      "entityType": "Municipality",
+      "matchConfidence": {
+        "score": 0.735073708599196
+      },
+      "address": {
+        "municipality": "Nyali",
+        "countrySecondarySubdivision": "Mombasa",
+        "countrySubdivision": "Coast",
+        "countrySubdivisionName": "Coast",
+        "countryCode": "KE",
+        "country": "Kenya",
+        "countryCodeISO3": "KEN",
+        "freeformAddress": "Nyali, Coast"
+      },
+      "position": {
+        "lat": -4.0542845,
+        "lon": 39.6904348
+      },
+      "viewport": {
+        "topLeftPoint": {
+          "lat": -4.0023,
+          "lon": 39.68044
+        },
+        "btmRightPoint": {
+          "lat": -4.06367,
+          "lon": 39.73152
+        }
+      },
+      "boundingBox": {
+        "topLeftPoint": {
+          "lat": -4.0023,
+          "lon": 39.680445
+        },
+        "btmRightPoint": {
+          "lat": -4.063674,
+          "lon": 39.731517
+        }
+      },
+      "dataSources": {
+        "geometry": {
+          "id": "dae91375-c94c-4b61-9e42-9a61b6a34799"
+        }
+      }
+    },
+    "source_type": "provider",
+    "method": "tomtom",
+    "successful_query": "Nyali, Mombasa County, Kenya",
+    "total_queries_tried": 1
+  },
+  "03a5f71906f8079bbdcec98dcb6a63636d67f6356de999241deb99e02638b041": {
+    "lat": -4.1362573,
+    "lon": 39.3191131,
+    "address": "Kinango, Coast",
+    "confidence": 0.61933107376,
+    "accuracy_meters": 76103.88792444555,
+    "raw": {
+      "type": "Geography",
+      "id": "rJNNC0KFM1ll6448WwLbzA",
+      "score": 6.1933107376,
+      "entityType": "Municipality",
+      "matchConfidence": {
+        "score": 0.7781452300136418
+      },
+      "address": {
+        "municipality": "Kinango",
+        "countrySecondarySubdivision": "Kwalé",
+        "countrySubdivision": "Coast",
+        "countrySubdivisionName": "Coast",
+        "countryCode": "KE",
+        "country": "Kenya",
+        "countryCodeISO3": "KEN",
+        "freeformAddress": "Kinango, Coast"
+      },
+      "position": {
+        "lat": -4.1362573,
+        "lon": 39.3191131
+      },
+      "viewport": {
+        "topLeftPoint": {
+          "lat": -3.56692,
+          "lon": 38.44995
+        },
+        "btmRightPoint": {
+          "lat": -4.3296,
+          "lon": 39.58934
+        }
+      },
+      "boundingBox": {
+        "topLeftPoint": {
+          "lat": -3.566921,
+          "lon": 38.449946
+        },
+        "btmRightPoint": {
+          "lat": -4.329601,
+          "lon": 39.589341
+        }
+      },
+      "dataSources": {
+        "geometry": {
+          "id": "00005858-5800-1200-0000-00007d2fdb4c"
+        }
+      }
+    },
+    "source_type": "provider",
+    "method": "tomtom",
+    "successful_query": "Kinango, Kwale County, Kenya",
+    "total_queries_tried": 1
+  },
+  "1c13f02a072ab145d815ae6354589ac76ba6d4bc9863026ca83fdeae830b8877": {
+    "lat": -3.6337024,
+    "lon": 39.8498467,
+    "address": "Kilifi North, Coast",
+    "confidence": 0.9,
+    "accuracy_meters": 37710.57791682659,
+    "raw": {
+      "type": "Geography",
+      "id": "Z57jNSYyuZ98yNeeGRwTvQ",
+      "score": 9.4573717117,
+      "entityType": "Municipality",
+      "matchConfidence": {
+        "score": 0.8188199220447029
+      },
+      "address": {
+        "municipality": "Kilifi North",
+        "countrySecondarySubdivision": "Kilifi",
+        "countrySubdivision": "Coast",
+        "countrySubdivisionName": "Coast",
+        "countryCode": "KE",
+        "country": "Kenya",
+        "countryCodeISO3": "KEN",
+        "freeformAddress": "Kilifi North, Coast"
+      },
+      "position": {
+        "lat": -3.6337024,
+        "lon": 39.8498467
+      },
+      "viewport": {
+        "topLeftPoint": {
+          "lat": -3.21933,
+          "lon": 39.74789
+        },
+        "btmRightPoint": {
+          "lat": -3.78347,
+          "lon": 40.12517
+        }
+      },
+      "boundingBox": {
+        "topLeftPoint": {
+          "lat": -3.219329,
+          "lon": 39.747887
+        },
+        "btmRightPoint": {
+          "lat": -3.783468,
+          "lon": 40.12517
+        }
+      },
+      "dataSources": {
+        "geometry": {
+          "id": "f9eb6469-a414-4842-8853-a58102528889"
+        }
+      }
+    },
+    "source_type": "provider",
+    "method": "tomtom",
+    "successful_query": "Kilifi North, Kilifi County, Kenya",
+    "total_queries_tried": 1
+  },
+  "4b1ae59a026b6aabf1ca7f6ecbfc7abd84f456e1e4aa9934a22f9eeb2e8f1367": {
+    "lat": -3.8168669,
+    "lon": 39.6266002,
+    "address": "Kaloleni, Coast",
+    "confidence": 0.61928272247,
+    "accuracy_meters": 23973.148562334663,
+    "raw": {
+      "type": "Geography",
+      "id": "u8mZ1ov0kmR33fyAnCk5nQ",
+      "score": 6.1928272247,
+      "entityType": "Municipality",
+      "matchConfidence": {
+        "score": 0.7503363085419765
+      },
+      "address": {
+        "municipality": "Kaloleni",
+        "countrySecondarySubdivision": "Kilifi",
+        "countrySubdivision": "Coast",
+        "countrySubdivisionName": "Coast",
+        "countryCode": "KE",
+        "country": "Kenya",
+        "countryCodeISO3": "KEN",
+        "freeformAddress": "Kaloleni, Coast"
+      },
+      "position": {
+        "lat": -3.8168669,
+        "lon": 39.6266002
+      },
+      "viewport": {
+        "topLeftPoint": {
+          "lat": -3.63059,
+          "lon": 39.34779
+        },
+        "btmRightPoint": {
+          "lat": -3.91785,
+          "lon": 39.67006
+        }
+      },
+      "boundingBox": {
+        "topLeftPoint": {
+          "lat": -3.630587,
+          "lon": 39.347792
+        },
+        "btmRightPoint": {
+          "lat": -3.917851,
+          "lon": 39.670063
+        }
+      },
+      "dataSources": {
+        "geometry": {
+          "id": "8d43b918-c9e7-4383-baeb-0b3345db646b"
+        }
+      }
+    },
+    "source_type": "provider",
+    "method": "tomtom",
+    "successful_query": "Kaloleni, Kilifi County, Kenya",
+    "total_queries_tried": 1
+  },
+  "a77c56771a8aa4b1be11d9b8b12c72aff00a2091ae98f6678e93d568597e0853": {
+    "lat": -3.5367319,
+    "lon": 39.6923692,
+    "address": "Ganze, Coast",
+    "confidence": 0.61924247742,
+    "accuracy_meters": 49552.740016633885,
+    "raw": {
+      "type": "Geography",
+      "id": "50ddBNYnHOXlH0nqmsxx_A",
+      "score": 6.1924247742,
+      "entityType": "Municipality",
+      "matchConfidence": {
+        "score": 0.7673267524997984
+      },
+      "address": {
+        "municipality": "Ganze",
+        "countrySecondarySubdivision": "Kilifi",
+        "countrySubdivision": "Coast",
+        "countrySubdivisionName": "Coast",
+        "countryCode": "KE",
+        "country": "Kenya",
+        "countryCodeISO3": "KEN",
+        "freeformAddress": "Ganze, Coast"
+      },
+      "position": {
+        "lat": -3.5367319,
+        "lon": 39.6923692
+      },
+      "viewport": {
+        "topLeftPoint": {
+          "lat": -3.18576,
+          "lon": 39.08741
+        },
+        "btmRightPoint": {
+          "lat": -3.6914,
+          "lon": 39.8227
+        }
+      },
+      "boundingBox": {
+        "topLeftPoint": {
+          "lat": -3.185756,
+          "lon": 39.087411
+        },
+        "btmRightPoint": {
+          "lat": -3.691403,
+          "lon": 39.8227
+        }
+      },
+      "dataSources": {
+        "geometry": {
+          "id": "827f4b98-0510-4186-93a5-85c37f8d06b8"
+        }
+      }
+    },
+    "source_type": "provider",
+    "method": "tomtom"
+  },
+  "502eb251a234473340fc2a2544ae0f7df0b097457a2f1312d49dc6669b566534": {
+    "lat": -3.2131856,
+    "lon": 40.1180017,
+    "address": "Malindi, Coast",
+    "confidence": 0.61958055496,
+    "accuracy_meters": 27927.669641877183,
+    "raw": {
+      "type": "Geography",
+      "id": "oVC0NjOW8vBS24CPj-T3-g",
+      "score": 6.1958055496,
+      "entityType": "Municipality",
+      "matchConfidence": {
+        "score": 0.7673267524997984
+      },
+      "address": {
+        "municipality": "Malindi",
+        "countrySecondarySubdivision": "Kilifi",
+        "countrySubdivision": "Coast",
+        "countrySubdivisionName": "Coast",
+        "countryCode": "KE",
+        "country": "Kenya",
+        "countryCodeISO3": "KEN",
+        "freeformAddress": "Malindi, Coast"
+      },
+      "position": {
+        "lat": -3.2131856,
+        "lon": 40.1180017
+      },
+      "viewport": {
+        "topLeftPoint": {
+          "lat": -3.10507,
+          "lon": 39.69061
+        },
+        "btmRightPoint": {
+          "lat": -3.34565,
+          "lon": 40.13227
+        }
+      },
+      "boundingBox": {
+        "topLeftPoint": {
+          "lat": -3.105067,
+          "lon": 39.690609
+        },
+        "btmRightPoint": {
+          "lat": -3.345645,
+          "lon": 40.132269
+        }
+      },
+      "dataSources": {
+        "geometry": {
+          "id": "faf38b0b-b141-4d81-abe8-8e9be5f23e3a"
+        }
+      }
+    },
+    "source_type": "provider",
+    "method": "tomtom",
+    "successful_query": "Malindi, Kilifi County, Kenya",
+    "total_queries_tried": 1
+  },
+  "3d162fafe91b9b6b347837efe8f9472860981016b6fed93c140de429d809b3cd": {
+    "lat": -3.392203,
+    "lon": 37.674121,
+    "address": "Taveta, Coast",
+    "confidence": 0.8764891624500001,
+    "accuracy_meters": 63430.41382911961,
+    "raw": {
+      "type": "Geography",
+      "id": "TYOvJjvlSLYXVFTXJijB0g",
+      "score": 8.7648916245,
+      "entityType": "Municipality",
+      "matchConfidence": {
+        "score": 0.831040072223231
+      },
+      "address": {
+        "municipality": "Taveta",
+        "countrySecondarySubdivision": "Taita Taveta",
+        "countrySubdivision": "Coast",
+        "countrySubdivisionName": "Coast",
+        "countryCode": "KE",
+        "country": "Kenya",
+        "countryCodeISO3": "KEN",
+        "freeformAddress": "Taveta, Coast"
+      },
+      "position": {
+        "lat": -3.392203,
+        "lon": 37.674121
+      },
+      "viewport": {
+        "topLeftPoint": {
+          "lat": -3.00095,
+          "lon": 37.58462
+        },
+        "btmRightPoint": {
+          "lat": -3.87871,
+          "lon": 38.31475
+        }
+      },
+      "boundingBox": {
+        "topLeftPoint": {
+          "lat": -3.000945,
+          "lon": 37.584624
+        },
+        "btmRightPoint": {
+          "lat": -3.878708,
+          "lon": 38.314746
+        }
+      },
+      "dataSources": {
+        "geometry": {
+          "id": "f607a3d6-793c-46d3-bb50-f66804db5308"
+        }
+      }
+    },
+    "source_type": "provider",
+    "method": "tomtom",
+    "successful_query": "Taveta, Taita Taveta County, Kenya",
+    "total_queries_tried": 1
+  },
+  "2f3dc15c943e036b684c8ab3dc492dbef27d531838069220382dedaf87b8c0e5": {
+    "lat": -2.8411706,
+    "lon": 37.909934,
+    "address": "Shield, Kenya, B54, Marlal, Kuku, Kuku ward, Loitokitok, Kajiado, Kenya",
+    "confidence": 0.7,
+    "accuracy_meters": 10.0,
+    "raw": {
+      "place_id": 422409221,
+      "licence": "Data © OpenStreetMap contributors, ODbL 1.0. http://osm.org/copyright",
+      "osm_type": "node",
+      "osm_id": 13295193216,
+      "lat": "-2.8411706",
+      "lon": "37.9099340",
+      "category": "tourism",
+      "type": "artwork",
+      "place_rank": 30,
+      "importance": 4.5001144426596745e-05,
+      "addresstype": "tourism",
+      "name": "Shield, Kenya",
+      "display_name": "Shield, Kenya, B54, Marlal, Kuku, Kuku ward, Loitokitok, Kajiado, Kenya",
+      "address": {
+        "tourism": "Shield, Kenya",
+        "road": "B54",
+        "hamlet": "Marlal",
+        "village": "Kuku",
+        "city": "Kuku ward",
+        "county": "Loitokitok",
+        "state": "Kajiado",
+        "ISO3166-2-lvl4": "KE-10",
+        "country": "Kenya",
+        "country_code": "ke"
+      },
+      "boundingbox": [
+        "-2.8412206",
+        "-2.8411206",
+        "37.9098840",
+        "37.9099840"
+      ]
+    },
+    "source_type": "provider",
+    "method": "nominatim",
+    "successful_query": "Wundanyi, Taita Taveta County, Kenya",
+    "total_queries_tried": 1
+  },
+  "2630f7cee67b9d4b5eb6a78fac977a2972a5be7a88d5fedd571297312985317c": {
+    "lat": -3.4435818,
+    "lon": 39.161387,
+    "address": "Voi, Ganze, Kilifi, Kenya",
+    "confidence": 0.5,
+    "accuracy_meters": 19942.0387035259,
+    "raw": {
+      "place_id": 33611476,
+      "licence": "Data © OpenStreetMap contributors, ODbL 1.0. http://osm.org/copyright",
+      "osm_type": "way",
+      "osm_id": 1132483908,
+      "lat": "-3.4435818",
+      "lon": "39.1613870",
+      "category": "waterway",
+      "type": "river",
+      "place_rank": 19,
+      "importance": 0.14671166781109327,
+      "addresstype": "river",
+      "name": "Voi",
+      "display_name": "Voi, Ganze, Kilifi, Kenya",
+      "address": {
+        "river": "Voi",
+        "county": "Ganze",
+        "state": "Kilifi",
+        "ISO3166-2-lvl4": "KE-14",
+        "country": "Kenya",
+        "country_code": "ke"
+      },
+      "boundingbox": [
+        "-3.4996295",
+        "-3.4052251",
+        "38.9821112",
+        "39.3287802"
+      ]
+    },
+    "source_type": "provider",
+    "method": "nominatim",
+    "successful_query": "Voi, Taita Taveta County, Kenya",
+    "total_queries_tried": 1
+  },
+  "4bfd293422667e76644ab4240cdc63a510ea68704a591b5e5389a0d138d5748f": {
+    "lat": -0.4459246,
+    "lon": 39.652735,
+    "address": "Dujis Garissa, North Eastern",
+    "confidence": 0.60950593948,
+    "accuracy_meters": 4957.994697786109,
+    "raw": {
+      "type": "Geography",
+      "id": "erKgAoY5zT0K5VubtQUsYA",
+      "score": 6.0950593948,
+      "entityType": "MunicipalitySubdivision",
+      "matchConfidence": {
+        "score": 0.5500667385162843
+      },
+      "address": {
+        "municipalitySubdivision": "Garissa",
+        "municipality": "Dujis",
+        "countrySecondarySubdivision": "Garissa",
+        "countrySubdivision": "North Eastern",
+        "countrySubdivisionName": "North Eastern",
+        "countryCode": "KE",
+        "country": "Kenya",
+        "countryCodeISO3": "KEN",
+        "freeformAddress": "Dujis Garissa, North Eastern"
+      },
+      "position": {
+        "lat": -0.4459246,
+        "lon": 39.652735
+      },
+      "viewport": {
+        "topLeftPoint": {
+          "lat": -0.41838,
+          "lon": 39.6243
+        },
+        "btmRightPoint": {
+          "lat": -0.4915,
+          "lon": 39.67535
+        }
+      },
+      "boundingBox": {
+        "topLeftPoint": {
+          "lat": -0.418378,
+          "lon": 39.624303
+        },
+        "btmRightPoint": {
+          "lat": -0.491501,
+          "lon": 39.675349
+        }
+      },
+      "dataSources": {
+        "geometry": {
+          "id": "d54278da-c8b2-4f8e-9e24-78fc8fb5bce4"
+        }
+      }
+    },
+    "source_type": "provider",
+    "method": "tomtom",
+    "successful_query": "Garissa Township, Garissa County, Kenya",
+    "total_queries_tried": 1
+  },
+  "133901d45090390e2e2bfe4654ec13d9e48ef740c4b52cbe972360acd975a16a": {
+    "lat": -0.0953748,
+    "lon": 39.3509291,
+    "address": "Balambala, North Eastern",
+    "confidence": 0.61926660538,
+    "accuracy_meters": 85160.68373524764,
+    "raw": {
+      "type": "Geography",
+      "id": "KaLDZo3bEpIIcapPye3dVg",
+      "score": 6.1926660538,
+      "entityType": "Municipality",
+      "matchConfidence": {
+        "score": 0.781566052867732
+      },
+      "address": {
+        "municipality": "Balambala",
+        "countrySecondarySubdivision": "Garissa",
+        "countrySubdivision": "North Eastern",
+        "countrySubdivisionName": "North Eastern",
+        "countryCode": "KE",
+        "country": "Kenya",
+        "countryCodeISO3": "KEN",
+        "freeformAddress": "Balambala, North Eastern"
+      },
+      "position": {
+        "lat": -0.0953748,
+        "lon": 39.3509291
+      },
+      "viewport": {
+        "topLeftPoint": {
+          "lat": 0.38627,
+          "lon": 38.71065
+        },
+        "btmRightPoint": {
+          "lat": -0.43095,
+          "lon": 40.00618
+        }
+      },
+      "boundingBox": {
+        "topLeftPoint": {
+          "lat": 0.386272,
+          "lon": 38.71065
+        },
+        "btmRightPoint": {
+          "lat": -0.430949,
+          "lon": 40.006182
+        }
+      },
+      "dataSources": {
+        "geometry": {
+          "id": "c82a594e-0e38-47a1-8fa3-ac977ccf2865"
+        }
+      }
+    },
+    "source_type": "provider",
+    "method": "tomtom",
+    "successful_query": "Balambala, Garissa County, Kenya",
+    "total_queries_tried": 1
+  },
+  "9c98ff1635af61b30b4ec2c1f1a9ac0a3b5997813b023d1e7839782870651b3f": {
+    "lat": 0.5026229,
+    "lon": 38.7714862,
+    "address": "Lagdera, North Eastern",
+    "confidence": 0.61925854683,
+    "accuracy_meters": 88487.78935445493,
+    "raw": {
+      "type": "Geography",
+      "id": "wzWUt44XF0MWCyvxJfr0XA",
+      "score": 6.1925854683,
+      "entityType": "Municipality",
+      "matchConfidence": {
+        "score": 0.781566052867732
+      },
+      "address": {
+        "municipality": "Lagdera",
+        "countrySecondarySubdivision": "Garissa",
+        "countrySubdivision": "North Eastern",
+        "countrySubdivisionName": "North Eastern",
+        "countryCode": "KE",
+        "country": "Kenya",
+        "countryCodeISO3": "KEN",
+        "freeformAddress": "Lagdera, North Eastern"
+      },
+      "position": {
+        "lat": 0.5026229,
+        "lon": 38.7714862
+      },
+      "viewport": {
+        "topLeftPoint": {
+          "lat": 0.99514,
+          "lon": 38.65959
+        },
+        "btmRightPoint": {
+          "lat": 0.00371,
+          "lon": 39.90472
+        }
+      },
+      "boundingBox": {
+        "topLeftPoint": {
+          "lat": 0.995138,
+          "lon": 38.659594
+        },
+        "btmRightPoint": {
+          "lat": 0.003707,
+          "lon": 39.904716
+        }
+      },
+      "dataSources": {
+        "geometry": {
+          "id": "d9c871fa-44e4-4422-88e9-ab91bf0b4e95"
+        }
+      }
+    },
+    "source_type": "provider",
+    "method": "tomtom",
+    "successful_query": "Lagdera, Garissa County, Kenya",
+    "total_queries_tried": 1
+  },
+  "a4deabff9820b98c611ee335ed9825059159bf15b6515285cca6452f48f0a126": {
+    "lat": 0.0522555,
+    "lon": 40.3084786,
+    "address": "Dadaab, North Eastern",
+    "confidence": 0.61929073334,
+    "accuracy_meters": 94665.47465209856,
+    "raw": {
+      "type": "Geography",
+      "id": "2Y45dZqWBsFifFRyNTwIdQ",
+      "score": 6.1929073334,
+      "entityType": "Municipality",
+      "matchConfidence": {
+        "score": 0.781566052867732
+      },
+      "address": {
+        "municipality": "Dadaab",
+        "countrySecondarySubdivision": "Garissa",
+        "countrySubdivision": "North Eastern",
+        "countrySubdivisionName": "North Eastern",
+        "countryCode": "KE",
+        "country": "Kenya",
+        "countryCodeISO3": "KEN",
+        "freeformAddress": "Dadaab, North Eastern"
+      },
+      "position": {
+        "lat": 0.0522555,
+        "lon": 40.3084786
+      },
+      "viewport": {
+        "topLeftPoint": {
+          "lat": 0.45613,
+          "lon": 39.50088
+        },
+        "btmRightPoint": {
+          "lat": -0.34856,
+          "lon": 41.00144
+        }
+      },
+      "boundingBox": {
+        "topLeftPoint": {
+          "lat": 0.456131,
+          "lon": 39.500885
+        },
+        "btmRightPoint": {
+          "lat": -0.348557,
+          "lon": 41.001445
+        }
+      },
+      "dataSources": {
+        "geometry": {
+          "id": "c1f7deac-76d5-42d9-9e34-c39ae5aeb06a"
+        }
+      }
+    },
+    "source_type": "provider",
+    "method": "tomtom",
+    "successful_query": "Dadaab, Garissa County, Kenya",
+    "total_queries_tried": 1
+  },
+  "3970d1af87b96e4c2c91fdaf89287978bed7c326cda03ff28e1ff3c040bfb804": {
+    "lat": 0.0090771,
+    "lon": 40.3769563,
+    "address": "Fafi, North Eastern",
+    "confidence": 0.61925053596,
+    "accuracy_meters": 113068.82050370694,
+    "raw": {
+      "type": "Geography",
+      "id": "9s9YNOOvBf0pH6eA46QSLw",
+      "score": 6.1925053596,
+      "entityType": "Municipality",
+      "matchConfidence": {
+        "score": 0.781566052867732
+      },
+      "address": {
+        "municipality": "Fafi",
+        "countrySecondarySubdivision": "Garissa",
+        "countrySubdivision": "North Eastern",
+        "countrySubdivisionName": "North Eastern",
+        "countryCode": "KE",
+        "country": "Kenya",
+        "countryCodeISO3": "KEN",
+        "freeformAddress": "Fafi, North Eastern"
+      },
+      "position": {
+        "lat": 0.0090771,
+        "lon": 40.3769563
+      },
+      "viewport": {
+        "topLeftPoint": {
+          "lat": 0.03767,
+          "lon": 39.81438
+        },
+        "btmRightPoint": {
+          "lat": -1.5932,
+          "lon": 41.02953
+        }
+      },
+      "boundingBox": {
+        "topLeftPoint": {
+          "lat": 0.037673,
+          "lon": 39.814378
+        },
+        "btmRightPoint": {
+          "lat": -1.593204,
+          "lon": 41.029528
+        }
+      },
+      "dataSources": {
+        "geometry": {
+          "id": "00005858-5800-1200-0000-00007d2fdb5c"
+        }
+      }
+    },
+    "source_type": "provider",
+    "method": "tomtom",
+    "successful_query": "Fafi, Garissa County, Kenya",
+    "total_queries_tried": 1
+  },
+  "02df0ed17316a1b28f3c4a50aa2001b8d93a84b065b56d9c8b43715db6fd492a": {
+    "lat": -1.5956289,
+    "lon": 40.5147259,
+    "address": "Ijara, North Eastern",
+    "confidence": 0.61924247742,
+    "accuracy_meters": 105916.55564091739,
+    "raw": {
+      "type": "Geography",
+      "id": "3HYfm0v1TTksnM1QFDHpfA",
+      "score": 6.1924247742,
+      "entityType": "Municipality",
+      "matchConfidence": {
+        "score": 0.781566052867732
+      },
+      "address": {
+        "municipality": "Ijara",
+        "countrySecondarySubdivision": "Garissa",
+        "countrySubdivision": "North Eastern",
+        "countrySubdivisionName": "North Eastern",
+        "countryCode": "KE",
+        "country": "Kenya",
+        "countryCodeISO3": "KEN",
+        "freeformAddress": "Ijara, North Eastern"
+      },
+      "position": {
+        "lat": -1.5956289,
+        "lon": 40.5147259
+      },
+      "viewport": {
+        "topLeftPoint": {
+          "lat": -0.82912,
+          "lon": 40.09552
+        },
+        "btmRightPoint": {
+          "lat": -2.03847,
+          "lon": 41.56799
+        }
+      },
+      "boundingBox": {
+        "topLeftPoint": {
+          "lat": -0.82912,
+          "lon": 40.095524
+        },
+        "btmRightPoint": {
+          "lat": -2.038467,
+          "lon": 41.567993
+        }
+      },
+      "dataSources": {
+        "geometry": {
+          "id": "fe886364-cfc1-4409-8204-9d827d2893c3"
+        }
+      }
+    },
+    "source_type": "provider",
+    "method": "tomtom",
+    "successful_query": "Ijara, Garissa County, Kenya",
+    "total_queries_tried": 1
+  },
+  "c3ca952223cf1a3f665c397ec2d4e584ff7a84d94c2ac2f4946d6dcd2ce67bff": {
+    "lat": 3.762383,
+    "lon": 40.9283306,
+    "address": "Mandera North, North Eastern",
+    "confidence": 0.9,
+    "accuracy_meters": 79314.57320016577,
+    "raw": {
+      "type": "Geography",
+      "id": "te9Udl--RGf8BGGQwT91-w",
+      "score": 9.4528255463,
+      "entityType": "Municipality",
+      "matchConfidence": {
+        "score": 0.7787472486629754
+      },
+      "address": {
+        "municipality": "Mandera North",
+        "countrySecondarySubdivision": "Mandéra",
+        "countrySubdivision": "North Eastern",
+        "countrySubdivisionName": "North Eastern",
+        "countryCode": "KE",
+        "country": "Kenya",
+        "countryCodeISO3": "KEN",
+        "freeformAddress": "Mandera North, North Eastern"
+      },
+      "position": {
+        "lat": 3.762383,
+        "lon": 40.9283306
+      },
+      "viewport": {
+        "topLeftPoint": {
+          "lat": 4.11479,
+          "lon": 40.2886
+        },
+        "btmRightPoint": {
+          "lat": 3.0849,
+          "lon": 41.27772
+        }
+      },
+      "boundingBox": {
+        "topLeftPoint": {
+          "lat": 4.114795,
+          "lon": 40.288604
+        },
+        "btmRightPoint": {
+          "lat": 3.084899,
+          "lon": 41.277716
+        }
+      },
+      "dataSources": {
+        "geometry": {
+          "id": "9f273311-777f-445c-a41d-9d10907172dc"
+        }
+      }
+    },
+    "source_type": "provider",
+    "method": "tomtom",
+    "successful_query": "Mandera North, Mandera County, Kenya",
+    "total_queries_tried": 1
+  },
+  "27333fba86a3e5f54d325cb7b391e085db1081d07fa8423add40ae9df74e500c": {
+    "lat": 3.4970367,
+    "lon": 41.183628,
+    "address": "Lafey, Mandera, Kenya",
+    "confidence": 0.5,
+    "accuracy_meters": 66782.01589001699,
+    "raw": {
+      "place_id": 38171826,
+      "licence": "Data © OpenStreetMap contributors, ODbL 1.0. http://osm.org/copyright",
+      "osm_type": "relation",
+      "osm_id": 16113593,
+      "lat": "3.4970367",
+      "lon": "41.1836280",
+      "category": "boundary",
+      "type": "administrative",
+      "place_rank": 12,
+      "importance": 0.24004500114442662,
+      "addresstype": "county",
+      "name": "Lafey",
+      "display_name": "Lafey, Mandera, Kenya",
+      "address": {
+        "county": "Lafey",
+        "state": "Mandera",
+        "ISO3166-2-lvl4": "KE-24",
+        "country": "Kenya",
+        "country_code": "ke"
+      },
+      "boundingbox": [
+        "3.0120657",
+        "3.9821400",
+        "40.8916427",
+        "41.6013270"
+      ]
+    },
+    "source_type": "provider",
+    "method": "nominatim",
+    "successful_query": "Lafey, Mandera County, Kenya",
+    "total_queries_tried": 1
+  },
+  "22ec6a6d9d6f47e5797397cf605509d65d31b53782a09bced904f40dead6f352": {
+    "lat": 0.3654264,
+    "lon": 37.5899505,
+    "address": "Isiolo North, Eastern",
+    "confidence": 0.9,
+    "accuracy_meters": 176276.5092708547,
+    "raw": {
+      "type": "Geography",
+      "id": "300Sy3SMZ_nTO85sI00Zvw",
+      "score": 9.4531936646,
+      "entityType": "Municipality",
+      "matchConfidence": {
+        "score": 0.8188199220447029
+      },
+      "address": {
+        "municipality": "Isiolo North",
+        "countrySecondarySubdivision": "Isiolo",
+        "countrySubdivision": "Eastern",
+        "countrySubdivisionName": "Eastern",
+        "countryCode": "KE",
+        "country": "Kenya",
+        "countryCodeISO3": "KEN",
+        "freeformAddress": "Isiolo North, Eastern"
+      },
+      "position": {
+        "lat": 0.3654264,
+        "lon": 37.5899505
+      },
+      "viewport": {
+        "topLeftPoint": {
+          "lat": 2.0977,
+          "lon": 36.86435
+        },
+        "btmRightPoint": {
+          "lat": 0.26222,
+          "lon": 39.45028
+        }
+      },
+      "boundingBox": {
+        "topLeftPoint": {
+          "lat": 2.097701,
+          "lon": 36.864354
+        },
+        "btmRightPoint": {
+          "lat": 0.26222,
+          "lon": 39.450284
+        }
+      },
+      "dataSources": {
+        "geometry": {
+          "id": "00005858-5800-1200-0000-00007d2fdb28"
+        }
+      }
+    },
+    "source_type": "provider",
+    "method": "tomtom",
+    "successful_query": "Isiolo North, Isiolo County, Kenya",
+    "total_queries_tried": 1
+  },
+  "ab67f4c2a0d5424b04f03bc38b398cdeb035916381d86d1b1ad9a9701694380d": {
+    "lat": 0.0847934,
+    "lon": 37.2398001,
+    "address": "Buuri, Eastern",
+    "confidence": 0.61933107376,
+    "accuracy_meters": 41579.139137367965,
+    "raw": {
+      "type": "Geography",
+      "id": "WBmMeYN94pP7wU57D8R1FA",
+      "score": 6.1933107376,
+      "entityType": "Municipality",
+      "matchConfidence": {
+        "score": 0.766262581718599
+      },
+      "address": {
+        "municipality": "Buuri",
+        "countrySecondarySubdivision": "Meru",
+        "countrySubdivision": "Eastern",
+        "countrySubdivisionName": "Eastern",
+        "countryCode": "KE",
+        "country": "Kenya",
+        "countryCodeISO3": "KEN",
+        "freeformAddress": "Buuri, Eastern"
+      },
+      "position": {
+        "lat": 0.0847934,
+        "lon": 37.2398001
+      },
+      "viewport": {
+        "topLeftPoint": {
+          "lat": 0.32559,
+          "lon": 37.10767
+        },
+        "btmRightPoint": {
+          "lat": -0.15328,
+          "lon": 37.68211
+        }
+      },
+      "boundingBox": {
+        "topLeftPoint": {
+          "lat": 0.325587,
+          "lon": 37.10767
+        },
+        "btmRightPoint": {
+          "lat": -0.153284,
+          "lon": 37.682106
+        }
+      },
+      "dataSources": {
+        "geometry": {
+          "id": "00005858-5800-1200-0000-00007d2fdb2b"
+        }
+      }
+    },
+    "source_type": "provider",
+    "method": "tomtom",
+    "successful_query": "Buuri, Meru County, Kenya",
+    "total_queries_tried": 1
+  },
+  "49eec1e20869ea2a3612fce757818eb41237629fb7aab61e415ab2ef8d44cb8b": {
+    "lat": -0.9196838,
+    "lon": 38.468054,
+    "address": "Mwingi Central, Kitui, Kenya",
+    "confidence": 0.5,
+    "accuracy_meters": 62771.944242117235,
+    "raw": {
+      "place_id": 33768060,
+      "licence": "Data © OpenStreetMap contributors, ODbL 1.0. http://osm.org/copyright",
+      "osm_type": "relation",
+      "osm_id": 16084963,
+      "lat": "-0.9196838",
+      "lon": "38.4680540",
+      "category": "boundary",
+      "type": "administrative",
+      "place_rank": 12,
+      "importance": 0.24000999999999997,
+      "addresstype": "county",
+      "name": "Mwingi Central",
+      "display_name": "Mwingi Central, Kitui, Kenya",
+      "address": {
+        "county": "Mwingi Central",
+        "state": "Kitui",
+        "ISO3166-2-lvl4": "KE-18",
+        "country": "Kenya",
+        "country_code": "ke"
+      },
+      "boundingbox": [
+        "-1.2051861",
+        "-0.6339520",
+        "37.9893197",
+        "38.9633231"
+      ]
+    },
+    "source_type": "provider",
+    "method": "nominatim",
+    "successful_query": "Mwingi Central, Kitui County, Kenya",
+    "total_queries_tried": 1
+  },
+  "d9eb4ea6b44cb5b78d8adbb50a4187a381e24b83d2e13b3a5c53e8f5555c4d2f": {
+    "lat": -1.6456293,
+    "lon": 37.8445646,
+    "address": "Kitui Rural, Eastern",
+    "confidence": 0.9,
+    "accuracy_meters": 55047.616004180214,
+    "raw": {
+      "type": "Geography",
+      "id": "swOqVY6GKkB-xbrmGNIToA",
+      "score": 9.4531936646,
+      "entityType": "Municipality",
+      "matchConfidence": {
+        "score": 0.8359330481995787
+      },
+      "address": {
+        "municipality": "Kitui Rural",
+        "countrySecondarySubdivision": "Kitui",
+        "countrySubdivision": "Eastern",
+        "countrySubdivisionName": "Eastern",
+        "countryCode": "KE",
+        "country": "Kenya",
+        "countryCodeISO3": "KEN",
+        "freeformAddress": "Kitui Rural, Eastern"
+      },
+      "position": {
+        "lat": -1.6456293,
+        "lon": 37.8445646
+      },
+      "viewport": {
+        "topLeftPoint": {
+          "lat": -1.08104,
+          "lon": 37.5955
+        },
+        "btmRightPoint": {
+          "lat": -1.89742,
+          "lon": 38.15591
+        }
+      },
+      "boundingBox": {
+        "topLeftPoint": {
+          "lat": -1.081044,
+          "lon": 37.595496
+        },
+        "btmRightPoint": {
+          "lat": -1.897424,
+          "lon": 38.155913
+        }
+      },
+      "dataSources": {
+        "geometry": {
+          "id": "c4ec3b50-41cf-446a-8c59-82e407226c66"
+        }
+      }
+    },
+    "source_type": "provider",
+    "method": "tomtom",
+    "successful_query": "Kitui Rural, Kitui County, Kenya",
+    "total_queries_tried": 1
+  },
+  "fca45944fba2cdeb4b32d77f2cbb5d97a47a98e8267c5418d9acab196770b4af": {
+    "lat": -0.9756653,
+    "lon": 37.6061343,
+    "address": "Masinga, Eastern",
+    "confidence": 0.61932301521,
+    "accuracy_meters": 40573.92640566651,
+    "raw": {
+      "type": "Geography",
+      "id": "3zKg45hF7EonJLa-qXDb_Q",
+      "score": 6.1932301521,
+      "entityType": "Municipality",
+      "matchConfidence": {
+        "score": 0.7725344575977304
+      },
+      "address": {
+        "municipality": "Masinga",
+        "countrySecondarySubdivision": "Machakos",
+        "countrySubdivision": "Eastern",
+        "countrySubdivisionName": "Eastern",
+        "countryCode": "KE",
+        "country": "Kenya",
+        "countryCodeISO3": "KEN",
+        "freeformAddress": "Masinga, Eastern"
+      },
+      "position": {
+        "lat": -0.9756653,
+        "lon": 37.6061343
+      },
+      "viewport": {
+        "topLeftPoint": {
+          "lat": -0.77656,
+          "lon": 37.23202
+        },
+        "btmRightPoint": {
+          "lat": -1.13058,
+          "lon": 37.87027
+        }
+      },
+      "boundingBox": {
+        "topLeftPoint": {
+          "lat": -0.776564,
+          "lon": 37.232016
+        },
+        "btmRightPoint": {
+          "lat": -1.130584,
+          "lon": 37.870269
+        }
+      },
+      "dataSources": {
+        "geometry": {
+          "id": "00005858-5800-1200-0000-00007d2fdb4b"
+        }
+      }
+    },
+    "source_type": "provider",
+    "method": "tomtom",
+    "successful_query": "Masinga, Machakos County, Kenya",
+    "total_queries_tried": 1
+  },
+  "164eb74e9df7a03be99992964c9f3a69aee0e43aea284962d51e85c2ac2556d2": {
+    "lat": -1.2883127,
+    "lon": 37.6795808,
+    "address": "Yatta, Eastern",
+    "confidence": 0.6193149089800001,
+    "accuracy_meters": 39086.95720627905,
+    "raw": {
+      "type": "Geography",
+      "id": "_xidCttycsbeCGb977Kv7w",
+      "score": 6.1931490898,
+      "entityType": "Municipality",
+      "matchConfidence": {
+        "score": 0.7625645216255664
+      },
+      "address": {
+        "municipality": "Yatta",
+        "countrySecondarySubdivision": "Machakos",
+        "countrySubdivision": "Eastern",
+        "countrySubdivisionName": "Eastern",
+        "countryCode": "KE",
+        "country": "Kenya",
+        "countryCodeISO3": "KEN",
+        "freeformAddress": "Yatta, Eastern"
+      },
+      "position": {
+        "lat": -1.2883127,
+        "lon": 37.6795808
+      },
+      "viewport": {
+        "topLeftPoint": {
+          "lat": -0.98608,
+          "lon": 37.34313
+        },
+        "btmRightPoint": {
+          "lat": -1.50066,
+          "lon": 37.82227
+        }
+      },
+      "boundingBox": {
+        "topLeftPoint": {
+          "lat": -0.986078,
+          "lon": 37.343125
+        },
+        "btmRightPoint": {
+          "lat": -1.500655,
+          "lon": 37.822268
+        }
+      },
+      "dataSources": {
+        "geometry": {
+          "id": "e647c0df-cb82-4a2d-84c4-30ec167dc325"
+        }
+      }
+    },
+    "source_type": "provider",
+    "method": "tomtom",
+    "successful_query": "Yatta, Machakos County, Kenya",
+    "total_queries_tried": 1
+  },
+  "120f2937224245f04cb817d2c3187fdc9c741ab079c0aed898643deec9179eb5": {
+    "lat": -1.3029609,
+    "lon": 37.3481508,
+    "address": "Kangundo, Eastern",
+    "confidence": 0.61927466393,
+    "accuracy_meters": 13081.98853960906,
+    "raw": {
+      "type": "Geography",
+      "id": "lbB0Dc7UuOwuWnvFipRq4A",
+      "score": 6.1927466393,
+      "entityType": "Municipality",
+      "matchConfidence": {
+        "score": 0.7725344575977304
+      },
+      "address": {
+        "municipality": "Kangundo",
+        "countrySecondarySubdivision": "Machakos",
+        "countrySubdivision": "Eastern",
+        "countrySubdivisionName": "Eastern",
+        "countryCode": "KE",
+        "country": "Kenya",
+        "countryCodeISO3": "KEN",
+        "freeformAddress": "Kangundo, Eastern"
+      },
+      "position": {
+        "lat": -1.3029609,
+        "lon": 37.3481508
+      },
+      "viewport": {
+        "topLeftPoint": {
+          "lat": -1.24987,
+          "lon": 37.27379
+        },
+        "btmRightPoint": {
+          "lat": -1.43096,
+          "lon": 37.42407
+        }
+      },
+      "boundingBox": {
+        "topLeftPoint": {
+          "lat": -1.249874,
+          "lon": 37.27379
+        },
+        "btmRightPoint": {
+          "lat": -1.430963,
+          "lon": 37.42407
+        }
+      },
+      "dataSources": {
+        "geometry": {
+          "id": "c0da51f4-3687-422e-9d06-bb50effe4e3d"
+        }
+      }
+    },
+    "source_type": "provider",
+    "method": "tomtom",
+    "successful_query": "Kangundo, Machakos County, Kenya",
+    "total_queries_tried": 1
+  },
+  "dd0fe2a401b00eb9dbcfe83039017055465a809b409d268108935f691cfeca80": {
+    "lat": -1.2354828,
+    "lon": 37.3298765,
+    "address": "Matungulu, Eastern",
+    "confidence": 0.61930685043,
+    "accuracy_meters": 22037.54866028722,
+    "raw": {
+      "type": "Geography",
+      "id": "9llJYMjgN6k2km3sw_q3FA",
+      "score": 6.1930685043,
+      "entityType": "Municipality",
+      "matchConfidence": {
+        "score": 0.7725344575977304
+      },
+      "address": {
+        "municipality": "Matungulu",
+        "countrySecondarySubdivision": "Machakos",
+        "countrySubdivision": "Eastern",
+        "countrySubdivisionName": "Eastern",
+        "countryCode": "KE",
+        "country": "Kenya",
+        "countryCodeISO3": "KEN",
+        "freeformAddress": "Matungulu, Eastern"
+      },
+      "position": {
+        "lat": -1.2354828,
+        "lon": 37.3298765
+      },
+      "viewport": {
+        "topLeftPoint": {
+          "lat": -1.06718,
+          "lon": 37.10226
+        },
+        "btmRightPoint": {
+          "lat": -1.35051,
+          "lon": 37.37952
+        }
+      },
+      "boundingBox": {
+        "topLeftPoint": {
+          "lat": -1.067177,
+          "lon": 37.102257
+        },
+        "btmRightPoint": {
+          "lat": -1.350514,
+          "lon": 37.379519
+        }
+      },
+      "dataSources": {
+        "geometry": {
+          "id": "83592978-2426-4d78-b7f3-1494294fa682"
+        }
+      }
+    },
+    "source_type": "provider",
+    "method": "tomtom",
+    "successful_query": "Matungulu, Machakos County, Kenya",
+    "total_queries_tried": 1
+  },
+  "6ab0226680aa75bb2989b7a3178820b400c6a06c75008ba81a20dbd853ac152e": {
+    "lat": -1.4134371,
+    "lon": 37.332076,
+    "address": "Kathiani, Eastern",
+    "confidence": 0.61927466393,
+    "accuracy_meters": 17182.480782178176,
+    "raw": {
+      "type": "Geography",
+      "id": "Tfg5-sEaYvjSr0TLiuZvzQ",
+      "score": 6.1927466393,
+      "entityType": "Municipality",
+      "matchConfidence": {
+        "score": 0.7725344575977304
+      },
+      "address": {
+        "municipality": "Kathiani",
+        "countrySecondarySubdivision": "Machakos",
+        "countrySubdivision": "Eastern",
+        "countrySubdivisionName": "Eastern",
+        "countryCode": "KE",
+        "country": "Kenya",
+        "countryCodeISO3": "KEN",
+        "freeformAddress": "Kathiani, Eastern"
+      },
+      "position": {
+        "lat": -1.4134371,
+        "lon": 37.332076
+      },
+      "viewport": {
+        "topLeftPoint": {
+          "lat": -1.29221,
+          "lon": 37.21878
+        },
+        "btmRightPoint": {
+          "lat": -1.55072,
+          "lon": 37.3882
+        }
+      },
+      "boundingBox": {
+        "topLeftPoint": {
+          "lat": -1.292207,
+          "lon": 37.218785
+        },
+        "btmRightPoint": {
+          "lat": -1.55072,
+          "lon": 37.388196
+        }
+      },
+      "dataSources": {
+        "geometry": {
+          "id": "8d648a51-20d5-4098-91e2-bb98fec7dd15"
+        }
+      }
+    },
+    "source_type": "provider",
+    "method": "tomtom",
+    "successful_query": "Kathiani, Machakos County, Kenya",
+    "total_queries_tried": 1
+  },
+  "877c9047a1115a577ef9cd5d73c4897eda16a3cf2ead9dace7a75af63d4ed7fa": {
+    "lat": -1.4680665,
+    "lon": 37.0950989,
+    "address": "Mavoko, Eastern",
+    "confidence": 0.61937127113,
+    "accuracy_meters": 27388.540910278218,
+    "raw": {
+      "type": "Geography",
+      "id": "KAOQncwzHNTigW1DY3UNXA",
+      "score": 6.1937127113,
+      "entityType": "Municipality",
+      "matchConfidence": {
+        "score": 0.7725344575977304
+      },
+      "address": {
+        "municipality": "Mavoko",
+        "countrySecondarySubdivision": "Machakos",
+        "countrySubdivision": "Eastern",
+        "countrySubdivisionName": "Eastern",
+        "countryCode": "KE",
+        "country": "Kenya",
+        "countryCodeISO3": "KEN",
+        "freeformAddress": "Mavoko, Eastern"
+      },
+      "position": {
+        "lat": -1.4680665,
+        "lon": 37.0950989
+      },
+      "viewport": {
+        "topLeftPoint": {
+          "lat": -1.27064,
+          "lon": 36.87878
+        },
+        "btmRightPoint": {
+          "lat": -1.62595,
+          "lon": 37.22011
+        }
+      },
+      "boundingBox": {
+        "topLeftPoint": {
+          "lat": -1.27064,
+          "lon": 36.878782
+        },
+        "btmRightPoint": {
+          "lat": -1.625946,
+          "lon": 37.220114
+        }
+      },
+      "dataSources": {
+        "geometry": {
+          "id": "f8a03983-dc72-44a1-8a92-403c7bd34f7d"
+        }
+      }
+    },
+    "source_type": "provider",
+    "method": "tomtom",
+    "successful_query": "Mavoko, Machakos County, Kenya",
+    "total_queries_tried": 1
+  },
+  "a3dec49277e5252938703c229a5c52c009a8f75de0dbeb0b10bf7bfa9132afd9": {
+    "lat": -1.5184295,
+    "lon": 37.2668947,
+    "address": "Machakos Town, Eastern",
+    "confidence": 0.9,
+    "accuracy_meters": 31827.860082524054,
+    "raw": {
+      "type": "Geography",
+      "id": "4vsvNVJTPh5uKjhclTyLbw",
+      "score": 9.4570035934,
+      "entityType": "Municipality",
+      "matchConfidence": {
+        "score": 0.8365165797353838
+      },
+      "address": {
+        "municipality": "Machakos Town",
+        "countrySecondarySubdivision": "Machakos",
+        "countrySubdivision": "Eastern",
+        "countrySubdivisionName": "Eastern",
+        "countryCode": "KE",
+        "country": "Kenya",
+        "countryCodeISO3": "KEN",
+        "freeformAddress": "Machakos Town, Eastern"
+      },
+      "position": {
+        "lat": -1.5184295,
+        "lon": 37.2668947
+      },
+      "viewport": {
+        "topLeftPoint": {
+          "lat": -1.35307,
+          "lon": 37.03004
+        },
+        "btmRightPoint": {
+          "lat": -1.78054,
+          "lon": 37.41096
+        }
+      },
+      "boundingBox": {
+        "topLeftPoint": {
+          "lat": -1.353068,
+          "lon": 37.03004
+        },
+        "btmRightPoint": {
+          "lat": -1.780543,
+          "lon": 37.410956
+        }
+      },
+      "dataSources": {
+        "geometry": {
+          "id": "b7121836-145a-4dfa-a6c4-4d315757a1e6"
+        }
+      }
+    },
+    "source_type": "provider",
+    "method": "tomtom",
+    "successful_query": "Machakos Town, Machakos County, Kenya",
+    "total_queries_tried": 1
+  },
+  "15d4d15cbc56fff349db9437b887e41dfab0b925e5fc75d541263a269aca4da2": {
+    "lat": -1.3521511,
+    "lon": 37.455706,
+    "address": "Mwala, Eastern",
+    "confidence": 0.61924247742,
+    "accuracy_meters": 35814.69134430637,
+    "raw": {
+      "type": "Geography",
+      "id": "sx2Hzj2brosUcdEIg0eLxA",
+      "score": 6.1924247742,
+      "entityType": "Municipality",
+      "matchConfidence": {
+        "score": 0.7725344575977304
+      },
+      "address": {
+        "municipality": "Mwala",
+        "countrySecondarySubdivision": "Machakos",
+        "countrySubdivision": "Eastern",
+        "countrySubdivisionName": "Eastern",
+        "countryCode": "KE",
+        "country": "Kenya",
+        "countryCodeISO3": "KEN",
+        "freeformAddress": "Mwala, Eastern"
+      },
+      "position": {
+        "lat": -1.3521511,
+        "lon": 37.455706
+      },
+      "viewport": {
+        "topLeftPoint": {
+          "lat": -1.15861,
+          "lon": 37.33696
+        },
+        "btmRightPoint": {
+          "lat": -1.64859,
+          "lon": 37.75528
+        }
+      },
+      "boundingBox": {
+        "topLeftPoint": {
+          "lat": -1.158611,
+          "lon": 37.336956
+        },
+        "btmRightPoint": {
+          "lat": -1.648593,
+          "lon": 37.755284
+        }
+      },
+      "dataSources": {
+        "geometry": {
+          "id": "c6ba449a-4473-4631-9dd4-2e381298287c"
+        }
+      }
+    },
+    "source_type": "provider",
+    "method": "tomtom",
+    "successful_query": "Mwala, Machakos County, Kenya",
+    "total_queries_tried": 1
+  },
+  "cb13e4af921096c75da191b69721a623fe4c43027aa80149f6d8fc7368ba9472": {
+    "lat": -0.7256199,
+    "lon": 36.6568935,
+    "address": "Kinangop, Central",
+    "confidence": 0.61933908463,
+    "accuracy_meters": 24954.091055797337,
+    "raw": {
+      "type": "Geography",
+      "id": "xME6dmABGVz0RBlFg9t1rw",
+      "score": 6.1933908463,
+      "entityType": "Municipality",
+      "matchConfidence": {
+        "score": 0.7610959542803348
+      },
+      "address": {
+        "municipality": "Kinangop",
+        "countrySecondarySubdivision": "Nyandarua",
+        "countrySubdivision": "Central",
+        "countrySubdivisionName": "Central",
+        "countryCode": "KE",
+        "country": "Kenya",
+        "countryCodeISO3": "KEN",
+        "freeformAddress": "Kinangop, Central"
+      },
+      "position": {
+        "lat": -0.7256199,
+        "lon": 36.6568935
+      },
+      "viewport": {
+        "topLeftPoint": {
+          "lat": -0.54798,
+          "lon": 36.49208
+        },
+        "btmRightPoint": {
+          "lat": -0.92316,
+          "lon": 36.73846
+        }
+      },
+      "boundingBox": {
+        "topLeftPoint": {
+          "lat": -0.547983,
+          "lon": 36.492078
+        },
+        "btmRightPoint": {
+          "lat": -0.923162,
+          "lon": 36.738457
+        }
+      },
+      "dataSources": {
+        "geometry": {
+          "id": "d503bbc7-1edc-4305-b6d4-7bd340fda229"
+        }
+      }
+    },
+    "source_type": "provider",
+    "method": "tomtom",
+    "successful_query": "Kinangop, Nyandarua County, Kenya",
+    "total_queries_tried": 1
+  },
+  "c480c9df380d30a0c44a413923d843fd2d9f438656eaa6201f9da84dbbcc1f38": {
+    "lat": -0.5886111,
+    "lon": 36.490248,
+    "address": "Kipipiri, Central",
+    "confidence": 0.61927466393,
+    "accuracy_meters": 27818.399951047704,
+    "raw": {
+      "type": "Geography",
+      "id": "YE1lJWOko8vxKx8tiM_fDQ",
+      "score": 6.1927466393,
+      "entityType": "Municipality",
+      "matchConfidence": {
+        "score": 0.7766992578790406
+      },
+      "address": {
+        "municipality": "Kipipiri",
+        "countrySecondarySubdivision": "Nyandarua",
+        "countrySubdivision": "Central",
+        "countrySubdivisionName": "Central",
+        "countryCode": "KE",
+        "country": "Kenya",
+        "countryCodeISO3": "KEN",
+        "freeformAddress": "Kipipiri, Central"
+      },
+      "position": {
+        "lat": -0.5886111,
+        "lon": 36.490248
+      },
+      "viewport": {
+        "topLeftPoint": {
+          "lat": -0.21928,
+          "lon": 36.38779
+        },
+        "btmRightPoint": {
+          "lat": -0.63189,
+          "lon": 36.67083
+        }
+      },
+      "boundingBox": {
+        "topLeftPoint": {
+          "lat": -0.219279,
+          "lon": 36.387785
+        },
+        "btmRightPoint": {
+          "lat": -0.631887,
+          "lon": 36.670833
+        }
+      },
+      "dataSources": {
+        "geometry": {
+          "id": "00005858-5800-1200-0000-00007d2fdb2f"
+        }
+      }
+    },
+    "source_type": "provider",
+    "method": "tomtom",
+    "successful_query": "Kipipiri, Nyandarua County, Kenya",
+    "total_queries_tried": 1
+  },
+  "5f6f26afe7ecd0c3a85571fc1264528dc06ab7bdb1e60698e60e058f472f2adc": {
+    "lat": -0.274915,
+    "lon": 36.377233,
+    "address": "Ol Kalou, Nyandarua, Central, Kenya",
+    "confidence": 0.6,
+    "accuracy_meters": 50.0,
+    "raw": {
+      "place_id": "331074879387",
+      "licence": "https://locationiq.com/attribution",
+      "lat": "-0.274915",
+      "lon": "36.377233",
+      "display_name": "Ol Kalou, Nyandarua, Central, Kenya",
+      "boundingbox": [
+        "-0.275028",
+        "-0.274849",
+        "36.3772",
+        "36.377564"
+      ],
+      "importance": 0.25
+    },
+    "source_type": "provider",
+    "method": "locationiq",
+    "successful_query": "Ol Jorok, Nyandarua County, Kenya",
+    "total_queries_tried": 1
+  },
+  "cf33e5bd1f6f5c95a92ad3d3401a2bef5d7bd8bb101a13e24fc58ae79d9a6525": {
+    "lat": -0.0587899,
+    "lon": 36.5278259,
+    "address": "Ndaragwa, Central",
+    "confidence": 0.61926660538,
+    "accuracy_meters": 29778.914311696757,
+    "raw": {
+      "type": "Geography",
+      "id": "0Ez4QTuNeZT9dT8juett-Q",
+      "score": 6.1926660538,
+      "entityType": "Municipality",
+      "matchConfidence": {
+        "score": 0.7766992578790406
+      },
+      "address": {
+        "municipality": "Ndaragwa",
+        "countrySecondarySubdivision": "Nyandarua",
+        "countrySubdivision": "Central",
+        "countrySubdivisionName": "Central",
+        "countryCode": "KE",
+        "country": "Kenya",
+        "countryCodeISO3": "KEN",
+        "freeformAddress": "Ndaragwa, Central"
+      },
+      "position": {
+        "lat": -0.0587899,
+        "lon": 36.5278259
+      },
+      "viewport": {
+        "topLeftPoint": {
+          "lat": 0.13318,
+          "lon": 36.37386
+        },
+        "btmRightPoint": {
+          "lat": -0.30237,
+          "lon": 36.6856
+        }
+      },
+      "boundingBox": {
+        "topLeftPoint": {
+          "lat": 0.133183,
+          "lon": 36.373863
+        },
+        "btmRightPoint": {
+          "lat": -0.302368,
+          "lon": 36.685596
+        }
+      },
+      "dataSources": {
+        "geometry": {
+          "id": "89227617-b977-44c7-bc90-23c9c7bf5313"
+        }
+      }
+    },
+    "source_type": "provider",
+    "method": "tomtom",
+    "successful_query": "Ndaragwa, Nyandarua County, Kenya",
+    "total_queries_tried": 1
+  },
+  "2723ecaa6b064c8d5979768221b491ca3662f1e80b4a3ba9cd9d416cc499c79b": {
+    "lat": -0.56092,
+    "lon": 37.04759,
+    "address": "Mukurwe-ini, Nyeri, Central, Kenya",
+    "confidence": 0.6,
+    "accuracy_meters": 50.0,
+    "raw": {
+      "place_id": "332402886753",
+      "licence": "https://locationiq.com/attribution",
+      "lat": "-0.56092",
+      "lon": "37.04759",
+      "display_name": "Mukurwe-ini, Nyeri, Central, Kenya",
+      "boundingbox": [
+        "-0.58092",
+        "-0.54092",
+        "37.02759",
+        "37.06759"
+      ],
+      "importance": 0.25
+    },
+    "source_type": "provider",
+    "method": "locationiq",
+    "successful_query": "Mukurwe-Ini, Nyeri County, Kenya",
+    "total_queries_tried": 1
+  },
+  "9233b1be61655602e05d22344d97b2fff2a1ff780594a7e8632c9f01058bdf0f": {
+    "lat": -0.553624,
+    "lon": 37.302367,
+    "address": "Kirinyaga, Central, Kenya",
+    "confidence": 0.6,
+    "accuracy_meters": 50.0,
+    "raw": {
+      "place_id": "330063456052",
+      "licence": "https://locationiq.com/attribution",
+      "lat": "-0.553624",
+      "lon": "37.302367",
+      "display_name": "Kirinyaga, Central, Kenya",
+      "boundingbox": [
+        "-0.783795",
+        "-0.152541",
+        "37.148298",
+        "37.488235"
+      ],
+      "importance": 0.1
+    },
+    "source_type": "provider",
+    "method": "locationiq",
+    "successful_query": "Murang’a, Kirinyaga County, Kenya",
+    "total_queries_tried": 1
+  },
+  "af24a5f67f10704312e5f16d26ff296680021b0e370a81a24c640654cd0a7f68": {
+    "lat": -0.5009378,
+    "lon": 37.2790147,
+    "address": "Kirinyaga Central, Central",
+    "confidence": 0.42639908791,
+    "accuracy_meters": 25930.368340658475,
+    "raw": {
+      "type": "Geography",
+      "id": "kyoiQHoKnzOU9tM3rfKQXg",
+      "score": 4.2639908791,
+      "entityType": "Municipality",
+      "matchConfidence": {
+        "score": 0.39414829046092703
+      },
+      "address": {
+        "municipality": "Kirinyaga Central",
+        "countrySecondarySubdivision": "Kirinyaga",
+        "countrySubdivision": "Central",
+        "countrySubdivisionName": "Central",
+        "countryCode": "KE",
+        "country": "Kenya",
+        "countryCodeISO3": "KEN",
+        "freeformAddress": "Kirinyaga Central, Central"
+      },
+      "position": {
+        "lat": -0.5009378,
+        "lon": 37.2790147
+      },
+      "viewport": {
+        "topLeftPoint": {
+          "lat": -0.15328,
+          "lon": 37.21354
+        },
+        "btmRightPoint": {
+          "lat": -0.60607,
+          "lon": 37.32537
+        }
+      },
+      "boundingBox": {
+        "topLeftPoint": {
+          "lat": -0.153284,
+          "lon": 37.213538
+        },
+        "btmRightPoint": {
+          "lat": -0.606068,
+          "lon": 37.325374
+        }
+      },
+      "dataSources": {
+        "geometry": {
+          "id": "cd6c9652-4007-4a81-b860-d372e3837aef"
+        }
+      }
+    },
+    "source_type": "provider",
+    "method": "tomtom",
+    "successful_query": "Mukuyu, Kirinyaga County, Kenya",
+    "total_queries_tried": 1
+  },
+  "0e89ee5f54e0f26c91b0c3d8a6cb733e8d963aaa23b18217b3182e421aba5e6b": {
+    "lat": -0.9871052,
+    "lon": 36.8521188,
+    "address": "Gatundu South, Kiambu, 01030, Kenya",
+    "confidence": 0.5,
+    "accuracy_meters": 15455.296217164538,
+    "raw": {
+      "place_id": 33742682,
+      "licence": "Data © OpenStreetMap contributors, ODbL 1.0. http://osm.org/copyright",
+      "osm_type": "relation",
+      "osm_id": 16011386,
+      "lat": "-0.9871052",
+      "lon": "36.8521188",
+      "category": "boundary",
+      "type": "administrative",
+      "place_rank": 12,
+      "importance": 0.24004500114442662,
+      "addresstype": "county",
+      "name": "Gatundu South",
+      "display_name": "Gatundu South, Kiambu, 01030, Kenya",
+      "address": {
+        "county": "Gatundu South",
+        "state": "Kiambu",
+        "ISO3166-2-lvl4": "KE-13",
+        "postcode": "01030",
+        "country": "Kenya",
+        "country_code": "ke"
+      },
+      "boundingbox": [
+        "-1.0661557",
+        "-0.9080041",
+        "36.7273393",
+        "36.9559867"
+      ]
+    },
+    "source_type": "provider",
+    "method": "nominatim",
+    "successful_query": "Gatundu South, Kiambu County, Kenya",
+    "total_queries_tried": 1
+  },
+  "b6d3cb2afb7eab18c0a5ddeb656c5e15de4f504f11e1bcd6f2de856f16559d67": {
+    "lat": -1.1480309,
+    "lon": 36.9605921,
+    "address": "Ruiru, Central",
+    "confidence": 0.61991062164,
+    "accuracy_meters": 17272.232670649904,
+    "raw": {
+      "type": "Geography",
+      "id": "bkjyjROc7_ExwBIpOxuEhg",
+      "score": 6.1991062164,
+      "entityType": "Municipality",
+      "matchConfidence": {
+        "score": 0.7575767762094543
+      },
+      "address": {
+        "municipality": "Ruiru",
+        "countrySecondarySubdivision": "Kiambu",
+        "countrySubdivision": "Central",
+        "countrySubdivisionName": "Central",
+        "countryCode": "KE",
+        "country": "Kenya",
+        "countryCodeISO3": "KEN",
+        "freeformAddress": "Ruiru, Central"
+      },
+      "position": {
+        "lat": -1.1480309,
+        "lon": 36.9605921
+      },
+      "viewport": {
+        "topLeftPoint": {
+          "lat": -1.12627,
+          "lon": 36.88158
+        },
+        "btmRightPoint": {
+          "lat": -1.26216,
+          "lon": 37.16101
+        }
+      },
+      "boundingBox": {
+        "topLeftPoint": {
+          "lat": -1.126271,
+          "lon": 36.881584
+        },
+        "btmRightPoint": {
+          "lat": -1.262161,
+          "lon": 37.16101
+        }
+      },
+      "dataSources": {
+        "geometry": {
+          "id": "f55655d1-efba-4b30-b056-7deda20fd6a4"
+        }
+      }
+    },
+    "source_type": "provider",
+    "method": "tomtom",
+    "successful_query": "Ruiru, Kiambu County, Kenya",
+    "total_queries_tried": 1
+  },
+  "9f693e12b731da77283b03669ca9c9789b47ff175087ba998be7f5d2600873d7": {
+    "lat": -1.163481,
+    "lon": 36.7572751,
+    "address": "Kiambaa, Central",
+    "confidence": 0.61959667206,
+    "accuracy_meters": 9340.764240595507,
+    "raw": {
+      "type": "Geography",
+      "id": "tayXUPuf4YeIYXGWJ0Kxzg",
+      "score": 6.1959667206,
+      "entityType": "Municipality",
+      "matchConfidence": {
+        "score": 0.7575767762094543
+      },
+      "address": {
+        "municipality": "Kiambaa",
+        "countrySecondarySubdivision": "Kiambu",
+        "countrySubdivision": "Central",
+        "countrySubdivisionName": "Central",
+        "countryCode": "KE",
+        "country": "Kenya",
+        "countryCodeISO3": "KEN",
+        "freeformAddress": "Kiambaa, Central"
+      },
+      "position": {
+        "lat": -1.163481,
+        "lon": 36.7572751
+      },
+      "viewport": {
+        "topLeftPoint": {
+          "lat": -1.10391,
+          "lon": 36.71199
+        },
+        "btmRightPoint": {
+          "lat": -1.22726,
+          "lon": 36.82608
+        }
+      },
+      "boundingBox": {
+        "topLeftPoint": {
+          "lat": -1.103915,
+          "lon": 36.711993
+        },
+        "btmRightPoint": {
+          "lat": -1.227256,
+          "lon": 36.826084
+        }
+      },
+      "dataSources": {
+        "geometry": {
+          "id": "b8f8ecb0-c323-495e-98ee-080243cf0f63"
+        }
+      }
+    },
+    "source_type": "provider",
+    "method": "tomtom",
+    "successful_query": "Kiambaa, Kiambu County, Kenya",
+    "total_queries_tried": 1
+  },
+  "3dfe55d5df63106c36a6c38281132b1b42ef3ccb1de603af5c750ba62d10a699": {
+    "lat": -1.1093486,
+    "lon": 36.6432176,
+    "address": "Limuru, Central",
+    "confidence": 0.61994285583,
+    "accuracy_meters": 16753.636860613067,
+    "raw": {
+      "type": "Geography",
+      "id": "LGeFsR2N1f6Y7crchqZdRQ",
+      "score": 6.1994285583,
+      "entityType": "Municipality",
+      "matchConfidence": {
+        "score": 0.7575767762094543
+      },
+      "address": {
+        "municipality": "Limuru",
+        "countrySecondarySubdivision": "Kiambu",
+        "countrySubdivision": "Central",
+        "countrySubdivisionName": "Central",
+        "countryCode": "KE",
+        "country": "Kenya",
+        "countryCodeISO3": "KEN",
+        "freeformAddress": "Limuru, Central"
+      },
+      "position": {
+        "lat": -1.1093486,
+        "lon": 36.6432176
+      },
+      "viewport": {
+        "topLeftPoint": {
+          "lat": -1.0498,
+          "lon": 36.51111
+        },
+        "btmRightPoint": {
+          "lat": -1.2403,
+          "lon": 36.74464
+        }
+      },
+      "boundingBox": {
+        "topLeftPoint": {
+          "lat": -1.049795,
+          "lon": 36.511111
+        },
+        "btmRightPoint": {
+          "lat": -1.240303,
+          "lon": 36.744637
+        }
+      },
+      "dataSources": {
+        "geometry": {
+          "id": "e5a53a57-6ba2-494f-b9ec-2434499932a7"
+        }
+      }
+    },
+    "source_type": "provider",
+    "method": "tomtom",
+    "successful_query": "Limuru, Kiambu County, Kenya",
+    "total_queries_tried": 1
+  },
+  "02d7d53fcdbfd5faba938dca16571ca8810405fe467de042c86501174a1cecdb": {
+    "lat": 1.0960911,
+    "lon": 36.7013148,
+    "address": "Samburu West, Rift Valley",
+    "confidence": 0.9,
+    "accuracy_meters": 52909.15111222504,
+    "raw": {
+      "type": "Geography",
+      "id": "adp5x_nFtyyFjfWLBPYd7g",
+      "score": 9.4524564743,
+      "entityType": "Municipality",
+      "matchConfidence": {
+        "score": 0.8155285382954494
+      },
+      "address": {
+        "municipality": "Samburu West",
+        "countrySecondarySubdivision": "Samburu",
+        "countrySubdivision": "Rift Valley",
+        "countrySubdivisionName": "Rift Valley",
+        "countryCode": "KE",
+        "country": "Kenya",
+        "countryCodeISO3": "KEN",
+        "freeformAddress": "Samburu West, Rift Valley"
+      },
+      "position": {
+        "lat": 1.0960911,
+        "lon": 36.7013148
+      },
+      "viewport": {
+        "topLeftPoint": {
+          "lat": 1.45105,
+          "lon": 36.38854
+        },
+        "btmRightPoint": {
+          "lat": 0.72553,
+          "lon": 37.00449
+        }
+      },
+      "boundingBox": {
+        "topLeftPoint": {
+          "lat": 1.451052,
+          "lon": 36.388543
+        },
+        "btmRightPoint": {
+          "lat": 0.72553,
+          "lon": 37.004494
+        }
+      },
+      "dataSources": {
+        "geometry": {
+          "id": "b9632b45-9115-4646-a12f-59c64ae08e89"
+        }
+      }
+    },
+    "source_type": "provider",
+    "method": "tomtom",
+    "successful_query": "Samburu West, Samburu County, Kenya",
+    "total_queries_tried": 1
+  },
+  "470df6b0b01cbd4e778c9e00e4d876130481a5a646c99f8de7712eab80ef0c49": {
+    "lat": 0.7600378,
+    "lon": 35.2211047,
+    "address": "Soy, Uasin Gishu, Kenya",
+    "confidence": 0.5,
+    "accuracy_meters": 25182.25068318412,
+    "raw": {
+      "place_id": 38495650,
+      "licence": "Data © OpenStreetMap contributors, ODbL 1.0. http://osm.org/copyright",
+      "osm_type": "relation",
+      "osm_id": 16032715,
+      "lat": "0.7600378",
+      "lon": "35.2211047",
+      "category": "boundary",
+      "type": "administrative",
+      "place_rank": 12,
+      "importance": 0.24004500114442662,
+      "addresstype": "county",
+      "name": "Soy",
+      "display_name": "Soy, Uasin Gishu, Kenya",
+      "address": {
+        "county": "Soy",
+        "state": "Uasin Gishu",
+        "ISO3166-2-lvl4": "KE-44",
+        "country": "Kenya",
+        "country_code": "ke"
+      },
+      "boundingbox": [
+        "0.5765285",
+        "0.9433193",
+        "35.1132838",
+        "35.3790483"
+      ]
+    },
+    "source_type": "provider",
+    "method": "nominatim",
+    "successful_query": "Soy, Uasin Gishu County, Kenya",
+    "total_queries_tried": 1
+  },
+  "24fe257058646f4829490a7296aed49a0f4114e9f913c9547940088bad653c16": {
+    "lat": 0.1063314,
+    "lon": 35.1855938,
+    "address": "Nandi Hills, Nandi Hills ward, Nandi Hills, Nandi, Kenya",
+    "confidence": 0.5,
+    "accuracy_meters": 3145.06472662866,
+    "raw": {
+      "place_id": 37734162,
+      "licence": "Data © OpenStreetMap contributors, ODbL 1.0. http://osm.org/copyright",
+      "osm_type": "node",
+      "osm_id": 44925430,
+      "lat": "0.1063314",
+      "lon": "35.1855938",
+      "category": "place",
+      "type": "village",
+      "place_rank": 19,
+      "importance": 0.24104979777505278,
+      "addresstype": "village",
+      "name": "Nandi Hills",
+      "display_name": "Nandi Hills, Nandi Hills ward, Nandi Hills, Nandi, Kenya",
+      "address": {
+        "village": "Nandi Hills",
+        "city": "Nandi Hills ward",
+        "county": "Nandi Hills",
+        "state": "Nandi",
+        "ISO3166-2-lvl4": "KE-32",
+        "country": "Kenya",
+        "country_code": "ke"
+      },
+      "boundingbox": [
+        "0.0863314",
+        "0.1263314",
+        "35.1655938",
+        "35.2055938"
+      ]
+    },
+    "source_type": "provider",
+    "method": "nominatim",
+    "successful_query": "Nandi Hills, Nandi County, Kenya",
+    "total_queries_tried": 1
+  },
+  "8c2b62df93d0f9b501d7f17a1056ba5aa54521e352ae38c681da1c5f9abc1655": {
+    "lat": 0.705852,
+    "lon": 35.7358109,
+    "address": "Baringo North, Rift Valley",
+    "confidence": 0.9,
+    "accuracy_meters": 35130.94420114943,
+    "raw": {
+      "type": "Geography",
+      "id": "c8VHVsyS4C6sHshODW9aTA",
+      "score": 9.4524564743,
+      "entityType": "Municipality",
+      "matchConfidence": {
+        "score": 0.8188199220447029
+      },
+      "address": {
+        "municipality": "Baringo North",
+        "countrySecondarySubdivision": "Baringo",
+        "countrySubdivision": "Rift Valley",
+        "countrySubdivisionName": "Rift Valley",
+        "countryCode": "KE",
+        "country": "Kenya",
+        "countryCodeISO3": "KEN",
+        "freeformAddress": "Baringo North, Rift Valley"
+      },
+      "position": {
+        "lat": 0.705852,
+        "lon": 35.7358109
+      },
+      "viewport": {
+        "topLeftPoint": {
+          "lat": 0.98685,
+          "lon": 35.5965
+        },
+        "btmRightPoint": {
+          "lat": 0.53039,
+          "lon": 36.03348
+        }
+      },
+      "boundingBox": {
+        "topLeftPoint": {
+          "lat": 0.986852,
+          "lon": 35.596504
+        },
+        "btmRightPoint": {
+          "lat": 0.530386,
+          "lon": 36.033476
+        }
+      },
+      "dataSources": {
+        "geometry": {
+          "id": "ca58d108-997d-48c0-afeb-2e933420a76d"
+        }
+      }
+    },
+    "source_type": "provider",
+    "method": "tomtom",
+    "successful_query": "Baringo North, Baringo County, Kenya",
+    "total_queries_tried": 1
+  },
+  "a2b00151e9346d0a5454b2092297ccc2c04096f29be46a4eacdff14088e57ea2": {
+    "lat": 0.1632276,
+    "lon": 35.9466769,
+    "address": "Mogotio, Baringo, Kenya",
+    "confidence": 0.5,
+    "accuracy_meters": 39862.21413641373,
+    "raw": {
+      "place_id": 37863579,
+      "licence": "Data © OpenStreetMap contributors, ODbL 1.0. http://osm.org/copyright",
+      "osm_type": "relation",
+      "osm_id": 16032481,
+      "lat": "0.1632276",
+      "lon": "35.9466769",
+      "category": "boundary",
+      "type": "administrative",
+      "place_rank": 12,
+      "importance": 0.24000999999999997,
+      "addresstype": "county",
+      "name": "Mogotio",
+      "display_name": "Mogotio, Baringo, Kenya",
+      "address": {
+        "county": "Mogotio",
+        "state": "Baringo",
+        "ISO3166-2-lvl4": "KE-01",
+        "country": "Kenya",
+        "country_code": "ke"
+      },
+      "boundingbox": [
+        "-0.0820442",
+        "0.4074684",
+        "35.6934867",
+        "36.2173571"
+      ]
+    },
+    "source_type": "provider",
+    "method": "nominatim",
+    "successful_query": "Mogotio, Baringo County, Kenya",
+    "total_queries_tried": 1
+  },
+  "5e956ff775a8ae8d30427ff73749b40b2ad9d5fd196909b949f8fd2a7ddf7c17": {
+    "lat": 0.0502915,
+    "lon": 35.7281381,
+    "address": "Eldama Ravine, Rift Valley",
+    "confidence": 0.89999160767,
+    "accuracy_meters": 29386.6228418949,
+    "raw": {
+      "type": "Geography",
+      "id": "SFyt6vgF6n8rMO5cdSZqeg",
+      "score": 8.9999160767,
+      "entityType": "Municipality",
+      "matchConfidence": {
+        "score": 0.8444580842739929
+      },
+      "address": {
+        "municipality": "Eldama Ravine",
+        "countrySecondarySubdivision": "Baringo",
+        "countrySubdivision": "Rift Valley",
+        "countrySubdivisionName": "Rift Valley",
+        "countryCode": "KE",
+        "country": "Kenya",
+        "countryCodeISO3": "KEN",
+        "freeformAddress": "Eldama Ravine, Rift Valley"
+      },
+      "position": {
+        "lat": 0.0502915,
+        "lon": 35.7281381
+      },
+      "viewport": {
+        "topLeftPoint": {
+          "lat": 0.192,
+          "lon": 35.52839
+        },
+        "btmRightPoint": {
+          "lat": -0.20573,
+          "lon": 35.87651
+        }
+      },
+      "boundingBox": {
+        "topLeftPoint": {
+          "lat": 0.191998,
+          "lon": 35.528385
+        },
+        "btmRightPoint": {
+          "lat": -0.205733,
+          "lon": 35.876509
+        }
+      },
+      "dataSources": {
+        "geometry": {
+          "id": "bf41c7f6-1a79-4faa-bfff-96d56eeb5260"
+        }
+      }
+    },
+    "source_type": "provider",
+    "method": "tomtom",
+    "successful_query": "Eldama Ravine, Baringo County, Kenya",
+    "total_queries_tried": 1
+  },
+  "6462d8ec213a76c76bcb43c7a3660971daa25388f04aa244d691480e7452344f": {
+    "lat": 0.0524903,
+    "lon": 35.9678174,
+    "address": "Molo, Rongai, Nakuru, Kenya",
+    "confidence": 0.5,
+    "accuracy_meters": 15046.446069628359,
+    "raw": {
+      "place_id": 38849785,
+      "licence": "Data © OpenStreetMap contributors, ODbL 1.0. http://osm.org/copyright",
+      "osm_type": "way",
+      "osm_id": 128130354,
+      "lat": "0.0524903",
+      "lon": "35.9678174",
+      "category": "waterway",
+      "type": "river",
+      "place_rank": 19,
+      "importance": 0.14671166781109327,
+      "addresstype": "river",
+      "name": "Molo",
+      "display_name": "Molo, Rongai, Nakuru, Kenya",
+      "address": {
+        "river": "Molo",
+        "county": "Rongai",
+        "state": "Nakuru",
+        "ISO3166-2-lvl4": "KE-31",
+        "country": "Kenya",
+        "country_code": "ke"
+      },
+      "boundingbox": [
+        "-0.0803682",
+        "0.1842086",
+        "35.9227881",
+        "35.9797156"
+      ]
+    },
+    "source_type": "provider",
+    "method": "nominatim",
+    "successful_query": "Molo, Nakuru County, Kenya",
+    "total_queries_tried": 1
+  },
+  "35bd553a92ac7bb0d9acaa267a272cf9bad4ec025fad0e1216cf1c9ed823dbb2": {
+    "lat": -0.4980018,
+    "lon": 36.3284263,
+    "address": "Gilgil, Rift Valley",
+    "confidence": 0.61932301521,
+    "accuracy_meters": 33484.12694435836,
+    "raw": {
+      "type": "Geography",
+      "id": "MIymAMsBY0TzeZc9bz6GlA",
+      "score": 6.1932301521,
+      "entityType": "Municipality",
+      "matchConfidence": {
+        "score": 0.766609157929018
+      },
+      "address": {
+        "municipality": "Gilgil",
+        "countrySecondarySubdivision": "Nakuru",
+        "countrySubdivision": "Rift Valley",
+        "countrySubdivisionName": "Rift Valley",
+        "countryCode": "KE",
+        "country": "Kenya",
+        "countryCodeISO3": "KEN",
+        "freeformAddress": "Gilgil, Rift Valley"
+      },
+      "position": {
+        "lat": -0.4980018,
+        "lon": 36.3284263
+      },
+      "viewport": {
+        "topLeftPoint": {
+          "lat": -0.31123,
+          "lon": 36.05458
+        },
+        "btmRightPoint": {
+          "lat": -0.72539,
+          "lon": 36.49185
+        }
+      },
+      "boundingBox": {
+        "topLeftPoint": {
+          "lat": -0.311232,
+          "lon": 36.054576
+        },
+        "btmRightPoint": {
+          "lat": -0.725388,
+          "lon": 36.491846
+        }
+      },
+      "dataSources": {
+        "geometry": {
+          "id": "83669500-b78b-4f48-8d91-f3d5887a42ca"
+        }
+      }
+    },
+    "source_type": "provider",
+    "method": "tomtom",
+    "successful_query": "Gilgil, Nakuru County, Kenya",
+    "total_queries_tried": 1
+  },
+  "3c7955efb5b97be3a754cd3c21473201e834fdf4c06029d737f52d46e04b31b5": {
+    "lat": 0.0008763,
+    "lon": 36.2315435,
+    "address": "The Clicks Pub Subukia, Nyahururu-Nakuru Road, Ngano-Ini, Subukia ward, Subukia, Nakuru, 20109, Kenya",
+    "confidence": 0.6,
+    "accuracy_meters": 50.0,
+    "raw": {
+      "place_id": "43698587",
+      "licence": "https://locationiq.com/attribution",
+      "osm_type": "node",
+      "osm_id": "7883773081",
+      "boundingbox": [
+        "0.0008263",
+        "0.0009263",
+        "36.2314935",
+        "36.2315935"
+      ],
+      "lat": "0.0008763",
+      "lon": "36.2315435",
+      "display_name": "The Clicks Pub Subukia, Nyahururu-Nakuru Road, Ngano-Ini, Subukia ward, Subukia, Nakuru, 20109, Kenya",
+      "class": "amenity",
+      "type": "pub",
+      "importance": 0.33004500114442664,
+      "icon": "https://locationiq.org/static/images/mapicons/food_pub.p.20.png"
+    },
+    "source_type": "provider",
+    "method": "locationiq",
+    "successful_query": "Subukia, Nakuru County, Kenya",
+    "total_queries_tried": 1
+  },
+  "e8cff17a88d54218ddbabac01c1e4b2146b94fee54e7d1e363d9df20e08abc03": {
+    "lat": -0.317783,
+    "lon": 36.0374066,
+    "address": "Nakuru Town West, Rift Valley",
+    "confidence": 0.9,
+    "accuracy_meters": 14115.38547108158,
+    "raw": {
+      "type": "Geography",
+      "id": "kUwAg1giHfh7VfJshj5_5A",
+      "score": 11.9535675049,
+      "entityType": "Municipality",
+      "matchConfidence": {
+        "score": 0.856770773802155
+      },
+      "address": {
+        "municipality": "Nakuru Town West",
+        "countrySecondarySubdivision": "Nakuru",
+        "countrySubdivision": "Rift Valley",
+        "countrySubdivisionName": "Rift Valley",
+        "countryCode": "KE",
+        "country": "Kenya",
+        "countryCodeISO3": "KEN",
+        "freeformAddress": "Nakuru Town West, Rift Valley"
+      },
+      "position": {
+        "lat": -0.317783,
+        "lon": 36.0374066
+      },
+      "viewport": {
+        "topLeftPoint": {
+          "lat": -0.25018,
+          "lon": 35.99858
+        },
+        "btmRightPoint": {
+          "lat": -0.4835,
+          "lon": 36.09868
+        }
+      },
+      "boundingBox": {
+        "topLeftPoint": {
+          "lat": -0.250182,
+          "lon": 35.99858
+        },
+        "btmRightPoint": {
+          "lat": -0.483495,
+          "lon": 36.098676
+        }
+      },
+      "dataSources": {
+        "geometry": {
+          "id": "00005858-5800-1200-0000-00007d2fdb63"
+        }
+      }
+    },
+    "source_type": "provider",
+    "method": "tomtom",
+    "successful_query": "Nakuru Town West, Nakuru County, Kenya",
+    "total_queries_tried": 1
+  },
+  "522faed7c70ebec2204fe444f90bc1a9dbe1931b24923473b79b21079bf1e760": {
+    "lat": -1.0077799,
+    "lon": 34.8807011,
+    "address": "Kilgoris, Rift Valley",
+    "confidence": 0.61926660538,
+    "accuracy_meters": 51502.704116953144,
+    "raw": {
+      "type": "Geography",
+      "id": "Z4bSBJOJIRA2eWtZ7t3v_A",
+      "score": 6.1926660538,
+      "entityType": "Municipality",
+      "matchConfidence": {
+        "score": 0.7789265386755776
+      },
+      "address": {
+        "municipality": "Kilgoris",
+        "countrySecondarySubdivision": "Narok",
+        "countrySubdivision": "Rift Valley",
+        "countrySubdivisionName": "Rift Valley",
+        "countryCode": "KE",
+        "country": "Kenya",
+        "countryCodeISO3": "KEN",
+        "freeformAddress": "Kilgoris, Rift Valley"
+      },
+      "position": {
+        "lat": -1.0077799,
+        "lon": 34.8807011
+      },
+      "viewport": {
+        "topLeftPoint": {
+          "lat": -0.89858,
+          "lon": 34.5871
+        },
+        "btmRightPoint": {
+          "lat": -1.55099,
+          "lon": 35.24489
+        }
+      },
+      "boundingBox": {
+        "topLeftPoint": {
+          "lat": -0.898582,
+          "lon": 34.587098
+        },
+        "btmRightPoint": {
+          "lat": -1.550987,
+          "lon": 35.244891
+        }
+      },
+      "dataSources": {
+        "geometry": {
+          "id": "00005858-5800-1200-0000-00007d2fdb6a"
+        }
+      }
+    },
+    "source_type": "provider",
+    "method": "tomtom",
+    "successful_query": "Kilgoris, Narok County, Kenya",
+    "total_queries_tried": 1
+  },
+  "9de96d74f1afdf06ace92f1b1a6483e6d3b6e451bc79771c38738308fa573c0a": {
+    "lat": -1.8419404,
+    "lon": 36.7892723,
+    "address": "Kajiado Central, Rift Valley",
+    "confidence": 0.9,
+    "accuracy_meters": 63010.40895660714,
+    "raw": {
+      "type": "Geography",
+      "id": "Wwv8i_NjKkxaRWb-axx-_Q",
+      "score": 9.4541778564,
+      "entityType": "Municipality",
+      "matchConfidence": {
+        "score": 0.8176246674401861
+      },
+      "address": {
+        "municipality": "Kajiado Central",
+        "countrySecondarySubdivision": "Kajiado",
+        "countrySubdivision": "Rift Valley",
+        "countrySubdivisionName": "Rift Valley",
+        "countryCode": "KE",
+        "country": "Kenya",
+        "countryCodeISO3": "KEN",
+        "freeformAddress": "Kajiado Central, Rift Valley"
+      },
+      "position": {
+        "lat": -1.8419404,
+        "lon": 36.7892723
+      },
+      "viewport": {
+        "topLeftPoint": {
+          "lat": -1.74531,
+          "lon": 36.43915
+        },
+        "btmRightPoint": {
+          "lat": -2.61349,
+          "lon": 37.16818
+        }
+      },
+      "boundingBox": {
+        "topLeftPoint": {
+          "lat": -1.745306,
+          "lon": 36.439154
+        },
+        "btmRightPoint": {
+          "lat": -2.613488,
+          "lon": 37.16818
+        }
+      },
+      "dataSources": {
+        "geometry": {
+          "id": "ef0ae409-24f0-44f8-913c-6d531f1febdd"
+        }
+      }
+    },
+    "source_type": "provider",
+    "method": "tomtom",
+    "successful_query": "Kajiado Central, Kajiado County, Kenya",
+    "total_queries_tried": 1
+  },
+  "bcf67f35f5b80ff8a8e065dc631f0de904d8e3b3665c3afa2b148ec60b8c06c3": {
+    "lat": -0.1988039,
+    "lon": 35.4652483,
+    "address": "Kipkelion West, Rift Valley",
+    "confidence": 0.89990978241,
+    "accuracy_meters": 19966.41469319615,
+    "raw": {
+      "type": "Geography",
+      "id": "U402ysUuofZtia2P1a2qIg",
+      "score": 8.9990978241,
+      "entityType": "Municipality",
+      "matchConfidence": {
+        "score": 0.8089016693877906
+      },
+      "address": {
+        "municipality": "Kipkelion West",
+        "countrySecondarySubdivision": "Kericho",
+        "countrySubdivision": "Rift Valley",
+        "countrySubdivisionName": "Rift Valley",
+        "countryCode": "KE",
+        "country": "Kenya",
+        "countryCodeISO3": "KEN",
+        "freeformAddress": "Kipkelion West, Rift Valley"
+      },
+      "position": {
+        "lat": -0.1988039,
+        "lon": 35.4652483
+      },
+      "viewport": {
+        "topLeftPoint": {
+          "lat": -0.07281,
+          "lon": 35.22032
+        },
+        "btmRightPoint": {
+          "lat": -0.2463,
+          "lon": 35.53476
+        }
+      },
+      "boundingBox": {
+        "topLeftPoint": {
+          "lat": -0.072807,
+          "lon": 35.220319
+        },
+        "btmRightPoint": {
+          "lat": -0.246303,
+          "lon": 35.534762
+        }
+      },
+      "dataSources": {
+        "geometry": {
+          "id": "ca51e391-5f8e-4835-9617-a27d01011073"
+        }
+      }
+    },
+    "source_type": "provider",
+    "method": "tomtom",
+    "successful_query": "Kipkelion West, Kericho County, Kenya",
+    "total_queries_tried": 1
+  },
+  "6c68c29cac6c24578e5474a02326c08264bb8dec2df5e172242b862a9255632c": {
+    "lat": 0.7117139,
+    "lon": 35.113036,
+    "address": "Likuyani, Western",
+    "confidence": 0.61925854683,
+    "accuracy_meters": 17242.381959630657,
+    "raw": {
+      "type": "Geography",
+      "id": "Ad0X1YAAfIQLBqdy_mCVqg",
+      "score": 6.1925854683,
+      "entityType": "Municipality",
+      "matchConfidence": {
+        "score": 0.7710545730621418
+      },
+      "address": {
+        "municipality": "Likuyani",
+        "countrySecondarySubdivision": "Kakamega",
+        "countrySubdivision": "Western",
+        "countrySubdivisionName": "Western",
+        "countryCode": "KE",
+        "country": "Kenya",
+        "countryCodeISO3": "KEN",
+        "freeformAddress": "Likuyani, Western"
+      },
+      "position": {
+        "lat": 0.7117139,
+        "lon": 35.113036
+      },
+      "viewport": {
+        "topLeftPoint": {
+          "lat": 0.90064,
+          "lon": 35.01305
+        },
+        "btmRightPoint": {
+          "lat": 0.62677,
+          "lon": 35.15858
+        }
+      },
+      "boundingBox": {
+        "topLeftPoint": {
+          "lat": 0.900638,
+          "lon": 35.013052
+        },
+        "btmRightPoint": {
+          "lat": 0.626772,
+          "lon": 35.158576
+        }
+      },
+      "dataSources": {
+        "geometry": {
+          "id": "b4c28a50-8da2-49c8-a7fd-5fa9070358cb"
+        }
+      }
+    },
+    "source_type": "provider",
+    "method": "tomtom",
+    "successful_query": "Likuyani, Kakamega County, Kenya",
+    "total_queries_tried": 1
+  },
+  "f234cc55ffc2df136056490a9b1ec6233983e1082bb5ca44af17498d6562c1a2": {
+    "lat": 0.4459769,
+    "lon": 34.8524885,
+    "address": "Malava, Western",
+    "confidence": 0.61927466393,
+    "accuracy_meters": 20451.30261256678,
+    "raw": {
+      "type": "Geography",
+      "id": "8ahSLytnVePK1pB2G3JE3Q",
+      "score": 6.1927466393,
+      "entityType": "Municipality",
+      "matchConfidence": {
+        "score": 0.7710545730621418
+      },
+      "address": {
+        "municipality": "Malava",
+        "countrySecondarySubdivision": "Kakamega",
+        "countrySubdivision": "Western",
+        "countrySubdivisionName": "Western",
+        "countryCode": "KE",
+        "country": "Kenya",
+        "countryCodeISO3": "KEN",
+        "freeformAddress": "Malava, Western"
+      },
+      "position": {
+        "lat": 0.4459769,
+        "lon": 34.8524885
+      },
+      "viewport": {
+        "topLeftPoint": {
+          "lat": 0.6056,
+          "lon": 34.71014
+        },
+        "btmRightPoint": {
+          "lat": 0.33262,
+          "lon": 34.95671
+        }
+      },
+      "boundingBox": {
+        "topLeftPoint": {
+          "lat": 0.605604,
+          "lon": 34.710139
+        },
+        "btmRightPoint": {
+          "lat": 0.332619,
+          "lon": 34.956706
+        }
+      },
+      "dataSources": {
+        "geometry": {
+          "id": "00005858-5800-1200-0000-00007d2fdb3d"
+        }
+      }
+    },
+    "source_type": "provider",
+    "method": "tomtom",
+    "successful_query": "Malava, Kakamega County, Kenya",
+    "total_queries_tried": 1
+  },
+  "f382ee8d6555570b124a199c6479bee4ecdfc9b509e7d82de0ff2f2ac2a73988": {
+    "lat": 0.377349,
+    "lon": 34.4872984,
+    "address": "Matungu, Western",
+    "confidence": 0.61927466393,
+    "accuracy_meters": 17671.082978364742,
+    "raw": {
+      "type": "Geography",
+      "id": "D2djK3NNJQtvDnenByjURQ",
+      "score": 6.1927466393,
+      "entityType": "Municipality",
+      "matchConfidence": {
+        "score": 0.7710545730621418
+      },
+      "address": {
+        "municipality": "Matungu",
+        "countrySecondarySubdivision": "Kakamega",
+        "countrySubdivision": "Western",
+        "countrySubdivisionName": "Western",
+        "countryCode": "KE",
+        "country": "Kenya",
+        "countryCodeISO3": "KEN",
+        "freeformAddress": "Matungu, Western"
+      },
+      "position": {
+        "lat": 0.377349,
+        "lon": 34.4872984
+      },
+      "viewport": {
+        "topLeftPoint": {
+          "lat": 0.48253,
+          "lon": 34.34536
+        },
+        "btmRightPoint": {
+          "lat": 0.27978,
+          "lon": 34.59014
+        }
+      },
+      "boundingBox": {
+        "topLeftPoint": {
+          "lat": 0.482531,
+          "lon": 34.345363
+        },
+        "btmRightPoint": {
+          "lat": 0.279776,
+          "lon": 34.590141
+        }
+      },
+      "dataSources": {
+        "geometry": {
+          "id": "98fa0398-59ac-4b2a-a87f-a962f0c7968c"
+        }
+      }
+    },
+    "source_type": "provider",
+    "method": "tomtom",
+    "successful_query": "Matungu, Kakamega County, Kenya",
+    "total_queries_tried": 1
+  },
+  "7612cc3b738027d4d89fc6f73655f252f331ec3f4bc528b9e41aa144d498579a": {
+    "lat": 0.1133601,
+    "lon": 34.8089687,
+    "address": "Sabatia, Western",
+    "confidence": 0.61936326027,
+    "accuracy_meters": 10360.983724240947,
+    "raw": {
+      "type": "Geography",
+      "id": "_wJCeMyJG0a47WZMvI36lQ",
+      "score": 6.1936326027,
+      "entityType": "Municipality",
+      "matchConfidence": {
+        "score": 0.7781452300136418
+      },
+      "address": {
+        "municipality": "Sabatia",
+        "countrySecondarySubdivision": "Vihiga",
+        "countrySubdivision": "Western",
+        "countrySubdivisionName": "Western",
+        "countryCode": "KE",
+        "country": "Kenya",
+        "countryCodeISO3": "KEN",
+        "freeformAddress": "Sabatia, Western"
+      },
+      "position": {
+        "lat": 0.1133601,
+        "lon": 34.8089687
+      },
+      "viewport": {
+        "topLeftPoint": {
+          "lat": 0.16649,
+          "lon": 34.67213
+        },
+        "btmRightPoint": {
+          "lat": 0.06522,
+          "lon": 34.82857
+        }
+      },
+      "boundingBox": {
+        "topLeftPoint": {
+          "lat": 0.166492,
+          "lon": 34.672131
+        },
+        "btmRightPoint": {
+          "lat": 0.065224,
+          "lon": 34.828574
+        }
+      },
+      "dataSources": {
+        "geometry": {
+          "id": "bd2dc4c0-4cc8-4341-a0d9-bc87d88c99e1"
+        }
+      }
+    },
+    "source_type": "provider",
+    "method": "tomtom",
+    "successful_query": "Sabatia, Vihiga County, Kenya",
+    "total_queries_tried": 1
+  },
+  "2fa424d6e587cb9c5190b69e5bb1529e99759b00b2a747077ae81db81cede89a": {
+    "lat": 0.0793771,
+    "lon": 34.8532129,
+    "address": "Hamisi, Western",
+    "confidence": 0.61934714317,
+    "accuracy_meters": 20118.10827313953,
+    "raw": {
+      "type": "Geography",
+      "id": "yALW1IljZKYcVak7jr_D-g",
+      "score": 6.1934714317,
+      "entityType": "Municipality",
+      "matchConfidence": {
+        "score": 0.7781452300136418
+      },
+      "address": {
+        "municipality": "Hamisi",
+        "countrySecondarySubdivision": "Vihiga",
+        "countrySubdivision": "Western",
+        "countrySubdivisionName": "Western",
+        "countryCode": "KE",
+        "country": "Kenya",
+        "countryCodeISO3": "KEN",
+        "freeformAddress": "Hamisi, Western"
+      },
+      "position": {
+        "lat": 0.0793771,
+        "lon": 34.8532129
+      },
+      "viewport": {
+        "topLeftPoint": {
+          "lat": 0.22592,
+          "lon": 34.71517
+        },
+        "btmRightPoint": {
+          "lat": -0.02642,
+          "lon": 34.97452
+        }
+      },
+      "boundingBox": {
+        "topLeftPoint": {
+          "lat": 0.22592,
+          "lon": 34.715168
+        },
+        "btmRightPoint": {
+          "lat": -0.02642,
+          "lon": 34.974522
+        }
+      },
+      "dataSources": {
+        "geometry": {
+          "id": "00005858-5800-1200-0000-00007d2fdb48"
+        }
+      }
+    },
+    "source_type": "provider",
+    "method": "tomtom",
+    "successful_query": "Hamisi, Vihiga County, Kenya",
+    "total_queries_tried": 1
+  },
+  "bf50346404dc66b6f1133a2e86de35779f18148e97c1f95675d1d39e6226144e": {
+    "lat": 0.5949440500000001,
+    "lon": 34.71220035300203,
+    "address": "Webuye West, Bungoma County, Kenya",
+    "confidence": 0.6,
+    "accuracy_meters": 50.0,
+    "raw": {
+      "place_id": "43713986",
+      "licence": "https://locationiq.com/attribution",
+      "osm_type": "relation",
+      "osm_id": "16027813",
+      "boundingbox": [
+        "0.4492802",
+        "0.7406318",
+        "34.6216063",
+        "34.790826"
+      ],
+      "lat": "0.5949440500000001",
+      "lon": "34.71220035300203",
+      "display_name": "Webuye West, Bungoma County, Kenya",
+      "class": "boundary",
+      "type": "administrative",
+      "importance": 0.7500475844968337,
+      "icon": "https://locationiq.org/static/images/mapicons/poi_boundary_administrative.p.20.png"
+    },
+    "source_type": "provider",
+    "method": "locationiq",
+    "successful_query": "Webuye West, Bungoma County, Kenya",
+    "total_queries_tried": 1
+  },
+  "98d8ac746da9ec95d951ab7d4faa574a1f3f6d2100d67eb5787ea53f41ca313a": {
+    "lat": 0.7838812,
+    "lon": 34.719834,
+    "address": "Kimilili, Western",
+    "confidence": 0.61925854683,
+    "accuracy_meters": 12623.642638037001,
+    "raw": {
+      "type": "Geography",
+      "id": "K-ypVDy1qFF163zbSH5QSA",
+      "score": 6.1925854683,
+      "entityType": "Municipality",
+      "matchConfidence": {
+        "score": 0.7720247258917079
+      },
+      "address": {
+        "municipality": "Kimilili",
+        "countrySecondarySubdivision": "Bungoma",
+        "countrySubdivision": "Western",
+        "countrySubdivisionName": "Western",
+        "countryCode": "KE",
+        "country": "Kenya",
+        "countryCodeISO3": "KEN",
+        "freeformAddress": "Kimilili, Western"
+      },
+      "position": {
+        "lat": 0.7838812,
+        "lon": 34.719834
+      },
+      "viewport": {
+        "topLeftPoint": {
+          "lat": 0.85466,
+          "lon": 34.64259
+        },
+        "btmRightPoint": {
+          "lat": 0.71285,
+          "lon": 34.81993
+        }
+      },
+      "boundingBox": {
+        "topLeftPoint": {
+          "lat": 0.854664,
+          "lon": 34.642586
+        },
+        "btmRightPoint": {
+          "lat": 0.71285,
+          "lon": 34.819934
+        }
+      },
+      "dataSources": {
+        "geometry": {
+          "id": "e41efc66-3416-422e-9187-8a4ec65486f8"
+        }
+      }
+    },
+    "source_type": "provider",
+    "method": "tomtom",
+    "successful_query": "Kimilili, Bungoma County, Kenya",
+    "total_queries_tried": 1
+  },
+  "69cedf9a26d79c961aa868353902aecf14c492671d1db9fa02a408d8f6501c52": {
+    "lat": 0.340595,
+    "lon": 34.3363367,
+    "address": "Butula, Western",
+    "confidence": 0.61926660538,
+    "accuracy_meters": 16879.06041473001,
+    "raw": {
+      "type": "Geography",
+      "id": "svJ3HbI0I7Z8oobfE2sb7g",
+      "score": 6.1926660538,
+      "entityType": "Municipality",
+      "matchConfidence": {
+        "score": 0.7725344575977304
+      },
+      "address": {
+        "municipality": "Butula",
+        "countrySecondarySubdivision": "Busia",
+        "countrySubdivision": "Western",
+        "countrySubdivisionName": "Western",
+        "countryCode": "KE",
+        "country": "Kenya",
+        "countryCodeISO3": "KEN",
+        "freeformAddress": "Butula, Western"
+      },
+      "position": {
+        "lat": 0.340595,
+        "lon": 34.3363367
+      },
+      "viewport": {
+        "topLeftPoint": {
+          "lat": 0.42433,
+          "lon": 34.17253
+        },
+        "btmRightPoint": {
+          "lat": 0.25414,
+          "lon": 34.42394
+        }
+      },
+      "boundingBox": {
+        "topLeftPoint": {
+          "lat": 0.424327,
+          "lon": 34.172526
+        },
+        "btmRightPoint": {
+          "lat": 0.25414,
+          "lon": 34.42394
+        }
+      },
+      "dataSources": {
+        "geometry": {
+          "id": "a128ddc6-ebf2-4df2-bc64-ba4371322119"
+        }
+      }
+    },
+    "source_type": "provider",
+    "method": "tomtom",
+    "successful_query": "Butula, Busia County, Kenya",
+    "total_queries_tried": 1
+  },
+  "5c6ef46ded38d23408d0ac09636c6d24cffaa98743226ebc6ee0c89377ddc08f": {
+    "lat": 0.1108678,
+    "lon": 34.0462022,
+    "address": "Budalangi, Western",
+    "confidence": 0.61924247742,
+    "accuracy_meters": 15670.289745079639,
+    "raw": {
+      "type": "Geography",
+      "id": "cd-pMhZr2vnmg7VOctHCVQ",
+      "score": 6.1924247742,
+      "entityType": "Municipality",
+      "matchConfidence": {
+        "score": 0.7725344575977304
+      },
+      "address": {
+        "municipality": "Budalangi",
+        "countrySecondarySubdivision": "Busia",
+        "countrySubdivision": "Western",
+        "countrySubdivisionName": "Western",
+        "countryCode": "KE",
+        "country": "Kenya",
+        "countryCodeISO3": "KEN",
+        "freeformAddress": "Budalangi, Western"
+      },
+      "position": {
+        "lat": 0.1108678,
+        "lon": 34.0462022
+      },
+      "viewport": {
+        "topLeftPoint": {
+          "lat": 0.1807,
+          "lon": 33.9105
+        },
+        "btmRightPoint": {
+          "lat": -0.03297,
+          "lon": 34.09431
+        }
+      },
+      "boundingBox": {
+        "topLeftPoint": {
+          "lat": 0.180698,
+          "lon": 33.910501
+        },
+        "btmRightPoint": {
+          "lat": -0.032969,
+          "lon": 34.094312
+        }
+      },
+      "dataSources": {
+        "geometry": {
+          "id": "ce3d9d2b-2050-4a06-a15b-4833f7e9c6d7"
+        }
+      }
+    },
+    "source_type": "provider",
+    "method": "tomtom",
+    "successful_query": "Budalangi, Busia County, Kenya",
+    "total_queries_tried": 1
+  },
+  "c14897e3dbdee669fdcb67e5c9b5e5eb76f7756a8939c7b18c375f00fa770bf7": {
+    "lat": 0.0376684,
+    "lon": 34.4645423,
+    "address": "Gem, Siaya, 40139, Kenya",
+    "confidence": 0.5,
+    "accuracy_meters": 17524.87008674788,
+    "raw": {
+      "place_id": 38868330,
+      "licence": "Data © OpenStreetMap contributors, ODbL 1.0. http://osm.org/copyright",
+      "osm_type": "relation",
+      "osm_id": 15955289,
+      "lat": "0.0376684",
+      "lon": "34.4645423",
+      "category": "boundary",
+      "type": "administrative",
+      "place_rank": 12,
+      "importance": 0.24004500114442662,
+      "addresstype": "county",
+      "name": "Gem",
+      "display_name": "Gem, Siaya, 40139, Kenya",
+      "address": {
+        "county": "Gem",
+        "state": "Siaya",
+        "ISO3166-2-lvl4": "KE-38",
+        "postcode": "40139",
+        "country": "Kenya",
+        "country_code": "ke"
+      },
+      "boundingbox": [
+        "-0.0795418",
+        "0.1550163",
+        "34.3493715",
+        "34.5599418"
+      ]
+    },
+    "source_type": "provider",
+    "method": "nominatim",
+    "successful_query": "Gem, Siaya County, Kenya",
+    "total_queries_tried": 1
+  },
+  "d125ff046b7d5eeeeccf89c0fffd289b74ee5bad3a7f3bf928c7afcd75f5463b": {
+    "lat": -0.10061809999999999,
+    "lon": 34.22530233497095,
+    "address": "Bondo, Siaya County, Kenya",
+    "confidence": 0.6,
+    "accuracy_meters": 50.0,
+    "raw": {
+      "place_id": "38597836",
+      "licence": "https://locationiq.com/attribution",
+      "osm_type": "relation",
+      "osm_id": "15955271",
+      "boundingbox": [
+        "-0.2465432",
+        "0.0453239",
+        "33.9846452",
+        "34.3818334"
+      ],
+      "lat": "-0.10061809999999999",
+      "lon": "34.22530233497095",
+      "display_name": "Bondo, Siaya County, Kenya",
+      "class": "boundary",
+      "type": "administrative",
+      "importance": 0.6600450011444265,
+      "icon": "https://locationiq.org/static/images/mapicons/poi_boundary_administrative.p.20.png"
+    },
+    "source_type": "provider",
+    "method": "locationiq",
+    "successful_query": "Bondo, Siaya County, Kenya",
+    "total_queries_tried": 1
+  },
+  "3a5279f6b705a72dbc25714555abb1b7db3c8255acfeed0d15d5412f4f0a77ee": {
+    "lat": -0.161487,
+    "lon": 35.0739327,
+    "address": "Nyando, Nyanza",
+    "confidence": 0.61937127113,
+    "accuracy_meters": 34814.934167656254,
+    "raw": {
+      "type": "Geography",
+      "id": "VBs_VoS-gblLdk66ttOvIA",
+      "score": 6.1937127113,
+      "entityType": "Municipality",
+      "matchConfidence": {
+        "score": 0.7781452300136418
+      },
+      "address": {
+        "municipality": "Nyando",
+        "countrySecondarySubdivision": "Kisumu",
+        "countrySubdivision": "Nyanza",
+        "countrySubdivisionName": "Nyanza",
+        "countryCode": "KE",
+        "country": "Kenya",
+        "countryCodeISO3": "KEN",
+        "freeformAddress": "Nyando, Nyanza"
+      },
+      "position": {
+        "lat": -0.161487,
+        "lon": 35.0739327
+      },
+      "viewport": {
+        "topLeftPoint": {
+          "lat": -0.11718,
+          "lon": 34.53068
+        },
+        "btmRightPoint": {
+          "lat": -0.29642,
+          "lon": 35.13068
+        }
+      },
+      "boundingBox": {
+        "topLeftPoint": {
+          "lat": -0.117184,
+          "lon": 34.530675
+        },
+        "btmRightPoint": {
+          "lat": -0.296421,
+          "lon": 35.130681
+        }
+      },
+      "dataSources": {
+        "geometry": {
+          "id": "86d45f4b-b0db-438b-bd73-1cd5fb2442d2"
+        }
+      }
+    },
+    "source_type": "provider",
+    "method": "tomtom",
+    "successful_query": "Nyando, Kisumu County, Kenya",
+    "total_queries_tried": 1
+  },
+  "18a6e907fd1b68b3cb347d9af576dd22f22fa15ce22e42836557c6bbfbaff375": {
+    "lat": -0.1585535,
+    "lon": 35.1934989,
+    "address": "Muhoroni, Nyanza",
+    "confidence": 0.61925854683,
+    "accuracy_meters": 32254.039902493976,
+    "raw": {
+      "type": "Geography",
+      "id": "O9tSQ0sMnxiYkUOQcrfVhQ",
+      "score": 6.1925854683,
+      "entityType": "Municipality",
+      "matchConfidence": {
+        "score": 0.7781452300136418
+      },
+      "address": {
+        "municipality": "Muhoroni",
+        "countrySecondarySubdivision": "Kisumu",
+        "countrySubdivision": "Nyanza",
+        "countrySubdivisionName": "Nyanza",
+        "countryCode": "KE",
+        "country": "Kenya",
+        "countryCodeISO3": "KEN",
+        "freeformAddress": "Muhoroni, Nyanza"
+      },
+      "position": {
+        "lat": -0.1585535,
+        "lon": 35.1934989
+      },
+      "viewport": {
+        "topLeftPoint": {
+          "lat": -0.02017,
+          "lon": 34.80909
+        },
+        "btmRightPoint": {
+          "lat": -0.25097,
+          "lon": 35.34134
+        }
+      },
+      "boundingBox": {
+        "topLeftPoint": {
+          "lat": -0.02017,
+          "lon": 34.809095
+        },
+        "btmRightPoint": {
+          "lat": -0.250972,
+          "lon": 35.341342
+        }
+      },
+      "dataSources": {
+        "geometry": {
+          "id": "00005858-5800-1200-0000-00007d2fdb5f"
+        }
+      }
+    },
+    "source_type": "provider",
+    "method": "tomtom",
+    "successful_query": "Muhoroni, Kisumu County, Kenya",
+    "total_queries_tried": 1
+  },
+  "3f245b684a3d89fd88c3406ed583914bd56482ed58351db4cb36c1d2038fa411": {
+    "lat": -0.3832347,
+    "lon": 34.9306947,
+    "address": "Nyakach, Nyanza",
+    "confidence": 0.61925854683,
+    "accuracy_meters": 22336.1868446075,
+    "raw": {
+      "type": "Geography",
+      "id": "8jH0Q4FesxSxujtyuphyzg",
+      "score": 6.1925854683,
+      "entityType": "Municipality",
+      "matchConfidence": {
+        "score": 0.7781452300136418
+      },
+      "address": {
+        "municipality": "Nyakach",
+        "countrySecondarySubdivision": "Kisumu",
+        "countrySubdivision": "Nyanza",
+        "countrySubdivisionName": "Nyanza",
+        "countryCode": "KE",
+        "country": "Kenya",
+        "countryCodeISO3": "KEN",
+        "freeformAddress": "Nyakach, Nyanza"
+      },
+      "position": {
+        "lat": -0.3832347,
+        "lon": 34.9306947
+      },
+      "viewport": {
+        "topLeftPoint": {
+          "lat": -0.21566,
+          "lon": 34.70373
+        },
+        "btmRightPoint": {
+          "lat": -0.41738,
+          "lon": 35.05117
+        }
+      },
+      "boundingBox": {
+        "topLeftPoint": {
+          "lat": -0.215664,
+          "lon": 34.703728
+        },
+        "btmRightPoint": {
+          "lat": -0.417377,
+          "lon": 35.051169
+        }
+      },
+      "dataSources": {
+        "geometry": {
+          "id": "ceb63aa9-3051-4a62-a3b7-1d63c15ec0ec"
+        }
+      }
+    },
+    "source_type": "provider",
+    "method": "tomtom",
+    "successful_query": "Nyakach, Kisumu County, Kenya",
+    "total_queries_tried": 1
+  },
+  "1b660c2c8b5b202d1d2e9672ff3ce9e04faef9e75182332064b34f9b0a85e365": {
+    "lat": -0.0688803,
+    "lon": 34.5178138,
+    "address": "Sème, Nyanza",
+    "confidence": 0.61929073334,
+    "accuracy_meters": 20362.733812546903,
+    "raw": {
+      "type": "Geography",
+      "id": "eE7viqGT79vo5oLKDnYdqw",
+      "score": 6.1929073334,
+      "entityType": "Municipality",
+      "matchConfidence": {
+        "score": 0.7781452300136418
+      },
+      "address": {
+        "municipality": "Sème",
+        "countrySecondarySubdivision": "Kisumu",
+        "countrySubdivision": "Nyanza",
+        "countrySubdivisionName": "Nyanza",
+        "countryCode": "KE",
+        "country": "Kenya",
+        "countryCodeISO3": "KEN",
+        "freeformAddress": "Sème, Nyanza"
+      },
+      "position": {
+        "lat": -0.0688803,
+        "lon": 34.5178138
+      },
+      "viewport": {
+        "topLeftPoint": {
+          "lat": -0.01819,
+          "lon": 34.43545
+        },
+        "btmRightPoint": {
+          "lat": -0.30143,
+          "lon": 34.66765
+        }
+      },
+      "boundingBox": {
+        "topLeftPoint": {
+          "lat": -0.018186,
+          "lon": 34.43545
+        },
+        "btmRightPoint": {
+          "lat": -0.301434,
+          "lon": 34.667645
+        }
+      },
+      "dataSources": {
+        "geometry": {
+          "id": "fc9333ac-73be-4e53-8b2c-7509862ad8a9"
+        }
+      }
+    },
+    "source_type": "provider",
+    "method": "tomtom",
+    "successful_query": "Seme, Kisumu County, Kenya",
+    "total_queries_tried": 1
+  },
+  "67ffa4fc2b9c97461d7cf0fef8950d2d505654b2840599238f9cb3c69716045a": {
+    "lat": -0.074886,
+    "lon": 34.709665,
+    "address": "Kisumu West, Nyanza",
+    "confidence": 0.9,
+    "accuracy_meters": 15308.546221838362,
+    "raw": {
+      "type": "Geography",
+      "id": "VPhpYwCrcM5lgkLGE2AKtA",
+      "score": 9.4531936646,
+      "entityType": "Municipality",
+      "matchConfidence": {
+        "score": 0.8194758451971077
+      },
+      "address": {
+        "municipality": "Kisumu West",
+        "countrySecondarySubdivision": "Kisumu",
+        "countrySubdivision": "Nyanza",
+        "countrySubdivisionName": "Nyanza",
+        "countryCode": "KE",
+        "country": "Kenya",
+        "countryCodeISO3": "KEN",
+        "freeformAddress": "Kisumu West, Nyanza"
+      },
+      "position": {
+        "lat": -0.074886,
+        "lon": 34.709665
+      },
+      "viewport": {
+        "topLeftPoint": {
+          "lat": 0.00736,
+          "lon": 34.57341
+        },
+        "btmRightPoint": {
+          "lat": -0.19006,
+          "lon": 34.76535
+        }
+      },
+      "boundingBox": {
+        "topLeftPoint": {
+          "lat": 0.007356,
+          "lon": 34.573411
+        },
+        "btmRightPoint": {
+          "lat": -0.190057,
+          "lon": 34.765348
+        }
+      },
+      "dataSources": {
+        "geometry": {
+          "id": "ce2c9824-9ef4-427f-ac8b-65d21cc9590a"
+        }
+      }
+    },
+    "source_type": "provider",
+    "method": "tomtom",
+    "successful_query": "Kisumu West, Kisumu County, Kenya",
+    "total_queries_tried": 1
+  },
+  "fc3cff141bfe740253fa8f84f8625b096a3b9cb1553ede032444352d0524a7da": {
+    "lat": -0.1179946,
+    "lon": 34.7876169,
+    "address": "Kisumu East, Nyanza",
+    "confidence": 0.9,
+    "accuracy_meters": 17003.347575005082,
+    "raw": {
+      "type": "Geography",
+      "id": "ePexKUNVn0IlaehP_598LQ",
+      "score": 9.4533176422,
+      "entityType": "Municipality",
+      "matchConfidence": {
+        "score": 0.8201823879237777
+      },
+      "address": {
+        "municipality": "Kisumu East",
+        "countrySecondarySubdivision": "Kisumu",
+        "countrySubdivision": "Nyanza",
+        "countrySubdivisionName": "Nyanza",
+        "countryCode": "KE",
+        "country": "Kenya",
+        "countryCodeISO3": "KEN",
+        "freeformAddress": "Kisumu East, Nyanza"
+      },
+      "position": {
+        "lat": -0.1179946,
+        "lon": 34.7876169
+      },
+      "viewport": {
+        "topLeftPoint": {
+          "lat": 0.01886,
+          "lon": 34.66765
+        },
+        "btmRightPoint": {
+          "lat": -0.18935,
+          "lon": 34.89166
+        }
+      },
+      "boundingBox": {
+        "topLeftPoint": {
+          "lat": 0.018864,
+          "lon": 34.667645
+        },
+        "btmRightPoint": {
+          "lat": -0.18935,
+          "lon": 34.891664
+        }
+      },
+      "dataSources": {
+        "geometry": {
+          "id": "92b45e97-9684-48d7-926b-2a4f4c8b3443"
+        }
+      }
+    },
+    "source_type": "provider",
+    "method": "tomtom",
+    "successful_query": "Kisumu East, Kisumu County, Kenya",
+    "total_queries_tried": 1
+  },
+  "a2149045fdf3f6522621a0e6e1f3de6b79fe37c8d99beb5cf116953b2474e101": {
+    "lat": -0.1030863,
+    "lon": 34.7560645,
+    "address": "Kisumu Central, Nyanza",
+    "confidence": 0.9,
+    "accuracy_meters": 10321.03529620444,
+    "raw": {
+      "type": "Geography",
+      "id": "RbH5KiV53k863tYOVef1Iw",
+      "score": 9.4640073776,
+      "entityType": "Municipality",
+      "matchConfidence": {
+        "score": 0.8269964336607201
+      },
+      "address": {
+        "municipality": "Kisumu Central",
+        "countrySecondarySubdivision": "Kisumu",
+        "countrySubdivision": "Nyanza",
+        "countrySubdivisionName": "Nyanza",
+        "countryCode": "KE",
+        "country": "Kenya",
+        "countryCodeISO3": "KEN",
+        "freeformAddress": "Kisumu Central, Nyanza"
+      },
+      "position": {
+        "lat": -0.1030863,
+        "lon": 34.7560645
+      },
+      "viewport": {
+        "topLeftPoint": {
+          "lat": -0.04604,
+          "lon": 34.66765
+        },
+        "btmRightPoint": {
+          "lat": -0.18935,
+          "lon": 34.78565
+        }
+      },
+      "boundingBox": {
+        "topLeftPoint": {
+          "lat": -0.046039,
+          "lon": 34.667645
+        },
+        "btmRightPoint": {
+          "lat": -0.18935,
+          "lon": 34.785646
+        }
+      },
+      "dataSources": {
+        "geometry": {
+          "id": "00005858-5800-1200-0000-00007d2fdb55"
+        }
+      }
+    },
+    "source_type": "provider",
+    "method": "tomtom",
+    "successful_query": "Kisumu Central, Kisumu County, Kenya",
+    "total_queries_tried": 1
+  },
+  "70a7a03381c72405bf0ae780d244892f2a46edc7d0c907c21b2136ce22e4cad5": {
+    "lat": -0.6115078,
+    "lon": 34.4926172,
+    "address": "Homabay-Rongo, Homa Bay, Nyanza",
+    "confidence": 0.7861643791199999,
+    "accuracy_meters": 1414.4537947255583,
+    "raw": {
+      "type": "Street",
+      "id": "D2eeNPeK9UIenshz9531Rw",
+      "score": 7.8616437912,
+      "matchConfidence": {
+        "score": 0.8041766255274592
+      },
+      "address": {
+        "streetName": "Homabay-Rongo",
+        "municipality": "Homa Bay",
+        "countrySecondarySubdivision": "Homa Bay",
+        "countrySubdivision": "Nyanza",
+        "countrySubdivisionName": "Nyanza",
+        "countryCode": "KE",
+        "country": "Kenya",
+        "countryCodeISO3": "KEN",
+        "freeformAddress": "Homabay-Rongo, Homa Bay, Nyanza",
+        "localName": "Homa Bay"
+      },
+      "position": {
+        "lat": -0.6115078,
+        "lon": 34.4926172
+      },
+      "viewport": {
+        "topLeftPoint": {
+          "lat": -0.60263,
+          "lon": 34.48378
+        },
+        "btmRightPoint": {
+          "lat": -0.62062,
+          "lon": 34.50177
+        }
+      }
+    },
+    "source_type": "provider",
+    "method": "tomtom",
+    "successful_query": "Homabay, Homa Bay County, Kenya",
+    "total_queries_tried": 1
+  },
+  "7c9496c30395c01d283690aaad7c39042351967ebb688d98d71332899c4978bc": {
+    "lat": -0.5093638,
+    "lon": 34.7354068,
+    "address": "Kasipul, Nyanza",
+    "confidence": 0.84796304703,
+    "accuracy_meters": 15178.452477814828,
+    "raw": {
+      "type": "Geography",
+      "id": "yGEW4qNQdwwtdgYaU3MoVg",
+      "score": 8.4796304703,
+      "entityType": "Municipality",
+      "matchConfidence": {
+        "score": 0.8184236174919
+      },
+      "address": {
+        "municipality": "Kasipul",
+        "countrySecondarySubdivision": "Homa Bay",
+        "countrySubdivision": "Nyanza",
+        "countrySubdivisionName": "Nyanza",
+        "countryCode": "KE",
+        "country": "Kenya",
+        "countryCodeISO3": "KEN",
+        "freeformAddress": "Kasipul, Nyanza"
+      },
+      "position": {
+        "lat": -0.5093638,
+        "lon": 34.7354068
+      },
+      "viewport": {
+        "topLeftPoint": {
+          "lat": -0.40586,
+          "lon": 34.62772
+        },
+        "btmRightPoint": {
+          "lat": -0.6103,
+          "lon": 34.80866
+        }
+      },
+      "boundingBox": {
+        "topLeftPoint": {
+          "lat": -0.405859,
+          "lon": 34.627723
+        },
+        "btmRightPoint": {
+          "lat": -0.610297,
+          "lon": 34.808657
+        }
+      },
+      "dataSources": {
+        "geometry": {
+          "id": "ff550266-2f67-41c6-a811-df85eea4b854"
+        }
+      }
+    },
+    "source_type": "provider",
+    "method": "tomtom",
+    "successful_query": "Kasipul, Homa Bay County, Kenya",
+    "total_queries_tried": 1
+  },
+  "2c1abd64b0e8f43706435274794700f65aa57e988882865c0c21516dbf56aa88": {
+    "lat": -0.4023372,
+    "lon": 34.7924146,
+    "address": "Kabondo Kasipul, Nyanza",
+    "confidence": 0.9,
+    "accuracy_meters": 16684.717935742494,
+    "raw": {
+      "type": "Geography",
+      "id": "r59cEkRICVHx--iyeCQ0Xw",
+      "score": 11.2858247757,
+      "entityType": "Municipality",
+      "matchConfidence": {
+        "score": 0.8644608359850425
+      },
+      "address": {
+        "municipality": "Kabondo Kasipul",
+        "countrySecondarySubdivision": "Homa Bay",
+        "countrySubdivision": "Nyanza",
+        "countrySubdivisionName": "Nyanza",
+        "countryCode": "KE",
+        "country": "Kenya",
+        "countryCodeISO3": "KEN",
+        "freeformAddress": "Kabondo Kasipul, Nyanza"
+      },
+      "position": {
+        "lat": -0.4023372,
+        "lon": 34.7924146
+      },
+      "viewport": {
+        "topLeftPoint": {
+          "lat": -0.36606,
+          "lon": 34.73899
+        },
+        "btmRightPoint": {
+          "lat": -0.53523,
+          "lon": 34.98687
+        }
+      },
+      "boundingBox": {
+        "topLeftPoint": {
+          "lat": -0.366055,
+          "lon": 34.738988
+        },
+        "btmRightPoint": {
+          "lat": -0.535233,
+          "lon": 34.986869
+        }
+      },
+      "dataSources": {
+        "geometry": {
+          "id": "ea5383b2-f416-4505-a8b8-5889c8d56030"
+        }
+      }
+    },
+    "source_type": "provider",
+    "method": "tomtom",
+    "successful_query": "Kabondo Kasipul, Homa Bay County, Kenya",
+    "total_queries_tried": 1
+  },
+  "a8dd3ae38f644a2d71bef3b5859b492cf2626866108f87cd7669730b54a7e8c6": {
+    "lat": -0.3972431,
+    "lon": 34.6268809,
+    "address": "Karachuonyo, Nyanza",
+    "confidence": 0.84804019928,
+    "accuracy_meters": 29999.108583992012,
+    "raw": {
+      "type": "Geography",
+      "id": "j-a7_i06AACunHXf2WG97Q",
+      "score": 8.4804019928,
+      "entityType": "Municipality",
+      "matchConfidence": {
+        "score": 0.8243124799537679
+      },
+      "address": {
+        "municipality": "Karachuonyo",
+        "countrySecondarySubdivision": "Homa Bay",
+        "countrySubdivision": "Nyanza",
+        "countrySubdivisionName": "Nyanza",
+        "countryCode": "KE",
+        "country": "Kenya",
+        "countryCodeISO3": "KEN",
+        "freeformAddress": "Karachuonyo, Nyanza"
+      },
+      "position": {
+        "lat": -0.3972431,
+        "lon": 34.6268809
+      },
+      "viewport": {
+        "topLeftPoint": {
+          "lat": -0.26269,
+          "lon": 34.35499
+        },
+        "btmRightPoint": {
+          "lat": -0.53882,
+          "lon": 34.81857
+        }
+      },
+      "boundingBox": {
+        "topLeftPoint": {
+          "lat": -0.262691,
+          "lon": 34.354992
+        },
+        "btmRightPoint": {
+          "lat": -0.538818,
+          "lon": 34.818573
+        }
+      },
+      "dataSources": {
+        "geometry": {
+          "id": "ef711ee4-848e-4632-b8b8-167c55e044f3"
+        }
+      }
+    },
+    "source_type": "provider",
+    "method": "tomtom",
+    "successful_query": "Karachuonyo, Homa Bay County, Kenya",
+    "total_queries_tried": 1
+  },
+  "7fea9aafbc1f54c40cbc6c5740cdb9fc41cd52320e20382d05620bb871826a72": {
+    "lat": -0.5999317,
+    "lon": 34.5836415,
+    "address": "Rangwe, Nyanza",
+    "confidence": 0.8479410171499999,
+    "accuracy_meters": 14696.9740038885,
+    "raw": {
+      "type": "Geography",
+      "id": "u03r5y6_seqnigbMrCeT-A",
+      "score": 8.4794101715,
+      "entityType": "Municipality",
+      "matchConfidence": {
+        "score": 0.8243124799537679
+      },
+      "address": {
+        "municipality": "Rangwe",
+        "countrySecondarySubdivision": "Homa Bay",
+        "countrySubdivision": "Nyanza",
+        "countrySubdivisionName": "Nyanza",
+        "countryCode": "KE",
+        "country": "Kenya",
+        "countryCodeISO3": "KEN",
+        "freeformAddress": "Rangwe, Nyanza"
+      },
+      "position": {
+        "lat": -0.5999317,
+        "lon": 34.5836415
+      },
+      "viewport": {
+        "topLeftPoint": {
+          "lat": -0.45926,
+          "lon": 34.49068
+        },
+        "btmRightPoint": {
+          "lat": -0.6618,
+          "lon": 34.66056
+        }
+      },
+      "boundingBox": {
+        "topLeftPoint": {
+          "lat": -0.459264,
+          "lon": 34.490681
+        },
+        "btmRightPoint": {
+          "lat": -0.661801,
+          "lon": 34.660564
+        }
+      },
+      "dataSources": {
+        "geometry": {
+          "id": "e62aa069-e1b9-4639-abc4-8d7d19d5a5e5"
+        }
+      }
+    },
+    "source_type": "provider",
+    "method": "tomtom",
+    "successful_query": "Rangwe, Homa Bay County, Kenya",
+    "total_queries_tried": 1
+  },
+  "44624a5afd75e8cefbb3bdb90c3461e9b6344ddbd47a1b2000f56e88052693d8": {
+    "lat": -0.5271843,
+    "lon": 34.4557052,
+    "address": "Homa Bay, Nyanza",
+    "confidence": 0.9,
+    "accuracy_meters": 13223.90626691378,
+    "raw": {
+      "type": "Geography",
+      "id": "V52OEtSe22coTRr-VI_xGQ",
+      "score": 12.2832279205,
+      "entityType": "Municipality",
+      "matchConfidence": {
+        "score": 0.6737953838862144
+      },
+      "address": {
+        "municipality": "Homa Bay",
+        "countrySecondarySubdivision": "Homa Bay",
+        "countrySubdivision": "Nyanza",
+        "countrySubdivisionName": "Nyanza",
+        "countryCode": "KE",
+        "country": "Kenya",
+        "countryCodeISO3": "KEN",
+        "freeformAddress": "Homa Bay, Nyanza"
+      },
+      "position": {
+        "lat": -0.5271843,
+        "lon": 34.4557052
+      },
+      "viewport": {
+        "topLeftPoint": {
+          "lat": -0.50006,
+          "lon": 34.40213
+        },
+        "btmRightPoint": {
+          "lat": -0.6686,
+          "lon": 34.56997
+        }
+      },
+      "boundingBox": {
+        "topLeftPoint": {
+          "lat": -0.500062,
+          "lon": 34.402129
+        },
+        "btmRightPoint": {
+          "lat": -0.668597,
+          "lon": 34.569974
+        }
+      },
+      "dataSources": {
+        "geometry": {
+          "id": "e7bd9463-a910-49e8-8dc2-b748fe278486"
+        }
+      }
+    },
+    "source_type": "provider",
+    "method": "tomtom",
+    "successful_query": "Homa Bay Town, Homa Bay County, Kenya",
+    "total_queries_tried": 1
+  },
+  "eb8b7a57843e8063c60e253b7bc1d41df3a7836971d5a8e991f29ee7c78224f1": {
+    "lat": -0.7310858,
+    "lon": 34.3678533,
+    "address": "Ndhiwa, Nyanza",
+    "confidence": 0.8479519844100001,
+    "accuracy_meters": 26425.152648427465,
+    "raw": {
+      "type": "Geography",
+      "id": "Glu0K1GR4piv-5M6S6Ul8A",
+      "score": 8.4795198441,
+      "entityType": "Municipality",
+      "matchConfidence": {
+        "score": 0.8243124799537679
+      },
+      "address": {
+        "municipality": "Ndhiwa",
+        "countrySecondarySubdivision": "Homa Bay",
+        "countrySubdivision": "Nyanza",
+        "countrySubdivisionName": "Nyanza",
+        "countryCode": "KE",
+        "country": "Kenya",
+        "countryCodeISO3": "KEN",
+        "freeformAddress": "Ndhiwa, Nyanza"
+      },
+      "position": {
+        "lat": -0.7310858,
+        "lon": 34.3678533
+      },
+      "viewport": {
+        "topLeftPoint": {
+          "lat": -0.56802,
+          "lon": 34.19878
+        },
+        "btmRightPoint": {
+          "lat": -0.87743,
+          "lon": 34.5596
+        }
+      },
+      "boundingBox": {
+        "topLeftPoint": {
+          "lat": -0.568017,
+          "lon": 34.198779
+        },
+        "btmRightPoint": {
+          "lat": -0.877434,
+          "lon": 34.559598
+        }
+      },
+      "dataSources": {
+        "geometry": {
+          "id": "fcee0042-d53a-467a-a415-0c054cacb227"
+        }
+      }
+    },
+    "source_type": "provider",
+    "method": "tomtom",
+    "successful_query": "Ndhiwa, Homa Bay County, Kenya",
+    "total_queries_tried": 1
+  },
+  "71e08a4efbd63d19786e14abdaa6731df5133acf38eff79e7d3d56306c7bba66": {
+    "lat": -0.4372517,
+    "lon": 34.2060824,
+    "address": "Suba North, Nyanza",
+    "confidence": 0.9,
+    "accuracy_meters": 34290.30031868826,
+    "raw": {
+      "type": "Geography",
+      "id": "0GB_NPCNBP8D5PfbEDAsww",
+      "score": 11.2865571976,
+      "entityType": "Municipality",
+      "matchConfidence": {
+        "score": 0.84368465294508
+      },
+      "address": {
+        "municipality": "Suba North",
+        "countrySecondarySubdivision": "Homa Bay",
+        "countrySubdivision": "Nyanza",
+        "countrySubdivisionName": "Nyanza",
+        "countryCode": "KE",
+        "country": "Kenya",
+        "countryCodeISO3": "KEN",
+        "freeformAddress": "Suba North, Nyanza"
+      },
+      "position": {
+        "lat": -0.4372517,
+        "lon": 34.2060824
+      },
+      "viewport": {
+        "topLeftPoint": {
+          "lat": -0.34177,
+          "lon": 33.91786
+        },
+        "btmRightPoint": {
+          "lat": -0.67204,
+          "lon": 34.43876
+        }
+      },
+      "boundingBox": {
+        "topLeftPoint": {
+          "lat": -0.341774,
+          "lon": 33.917863
+        },
+        "btmRightPoint": {
+          "lat": -0.672039,
+          "lon": 34.438758
+        }
+      },
+      "dataSources": {
+        "geometry": {
+          "id": "00005858-5800-1200-0000-00007d2fdb51"
+        }
+      }
+    },
+    "source_type": "provider",
+    "method": "tomtom",
+    "successful_query": "Suba North, Homa Bay County, Kenya",
+    "total_queries_tried": 1
+  },
+  "35d41d29a3b6307683d0f8355134eb01304c33ab8271feddb7048126b7bb5fe7": {
+    "lat": -0.5401686,
+    "lon": 34.1691104,
+    "address": "Suba South, Nyanza",
+    "confidence": 0.9,
+    "accuracy_meters": 29153.551388608215,
+    "raw": {
+      "type": "Geography",
+      "id": "lb0fvHeTaek0XwC0s6Sqyw",
+      "score": 11.2865571976,
+      "entityType": "Municipality",
+      "matchConfidence": {
+        "score": 0.8441731378444052
+      },
+      "address": {
+        "municipality": "Suba South",
+        "countrySecondarySubdivision": "Homa Bay",
+        "countrySubdivision": "Nyanza",
+        "countrySubdivisionName": "Nyanza",
+        "countryCode": "KE",
+        "country": "Kenya",
+        "countryCodeISO3": "KEN",
+        "freeformAddress": "Suba South, Nyanza"
+      },
+      "position": {
+        "lat": -0.5401686,
+        "lon": 34.1691104
+      },
+      "viewport": {
+        "topLeftPoint": {
+          "lat": -0.4698,
+          "lon": 33.91661
+        },
+        "btmRightPoint": {
+          "lat": -0.8052,
+          "lon": 34.31971
+        }
+      },
+      "boundingBox": {
+        "topLeftPoint": {
+          "lat": -0.469804,
+          "lon": 33.916607
+        },
+        "btmRightPoint": {
+          "lat": -0.805204,
+          "lon": 34.319708
+        }
+      },
+      "dataSources": {
+        "geometry": {
+          "id": "a46edb04-2e56-4de9-8bcc-42ce5213c91f"
+        }
+      }
+    },
+    "source_type": "provider",
+    "method": "tomtom",
+    "successful_query": "Suba South, Homa Bay County, Kenya",
+    "total_queries_tried": 1
+  },
+  "291f7d0930ca00f3bd5f1adb4fd01011e63ac83d786fb28b7f5517c6fca1f142": {
+    "lat": -0.7561777,
+    "lon": 34.6017335,
+    "address": "Rongo, Nyanza",
+    "confidence": 0.61927466393,
+    "accuracy_meters": 19756.088742054682,
+    "raw": {
+      "type": "Geography",
+      "id": "FbFqCmSpV5EisYeKSXc0VQ",
+      "score": 6.1927466393,
+      "entityType": "Municipality",
+      "matchConfidence": {
+        "score": 0.7710545730621418
+      },
+      "address": {
+        "municipality": "Rongo",
+        "countrySecondarySubdivision": "Migori",
+        "countrySubdivision": "Nyanza",
+        "countrySubdivisionName": "Nyanza",
+        "countryCode": "KE",
+        "country": "Kenya",
+        "countryCodeISO3": "KEN",
+        "freeformAddress": "Rongo, Nyanza"
+      },
+      "position": {
+        "lat": -0.7561777,
+        "lon": 34.6017335
+      },
+      "viewport": {
+        "topLeftPoint": {
+          "lat": -0.64931,
+          "lon": 34.52893
+        },
+        "btmRightPoint": {
+          "lat": -0.98545,
+          "lon": 34.64417
+        }
+      },
+      "boundingBox": {
+        "topLeftPoint": {
+          "lat": -0.649315,
+          "lon": 34.528935
+        },
+        "btmRightPoint": {
+          "lat": -0.985447,
+          "lon": 34.64417
+        }
+      },
+      "dataSources": {
+        "geometry": {
+          "id": "f841bf20-7f6d-46d6-80b7-5b9552c94385"
+        }
+      }
+    },
+    "source_type": "provider",
+    "method": "tomtom",
+    "successful_query": "Rongo, Migori County, Kenya",
+    "total_queries_tried": 1
+  },
+  "b82e2901c1340ff3fd8eb49b89135c3144799e02b7c816269f79043a76abea2d": {
+    "lat": -0.8938185,
+    "lon": 34.5308201,
+    "address": "Awendo, Nyanza",
+    "confidence": 0.61926660538,
+    "accuracy_meters": 19427.01426252535,
+    "raw": {
+      "type": "Geography",
+      "id": "i2iu1h2ErIgKE62bkV3P0A",
+      "score": 6.1926660538,
+      "entityType": "Municipality",
+      "matchConfidence": {
+        "score": 0.7710545730621418
+      },
+      "address": {
+        "municipality": "Awendo",
+        "countrySecondarySubdivision": "Migori",
+        "countrySubdivision": "Nyanza",
+        "countrySubdivisionName": "Nyanza",
+        "countryCode": "KE",
+        "country": "Kenya",
+        "countryCodeISO3": "KEN",
+        "freeformAddress": "Awendo, Nyanza"
+      },
+      "position": {
+        "lat": -0.8938185,
+        "lon": 34.5308201
+      },
+      "viewport": {
+        "topLeftPoint": {
+          "lat": -0.72478,
+          "lon": 34.46937
+        },
+        "btmRightPoint": {
+          "lat": -1.03589,
+          "lon": 34.62847
+        }
+      },
+      "boundingBox": {
+        "topLeftPoint": {
+          "lat": -0.724779,
+          "lon": 34.469366
+        },
+        "btmRightPoint": {
+          "lat": -1.035889,
+          "lon": 34.628469
+        }
+      },
+      "dataSources": {
+        "geometry": {
+          "id": "b3b62f94-9a65-4557-965e-5b5f26514d68"
+        }
+      }
+    },
+    "source_type": "provider",
+    "method": "tomtom",
+    "successful_query": "Awendo, Migori County, Kenya",
+    "total_queries_tried": 1
+  },
+  "a3cd445b70d80cdf3c33e6f351a7dd07590f87ed3a74657af67896eb755b0bc3": {
+    "lat": -1.067525,
+    "lon": 34.52542837011335,
+    "address": "Suna East, Migori County, Kenya",
+    "confidence": 0.6,
+    "accuracy_meters": 50.0,
+    "raw": {
+      "place_id": "38720800",
+      "licence": "https://locationiq.com/attribution",
+      "osm_type": "relation",
+      "osm_id": "15957580",
+      "boundingbox": [
+        "-1.1588528",
+        "-0.976298",
+        "34.3336879",
+        "34.6326957"
+      ],
+      "lat": "-1.067525",
+      "lon": "34.52542837011335",
+      "display_name": "Suna East, Migori County, Kenya",
+      "class": "boundary",
+      "type": "administrative",
+      "importance": 0.7500450011444266,
+      "icon": "https://locationiq.org/static/images/mapicons/poi_boundary_administrative.p.20.png"
+    },
+    "source_type": "provider",
+    "method": "locationiq",
+    "successful_query": "Suna East, Migori County, Kenya",
+    "total_queries_tried": 1
+  },
+  "1ec0a1cf06acb8cf5d86bd2f5a2c098839fd1f4b36d9ff1a7f74b7aa8cf73da9": {
+    "lat": -0.9458509500000001,
+    "lon": 34.43727715714935,
+    "address": "Uriri, Migori County, Kenya",
+    "confidence": 0.6,
+    "accuracy_meters": 50.0,
+    "raw": {
+      "place_id": "38512428",
+      "licence": "https://locationiq.com/attribution",
+      "osm_type": "relation",
+      "osm_id": "15957633",
+      "boundingbox": [
+        "-1.0716635",
+        "-0.8190321",
+        "34.3243038",
+        "34.6012444"
+      ],
+      "lat": "-0.9458509500000001",
+      "lon": "34.43727715714935",
+      "display_name": "Uriri, Migori County, Kenya",
+      "class": "boundary",
+      "type": "administrative",
+      "importance": 0.6600450011444265,
+      "icon": "https://locationiq.org/static/images/mapicons/poi_boundary_administrative.p.20.png"
+    },
+    "source_type": "provider",
+    "method": "locationiq",
+    "successful_query": "Uriri, Migori County, Kenya",
+    "total_queries_tried": 1
+  },
+  "dbdac175b7bd4e6ce800fc570380f8f69781f91cda501b71823468cbc90ce512": {
+    "lat": -1.3383575,
+    "lon": 34.6893622,
+    "address": "Kuria East, Nyanza",
+    "confidence": 0.89990978241,
+    "accuracy_meters": 14811.952179353293,
+    "raw": {
+      "type": "Geography",
+      "id": "VHtA3dipSyZiW9FPcT_IFw",
+      "score": 8.9990978241,
+      "entityType": "Municipality",
+      "matchConfidence": {
+        "score": 0.8085376272824477
+      },
+      "address": {
+        "municipality": "Kuria East",
+        "countrySecondarySubdivision": "Migori",
+        "countrySubdivision": "Nyanza",
+        "countrySubdivisionName": "Nyanza",
+        "countryCode": "KE",
+        "country": "Kenya",
+        "countryCodeISO3": "KEN",
+        "freeformAddress": "Kuria East, Nyanza"
+      },
+      "position": {
+        "lat": -1.3383575,
+        "lon": 34.6893622
+      },
+      "viewport": {
+        "topLeftPoint": {
+          "lat": -1.16406,
+          "lon": 34.58162
+        },
+        "btmRightPoint": {
+          "lat": -1.38649,
+          "lon": 34.72829
+        }
+      },
+      "boundingBox": {
+        "topLeftPoint": {
+          "lat": -1.164062,
+          "lon": 34.581616
+        },
+        "btmRightPoint": {
+          "lat": -1.386486,
+          "lon": 34.728289
+        }
+      },
+      "dataSources": {
+        "geometry": {
+          "id": "8b95b1fa-7f1d-4ed3-b4f6-a50303889a7f"
+        }
+      }
+    },
+    "source_type": "provider",
+    "method": "tomtom",
+    "successful_query": "Kuria East, Migori County, Kenya",
+    "total_queries_tried": 1
+  },
+  "51510d001b470cc70b12390f8f92a8f406dc8460f22e6f6612927b0410507256": {
+    "lat": -0.5661617999999999,
+    "lon": 34.81321148475658,
+    "address": "Kitutu Chache North, Marani, Kisii County, Kenya",
+    "confidence": 0.6,
+    "accuracy_meters": 50.0,
+    "raw": {
+      "place_id": "37991752",
+      "licence": "https://locationiq.com/attribution",
+      "osm_type": "relation",
+      "osm_id": "13373634",
+      "boundingbox": [
+        "-0.6288467",
+        "-0.5035847",
+        "34.7457928",
+        "34.8921475"
+      ],
+      "lat": "-0.5661617999999999",
+      "lon": "34.81321148475658",
+      "display_name": "Kitutu Chache North, Marani, Kisii County, Kenya",
+      "class": "boundary",
+      "type": "political",
+      "importance": 0.6767041680018311
+    },
+    "source_type": "provider",
+    "method": "locationiq",
+    "successful_query": "Kitutu Chache North, Kisii County, Kenya",
+    "total_queries_tried": 1
+  },
+  "36c7ae641ed2c94ac323ecb961ccb4181e76c91e0e06313117d78c722efd3636": {
+    "lat": -0.69118645,
+    "lon": 34.91568190461972,
+    "address": "Kitutu Masaba, Manga, Nyamira County, Kenya",
+    "confidence": 0.6,
+    "accuracy_meters": 50.0,
+    "raw": {
+      "place_id": "38040678",
+      "licence": "https://locationiq.com/attribution",
+      "osm_type": "relation",
+      "osm_id": "16347072",
+      "boundingbox": [
+        "-0.7847645",
+        "-0.5976062",
+        "34.7787554",
+        "35.0204827"
+      ],
+      "lat": "-0.69118645",
+      "lon": "34.91568190461972",
+      "display_name": "Kitutu Masaba, Manga, Nyamira County, Kenya",
+      "class": "boundary",
+      "type": "political",
+      "importance": 0.5767116678110933
+    },
+    "source_type": "provider",
+    "method": "locationiq",
+    "successful_query": "Kitutu Masaba, Nyamira County, Kenya",
+    "total_queries_tried": 1
+  },
+  "7875c7a698541eb5f50e0ce14cd59c17d239268f3efc0cd96d095c3343bc4c48": {
+    "lat": -1.3055107,
+    "lon": 36.8353293,
+    "address": "Nairobi Nairobi South, Nairobi",
+    "confidence": 0.60523767471,
+    "accuracy_meters": 2801.79663097853,
+    "raw": {
+      "type": "Geography",
+      "id": "tlVnrceK2X6p0QmbKrdyUA",
+      "score": 6.0523767471,
+      "entityType": "MunicipalitySubdivision",
+      "matchConfidence": {
+        "score": 0.4955941330170772
+      },
+      "address": {
+        "municipalitySubdivision": "Nairobi South",
+        "municipality": "Nairobi",
+        "countrySecondarySubdivision": "Nairobi",
+        "countrySubdivision": "Nairobi",
+        "countrySubdivisionName": "Nairobi",
+        "countrySubdivisionCode": "30",
+        "countryCode": "KE",
+        "country": "Kenya",
+        "countryCodeISO3": "KEN",
+        "freeformAddress": "Nairobi Nairobi South, Nairobi"
+      },
+      "position": {
+        "lat": -1.3055107,
+        "lon": 36.8353293
+      },
+      "viewport": {
+        "topLeftPoint": {
+          "lat": -1.28904,
+          "lon": 36.82194
+        },
+        "btmRightPoint": {
+          "lat": -1.32066,
+          "lon": 36.86119
+        }
+      },
+      "boundingBox": {
+        "topLeftPoint": {
+          "lat": -1.289038,
+          "lon": 36.82194
+        },
+        "btmRightPoint": {
+          "lat": -1.320657,
+          "lon": 36.861193
+        }
+      },
+      "dataSources": {
+        "geometry": {
+          "id": "00005858-5800-1200-0000-00007d2fdbb3"
+        }
+      }
+    },
+    "source_type": "provider",
+    "method": "tomtom",
+    "successful_query": "Dagoretti South, Nairobi County, Kenya",
+    "total_queries_tried": 1
+  },
+  "3710af2bd103e2e94d5d86c99ad6311e49eb3bffc4831402ea0b408a3985b877": {
+    "lat": -1.2952187,
+    "lon": 36.8718614,
+    "address": "Makadara, Maringo/Hamza ward, Makadara subcounty, Nairobi, Nairobi County, 00522, Kenya",
+    "confidence": 0.6,
+    "accuracy_meters": 50.0,
+    "raw": {
+      "place_id": "38226927",
+      "licence": "https://locationiq.com/attribution",
+      "osm_type": "node",
+      "osm_id": "10236095025",
+      "boundingbox": [
+        "-1.3152187",
+        "-1.2752187",
+        "36.8518614",
+        "36.8918614"
+      ],
+      "lat": "-1.2952187",
+      "lon": "36.8718614",
+      "display_name": "Makadara, Maringo/Hamza ward, Makadara subcounty, Nairobi, Nairobi County, 00522, Kenya",
+      "class": "place",
+      "type": "suburb",
+      "importance": 0.7395991533582804,
+      "icon": "https://locationiq.org/static/images/mapicons/poi_place_village.p.20.png"
+    },
+    "source_type": "provider",
+    "method": "locationiq"
+  }
+}

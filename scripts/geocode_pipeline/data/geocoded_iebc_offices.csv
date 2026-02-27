@@ -1,0 +1,387 @@
+county,constituency_code,constituency_name,office_location,landmark,distance_from_landmark,latitude,longitude,geocode_method,geocode_confidence,accuracy_meters,formatted_address,successful_geocode_query,total_queries_tried,geocode_status
+Mombasa,,Changamwe,At Changamwe firestation,Changamwe firestation,0 meters,-4.0169653,39.6086385,tomtom,0.6193149089800001,5898.184098127718,"Changamwe, Coast","Changamwe, Mombasa County, Kenya",1,enhanced
+Mombasa,,Jomvu,Mikindani Police Station,Mikindani Police Station,0 meters,-4.0435,39.6682,constituency_center,0.4,10000.0,"Jomvu Constituency Center, Mombasa",CONSTITUENCY_CENTER,1,enhanced
+Mombasa,,Kisauni,"Bamburi Fisheries, Shangaza Estate House 9",Supa Loaf Bakery,50 meters,-4.0434,39.6683,constituency_center_offset,0.4,10000.0,"Kisauni Constituency Center, Mombasa",CONSTITUENCY_CENTER,1,enhanced
+Mombasa,,Nyali,Chiefs office Kongowea,DCC Nyali's office,0 meters,-4.0542845,39.6904348,tomtom,0.64365310669,4434.760170296207,"Nyali, Coast","Nyali, Mombasa County, Kenya",1,enhanced
+Mombasa,,Likoni,Shika Adabu,Shika Adabu Chiefs office,10 meters,-4.0433,39.6684,constituency_center_offset,0.4,10000.0,"Likoni Constituency Center, Mombasa",CONSTITUENCY_CENTER,1,enhanced
+Mombasa,,Mvita,"Kizingo, Rashid Sajad road",Chef Royale Restaurant,20 meters,-4.0432,39.6685,constituency_center_offset,0.4,10000.0,"Mvita Constituency Center, Mombasa",CONSTITUENCY_CENTER,1,enhanced
+Kwale,,Msambweni,Msambweni Dcc's Office Compound,Subcounty Headquarters of,100 Metres,-4.180233786270461,39.4556315137532,provider_refined:locationiq,0.6,200.0,"County Government Headquarters, Kwale, Coast, Kenya",,0,success
+Kwale,,Lungalunga,Mbuyuni Area Next to Rafiki Yetu Building,Mnarani (Communication Mast),100 Metres,0.5549499270418363,37.90330264432511,provider_refined:locationiq,0.6,200.0,Kenya,,0,success
+Kwale,,Matuga,"IEBC Offices, Kwale Town, Opposite Ministry of","Baraza Park, Kwale Town",200 Metres,1.761309087203347,40.05690704072601,provider_refined:locationiq,0.6,400.0,"IEBC Offices, Wajir, North-Eastern, Kenya",,0,success
+Kwale,,Kinango,"Bebora Plaza, 3rd Floor, Kinango Town",Chief's Office Kinango Town,10 Metres,-4.1362573,39.3191131,tomtom,0.61933107376,76103.88792444555,"Kinango, Coast","Kinango, Kwale County, Kenya",1,enhanced
+Kilifi,,Kilifi North,Next To Huduma Centre Kilifi,Kilifi Bridge,550 Metres,-3.6337024,39.8498467,tomtom,0.9,37710.57791682659,"Kilifi North, Coast","Kilifi North, Kilifi County, Kenya",1,enhanced
+Kilifi,,Kilifi South,Majengo Kanamai,Matatu Terminus - Majengo Kanamai,600 Metres,-3.4809846243509983,39.57069245703246,provider_refined:locationiq,0.6,1200.0,"majengo waterpan, Kilifi, Coast, Kenya",,0,success
+Kilifi,,Kaloleni,Adjacent To St.Johns Girls Sec. School,Ack Church Kaloleni,50 Metres,-3.8168669,39.6266002,tomtom,0.61928272247,23973.148562334663,"Kaloleni, Coast","Kaloleni, Kilifi County, Kenya",1,enhanced
+Kilifi,,Rabai,Shikaadabu,Cdf Office/Shikaadabu Dispensary,500 Metres,-3.933556896357174,39.55767229778836,provider_refined:locationiq,0.6,1000.0,"Rabai Power Plant, Kilifi, Coast, Kenya",,0,success
+Kilifi,,Ganze,Ganze Town,Ganze Sub-County Police Hq.,0,-3.5367319,39.6923692,tomtom,0.61924247742,49552.740016633885,"Ganze, Coast","Ganze, Kilifi County, Kenya",0,enhanced
+Kilifi,,Malindi,Maweni Area - Near Judo,Malindi Sub-County Hospital,600 Metres,-3.2131856,40.1180017,tomtom,0.61958055496,27927.669641877183,"Malindi, Coast","Malindi, Kilifi County, Kenya",1,enhanced
+Kilifi,,Magarini,Near Mwembe Resort,Mwembe Resort,300 Metres,-3.038199579822446,40.07039792355241,provider_refined:locationiq,0.6,600.0,"Magarini, Malindi, Coast, Kenya",,0,success
+Tana River,,Garsen,Garsen Town,Kcb Bank,100 Metres,-2.271394884365789,40.1079804365792,provider_refined:nominatim,0.65,200.0,"Garsen Town, Garsen, Tana River, Kenya",,0,success
+Tana River,,Galole,Hola Town,Kenya Medical Training,50 Metres,-1.4979507888352908,40.03455129279918,provider_refined:nominatim,0.65,100.0,"Hola, Galole, Tana River, 70101, Kenya",,0,success
+Tana River,,Bura,Bura Town,National Government Offices,0 Metres,-1.194328,39.8434663,provider_refined:nominatim,0.65,50.0,"Bura West, Bura, Tana River, Kenya",,0,success
+Lamu,,Lamu East,Batuli Mudh-hir Haji Building - Faza,Post Office - Faza,Adjacent,-2.2696,40.9006,pending,0.0,9999.0,Geocoding failed for Lamu East,,0,enhanced
+Lamu,,Lamu West,Ministry of Housing Office Building - Mokowe,Public Work Office - Mokowe,100 Metres,-2.2695,40.9007,pending_offset,0.0,9999.0,Geocoding failed for Lamu West,,0,enhanced
+Taita Taveta,,Taveta,Next to Probation office Taveta,Probation Office Taveta,5 Metres,-3.392203,37.674121,tomtom,0.8764891624500001,63430.41382911961,"Taveta, Coast","Taveta, Taita Taveta County, Kenya",1,enhanced
+Taita Taveta,,Wundanyi,Along Administration offices(Deputy County,Next to Kenya Forest Service County office 50 Meters,,-2.8411706,37.909934,nominatim,0.7,10.0,"Shield, Kenya, B54, Marlal, Kuku, Kuku ward, Loitokitok, Kajiado, Kenya","Wundanyi, Taita Taveta County, Kenya",1,enhanced
+Taita Taveta,,Mwatate,"Mwatate old market, along Wundanyi road",Tavevo water and sewerage company ltd 50 Meters,,0.5545966278046405,37.90242333723317,provider_refined:locationiq,0.6,200.0,Kenya,,0,success
+Taita Taveta,,Voi,Behind Taita Taveta County Public Service,Voi Remand GK prison,100 Metres,-3.4435818,39.161387,nominatim,0.5,19942.0387035259,"Voi, Ganze, Kilifi, Kenya","Voi, Taita Taveta County, Kenya",1,enhanced
+Garissa,,Garissa Township,"Off Lamu Road, Behind Ministry Of Water Garage",,,-0.4459246,39.652735,tomtom,0.60950593948,4957.994697786109,"Dujis Garissa, North Eastern","Garissa Township, Garissa County, Kenya",1,enhanced
+Garissa,,Balambala,Balambala Town Next To Dc’s Office,,,-0.0953748,39.3509291,tomtom,0.61926660538,85160.68373524764,"Balambala, North Eastern","Balambala, Garissa County, Kenya",1,enhanced
+Garissa,,Lagdera,"Modogashe Town, Opposite Police Station",,,0.5026229,38.7714862,tomtom,0.61925854683,88487.78935445493,"Lagdera, North Eastern","Lagdera, Garissa County, Kenya",1,enhanced
+Garissa,,Dadaab,"Dadaab Town, Opposite Un Compound",,,0.0522555,40.3084786,tomtom,0.61929073334,94665.47465209856,"Dadaab, North Eastern","Dadaab, Garissa County, Kenya",1,enhanced
+Garissa,,Fafi,Next To Dc’s Office,,,0.0090771,40.3769563,tomtom,0.61925053596,113068.82050370694,"Fafi, North Eastern","Fafi, Garissa County, Kenya",1,enhanced
+Garissa,,Ijara,"Masalani Town, Next To Dc’s Office.",,,-1.5956289,40.5147259,tomtom,0.61924247742,105916.5556409174,"Ijara, North Eastern","Ijara, Garissa County, Kenya",1,enhanced
+Wajir,,Wajir North,Bute,Police Station,100 Metres,1.7488,40.0582,pending,0.0,9999.0,Geocoding failed for Wajir North,,0,enhanced
+Wajir,,Wajir East,Wajir,Huduma Centre,20 Metres,1.7489,40.0583,pending_offset,0.0,9999.0,Geocoding failed for Wajir East,,0,enhanced
+Wajir,,Tarbaj,Tarbaj,Ward Administrator’s Office,50 Metres,1.749,40.0584,pending_offset,0.0,9999.0,Geocoding failed for Tarbaj,,0,enhanced
+Wajir,,Wajir West,Giriftu,DCC’s Office,100 Metres,1.7491,40.0585,pending_offset,0.0,9999.0,Geocoding failed for Wajir West,,0,enhanced
+Wajir,,Eldas,Eldas,DC‘s Residence,50 Metres,1.7492,40.0586,pending_offset,0.0,9999.0,Geocoding failed for Eldas,,0,enhanced
+Wajir,,Wajir South,Habaswein,AP Camp,100 Metres,1.7493,40.0587,pending_offset,0.0,9999.0,Geocoding failed for Wajir South,,0,enhanced
+Mandera,,Banissa,"Banissa Town, Along Banissa-Rhamu Road",Next to Malkamari Hotel,20 Meters,3.9264,41.8423,pending,0.0,9999.0,Geocoding failed for Banissa,,0,enhanced
+Mandera,,Mandera West,Opposite Takaba Primary Main Gate,Takaba Primary School,20 Meters,3.9265,41.842400000000005,pending_offset,0.0,9999.0,Geocoding failed for Mandera West,,0,enhanced
+Mandera,,Mandera North,Inside Mandera North DCC's Compound,DCC Compound-Mandera North,Within Mandera North DCC Com-pound,3.762383,40.9283306,tomtom,0.9,79314.57320016577,"Mandera North, North Eastern","Mandera North, Mandera County, Kenya",1,enhanced
+Mandera,,Mandera South,Elwak CBD Along Elwak-Wajir Road,Dido Petrol Station,30 Metres,3.9266,41.8425,pending_offset,0.0,9999.0,Geocoding failed for Mandera South,,0,enhanced
+Mandera,,Mandera East,Off Suftu Road Behind Blue Light Petrol Station,Blue Light Petrol Station,50 Metres,3.9267,41.8426,pending_offset,0.0,9999.0,Geocoding failed for Mandera East,,0,enhanced
+Mandera,,Lafey,Lafey Town,Next To Lafey Primary School,100 Metres,3.4970367,41.183628,nominatim,0.5,66782.01589001699,"Lafey, Mandera, Kenya","Lafey, Mandera County, Kenya",1,enhanced
+Marsabit,,Moyale,ACK Moyale.,St. Paul Training Center,Within the Compound,2.3341,37.9902,pending,0.0,9999.0,Geocoding failed for Moyale,,0,enhanced
+Marsabit,,North Horr,Nyota Self Help Group North Horr,Adjacent to AP Camp,300 Metres,2.3342,37.990300000000005,pending_offset,0.0,9999.0,Geocoding failed for North Horr,,0,enhanced
+Marsabit,,Saku,"ACK Saku Offices Building,",St. Peter Cathedral,Within The Compound,2.3343,37.9904,pending_offset,0.0,9999.0,Geocoding failed for Saku,,0,enhanced
+Marsabit,,Laisamis,DCC Office Laisamis,DCC Office,DCC Compound,2.3344,37.9905,pending_offset,0.0,9999.0,Geocoding failed for Laisamis,,0,enhanced
+Isiolo,,Isiolo North,Isiolo Town,Opposite Isiolo County Assembly,10 Metres,0.3654264,37.5899505,tomtom,0.9,176276.5092708547,"Isiolo North, Eastern","Isiolo North, Isiolo County, Kenya",1,enhanced
+Isiolo,,Isiolo South,Garbatulla Town,Garbatulla Catholic Mission,Within Garbatulla Catholic,0.3547,37.5822,pending,0.0,9999.0,Geocoding failed for Isiolo South,,0,enhanced
+Meru,,Buuri,Timau,DCC Buuri West Office,Sharing Building,0.0847934,37.2398001,tomtom,0.61933107376,41579.139137367965,"Buuri, Eastern","Buuri, Meru County, Kenya",1,enhanced
+Meru,,Igembe Central,Kangeta,DCC Office,100 Meters,0.05,37.65,county_center,0.3,25000.0,Meru County Center,COUNTY_CENTER,1,enhanced
+Meru,,Igembe North,Laare,Shell Petrol Station (Kajuko Centre),500 Meters,0.0501,37.6501,county_center_offset,0.3,25000.0,Meru County Center,COUNTY_CENTER,1,enhanced
+Meru,,Tigania West,Kianjai Town,Kianjai National Bank,100 Meters,0.0502,37.6502,county_center_offset,0.3,25000.0,Meru County Center,COUNTY_CENTER,1,enhanced
+Meru,,Tigania East,Muriri DCC Compound,DCC Office,100 Metres,0.0503,37.6503,county_center_offset,0.3,25000.0,Meru County Center,COUNTY_CENTER,1,enhanced
+Meru,,North Imenti,Meru Town,Meru Huduma Center,300 Meters,0.0504,37.6504,county_center_offset,0.3,25000.0,Meru County Center,COUNTY_CENTER,1,enhanced
+Meru,,Igembe South,Maua Town,Maua Police Station,150 Meters,0.0505,37.6505,county_center_offset,0.3,25000.0,Meru County Center,COUNTY_CENTER,1,enhanced
+Meru,,Central Imenti,Gatimbi Market,Equator Signpost,800 Meters,0.0506,37.6506,county_center_offset,0.3,25000.0,Meru County Center,COUNTY_CENTER,1,enhanced
+Meru,,South Imenti,Nkubu,Consolata Hospital Nkubu,2km,0.0507,37.6507,county_center_offset,0.3,25000.0,Meru County Center,COUNTY_CENTER,1,enhanced
+Tharaka-Nithi,,Maara,"DCC Compound, Kienganguru",DCC Compound,100 Metres,-0.23562053175243766,37.63238754501547,provider_refined:locationiq,0.6,200.0,"Maara, Mwimbi, Tharaka-Nithi, Kenya",,0,success
+Tharaka-Nithi,,Chuka/ Igambang'ombe,"Chuka Town, Sub County Office Compound",Opposite Trans National Bank,200 Metres,-1.2852933911055249,36.82163095607712,provider_refined:locationiq,0.6,400.0,"Trans National Bank, City Hall Way, Nairobi, Nairobi Area, Kenya",,0,success
+Tharaka-Nithi,,Tharaka,"Marimanti Town, DCC Compound",DCC Offices,200 Metres,-1.055038136942407,36.7815601671066,provider_refined:locationiq,0.6,400.0,"Githunguri DCC’S office, Kiambu, Central, Kenya",,0,success
+Embu,,Manyatta,Embu Town-Along Embu-Meru Highway,Ack Embu Cathedral Church,25 Metres,-0.539,37.4574,county_center,0.3,25000.0,Embu County Center,COUNTY_CENTER,1,enhanced
+Embu,,Runyenjes,"Embu East DCC Bulding, 1st Floor","DCC Offices, Embu East",10 Metres,-0.5389,37.4575,county_center_offset,0.3,25000.0,Embu County Center,COUNTY_CENTER,1,enhanced
+Embu,,Mbeere South,Kiritiri Town,DCC Offices - Mbeere East Subcounty,200 Metres,-0.5388000000000001,37.4576,county_center_offset,0.3,25000.0,Embu County Center,COUNTY_CENTER,1,enhanced
+Embu,,Mbeere North,DCC Compound Mbeere North Subcounty,DCC Offices,15 Metres,-0.5387000000000001,37.4577,county_center_offset,0.3,25000.0,Embu County Center,COUNTY_CENTER,1,enhanced
+Kitui,,Mwingi North,Kyuso Town,Behind Equity Bank,200 ft,-1.367,38.0106,county_center,0.3,25000.0,Kitui County Center,COUNTY_CENTER,1,enhanced
+Kitui,,Mwingi West,Migwani market - inside DCC Office Complex,Baraza Park,30 Metres,-1.3669,38.0107,county_center_offset,0.3,25000.0,Kitui County Center,COUNTY_CENTER,1,enhanced
+Kitui,,Mwingi Central,Mwingi Town Opposite NCPB Mwingi Depot,National Cereals and Produce Board (NCPB) Mwingi Depot,5 Metres,-0.9196838,38.468054,nominatim,0.5,62771.94424211724,"Mwingi Central, Kitui, Kenya","Mwingi Central, Kitui County, Kenya",1,enhanced
+Kitui,,Kitui West,Matinyani,Matinyani DCC Offices,2 KMs,-1.3668,38.0108,county_center_offset,0.3,25000.0,Kitui County Center,COUNTY_CENTER,1,enhanced
+Kitui,,Kitui Rural,Kwa Vonza Town,Kitui Rural CDF Building,0 Metres,-1.6456293,37.8445646,tomtom,0.9,55047.61600418021,"Kitui Rural, Eastern","Kitui Rural, Kitui County, Kenya",1,enhanced
+Kitui,,Kitui Central,"Along DCC - Kitui Hospital Road, opposite",Kafoca Hotel,20 Metres,-1.3667,38.0109,county_center_offset,0.3,25000.0,Kitui County Center,COUNTY_CENTER,1,enhanced
+Kitui,,Kitui East,Zombe Town,Zombe Police Station,10 Metres,-1.3666,38.011,county_center_offset,0.3,25000.0,Kitui County Center,COUNTY_CENTER,1,enhanced
+Kitui,,Kitui South,Ikutha Town,Opposite Registry Office,100 Metres,-1.3665,38.0111,county_center_offset,0.3,25000.0,Kitui County Center,COUNTY_CENTER,1,enhanced
+Machakos,,Masinga,Masinga Town Opposite MULKAS petrol,,,-0.9756653,37.6061343,tomtom,0.61932301521,40573.92640566651,"Masinga, Eastern","Masinga, Machakos County, Kenya",1,enhanced
+Machakos,,Yatta,National Cereals and Produce Board,,,-1.2883127,37.6795808,tomtom,0.6193149089800001,39086.95720627905,"Yatta, Eastern","Yatta, Machakos County, Kenya",1,enhanced
+Machakos,,Kangundo,"Ministry Of Works Bulding,Opposite Kangundo",,,-1.3029609,37.3481508,tomtom,0.61927466393,13081.98853960906,"Kangundo, Eastern","Kangundo, Machakos County, Kenya",1,enhanced
+Machakos,,Matungulu,Kangundo Junior School Within Tala Town,,,-1.2354828,37.3298765,tomtom,0.61930685043,22037.54866028722,"Matungulu, Eastern","Matungulu, Machakos County, Kenya",1,enhanced
+Machakos,,Kathiani,DCCs Office block,,,-1.4134371,37.332076,tomtom,0.61927466393,17182.480782178176,"Kathiani, Eastern","Kathiani, Machakos County, Kenya",1,enhanced
+Machakos,,Mavoko,DCC Office Compound in Athi River,,,-1.4680665,37.0950989,tomtom,0.61937127113,27388.540910278218,"Mavoko, Eastern","Mavoko, Machakos County, Kenya",1,enhanced
+Machakos,,Machakos Town,"IEBC County Offices compound,behind",,,-1.5184295,37.2668947,tomtom,0.9,31827.860082524054,"Machakos Town, Eastern","Machakos Town, Machakos County, Kenya",1,enhanced
+Machakos,,Mwala,Makutano ya Mwala Shopping centre,,,-1.3521511,37.455706,tomtom,0.61924247742,35814.69134430637,"Mwala, Eastern","Mwala, Machakos County, Kenya",1,enhanced
+Makueni,,Mbooni,Tawa Social Hall,Tawa Law Courts,80 Metres,1.7273667523052882,40.008316667835025,provider_refined:locationiq,0.6,160.0,"social hall, 321, Mayalo Road, Wajir, North-Eastern, 213, Kenya",,0,success
+Makueni,,Kilome,Kwa DC (Malili),Konza City (Malili),1 km (along NBI-MSA Highway),-1.661541919851619,37.449549119600825,provider_refined:locationiq,0.6,2000.0,"Kwa Kimeu, Makueni, Eastern, Kenya",,0,success
+Makueni,,Kaiti,Mukuyuni Shopping Centre (CDF Compound),Mukuyuni Police Station,200 Metres,-1.1952591331045914,36.74634258721092,provider_refined:locationiq,0.6,400.0,"Shade to Market shopping center, Kiambu, Central, Kenya",,0,success
+Makueni,,Kibwezi West,Makindu Town,DCCs Office,Same compound,-2.2607974347354616,37.802838753558575,provider_refined:locationiq,0.6,200.0,"Makindu, Makueni, Eastern, Kenya",,0,success
+Makueni,,Kibwezi East,Kambu Lutheran Church,Kambu Sub County (Ministry of Interior Office),150 Metres,-3.1710879294221708,39.862340909572715,provider_refined:locationiq,0.6,300.0,"Lutheran Church, Malindi, Coast, Kenya",,0,success
+Nyandarua,,Kinangop,Elacy Trading Center First Floor,North Kinangop Subcounty Headquarters,50 Meters,-0.7256199,36.6568935,tomtom,0.61933908463,24954.091055797337,"Kinangop, Central","Kinangop, Nyandarua County, Kenya",1,enhanced
+Nyandarua,,Kipipiri,Kipipiri Subcounty Headquaters,Kipipiri Subcounty Headquaters,Within,-0.5886111,36.490248,tomtom,0.61927466393,27818.399951047704,"Kipipiri, Central","Kipipiri, Nyandarua County, Kenya",1,enhanced
+Nyandarua,,Ol Kalou,IEBC County Headqauters,Posta Building Olkalou,Within,-0.2758052169620526,36.37736064594656,provider_refined:locationiq,0.6,200.0,"Ol Kalou, Nyandarua, Central, Kenya",,0,success
+Nyandarua,,Ol Jorok,Nyandarua West Subcounty Headquaters,Nyandarua West Subcounty Headquaters,Within,-0.274915,36.377233,locationiq,0.6,50.0,"Ol Kalou, Nyandarua, Central, Kenya","Ol Jorok, Nyandarua County, Kenya",1,enhanced
+Nyandarua,,Ndaragwa,Ndaragwa Township Next to Central Ward MCA,Ndaragwa Police Station,50 to 100 Meters,-0.0587899,36.5278259,tomtom,0.61926660538,29778.91431169676,"Ndaragwa, Central","Ndaragwa, Nyandarua County, Kenya",1,enhanced
+Nyeri,,Tetu,Tetu Sub County Headquarters,Deputy County Commissioner(DCC) Offices or Tetu,50 Meters,-0.4167,36.95,county_center,0.3,25000.0,Nyeri County Center,COUNTY_CENTER,1,enhanced
+Nyeri,,Kieni,Mweiga Town,Next To Equity Atm,1 Meter,-0.4166,36.950100000000006,county_center_offset,0.3,25000.0,Nyeri County Center,COUNTY_CENTER,1,enhanced
+Nyeri,,Mathira,"2nd Floor Room 18, Mathira East",Karatina Law Courts,Opposite The Law Courts,-0.4165,36.9502,county_center_offset,0.3,25000.0,Nyeri County Center,COUNTY_CENTER,1,enhanced
+Nyeri,,Othaya,DCC Offices Grounds,DCC Office,Within DCC Offices,-0.4164,36.950300000000006,county_center_offset,0.3,25000.0,Nyeri County Center,COUNTY_CENTER,1,enhanced
+Nyeri,,Mukurwe-Ini,Mukurwe-ini DCC Grounds Offices,Near mukurwe-ini sub county hospital,200 Meters,-0.56092,37.04759,locationiq,0.6,50.0,"Mukurwe-ini, Nyeri, Central, Kenya","Mukurwe-Ini, Nyeri County, Kenya",1,enhanced
+Nyeri,,Nyeri-Town,DCC Offices Grounds,Huduma Center,50 Meters,-0.4163,36.9504,county_center_offset,0.3,25000.0,Nyeri County Center,COUNTY_CENTER,1,enhanced
+Kirinyaga,,Mwea,County Council Offices Wanguru,Wanguru Police Station,50 Metres,-0.6770557384186898,34.77149233812036,provider_refined:locationiq,0.6,100.0,"Kisii County Council Offices, Kisii Central, Nyanza, Kenya",,0,success
+Kirinyaga,,Gichugu,All Saints Kianyaga ACK,Raimu Primary School,50 Metres,-1.2888420302236194,36.8135007986176,provider_refined:locationiq,0.6,100.0,"All Saints Cathedral, Kenyatta Avenue, Nairobi, Nairobi Area, P.O Box 40539 Nairobi, Nairobi City, Kenya",,0,success
+Kirinyaga,,Ndia,Baricho Town,A.C.K St Philips - Baricho,0.5metres,-1.444345,36.678405,provider_refined:locationiq,0.6,50.0,"ACK Road, Kajiado, Rift Valley, Kenya",,0,success
+Kirinyaga,,Kirinyaga Central,Kerugoya Municipal Council Offices,Kerugoya Police Station/Kerugoya State,50 Metres,-0.6617480412222081,37.218835691614636,provider_refined:locationiq,0.6,100.0,"Sagana Police Station, C73, Kirinyaga, Central, Kenya",,0,success
+Kirinyaga,,Murang’a,County,,,-0.553624,37.302367,locationiq,0.6,50.0,"Kirinyaga, Central, Kenya","Murang’a, Kirinyaga County, Kenya",1,enhanced
+Kirinyaga,,Kangema,Kangema Town,DCC’s offices.,Within th DCC's office,-0.553911641960658,37.3015148795392,provider_refined:locationiq,0.6,200.0,"Kirinyaga, Central, Kenya",,0,success
+Kirinyaga,,Mathioya,Kiria-Ini Town,DCC’s offices.,Within th DCC's office,-0.7151747212745017,37.18859741058953,provider_refined:locationiq,0.6,200.0,"River Mathioya, Gikuu, Kiharu, Murang'a County, Kenya",,0,success
+Kirinyaga,,Kiharu,Murang’a -,"Along Kenol Murang'a Road, Next To Rubis Petrol Station at",100 Meters,-0.554459045931218,37.30270089829006,provider_refined:locationiq,0.6,200.0,"Kirinyaga, Central, Kenya",,0,success
+Kirinyaga,,Mukuyu,Mukuyu,,,-0.5009378,37.2790147,tomtom,0.42639908791,25930.368340658475,"Kirinyaga Central, Central","Mukuyu, Kirinyaga County, Kenya",1,enhanced
+Kirinyaga,,Kigumo,Kangari Town,"East End Mall, Building, 3rd Floor. Kangari Town.",Within Muungano Microfinance buidling,-0.10734667911917804,34.751131413627256,provider_refined:locationiq,0.6,200.0,"The West End Mall, Kisumu, Nyanza, Kenya",,0,success
+Kirinyaga,,Maragwa,Makuyu,"World Vision Block adjudcent to ACC’s Office, Makuyu",20 Meters ACCs office Makuyu,-0.5537403255982971,37.30222980930505,provider_refined:locationiq,0.6,50.0,"Kirinyaga, Central, Kenya",,0,success
+Kirinyaga,,Kandara,Kandara Town,"Hurukai House, 2nd Floor Above Amica Sacco, 500 meters",500 Meters from DCC's office,-0.9038193206175102,36.99762646473868,provider_refined:locationiq,0.6,1000.0,"Kandara, Maragua, Central, Kenya",,0,success
+Kirinyaga,,Gatanga,Kirwara Town,"Next to Amica Sacco Building, Ground Floor. Kirwara Town.",20 Meters from Kirwara Police Station,-0.5536574994940167,37.30219027458024,provider_refined:locationiq,0.6,50.0,"Kirinyaga, Central, Kenya",,0,success
+Kiambu,,Gatundu South,DCC Compound,Gatundu Level 5 Hospital,100 Meters,-0.9871052,36.8521188,nominatim,0.5,15455.296217164538,"Gatundu South, Kiambu, 01030, Kenya","Gatundu South, Kiambu County, Kenya",1,enhanced
+Kiambu,,Gatundu North,Kamwangi,DCC Office Kamwangi,Within DCC Office Compound,-0.9577935539718846,36.89981535169263,provider_refined:nominatim,0.65,200.0,"Kamwangi, Chania ward, Gatundu North, Kiambu, Kenya",,0,success
+Kiambu,,Juja,Menja Vision Plaza,Behind Agakhan Hospital,30 Metres,-1.327335022230231,36.852671398581265,provider_refined:locationiq,0.6,60.0,"Vision plaza, Mombasa Road, Nairobi, Nairobi Area, Kenya",,0,success
+Kiambu,,Thika Town,Afc Building Thika,Buffalo Grill & Butchery,100 Metres,-1.0390409978909887,37.07258074601359,provider_refined:nominatim,0.65,200.0,"BUFFALO GRILL AND BUTCHERY, Kenyatta Highway, Thika, Thika Town, Kiambu, 01000, Kenya",,0,success
+Kiambu,,Ruiru,Ruiru Law Courts,Ruiru Law Courts,20 Meters,-1.1480309,36.9605921,tomtom,0.61991062164,17272.232670649904,"Ruiru, Central","Ruiru, Kiambu County, Kenya",1,enhanced
+Kiambu,,Githunguri,DCC Compound,DCC Offices,7 Metres,-1.056078,36.783028,provider_refined:locationiq,0.6,50.0,"Githunguri DCC’S office, Kiambu, Central, Kenya",,0,success
+Kiambu,,Kiambaa,Kiambaa Subcounty DCC Office Compoud,Kiambaa Subcounty DCC Building (Orange),Afew Metres,-1.163481,36.7572751,tomtom,0.61959667206,9340.764240595508,"Kiambaa, Central","Kiambaa, Kiambu County, Kenya",1,enhanced
+Kiambu,,Kabete,Kabete Sub County Government Premises.,Wangige Sub County Hospital,100 Metres,-1.170339329910927,36.83069276657712,provider_refined:locationiq,0.6,200.0,"Kiambu Sub County Hospital, Biashara Street Kiambu, Kiambu, Central, Kenya",,0,success
+Kiambu,,Kikuyu,Kikuyu Town,K-Unity Bank,Zero,-1.2436406504848108,36.66372101484702,provider_refined:nominatim,0.65,200.0,"Kikuyu, Kiambu, 00109, Kenya",,0,success
+Kiambu,,Limuru,Directorate Of Public Works-Limuru,Limuru Law Courts,200 Metres,-1.1093486,36.6432176,tomtom,0.61994285583,16753.636860613067,"Limuru, Central","Limuru, Kiambu County, Kenya",1,enhanced
+Kiambu,,Lari,"Along Nairobi - Nakuru Highway, Within Ki-",Kimende Town,Within,-1.0262720218048393,36.630755629360515,provider_refined:locationiq,0.6,200.0,"Lari, Kiambu, Central, Kenya",,0,success
+Turkana,,Turkana North,DCC's Compound Lokitaung',DCC's Office,10 Metres,-0.296178,35.794009,provider_refined:locationiq,0.6,50.0,"District Officer's Office, Elburgon, Nakuru, Rift Valley, 20102, Kenya",,0,success
+Turkana,,Turkana West,Old DCC's Office Kakuma,Refugees Affairs Services Offices,5 Metres,1.015231,39.495124,provider_refined:locationiq,0.6,50.0,"Old Habawein DCs Office, Wajir, North-Eastern, Kenya",,0,success
+Turkana,,Turkana Central,DCC's Compound Lodwar,Huduma Centre,10 Metres,3.714627,34.85657,provider_refined:locationiq,0.6,50.0,"Lutheran World Foundation Compound, Turkana, Rift Valley, Kenya",,0,success
+Turkana,,Loima,DCC's Compound Lorgum,DCC's Office,10 Metres,-0.296178,35.794009,provider_refined:locationiq,0.6,50.0,"District Officer's Office, Elburgon, Nakuru, Rift Valley, 20102, Kenya",,0,success
+Turkana,,Turkana South,DCC's Compound Lokichar,DCC's Office,5 Metres,-0.296178,35.794009,provider_refined:locationiq,0.6,50.0,"District Officer's Office, Elburgon, Nakuru, Rift Valley, 20102, Kenya",,0,success
+Turkana,,Turkana East,DCC's Compound Lokori,DCC's Office,5 metres,-0.296178,35.794009,provider_refined:locationiq,0.6,50.0,"District Officer's Office, Elburgon, Nakuru, Rift Valley, 20102, Kenya",,0,success
+West Pokot,,Kapenguria,Deputy Commissioner’s Compound,DCC Offices,10 Meters,1.24007,35.119977,provider_refined:locationiq,0.6,50.0,"West Pokot County Assembly Offices, West Pokot, Rift Valley, Kenya",,0,success
+West Pokot,,Sigor,KVDA,KVDA Offices,0 Metres,0.519374,35.274852,provider_refined:locationiq,0.6,50.0,"KVDA, Uasin Gishu, Rift Valley, Kenya",,0,success
+West Pokot,,Kacheliba,Holy Cross Catholic Church Kacheliba Catholic Church,100 Meters,,-1.2837391150473236,36.75983393994353,provider_refined:locationiq,0.6,200.0,"Holy Cross Catholic Church, Serenity Road, Nairobi, Nairobi Area, Kenya",,0,success
+West Pokot,,Pokot South,St Marks Development Centre,DCC Offices,200 Meters,0.5546580076578149,37.904845805095825,provider_refined:locationiq,0.6,400.0,Kenya,,0,success
+Samburu,,Samburu West,Maralal Town,Samburu County Assembly,200 Metres,1.0960911,36.7013148,tomtom,0.9,52909.15111222504,"Samburu West, Rift Valley","Samburu West, Samburu County, Kenya",1,enhanced
+Samburu,,Samburu North,Baragoi Town,DCC Office,Within the DCC Building - 0 Metres,0.792365,37.497744,provider_refined:locationiq,0.6,50.0,"Archer's Post - Baragoi Road, Samburu, Rift Valley, Kenya",,0,success
+Samburu,,Samburu East,Wambaa Town,Wamba Parish,Within the Church Compound - 0 Metres,0.554064,37.903148,provider_refined:locationiq,0.6,50.0,Kenya,,0,success
+Trans Nzoia,,Kwanza,KFA Building kitale town,KFA Building,Within KFA Building,-0.10995818056136347,34.75326415025386,provider_refined:locationiq,0.6,200.0,"Nzoia Road, Kisumu, Nyanza, Kenya",,0,success
+Trans Nzoia,,Endebess,Endebess Centre,DCCs office,150 Metres,1.0740798784428829,34.89858982372414,provider_refined:locationiq,0.6,300.0,"Endebess Village Route, Trans Nzoia, Rift Valley, Kenya",,0,success
+Trans Nzoia,,Saboti,Maendeleo ya wanawake building Old Ambwere Plaza,100 Metres,,1.0154273475370275,34.99997026469232,provider_refined:locationiq,0.6,200.0,"Ambwere Plaza, Trans Nzoia, Rift Valley, Kenya",,0,success
+Trans Nzoia,,Kiminini,Kiminini centre,St Peters Cleavers Catholic Church,Within Church Compound,0.8919703587365915,34.924450835947646,provider_refined:locationiq,0.6,200.0,"Kiminini, Trans Nzoia, Rift Valley, Kenya",,0,success
+Trans Nzoia,,Cherangany,Kachibora,DCCs office,Within DCCs Office,0.9826947736604255,35.223461294187786,provider_refined:nominatim,0.65,200.0,"Kachibora, Cherangany, Trans Nzoia, Kenya",,0,success
+Uasin Gishu,,Soy,"Meadows Plaza, opposite Sirikwa Hotel",Meadows plaza,,0.7600378,35.2211047,nominatim,0.5,25182.25068318412,"Soy, Uasin Gishu, Kenya","Soy, Uasin Gishu County, Kenya",1,enhanced
+Uasin Gishu,,Turbo,"Within NCCK North headquarters, West Indies","NCCK North Headquarters, West Indies",100 Metres,0.19602186888678486,37.46454340190759,provider_refined:locationiq,0.6,200.0,"NRT Headquarters, Meru Central, Eastern, Kenya",,0,success
+Uasin Gishu,,Moiben,"Kimumu Ward Administrative Offices in Ainabtich, Kimumu Ward Administrative Offices",100 Metres,,0.8164978105267555,35.38240641238258,provider_refined:nominatim,0.65,200.0,"Moiben, Moiben ward, Moiben, Uasin Gishu, Kenya",,0,success
+Uasin Gishu,,Ainabkoi,"Adjacent To Eldoret East District Hqs, Off",Eldoret East District Hqs,Across The Road (0),0.3098288563384242,35.45654967347046,provider_refined:locationiq,0.6,100.0,"Ainabkoi, Uasin Gishu County, Kenya",,0,success
+Uasin Gishu,,Kapseret,"Inside R.C.E.A Ushirika Church Compound, Op-","R.C.E.A Ushirika Church, Opposite Hills School",Inside The Church Compound,-1.365229,36.662589,provider_refined:locationiq,0.6,50.0,"Hills View Este, Kajiado, Rift Valley, Kenya",,0,success
+Uasin Gishu,,Kesses,Jamboni Complex Near DCC’s Office,Moi Unversity Law School,1 Km,0.4699369289623318,35.292921124976424,provider_refined:locationiq,0.6,2000.0,"Jamboni Complex 2010, Eldoret - Nakuru Road, Uasin Gishu, Rift Valley, Kenya",,0,success
+Elgeyo Marakwet,,Marakwet East,Chesoi DCC Compound,DCC Office,Within,0.5536850992091192,37.90396364435226,provider_refined:locationiq,0.6,200.0,Kenya,,0,success
+Elgeyo Marakwet,,Marakwet West,Kapsowar IEBC Office,IEBC,Within,0.5546092795240105,37.90243280948754,provider_refined:locationiq,0.6,200.0,Kenya,,0,success
+Elgeyo Marakwet,,Keiyo North,IEBC,County Governor Office,Sharing a Fence,0.554064,37.903148,provider_refined:locationiq,0.6,50.0,Kenya,,0,success
+Elgeyo Marakwet,,Keiyo South,Chepkorio Prime Tower Sacco,Prime Tower Sacco Society,Within,0.5534112043287954,37.902529394387045,provider_refined:locationiq,0.6,200.0,Kenya,,0,success
+Nandi,,Mosop,Kabiyet-Nandi North District Headquarters,Kabiyet-Nandi North District Headquarters,Same Compound,0.4143250528568841,35.068014339415015,provider_refined:locationiq,0.6,200.0,"Mosop, Nandi County, Kenya",,0,success
+Nandi,,Nandi Hills,"Nandi Hills Town, Ministry of Public Works",Nandi Water Suplly,50 Meters,0.1063314,35.1855938,nominatim,0.5,3145.06472662866,"Nandi Hills, Nandi Hills ward, Nandi Hills, Nandi, Kenya","Nandi Hills, Nandi County, Kenya",1,enhanced
+Nandi,,Emgwen,Mininstry of Lands Kapsabet,Ministry of Lands/ Acc Office,20meters From Tarmac,-0.1040087535096049,34.75599006999396,provider_refined:locationiq,0.6,50.0,"ARDHI House(Ministry of Lands), Kisumu, Nyanza, Kenya",,0,success
+Nandi,,Chesumei,Cheptarit Catholic Church- Mosoriot,Cheptarit Catholic Church,Same Location,-3.347561,39.932924,provider_refined:locationiq,0.6,50.0,"Catholic Church, Malindi, Coast, Kenya",,0,success
+Nandi,,Aldai,"St. Pauls Catholic Church, Within Kobujoi Town",St. Pauls Catholic Church,,-3.3972899350288084,37.675027446179826,provider_refined:locationiq,0.6,200.0,"St. Pauls Catholic Church, Taita Taveta, Coast, Kenya",,0,success
+Nandi,,Tindiret,Senetwo Social Hall,Former World Vision Offices,Senetwo Primary School Within,-2.2101671332254424,40.18020118675361,provider_refined:locationiq,0.6,200.0,"Wema Social Hall, Tana River, Coast, Kenya",,0,success
+Baringo,,Tiaty,Next To Ministry Of Education Offices-,Chemolingot,,0.4658330090632727,35.96699898737031,provider_refined:locationiq,0.6,200.0,"Baringo, Baringo, Rift Valley, Kenya",,0,success
+Baringo,,Baringo North,Behind Posta Building,Posta Building –Baringo North,19 Km From Kabarnet Town,0.705852,35.7358109,tomtom,0.9,35130.94420114943,"Baringo North, Rift Valley","Baringo North, Baringo County, Kenya",1,enhanced
+Baringo,,Baringo Central,"County Commissioners Premises,",County Commissioners Premises- Kabarnet 100m,,-1.501997128139361,40.01680208891051,provider_refined:locationiq,0.6,200.0,"County Commissioner's office, Tana River, Coast, Kenya",,0,success
+Baringo,,Baringo South,Deputy County Commissioner’s,District Hq Marigat - Kabarnet,200m From Telcom Kenya,-0.025318686559600033,35.959919738715605,provider_refined:locationiq,0.6,400.0,"Deputy County Commissioner Office, Nakuru, Rift Valley, Kenya",,0,success
+Baringo,,Mogotio,Behind Boresha Sacco,Boresha Sacco- Mogotio Township,70m From The Tarmack,0.1632276,35.9466769,nominatim,0.5,39862.21413641373,"Mogotio, Baringo, Kenya","Mogotio, Baringo County, Kenya",1,enhanced
+Baringo,,Eldama Ravine,Sub County Commissioner’s,Law Courts – Eldama Ravine,-,0.0502915,35.7281381,tomtom,0.89999160767,29386.6228418949,"Eldama Ravine, Rift Valley","Eldama Ravine, Baringo County, Kenya",1,enhanced
+Laikipia,,Laikipia West,Telkom Building Nyahururu Town,Nyahururu Law Courts,20 Metres Approximate,0.016426416270594824,37.07690529046831,provider_refined:locationiq,0.6,50.0,"Nyakio Building, Laikipia, Rift Valley, Kenya",,0,success
+Laikipia,,Laikipia East,Laikipia County Commissioners,County Commissioners Office,Within The Compound,-1.501584,40.016003,provider_refined:locationiq,0.6,50.0,"County Commissioner's office, Tana River, Coast, Kenya",,0,success
+Laikipia,,Laikipia North,Doldol Catholic Parish Compound,Doldol Catholic Church,Within The Compound,0.041174,36.363378,provider_refined:locationiq,0.6,50.0,"Nyahururu Catholic Church, Nyeri-Nyahururu Road, Laikipia, Rift Valley, Kenya",,0,success
+Nakuru,,Molo,Dcc's Compound - Molo Town,Dc's Office - Molo Town,200m From Matatu Terminus,0.0524903,35.9678174,nominatim,0.5,15046.44606962836,"Molo, Rongai, Nakuru, Kenya","Molo, Nakuru County, Kenya",1,enhanced
+Nakuru,,Njoro,Aic Church - Compound -Njoro,Aic Church - Njoro,Inside The Compound,-0.3031,36.08,constituency_center,0.4,10000.0,"Njoro Constituency Center, Nakuru",CONSTITUENCY_CENTER,1,enhanced
+Nakuru,,Naivasha,Dcc's Compound - Near Naivasha Police Station,Naivasha Police Station,100m,-0.303,36.0801,constituency_center_offset,0.4,10000.0,"Naivasha Constituency Center, Nakuru",CONSTITUENCY_CENTER,1,enhanced
+Nakuru,,Gilgil,Hennsolex Building- Ground Floor- Gilgil Town,KPLC - Gilgil,Same Building,-0.4980018,36.3284263,tomtom,0.61932301521,33484.12694435836,"Gilgil, Rift Valley","Gilgil, Nakuru County, Kenya",1,enhanced
+Nakuru,,Kuresoi South,Keringet centre- Keringet Mall,Keringet Center 100m ahead from the,200m,-0.3029,36.0802,constituency_center_offset,0.4,10000.0,"Kuresoi South Constituency Center, Nakuru",CONSTITUENCY_CENTER,1,enhanced
+Nakuru,,Kuresoi North,"Kuresoi North Sub County Offices, Kamara Division Kuresoi North Sub County Offices",Inside Subcounty Offices,,-0.3027999999999999,36.0803,constituency_center_offset,0.4,10000.0,"Kuresoi North Constituency Center, Nakuru",CONSTITUENCY_CENTER,1,enhanced
+Nakuru,,Subukia,Behind top care hospital,100metres from subukia-Nakuru highway,100m,0.0008763,36.2315435,locationiq,0.6,50.0,"The Clicks Pub Subukia, Nyahururu-Nakuru Road, Ngano-Ini, Subukia ward, Subukia, Nakuru, 20109, Kenya","Subukia, Nakuru County, Kenya",1,enhanced
+Nakuru,,Rongai,IEBC Kampi ya moto behind DC office.,Kampi Ya Moto Trading Center,100m,-0.3026999999999999,36.0804,constituency_center_offset,0.4,10000.0,"Rongai Constituency Center, Nakuru",CONSTITUENCY_CENTER,1,enhanced
+Nakuru,,Bahati,Do's Compound - Kiamaina / Maili Sita - Bahati,Do's Office Kiamaina / Maili Sita - Bahati,100 M,-0.3026,36.0805,constituency_center_offset,0.4,10000.0,"Bahati Constituency Center, Nakuru",CONSTITUENCY_CENTER,1,enhanced
+Nakuru,,Nakuru Town West,"County council offices, opposite Kenya Farmers",Kfa Roundabout - Nakuru Town,200m,-0.317783,36.0374066,tomtom,0.9,14115.38547108158,"Nakuru Town West, Rift Valley","Nakuru Town West, Nakuru County, Kenya",1,enhanced
+Nakuru,,Nakuru Town East,Catholic Diocese Nakuru (Cdn) Compound -,"Mercy Mission Hospital, Assumption Center Near Within Catholic Diocese Compounds.",,-0.3025,36.0806,constituency_center_offset,0.4,10000.0,"Nakuru Town East Constituency Center, Nakuru",CONSTITUENCY_CENTER,1,enhanced
+Narok,,Kilgoris,Old Kilgoris County Council Offices,Cooperative Bank Kilgoris,80 Metres,-1.0077799,34.8807011,tomtom,0.61926660538,51502.70411695314,"Kilgoris, Rift Valley","Kilgoris, Narok County, Kenya",1,enhanced
+Narok,,Emurua Dikkir,Emurua Dikkir,Sub County Offices,10 Metres,-1.0804,35.871,county_center,0.3,25000.0,Narok County Center,COUNTY_CENTER,1,enhanced
+Narok,,Narok North,Narok North CDF Offices,Narok County Commisioner Offices,20 Meters,-1.0803,35.871100000000006,county_center_offset,0.3,25000.0,Narok County Center,COUNTY_CENTER,1,enhanced
+Narok,,Narok East,Ntulele,Ntulele Police Station,50 Metres,-1.0802,35.8712,county_center_offset,0.3,25000.0,Narok County Center,COUNTY_CENTER,1,enhanced
+Narok,,Narok South,Ololulunga,Ololulunga Police Station,10 Metres,-1.0801,35.871300000000005,county_center_offset,0.3,25000.0,Narok County Center,COUNTY_CENTER,1,enhanced
+Narok,,Narok West,Ngoswani Centre,Drilled Water Solar Powerpoint,70 Metres,-1.08,35.8714,county_center_offset,0.3,25000.0,Narok County Center,COUNTY_CENTER,1,enhanced
+Kajiado,,Kajiado North,Ngong DCC Office,Ngong DCC Office,0 Meters,-1.8524,36.7762,county_center,0.3,25000.0,Kajiado County Center,COUNTY_CENTER,1,enhanced
+Kajiado,,Kajiado Central,Ack Tenebo House,Kajiado Total Petrol Station,50 Meters,-1.8419404,36.7892723,tomtom,0.9,63010.40895660714,"Kajiado Central, Rift Valley","Kajiado Central, Kajiado County, Kenya",1,enhanced
+Kajiado,,Kajiado East,Isinya Multi-Purpose,Moi Girls High School Isinya,50 Meters,-1.8523,36.776300000000006,county_center_offset,0.3,25000.0,Kajiado County Center,COUNTY_CENTER,1,enhanced
+Kajiado,,Kajiado West,St Mary's Catholic Church-Kiserian,St Mary's Catholic Church-Kiserian,0 Meters,-1.8522,36.7764,county_center_offset,0.3,25000.0,Kajiado County Center,COUNTY_CENTER,1,enhanced
+Kajiado,,Kajiado South,Kajiado County Government Revenue Loitoktok DCC Office,200 Meters,,-1.8521,36.776500000000006,county_center_offset,0.3,25000.0,Kajiado County Center,COUNTY_CENTER,1,enhanced
+Kericho,,Ainamoi,County Commissioner's Compound Behind Administration Police and,20 Meters from the County Commissioners,,-0.3676,35.2836,county_center,0.3,25000.0,Kericho County Center,COUNTY_CENTER,1,enhanced
+Kericho,,Bureti,"Litein Town, Patnas Plaza",Patnas Plaza,Approx. 20 Meters from Bureti Police,-0.3675,35.2837,county_center_offset,0.3,25000.0,Kericho County Center,COUNTY_CENTER,1,enhanced
+Kericho,,Belgut,Rev. Temuga Plaza,Opposite DCC Office,100 Meters from Sosiot Police Station on,-0.3674,35.2838,county_center_offset,0.3,25000.0,Kericho County Center,COUNTY_CENTER,1,enhanced
+Kericho,,Sigowet Soin,Soko Huru Center,Inside Police Post Compound,"Mathioyo Stadium, 800 Meters from",-0.3672999999999999,35.2839,county_center_offset,0.3,25000.0,Kericho County Center,COUNTY_CENTER,1,enhanced
+Kericho,,Kipkelion East,Within Londian Post Office,Londian Post Office,Post Office Compound,-0.3671999999999999,35.284,county_center_offset,0.3,25000.0,Kericho County Center,COUNTY_CENTER,1,enhanced
+Kericho,,Kipkelion West,Posta Kenya Building Kipkelion,Kipkellion Post Office,5 Meters From Londian - Kisumu Highway,-0.1988039,35.4652483,tomtom,0.89990978241,19966.41469319615,"Kipkelion West, Rift Valley","Kipkelion West, Kericho County, Kenya",1,enhanced
+Bomet,,Chepalungu,Sigor AGC Church,Junction to Sigor Township,500 Metres,-0.781,35.3416,county_center,0.3,25000.0,Bomet County Center,COUNTY_CENTER,1,enhanced
+Bomet,,Bomet Central,Bomet Town,NCPB,0 Metres,-0.7809,35.3417,county_center_offset,0.3,25000.0,Bomet County Center,COUNTY_CENTER,1,enhanced
+Bomet,,Konoin,Mogogsiek,DCC Office Konoin Subcounty,Approx. 150 Metres,-0.7808,35.3418,county_center_offset,0.3,25000.0,Bomet County Center,COUNTY_CENTER,1,enhanced
+Bomet,,Bomet East,"AFC Building, Bomet Town",Shell Petrol Station,Approx. 15 Metres,-0.7807000000000001,35.3419,county_center_offset,0.3,25000.0,Bomet County Center,COUNTY_CENTER,1,enhanced
+Bomet,,Sotik,Ministry of Agriculture,Opposite CDF Office,Approx. 20 Metres,-0.7806000000000001,35.342,county_center_offset,0.3,25000.0,Bomet County Center,COUNTY_CENTER,1,enhanced
+Kakamega,,Lugari,Lumakanda Centre,Lumakanda P.A.G. Church,95 Metres,0.2827,34.7519,county_center,0.3,25000.0,Kakamega County Center,COUNTY_CENTER,1,enhanced
+Kakamega,,Likuyani,At PAG Kongoni Church Compound,Next to Likuyani Sub-County Offices,50 Metres,0.7117139,35.113036,tomtom,0.61925854683,17242.381959630657,"Likuyani, Western","Likuyani, Kakamega County, Kenya",1,enhanced
+Kakamega,,Malava,Malava Friends Church Compound.,Malava Boys High School,50 Metres,0.4459769,34.8524885,tomtom,0.61927466393,20451.30261256678,"Malava, Western","Malava, Kakamega County, Kenya",1,enhanced
+Kakamega,,Lurambi,Post Office,Huduma Center,20 Metres,0.2828,34.752,county_center_offset,0.3,25000.0,Kakamega County Center,COUNTY_CENTER,1,enhanced
+Kakamega,,Navakholo,Opposite Dowa Filling Station along,Dowa Filling Station,30 Meters,0.2829,34.7521,county_center_offset,0.3,25000.0,Kakamega County Center,COUNTY_CENTER,1,enhanced
+Kakamega,,Mumias West,ACK Guest House,ACK Church Complex,50 Metres,0.283,34.7522,county_center_offset,0.3,25000.0,Kakamega County Center,COUNTY_CENTER,1,enhanced
+Kakamega,,Mumias East,Moco Buildings-Shianda,Shianda Catholic Church,10 Metres,0.2831,34.7523,county_center_offset,0.3,25000.0,Kakamega County Center,COUNTY_CENTER,1,enhanced
+Kakamega,,Matungu,"Matungu Market, along Matungu -",Matungu Deputy County Commissioner's,200 Metres,0.377349,34.4872984,tomtom,0.61927466393,17671.082978364742,"Matungu, Western","Matungu, Kakamega County, Kenya",1,enhanced
+Kakamega,,Butere,Butere DCC Compound Next to,Deputy County Commissioner's Office,10 Metres,0.2832,34.7524,county_center_offset,0.3,25000.0,Kakamega County Center,COUNTY_CENTER,1,enhanced
+Kakamega,,Khwisero,Within DCC's Offices,DCC's Office,Inside DCC’s Office Block,0.2833,34.7525,county_center_offset,0.3,25000.0,Kakamega County Center,COUNTY_CENTER,1,enhanced
+Kakamega,,Shinyalu,Shinyalu Market,St.Acquinas Teachers College,100 Metres,0.2834,34.7526,county_center_offset,0.3,25000.0,Kakamega County Center,COUNTY_CENTER,1,enhanced
+Kakamega,,Ikolomani,Sub-County Registrar of Persons Office Malinya Primary School,100 Metres,,0.2835,34.7527,county_center_offset,0.3,25000.0,Kakamega County Center,COUNTY_CENTER,1,enhanced
+Vihiga,,Sabatia,DCC Compound,Sabatia Eye Hospital,600 Metres,0.1133601,34.8089687,tomtom,0.61936326027,10360.983724240949,"Sabatia, Western","Sabatia, Vihiga County, Kenya",1,enhanced
+Vihiga,,Hamisi,Hamisi Youth Empowerment Centre,Hamisi Sub-County Hospital,100 Metres,0.0793771,34.8532129,tomtom,0.61934714317,20118.10827313953,"Hamisi, Western","Hamisi, Vihiga County, Kenya",1,enhanced
+Vihiga,,Luanda,Luanda Centre,Bunyore Girls High School,800 Metres,0.03066637990051221,34.58773147843759,provider_refined:locationiq,0.6,1600.0,"from luanda, Vihiga, Western, Kenya",,0,success
+Vihiga,,Emuhaya,Esibuye Centre,Bunyore Medical Hospital,150 Metres,0.0998332625499265,34.6334770331577,provider_refined:locationiq,0.6,300.0,"Ematsuli-Esibuye Road, Vihiga, Western, Kenya",,0,success
+Bungoma,,Mt. Elgon,Kapsokwony,Koony House,Within Kooni House,0.5695,34.5584,county_center,0.3,25000.0,Bungoma County Center,COUNTY_CENTER,1,enhanced
+Bungoma,,Sisiria,DCC Compound,Sirisia DCC Office,50 Metres From DCC Office,0.5696,34.5585,county_center_offset,0.3,25000.0,Bungoma County Center,COUNTY_CENTER,1,enhanced
+Bungoma,,Kabuchai,Behind Kabuchai Cdf Compound,Along Kanduyi Chwele Road Approx.,100 Metres,0.5697,34.5586,county_center_offset,0.3,25000.0,Bungoma County Center,COUNTY_CENTER,1,enhanced
+Bungoma,,Bumula,Bumula DCC Ofiice,DCC Compound,150 Metres,0.5698,34.5587,county_center_offset,0.3,25000.0,Bungoma County Center,COUNTY_CENTER,1,enhanced
+Bungoma,,Kanduyi,Bungoma Cereals Board,Silos,Next To Silos in the Compound,0.5699,34.5588,county_center_offset,0.3,25000.0,Bungoma County Center,COUNTY_CENTER,1,enhanced
+Bungoma,,Webuye East,1st Office at DCC Compound 2nd,DCC Compound / Mp Office,Approx. 50m from the DCC Office,0.57,34.5589,county_center_offset,0.3,25000.0,Bungoma County Center,COUNTY_CENTER,1,enhanced
+Bungoma,,Webuye West,Matisi Market,Along Bungoma Webuye High Way -,100 Metres,0.5949440500000001,34.71220035300203,locationiq,0.6,50.0,"Webuye West, Bungoma County, Kenya","Webuye West, Bungoma County, Kenya",1,enhanced
+Bungoma,,Kimilili,Great Lounch Hotel Building,Opposite Kimilili Deb Primary,20 Metres,0.7838812,34.719834,tomtom,0.61925854683,12623.642638037,"Kimilili, Western","Kimilili, Bungoma County, Kenya",1,enhanced
+Bungoma,,Tongaren,Within Bungoma North Sub-County National Government CDF Offices,50 Metres From CDF Offices,,0.5701,34.559,county_center_offset,0.3,25000.0,Bungoma County Center,COUNTY_CENTER,1,enhanced
+Busia,,Teso North,DCC's Compound,Law Courts,2 Metres,0.4608,34.1115,county_center,0.3,25000.0,Busia County Center,COUNTY_CENTER,1,enhanced
+Busia,,Teso South,DCC's Compound,DCC's building,0 Metres,0.4609,34.1116,county_center_offset,0.3,25000.0,Busia County Center,COUNTY_CENTER,1,enhanced
+Busia,,Nambale,DCC's Compound,DCC's building,0 Metres,0.4609999999999999,34.1117,county_center_offset,0.3,25000.0,Busia County Center,COUNTY_CENTER,1,enhanced
+Busia,,Matayos,Assistant County Commissioner's com-,Assistant County Commissioner's office,10 Metres,0.4611,34.1118,county_center_offset,0.3,25000.0,Busia County Center,COUNTY_CENTER,1,enhanced
+Busia,,Butula,DCC's Compound,Butula Police Station,30 Metres,0.340595,34.3363367,tomtom,0.61926660538,16879.06041473001,"Butula, Western","Butula, Busia County, Kenya",1,enhanced
+Busia,,Funyula,Funyula market,Moody Awori Primary school,20 Metres,0.4612,34.1119,county_center_offset,0.3,25000.0,Busia County Center,COUNTY_CENTER,1,enhanced
+Busia,,Budalangi,Budalangi Market,Budalangi Primary School,100 Metres,0.1108678,34.0462022,tomtom,0.61924247742,15670.28974507964,"Budalangi, Western","Budalangi, Busia County, Kenya",1,enhanced
+Siaya,,Ugenya,Ukwala - Opposite Sub County Officers Posta - Ukwala,100 Metres,,0.0607,34.2881,county_center,0.3,25000.0,Siaya County Center,COUNTY_CENTER,1,enhanced
+Siaya,,Ugunja,Along Savana - Ambira Hospital Road Savana Hotel,50 Metres,,0.0608,34.2882,county_center_offset,0.3,25000.0,Siaya County Center,COUNTY_CENTER,1,enhanced
+Siaya,,Alego Usonga,Siaya Town- Within County,County Commissioner's Office,100 Metres,0.0608999999999999,34.2883,county_center_offset,0.3,25000.0,Siaya County Center,COUNTY_CENTER,1,enhanced
+Siaya,,Gem,Nyangweso Market Centre - Adjacent Sawagongo High School,200 Metres,,0.0376684,34.4645423,nominatim,0.5,17524.87008674788,"Gem, Siaya, 40139, Kenya","Gem, Siaya County, Kenya",1,enhanced
+Siaya,,Bondo,"Adjacent Municipal Offices, Next to",Bondo Law Courts,20 Metres,-0.1006180999999999,34.22530233497095,locationiq,0.6,50.0,"Bondo, Siaya County, Kenya","Bondo, Siaya County, Kenya",1,enhanced
+Siaya,,Rarieda,Kalandini Market Centre - Within,Kalandini Market,100 Metres,0.061,34.2884,county_center_offset,0.3,25000.0,Siaya County Center,COUNTY_CENTER,1,enhanced
+Kisumu,,Nyando,Awasi DCC Compound,,,-0.161487,35.0739327,tomtom,0.61937127113,34814.934167656254,"Nyando, Nyanza","Nyando, Kisumu County, Kenya",1,enhanced
+Kisumu,,Muhoroni,Awasi Opposite Pawtenge Primary,,,-0.1585535,35.1934989,tomtom,0.61925854683,32254.039902493976,"Muhoroni, Nyanza","Muhoroni, Kisumu County, Kenya",1,enhanced
+Kisumu,,Nyakach,Pap Onditi DCC Compound,,,-0.3832347,34.9306947,tomtom,0.61925854683,22336.1868446075,"Nyakach, Nyanza","Nyakach, Kisumu County, Kenya",1,enhanced
+Kisumu,,Seme,Kombewa DCC Compound,,,-0.0688803,34.5178138,tomtom,0.61929073334,20362.733812546903,"Sème, Nyanza","Seme, Kisumu County, Kenya",1,enhanced
+Kisumu,,Kisumu West,DCCs office block opposite the new DCCs/Huduma,,,-0.074886,34.709665,tomtom,0.9,15308.546221838362,"Kisumu West, Nyanza","Kisumu West, Kisumu County, Kenya",1,enhanced
+Kisumu,,Kisumu East,Mamboleo Show Ground,,,-0.1179946,34.7876169,tomtom,0.9,17003.347575005082,"Kisumu East, Nyanza","Kisumu East, Kisumu County, Kenya",1,enhanced
+Kisumu,,Kisumu Central,Huduma Centre Wing C Ground Floor,,,-0.1030863,34.7560645,tomtom,0.9,10321.03529620444,"Kisumu Central, Nyanza","Kisumu Central, Kisumu County, Kenya",1,enhanced
+Homa Bay,,Homabay,County,,,-0.6115078,34.4926172,tomtom,0.7861643791199999,1414.4537947255585,"Homabay-Rongo, Homa Bay, Nyanza","Homabay, Homa Bay County, Kenya",1,enhanced
+Homa Bay,,Kasipul,Within Karachuonyo South DCC Compound at Kosele,,,-0.5093638,34.7354068,tomtom,0.84796304703,15178.452477814828,"Kasipul, Nyanza","Kasipul, Homa Bay County, Kenya",1,enhanced
+Homa Bay,,Kabondo Kasipul,At Kadongo Centre Along Kisii - Kisumu Road,,,-0.4023372,34.7924146,tomtom,0.9,16684.717935742494,"Kabondo Kasipul, Nyanza","Kabondo Kasipul, Homa Bay County, Kenya",1,enhanced
+Homa Bay,,Karachuonyo,Within Rachuonyo North DCC Complex at Kamodi,,,-0.3972431,34.6268809,tomtom,0.84804019928,29999.10858399201,"Karachuonyo, Nyanza","Karachuonyo, Homa Bay County, Kenya",1,enhanced
+Homa Bay,,Rangwe,Within New Rangwe DCC's Complex aLong Oyugis -,,,-0.5999317,34.5836415,tomtom,0.8479410171499999,14696.9740038885,"Rangwe, Nyanza","Rangwe, Homa Bay County, Kenya",1,enhanced
+Homa Bay,,Homa Bay Town,Behind CC's Complex in Homabay Town,,,-0.5271843,34.4557052,tomtom,0.9,13223.90626691378,"Homa Bay, Nyanza","Homa Bay Town, Homa Bay County, Kenya",1,enhanced
+Homa Bay,,Ndhiwa,Within Ndhiwa Sub County DCC Complex Along Ndhiwa,,,-0.7310858,34.3678533,tomtom,0.8479519844100001,26425.152648427465,"Ndhiwa, Nyanza","Ndhiwa, Homa Bay County, Kenya",1,enhanced
+Homa Bay,,Suba North,Inside Suba North Sub County Compound along Mbita -,,,-0.4372517,34.2060824,tomtom,0.9,34290.30031868826,"Suba North, Nyanza","Suba North, Homa Bay County, Kenya",1,enhanced
+Homa Bay,,Suba South,At Magunga Trading Centre along Kiabuya - Magunga,,,-0.5401686,34.1691104,tomtom,0.9,29153.55138860821,"Suba South, Nyanza","Suba South, Homa Bay County, Kenya",1,enhanced
+Migori,,Rongo,Rongo Town,DCC Office Rongo sub County,Within DCC office compound,-0.7561777,34.6017335,tomtom,0.61927466393,19756.08874205468,"Rongo, Nyanza","Rongo, Migori County, Kenya",1,enhanced
+Migori,,Awendo,Awendo Town,NCPB Awendo,Within NCPB Compound,-0.8938185,34.5308201,tomtom,0.61926660538,19427.01426252535,"Awendo, Nyanza","Awendo, Migori County, Kenya",1,enhanced
+Migori,,Suna East,Migori Town,Migori County IEBC Office,Wthin office building,-1.067525,34.52542837011335,locationiq,0.6,50.0,"Suna East, Migori County, Kenya","Suna East, Migori County, Kenya",1,enhanced
+Migori,,Suna West,Migori Town,NCPB / Namba Junction,NCPB Compound,-1.0634,34.4731,county_center,0.3,25000.0,Migori County Center,COUNTY_CENTER,1,enhanced
+Migori,,Uriri,Uriri Town,DCC officeUriri Sub County,Within DCC Compound,-0.94585095,34.43727715714935,locationiq,0.6,50.0,"Uriri, Migori County, Kenya","Uriri, Migori County, Kenya",1,enhanced
+Migori,,Nyatike,Macalda Town,County Government Office Macalda,50m from DCC office,-1.0633,34.473200000000006,county_center_offset,0.3,25000.0,Migori County Center,COUNTY_CENTER,1,enhanced
+Migori,,Kuria West,Kehancha Town,Kehancha Law Courts,Next to the Law Court,-1.0632,34.4733,county_center_offset,0.3,25000.0,Migori County Center,COUNTY_CENTER,1,enhanced
+Migori,,Kuria East,Kegonga Town,DCC Office Kuria East Sub County,Within DCC's Office,-1.3383575,34.6893622,tomtom,0.89990978241,14811.952179353291,"Kuria East, Nyanza","Kuria East, Migori County, Kenya",1,enhanced
+Kisii,,Bonchari,Suneka Market,Itierio Boys High School,40 Metres,-0.6773,34.7796,county_center,0.3,25000.0,Kisii County Center,COUNTY_CENTER,1,enhanced
+Kisii,,South Mugirango,Nyamarambe,DCC's Office,50 Metres,-0.6772,34.779700000000005,county_center_offset,0.3,25000.0,Kisii County Center,COUNTY_CENTER,1,enhanced
+Kisii,,Bomachoge Borabu,Kenyanya Market Centre,DCC's Office,10 Metres,-0.6771,34.7798,county_center_offset,0.3,25000.0,Kisii County Center,COUNTY_CENTER,1,enhanced
+Kisii,,Bobasi,Itumbe,DCC's Office,50 Metres,-0.677,34.779900000000005,county_center_offset,0.3,25000.0,Kisii County Center,COUNTY_CENTER,1,enhanced
+Kisii,,Bomachoge Chache,Ogembo,DCC's Office,20 Metres,-0.6769000000000001,34.78,county_center_offset,0.3,25000.0,Kisii County Center,COUNTY_CENTER,1,enhanced
+Kisii,,Nyaribari Masaba,Masimba,DCC's Office,40 Metres,-0.6768000000000001,34.780100000000004,county_center_offset,0.3,25000.0,Kisii County Center,COUNTY_CENTER,1,enhanced
+Kisii,,Nyaribari Chache,Kisii town,County Commissioner's Office,50 Metres,-0.6767,34.7802,county_center_offset,0.3,25000.0,Kisii County Center,COUNTY_CENTER,1,enhanced
+Kisii,,Kitutu Chache North,Marani Centre,Marani Sub-County Office,100 Metres,-0.5661617999999999,34.81321148475658,locationiq,0.6,50.0,"Kitutu Chache North, Marani, Kisii County, Kenya","Kitutu Chache North, Kisii County, Kenya",1,enhanced
+Kisii,,Kitutu Chache South,Kisii town,County Commissioner's Office,20 Metres,-0.6766,34.780300000000004,county_center_offset,0.3,25000.0,Kisii County Center,COUNTY_CENTER,1,enhanced
+Nyamira,,Kitutu Masaba,Manga DCC Compound,Manga Cliff,200 Metres,-0.69118645,34.91568190461972,locationiq,0.6,50.0,"Kitutu Masaba, Manga, Nyamira County, Kenya","Kitutu Masaba, Nyamira County, Kenya",1,enhanced
+Nyamira,,West Mugirango,Nyamira Town,County Commissioners' Headquarters,200 Metres,-4.179734030535864,39.45764490902538,provider_refined:locationiq,0.6,400.0,"County Government Headquarters, Kwale, Coast, Kenya",,0,success
+Nyamira,,North Mugirango,Ekerenyo Market,Ekerenyo Bus Stage,100 Metres Off the Ekereyo - Nyamira Road,-0.8212005603543454,34.53861660114666,provider_refined:locationiq,0.6,200.0,"Dede Market-Ranen Market Road, Migori, Nyanza, Kenya",,0,success
+Nyamira,,Borabu,DCC Office Compound in Kijauri Town DCC Offfice,20 Metres,,-0.513320177719954,39.61020814916663,provider_refined:locationiq,0.6,200.0,"20, Av 2000, Tana River, Coast, 46117, Kenya",,0,success
+Nairobi,,Westlands,DC Compound,Safaricom Centre,200 Metres,-1.2921,36.8219,constituency_center,0.4,10000.0,"Westlands Constituency Center, Nairobi",CONSTITUENCY_CENTER,1,enhanced
+Nairobi,,Dagoretti North,Maliposa Appartments - Ngong Road,Nakumatt Junction,4KMs,-1.292,36.822,constituency_center_offset,0.4,10000.0,"Dagoretti North Constituency Center, Nairobi",CONSTITUENCY_CENTER,1,enhanced
+Nairobi,,Dagoretti South,Maisha Poa Centre,DCC Office Dagoretti South,200 Metres,-1.3055107,36.8353293,tomtom,0.60523767471,2801.79663097853,"Nairobi Nairobi South, Nairobi","Dagoretti South, Nairobi County, Kenya",1,enhanced
+Nairobi,,Langata,Langata Subcounty Headquarters Five Star,Five Star Road,2KMs,-1.2919,36.8221,constituency_center_offset,0.4,10000.0,"Langata Constituency Center, Nairobi",CONSTITUENCY_CENTER,1,enhanced
+Nairobi,,Kibra,Kibra DC,Adjacent To Huduma Centre,0 Metres,-1.2918,36.8222,constituency_center_offset,0.4,10000.0,"Kibra Constituency Center, Nairobi",CONSTITUENCY_CENTER,1,enhanced
+Nairobi,,Roysambu,Kahawa West Acc's Office/Police Station,Acc Office/Police Station,0 Metres,-1.2917,36.8223,constituency_center_offset,0.4,10000.0,"Roysambu Constituency Center, Nairobi",CONSTITUENCY_CENTER,1,enhanced
+Nairobi,,Kasarani,Former DCC Offices,Chiefs Office Nearby,700 Metres,-1.2916,36.8224,constituency_center_offset,0.4,10000.0,"Kasarani Constituency Center, Nairobi",CONSTITUENCY_CENTER,1,enhanced
+Nairobi,,Ruaraka,Matigari General Merchants,Lexx Place Hotel,450 Metres,-1.2915,36.8225,constituency_center_offset,0.4,10000.0,"Ruaraka Constituency Center, Nairobi",CONSTITUENCY_CENTER,1,enhanced
+Nairobi,,Embakasi South,Villa Franca,Equity Afya Hospital Banner,0 Metres,-1.2914,36.8226,constituency_center_offset,0.4,10000.0,"Embakasi South Constituency Center, Nairobi",CONSTITUENCY_CENTER,1,enhanced
+Nairobi,,Embakasi North,Near DCC Office,DCC Office,100 Meters,-1.2913,36.8227,constituency_center_offset,0.4,10000.0,"Embakasi North Constituency Center, Nairobi",CONSTITUENCY_CENTER,1,enhanced
+Nairobi,,Embakasi Central,DO's Office Kayole,DO's Office Kayole,0 Metres,-1.2912,36.8228,constituency_center_offset,0.4,10000.0,"Embakasi Central Constituency Center, Nairobi",CONSTITUENCY_CENTER,1,enhanced
+Nairobi,,Embakasi East,East Africa School of Aviation,East Africa School of Aviation (EASA),0 Metres,-1.2911,36.8229,constituency_center_offset,0.4,10000.0,"Embakasi East Constituency Center, Nairobi",CONSTITUENCY_CENTER,1,enhanced
+Nairobi,,Embakasi West,Tena White House,Foot Bridge Next to Shell Petrol Station,10 Metres,-1.291,36.823,constituency_center_offset,0.4,10000.0,"Embakasi West Constituency Center, Nairobi",CONSTITUENCY_CENTER,1,enhanced
+Nairobi,,Makadara,Makadara DCC Compound,CIPU Office Makadara,0 KMs,-1.2952187,36.8718614,locationiq,0.6,50.0,"Makadara, Maringo/Hamza ward, Makadara subcounty, Nairobi, Nairobi County, 00522, Kenya","Makadara, Nairobi County, Kenya",1,enhanced
+Nairobi,,Kamukunji,At DCC Hq Kamukunji,DCC Office,0 KMs,-1.2909,36.8231,constituency_center_offset,0.4,10000.0,"Kamukunji Constituency Center, Nairobi",CONSTITUENCY_CENTER,1,enhanced
+Nairobi,,Starehe,Kenya Railways Block D,Opposite Technical University of Kenya,200 Metres,-1.2908,36.8232,constituency_center_offset,0.4,10000.0,"Starehe Constituency Center, Nairobi",CONSTITUENCY_CENTER,1,enhanced
+Nairobi,,Mathare,Mathare DCC Compound,DCC Office,0 Metres,-1.2907,36.8233,constituency_center_offset,0.4,10000.0,"Mathare Constituency Center, Nairobi",CONSTITUENCY_CENTER,1,enhanced
+Kwale,,Msambweni,Msambweni Dcc's Office Compound,Subcounty Headquarters of,100 Metres,-4.179844974278959,39.4566440732818,provider_refined:locationiq,0.6,200.0,"County Government Headquarters, Kwale, Coast, Kenya",,0,success
+Kwale,,Lungalunga,Mbuyuni Area Next to Rafiki Yetu Building,Mnarani (Communication Mast),100 Metres,0.5543188277514985,37.90401050319629,provider_refined:locationiq,0.6,200.0,Kenya,,0,success
+Kwale,,Matuga,"IEBC Offices, Kwale Town, Opposite Ministry of","Baraza Park, Kwale Town",200 Metres,1.763946602192914,40.05705826057739,provider_refined:locationiq,0.6,400.0,"IEBC Offices, Wajir, North-Eastern, Kenya",,0,success
+Kilifi,,Kilifi South,Majengo Kanamai,Matatu Terminus - Majengo Kanamai,600 Metres,-3.4839743314285627,39.580928239210245,provider_refined:locationiq,0.6,1200.0,"majengo waterpan, Kilifi, Coast, Kenya",,0,success
+Kilifi,,Rabai,Shikaadabu,Cdf Office/Shikaadabu Dispensary,500 Metres,-3.9328204378630103,39.55771376523374,provider_refined:locationiq,0.6,1000.0,"Rabai Power Plant, Kilifi, Coast, Kenya",,0,success
+Kilifi,,Magarini,Near Mwembe Resort,Mwembe Resort,300 Metres,-3.035471388897341,40.07400514564729,provider_refined:locationiq,0.6,600.0,"Magarini, Malindi, Coast, Kenya",,0,success
+Tana River,,Garsen,Garsen Town,Kcb Bank,100 Metres,-2.2709513896431033,40.109664127661596,provider_refined:nominatim,0.65,200.0,"Garsen Town, Garsen, Tana River, Kenya",,0,success
+Tana River,,Galole,Hola Town,Kenya Medical Training,50 Metres,-1.4975530476069447,40.03447972142029,provider_refined:nominatim,0.65,100.0,"Hola, Galole, Tana River, 70101, Kenya",,0,success
+Tana River,,Bura,Bura Town,National Government Offices,0 Metres,-1.194328,39.8434663,provider_refined:nominatim,0.65,50.0,"Bura West, Bura, Tana River, Kenya",,0,success
+Lamu,,Lamu East,Batuli Mudh-hir Haji Building - Faza,Post Office - Faza,Adjacent,-2.2694,40.9008,enhanced_constituency_center_offset,0.7,2000.0,"Enhanced: Lamu East, Lamu",Enhanced_Constituency_Center,0,enhanced
+Lamu,,Lamu West,Ministry of Housing Office Building - Mokowe,Public Work Office - Mokowe,100 Metres,-2.2693,40.9009,enhanced_constituency_center_offset,0.7,2000.0,"Enhanced: Lamu West, Lamu",Enhanced_Constituency_Center,0,enhanced
+Taita Taveta,,Mwatate,"Mwatate old market, along Wundanyi road",Tavevo water and sewerage company ltd 50 Meters,,0.5533273996190134,37.9026320309202,provider_refined:locationiq,0.6,200.0,Kenya,,0,success
+Wajir,,Wajir North,Bute,Police Station,100 Metres,1.7493999999999998,40.0588,enhanced_constituency_center_offset,0.7,2000.0,"Enhanced: Wajir North, Wajir",Enhanced_Constituency_Center,0,enhanced
+Wajir,,Wajir East,Wajir,Huduma Centre,20 Metres,1.7494999999999998,40.0589,enhanced_constituency_center_offset,0.7,2000.0,"Enhanced: Wajir East, Wajir",Enhanced_Constituency_Center,0,enhanced
+Wajir,,Tarbaj,Tarbaj,Ward Administrator’s Office,50 Metres,1.7495999999999998,40.059,enhanced_constituency_center_offset,0.7,2000.0,"Enhanced: Tarbaj, Wajir",Enhanced_Constituency_Center,0,enhanced
+Wajir,,Wajir West,Giriftu,DCC’s Office,100 Metres,1.7496999999999998,40.0591,enhanced_constituency_center_offset,0.7,2000.0,"Enhanced: Wajir West, Wajir",Enhanced_Constituency_Center,0,enhanced
+Wajir,,Eldas,Eldas,DC‘s Residence,50 Metres,1.7497999999999998,40.0592,enhanced_constituency_center_offset,0.7,2000.0,"Enhanced: Eldas, Wajir",Enhanced_Constituency_Center,0,enhanced
+Wajir,,Wajir South,Habaswein,AP Camp,100 Metres,1.7499,40.0593,enhanced_constituency_center_offset,0.7,2000.0,"Enhanced: Wajir South, Wajir",Enhanced_Constituency_Center,0,enhanced
+Mandera,,Banissa,"Banissa Town, Along Banissa-Rhamu Road",Next to Malkamari Hotel,20 Meters,3.9268,41.8427,enhanced_constituency_center_offset,0.7,2000.0,"Enhanced: Banissa, Mandera",Enhanced_Constituency_Center,0,enhanced
+Mandera,,Mandera West,Opposite Takaba Primary Main Gate,Takaba Primary School,20 Meters,3.9269,41.8428,enhanced_constituency_center_offset,0.7,2000.0,"Enhanced: Mandera West, Mandera",Enhanced_Constituency_Center,0,enhanced
+Mandera,,Mandera South,Elwak CBD Along Elwak-Wajir Road,Dido Petrol Station,30 Metres,3.927,41.8429,enhanced_constituency_center_offset,0.7,2000.0,"Enhanced: Mandera South, Mandera",Enhanced_Constituency_Center,0,enhanced
+Mandera,,Mandera East,Off Suftu Road Behind Blue Light Petrol Station,Blue Light Petrol Station,50 Metres,3.9271,41.843,enhanced_constituency_center_offset,0.7,2000.0,"Enhanced: Mandera East, Mandera",Enhanced_Constituency_Center,0,enhanced
+Marsabit,,Moyale,ACK Moyale.,St. Paul Training Center,Within the Compound,2.3345,37.9906,enhanced_constituency_center_offset,0.7,2000.0,"Enhanced: Moyale, Marsabit",Enhanced_Constituency_Center,0,enhanced
+Marsabit,,North Horr,Nyota Self Help Group North Horr,Adjacent to AP Camp,300 Metres,2.3346,37.9907,enhanced_constituency_center_offset,0.7,2000.0,"Enhanced: North Horr, Marsabit",Enhanced_Constituency_Center,0,enhanced
+Marsabit,,Saku,"ACK Saku Offices Building,",St. Peter Cathedral,Within The Compound,2.3347,37.9908,enhanced_constituency_center_offset,0.7,2000.0,"Enhanced: Saku, Marsabit",Enhanced_Constituency_Center,0,enhanced
+Marsabit,,Laisamis,DCC Office Laisamis,DCC Office,DCC Compound,2.3348,37.9909,enhanced_constituency_center_offset,0.7,2000.0,"Enhanced: Laisamis, Marsabit",Enhanced_Constituency_Center,0,enhanced
+Isiolo,,Isiolo South,Garbatulla Town,Garbatulla Catholic Mission,Within Garbatulla Catholic,0.3548,37.5823,enhanced_constituency_center_offset,0.7,2000.0,"Enhanced: Isiolo South, Isiolo",Enhanced_Constituency_Center,0,enhanced
+Tharaka-Nithi,,Maara,"DCC Compound, Kienganguru",DCC Compound,100 Metres,-0.23558783542377373,37.63199142702682,provider_refined:locationiq,0.6,200.0,"Maara, Mwimbi, Tharaka-Nithi, Kenya",,0,success
+Tharaka-Nithi,,Chuka/ Igambang'ombe,"Chuka Town, Sub County Office Compound",Opposite Trans National Bank,200 Metres,-1.2873577526213966,36.82195884295333,provider_refined:locationiq,0.6,400.0,"Trans National Bank, City Hall Way, Nairobi, Nairobi Area, Kenya",,0,success
+Tharaka-Nithi,,Tharaka,"Marimanti Town, DCC Compound",DCC Offices,200 Metres,-1.0543137165252137,36.783377946789415,provider_refined:locationiq,0.6,400.0,"Githunguri DCC’S office, Kiambu, Central, Kenya",,0,success
+Makueni,,Mbooni,Tawa Social Hall,Tawa Law Courts,80 Metres,1.726108931564884,40.008700067793825,provider_refined:locationiq,0.6,160.0,"social hall, 321, Mayalo Road, Wajir, North-Eastern, 213, Kenya",,0,success
+Makueni,,Kilome,Kwa DC (Malili),Konza City (Malili),1 km (along NBI-MSA Highway),-1.6598178560691992,37.44845768440414,provider_refined:locationiq,0.6,2000.0,"Kwa Kimeu, Makueni, Eastern, Kenya",,0,success
+Makueni,,Kaiti,Mukuyuni Shopping Centre (CDF Compound),Mukuyuni Police Station,200 Metres,-1.1941209835330007,36.74936250000743,provider_refined:locationiq,0.6,400.0,"Shade to Market shopping center, Kiambu, Central, Kenya",,0,success
+Makueni,,Kibwezi West,Makindu Town,DCCs Office,Same compound,-2.25999954293009,37.80303450961628,provider_refined:locationiq,0.6,200.0,"Makindu, Makueni, Eastern, Kenya",,0,success
+Makueni,,Kibwezi East,Kambu Lutheran Church,Kambu Sub County (Ministry of Interior Office),150 Metres,-3.1728531706211656,39.862230574661446,provider_refined:locationiq,0.6,300.0,"Lutheran Church, Malindi, Coast, Kenya",,0,success
+Nyandarua,,Ol Kalou,IEBC County Headqauters,Posta Building Olkalou,Within,-0.27571360129704375,36.376819455240714,provider_refined:locationiq,0.6,200.0,"Ol Kalou, Nyandarua, Central, Kenya",,0,success
+Kirinyaga,,Mwea,County Council Offices Wanguru,Wanguru Police Station,50 Metres,-0.6770435875818387,34.77131033034105,provider_refined:locationiq,0.6,100.0,"Kisii County Council Offices, Kisii Central, Nyanza, Kenya",,0,success
+Kirinyaga,,Gichugu,All Saints Kianyaga ACK,Raimu Primary School,50 Metres,-1.289190756700781,36.81387535154788,provider_refined:locationiq,0.6,100.0,"All Saints Cathedral, Kenyatta Avenue, Nairobi, Nairobi Area, P.O Box 40539 Nairobi, Nairobi City, Kenya",,0,success
+Kirinyaga,,Ndia,Baricho Town,A.C.K St Philips - Baricho,0.5metres,-1.444345,36.678405,provider_refined:locationiq,0.6,50.0,"ACK Road, Kajiado, Rift Valley, Kenya",,0,success
+Kirinyaga,,Kirinyaga Central,Kerugoya Municipal Council Offices,Kerugoya Police Station/Kerugoya State,50 Metres,-0.6613283481555888,37.21838983859295,provider_refined:locationiq,0.6,100.0,"Sagana Police Station, C73, Kirinyaga, Central, Kenya",,0,success
+Kirinyaga,,Kangema,Kangema Town,DCC’s offices.,Within th DCC's office,-0.5545190440581845,37.30245461394071,provider_refined:locationiq,0.6,200.0,"Kirinyaga, Central, Kenya",,0,success
+Kirinyaga,,Mathioya,Kiria-Ini Town,DCC’s offices.,Within th DCC's office,-0.7140868757082535,37.18828000980245,provider_refined:locationiq,0.6,200.0,"River Mathioya, Gikuu, Kiharu, Murang'a County, Kenya",,0,success
+Kirinyaga,,Kiharu,Murang’a -,"Along Kenol Murang'a Road, Next To Rubis Petrol Station at",100 Meters,-0.554344787818982,37.30182916051366,provider_refined:locationiq,0.6,200.0,"Kirinyaga, Central, Kenya",,0,success
+Kirinyaga,,Kigumo,Kangari Town,"East End Mall, Building, 3rd Floor. Kangari Town.",Within Muungano Microfinance buidling,-0.10685754909130675,34.75109335764961,provider_refined:locationiq,0.6,200.0,"The West End Mall, Kisumu, Nyanza, Kenya",,0,success
+Kirinyaga,,Maragwa,Makuyu,"World Vision Block adjudcent to ACC’s Office, Makuyu",20 Meters ACCs office Makuyu,-0.5534607335237521,37.302442470281434,provider_refined:locationiq,0.6,50.0,"Kirinyaga, Central, Kenya",,0,success
+Kirinyaga,,Kandara,Kandara Town,"Hurukai House, 2nd Floor Above Amica Sacco, 500 meters",500 Meters from DCC's office,-0.9025900046357137,37.00367623499085,provider_refined:locationiq,0.6,1000.0,"Kandara, Maragua, Central, Kenya",,0,success
+Kirinyaga,,Gatanga,Kirwara Town,"Next to Amica Sacco Building, Ground Floor. Kirwara Town.",20 Meters from Kirwara Police Station,-0.553472612960094,37.30246412887688,provider_refined:locationiq,0.6,50.0,"Kirinyaga, Central, Kenya",,0,success
+Kiambu,,Gatundu North,Kamwangi,DCC Office Kamwangi,Within DCC Office Compound,-0.9593612332929021,36.89979896625441,provider_refined:nominatim,0.65,200.0,"Kamwangi, Chania ward, Gatundu North, Kiambu, Kenya",,0,success
+Kiambu,,Juja,Menja Vision Plaza,Behind Agakhan Hospital,30 Metres,-1.3269692032565072,36.8524588761906,provider_refined:locationiq,0.6,60.0,"Vision plaza, Mombasa Road, Nairobi, Nairobi Area, Kenya",,0,success
+Kiambu,,Thika Town,Afc Building Thika,Buffalo Grill & Butchery,100 Metres,-1.0378893596641738,37.07336350452877,provider_refined:nominatim,0.65,200.0,"BUFFALO GRILL AND BUTCHERY, Kenyatta Highway, Thika, Thika Town, Kiambu, 01000, Kenya",,0,success
+Kiambu,,Githunguri,DCC Compound,DCC Offices,7 Metres,-1.056078,36.783028,provider_refined:locationiq,0.6,50.0,"Githunguri DCC’S office, Kiambu, Central, Kenya",,0,success
+Kiambu,,Kabete,Kabete Sub County Government Premises.,Wangige Sub County Hospital,100 Metres,-1.1712547062203398,36.83096469121056,provider_refined:locationiq,0.6,200.0,"Kiambu Sub County Hospital, Biashara Street Kiambu, Kiambu, Central, Kenya",,0,success
+Kiambu,,Kikuyu,Kikuyu Town,K-Unity Bank,Zero,-1.2445471102244847,36.66520484963569,provider_refined:nominatim,0.65,200.0,"Kikuyu, Kiambu, 00109, Kenya",,0,success
+Kiambu,,Lari,"Along Nairobi - Nakuru Highway, Within Ki-",Kimende Town,Within,-1.025021536288121,36.63169492482496,provider_refined:locationiq,0.6,200.0,"Lari, Kiambu, Central, Kenya",,0,success
+Turkana,,Turkana North,DCC's Compound Lokitaung',DCC's Office,10 Metres,-0.296178,35.794009,provider_refined:locationiq,0.6,50.0,"District Officer's Office, Elburgon, Nakuru, Rift Valley, 20102, Kenya",,0,success
+Turkana,,Turkana West,Old DCC's Office Kakuma,Refugees Affairs Services Offices,5 Metres,1.015231,39.495124,provider_refined:locationiq,0.6,50.0,"Old Habawein DCs Office, Wajir, North-Eastern, Kenya",,0,success
+Turkana,,Turkana Central,DCC's Compound Lodwar,Huduma Centre,10 Metres,3.714627,34.85657,provider_refined:locationiq,0.6,50.0,"Lutheran World Foundation Compound, Turkana, Rift Valley, Kenya",,0,success
+Turkana,,Loima,DCC's Compound Lorgum,DCC's Office,10 Metres,-0.296178,35.794009,provider_refined:locationiq,0.6,50.0,"District Officer's Office, Elburgon, Nakuru, Rift Valley, 20102, Kenya",,0,success
+Turkana,,Turkana South,DCC's Compound Lokichar,DCC's Office,5 Metres,-0.296178,35.794009,provider_refined:locationiq,0.6,50.0,"District Officer's Office, Elburgon, Nakuru, Rift Valley, 20102, Kenya",,0,success
+Turkana,,Turkana East,DCC's Compound Lokori,DCC's Office,5 metres,-0.296178,35.794009,provider_refined:locationiq,0.6,50.0,"District Officer's Office, Elburgon, Nakuru, Rift Valley, 20102, Kenya",,0,success
+West Pokot,,Kapenguria,Deputy Commissioner’s Compound,DCC Offices,10 Meters,1.24007,35.119977,provider_refined:locationiq,0.6,50.0,"West Pokot County Assembly Offices, West Pokot, Rift Valley, Kenya",,0,success
+West Pokot,,Sigor,KVDA,KVDA Offices,0 Metres,0.519374,35.274852,provider_refined:locationiq,0.6,50.0,"KVDA, Uasin Gishu, Rift Valley, Kenya",,0,success
+West Pokot,,Kacheliba,Holy Cross Catholic Church Kacheliba Catholic Church,100 Meters,,-1.2843125980436092,36.76132725610554,provider_refined:locationiq,0.6,200.0,"Holy Cross Catholic Church, Serenity Road, Nairobi, Nairobi Area, Kenya",,0,success
+West Pokot,,Pokot South,St Marks Development Centre,DCC Offices,200 Meters,0.5546407633019504,37.90144425905252,provider_refined:locationiq,0.6,400.0,Kenya,,0,success
+Samburu,,Samburu North,Baragoi Town,DCC Office,Within the DCC Building - 0 Metres,0.792365,37.497744,provider_refined:locationiq,0.6,50.0,"Archer's Post - Baragoi Road, Samburu, Rift Valley, Kenya",,0,success
+Samburu,,Samburu East,Wambaa Town,Wamba Parish,Within the Church Compound - 0 Metres,0.554064,37.903148,provider_refined:locationiq,0.6,50.0,Kenya,,0,success
+Trans Nzoia,,Kwanza,KFA Building kitale town,KFA Building,Within KFA Building,-0.11168798517966513,34.753754974009226,provider_refined:locationiq,0.6,200.0,"Nzoia Road, Kisumu, Nyanza, Kenya",,0,success
+Trans Nzoia,,Endebess,Endebess Centre,DCCs office,150 Metres,1.0749091660356755,34.89974826765024,provider_refined:locationiq,0.6,300.0,"Endebess Village Route, Trans Nzoia, Rift Valley, Kenya",,0,success
+Trans Nzoia,,Saboti,Maendeleo ya wanawake building Old Ambwere Plaza,100 Metres,,1.0153329668405833,34.99990908643939,provider_refined:locationiq,0.6,200.0,"Ambwere Plaza, Trans Nzoia, Rift Valley, Kenya",,0,success
+Trans Nzoia,,Kiminini,Kiminini centre,St Peters Cleavers Catholic Church,Within Church Compound,0.8936829992537056,34.92436670227455,provider_refined:locationiq,0.6,200.0,"Kiminini, Trans Nzoia, Rift Valley, Kenya",,0,success
+Trans Nzoia,,Cherangany,Kachibora,DCCs office,Within DCCs Office,0.9827039933004491,35.22351472071747,provider_refined:nominatim,0.65,200.0,"Kachibora, Cherangany, Trans Nzoia, Kenya",,0,success
+Uasin Gishu,,Turbo,"Within NCCK North headquarters, West Indies","NCCK North Headquarters, West Indies",100 Metres,0.1961647753177631,37.4647255614086,provider_refined:locationiq,0.6,200.0,"NRT Headquarters, Meru Central, Eastern, Kenya",,0,success
+Uasin Gishu,,Moiben,"Kimumu Ward Administrative Offices in Ainabtich, Kimumu Ward Administrative Offices",100 Metres,,0.8157082439350508,35.38341641830341,provider_refined:nominatim,0.65,200.0,"Moiben, Moiben ward, Moiben, Uasin Gishu, Kenya",,0,success
+Uasin Gishu,,Ainabkoi,"Adjacent To Eldoret East District Hqs, Off",Eldoret East District Hqs,Across The Road (0),0.31031471566687524,35.45724069679119,provider_refined:locationiq,0.6,100.0,"Ainabkoi, Uasin Gishu County, Kenya",,0,success
+Uasin Gishu,,Kapseret,"Inside R.C.E.A Ushirika Church Compound, Op-","R.C.E.A Ushirika Church, Opposite Hills School",Inside The Church Compound,-1.365229,36.662589,provider_refined:locationiq,0.6,50.0,"Hills View Este, Kajiado, Rift Valley, Kenya",,0,success
+Uasin Gishu,,Kesses,Jamboni Complex Near DCC’s Office,Moi Unversity Law School,1 Km,0.46464322666281865,35.300871173585946,provider_refined:locationiq,0.6,2000.0,"Jamboni Complex 2010, Eldoret - Nakuru Road, Uasin Gishu, Rift Valley, Kenya",,0,success
+Elgeyo Marakwet,,Marakwet East,Chesoi DCC Compound,DCC Office,Within,0.5548689535135196,37.90354905392961,provider_refined:locationiq,0.6,200.0,Kenya,,0,success
+Elgeyo Marakwet,,Marakwet West,Kapsowar IEBC Office,IEBC,Within,0.5531648606821885,37.90312989285645,provider_refined:locationiq,0.6,200.0,Kenya,,0,success
+Elgeyo Marakwet,,Keiyo North,IEBC,County Governor Office,Sharing a Fence,0.554064,37.903148,provider_refined:locationiq,0.6,50.0,Kenya,,0,success
+Elgeyo Marakwet,,Keiyo South,Chepkorio Prime Tower Sacco,Prime Tower Sacco Society,Within,0.5533772809443519,37.90372871316913,provider_refined:locationiq,0.6,200.0,Kenya,,0,success
+Nandi,,Mosop,Kabiyet-Nandi North District Headquarters,Kabiyet-Nandi North District Headquarters,Same Compound,0.4140438713344497,35.06756554063397,provider_refined:locationiq,0.6,200.0,"Mosop, Nandi County, Kenya",,0,success
+Nandi,,Emgwen,Mininstry of Lands Kapsabet,Ministry of Lands/ Acc Office,20meters From Tarmac,-0.10435900855543424,34.755913423959385,provider_refined:locationiq,0.6,50.0,"ARDHI House(Ministry of Lands), Kisumu, Nyanza, Kenya",,0,success
+Nandi,,Chesumei,Cheptarit Catholic Church- Mosoriot,Cheptarit Catholic Church,Same Location,-3.347561,39.932924,provider_refined:locationiq,0.6,50.0,"Catholic Church, Malindi, Coast, Kenya",,0,success
+Nandi,,Aldai,"St. Pauls Catholic Church, Within Kobujoi Town",St. Pauls Catholic Church,,-3.396274265144353,37.673625144519455,provider_refined:locationiq,0.6,200.0,"St. Pauls Catholic Church, Taita Taveta, Coast, Kenya",,0,success
+Nandi,,Tindiret,Senetwo Social Hall,Former World Vision Offices,Senetwo Primary School Within,-2.2109839794663184,40.17916081913169,provider_refined:locationiq,0.6,200.0,"Wema Social Hall, Tana River, Coast, Kenya",,0,success
+Baringo,,Tiaty,Next To Ministry Of Education Offices-,Chemolingot,,0.465954989213094,35.96721548935353,provider_refined:locationiq,0.6,200.0,"Baringo, Baringo, Rift Valley, Kenya",,0,success
+Baringo,,Baringo Central,"County Commissioners Premises,",County Commissioners Premises- Kabarnet 100m,,-1.5022338930752457,40.015381160804715,provider_refined:locationiq,0.6,200.0,"County Commissioner's office, Tana River, Coast, Kenya",,0,success
+Baringo,,Baringo South,Deputy County Commissioner’s,District Hq Marigat - Kabarnet,200m From Telcom Kenya,-0.024661232436060637,35.95891062982057,provider_refined:locationiq,0.6,400.0,"Deputy County Commissioner Office, Nakuru, Rift Valley, Kenya",,0,success
+Laikipia,,Laikipia West,Telkom Building Nyahururu Town,Nyahururu Law Courts,20 Metres Approximate,0.01652735703359429,37.076821287520005,provider_refined:locationiq,0.6,50.0,"Nyakio Building, Laikipia, Rift Valley, Kenya",,0,success
+Laikipia,,Laikipia East,Laikipia County Commissioners,County Commissioners Office,Within The Compound,-1.501584,40.016003,provider_refined:locationiq,0.6,50.0,"County Commissioner's office, Tana River, Coast, Kenya",,0,success
+Laikipia,,Laikipia North,Doldol Catholic Parish Compound,Doldol Catholic Church,Within The Compound,0.041174,36.363378,provider_refined:locationiq,0.6,50.0,"Nyahururu Catholic Church, Nyeri-Nyahururu Road, Laikipia, Rift Valley, Kenya",,0,success
+Vihiga,,Luanda,Luanda Centre,Bunyore Girls High School,800 Metres,0.02393361200243683,34.59760436026884,provider_refined:locationiq,0.6,1600.0,"from luanda, Vihiga, Western, Kenya",,0,success
+Vihiga,,Emuhaya,Esibuye Centre,Bunyore Medical Hospital,150 Metres,0.10007917532609201,34.63528012922747,provider_refined:locationiq,0.6,300.0,"Ematsuli-Esibuye Road, Vihiga, Western, Kenya",,0,success
+Nyamira,,West Mugirango,Nyamira Town,County Commissioners' Headquarters,200 Metres,-4.179239663128987,39.45767777017619,provider_refined:locationiq,0.6,400.0,"County Government Headquarters, Kwale, Coast, Kenya",,0,success
+Nyamira,,North Mugirango,Ekerenyo Market,Ekerenyo Bus Stage,100 Metres Off the Ekereyo - Nyamira Road,-0.8204568951109064,34.53957900371261,provider_refined:locationiq,0.6,200.0,"Dede Market-Ranen Market Road, Migori, Nyanza, Kenya",,0,success
+Nyamira,,Borabu,DCC Office Compound in Kijauri Town DCC Offfice,20 Metres,,-0.5142333520792263,39.60957728617608,provider_refined:locationiq,0.6,200.0,"20, Av 2000, Tana River, Coast, 46117, Kenya",,0,success

@@ -56,7 +56,7 @@ jobs:
       - name: Commit and push changes
         if: ${{ !inputs.dry_run }}
         env:
-          SNIPPET: ${{ env.NEW_KEYWORDS_SNIPPET }}
+          SNIPPET: ${{ env.NEW_KEYWORDS_SNIPPET || '' }}
         run: |
           # Configure git
           git config user.name "CEKA-Trend-Bot"
@@ -90,7 +90,7 @@ jobs:
         continue-on-error: true
 
       - name: Slack notification (optional)
-        if: failure() && secrets.SLACK_WEBHOOK_URL != ''
+        if: ${{ failure() && secrets.SLACK_WEBHOOK_URL != '' }}
         uses: rtCamp/action-slack-notify@v2
         env:
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}

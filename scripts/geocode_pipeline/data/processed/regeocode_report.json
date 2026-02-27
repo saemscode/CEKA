@@ -1,0 +1,21 @@
+{
+  "timestamp": "2026-02-27T01:20:10.536721",
+  "total_records": 386,
+  "original_successes": 228,
+  "failures_processed": 158,
+  "total_fixed": 158,
+  "still_failed": 0,
+  "final_success_count": 158,
+  "final_success_rate": "40.9%",
+  "fix_breakdown": {
+    "provider_refined": 158,
+    "healthcare": 0,
+    "geonames": 0,
+    "overpass": 0,
+    "search_api": 0,
+    "llm": 0,
+    "centroid": 0,
+    "total_fixed": 158,
+    "still_failed": 0
+  }
+}

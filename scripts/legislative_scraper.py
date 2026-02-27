@@ -324,6 +324,7 @@ class LegislativeScraper:
         # Enhanced master-pack metadata
         category = self._infer_category(title)
         
+        # Deep metadata for Master-Pack Q1 2026
         return {
             "title": title,
             "bill_no": bill_no,
@@ -331,23 +332,25 @@ class LegislativeScraper:
             "sponsor": self._extract_sponsor(title),
             "status": status,
             "house": house,
-            "date": f"{year}-01-01",
+            "date": datetime.now().strftime("%Y-%m-%d"),
             "url": url,
             "pdf_url": url,
             "source": target['name'],
             "category": category,
             "summary": f"Legislative bill tracked from {target['name']}. Title: {title}.",
-            "text_content": f"Automated neural crawl pending for content at: {url}",
             "analysis_status": "pending",
-            "peoples_audit_eligible": category == "Finance" or "Bill" in title,
+            "peoples_audit_eligible": category == "Finance" or "Appropriation" in title or "Tax" in title,
+            "is_high_impact": "Finance" in title or "Constitution" in title or "Land" in title,
             "metadata": {
                 "scraped_at": datetime.now().isoformat(),
                 "original_target": target['name'],
                 "inferred_year": year,
-                "master_pack_version": "2026.Q1.HAM"
+                "master_pack_version": "2026.Q1.HAM",
+                "neural_sync": True
             },
             "created_at": datetime.now().isoformat()
         }
+
 
     def _clean_bill_title(self, raw: str) -> str:
         """Clean and normalize bill title for better matching and display."""

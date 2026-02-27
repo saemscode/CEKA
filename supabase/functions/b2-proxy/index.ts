@@ -20,6 +20,7 @@ serve(async (req) => {
     try {
         const url = new URL(req.url);
         const path = url.searchParams.get('path');
+        const requestedBucket = url.searchParams.get('bucket');
 
         if (!path) {
             return new Response(JSON.stringify({ error: 'Missing path parameter' }), {
@@ -28,10 +29,11 @@ serve(async (req) => {
             });
         }
 
-        // Get credentials from environment (trying both VITE_ and non-prefixed)
-        const B2_KEY_ID = Deno.env.get('VITE_B2_KEY_ID') || Deno.env.get('B2_KEY_ID');
-        const B2_APP_KEY = Deno.env.get('VITE_B2_APP_KEY') || Deno.env.get('B2_APP_KEY');
-        const B2_BUCKET = Deno.env.get('VITE_B2_BUCKET_NAME') || Deno.env.get('B2_BUCKET_NAME');
+        // Get credentials from environment
+        const B2_KEY_ID = Deno.env.get('B2_KEY_ID') || Deno.env.get('VITE_B2_KEY_ID');
+        const B2_APP_KEY = Deno.env.get('B2_APPLICATION_KEY') || Deno.env.get('B2_APP_KEY') || Deno.env.get('VITE_B2_APP_KEY');
+        const DEFAULT_BUCKET = Deno.env.get('B2_BUCKET_NAME') || Deno.env.get('VITE_B2_BUCKET_NAME');
+        const B2_BUCKET = requestedBucket || DEFAULT_BUCKET;
 
         if (!B2_KEY_ID || !B2_APP_KEY || !B2_BUCKET) {
             console.error('[B2-Proxy] Missing secrets:', { keyId: !!B2_KEY_ID, appKey: !!B2_APP_KEY, bucket: !!B2_BUCKET });
@@ -61,6 +63,7 @@ serve(async (req) => {
 
         // 2. Fetch the file using the download token
         const b2Url = `${downloadUrl}/file/${B2_BUCKET}/${path}`;
+
 
         console.log(`[B2-Proxy] Fetching: ${path}`);
 
