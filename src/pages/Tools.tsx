@@ -21,24 +21,24 @@ import Navbar from '@/components/layout/Navbar';
 import BottomNavbar from '@/components/layout/BottomNavbar';
 import { cn } from '@/lib/utils';
 
-// --- CUSTOM RELEVANT VISUALS (FEATHERED) ---
+// --- CUSTOM RELEVANT VISUALS (FEATHERED & THEME-AWARE) ---
 
 const NasakaVisual = () => (
     <div className="relative w-full h-full flex items-center justify-center">
         <motion.div
-            animate={{ scale: [1, 1.1, 1], opacity: [0.3, 0.6, 0.3] }}
+            animate={{ scale: [1, 1.1, 1], opacity: [0.1, 0.3, 0.1] }}
             transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
             className="absolute w-64 h-64 bg-primary/20 rounded-full blur-3xl"
         />
-        <div className="relative z-10 w-48 h-80 bg-slate-900 rounded-[3rem] border-8 border-slate-800 shadow-2xl overflow-hidden">
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-20 h-6 bg-slate-800 rounded-b-xl" />
+        <div className="relative z-10 w-48 h-80 bg-zinc-900 dark:bg-slate-900 rounded-[3.5rem] border-8 border-zinc-800 dark:border-slate-800 shadow-2xl overflow-hidden">
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-20 h-6 bg-zinc-800 dark:bg-slate-800 rounded-b-xl" />
             <div className="p-4 pt-10">
                 <div className="w-full h-32 bg-primary/10 rounded-2xl mb-4 flex items-center justify-center">
                     <MapIcon className="h-12 w-12 text-primary animate-pulse" />
                 </div>
                 <div className="space-y-2">
                     {[1, 2, 3].map(i => (
-                        <div key={i} className="h-2 bg-slate-800 rounded-full w-full" style={{ opacity: 1 - i * 0.2 }} />
+                        <div key={i} className="h-2 bg-zinc-800 dark:bg-slate-700 rounded-full w-full" style={{ opacity: 1 - i * 0.2 }} />
                     ))}
                 </div>
             </div>
@@ -59,14 +59,14 @@ const MasterPackVisual = () => (
                     key={i}
                     initial={{ opacity: 0.1, scale: 0.8 }}
                     animate={{
-                        opacity: [0.1, 0.5, 0.1],
+                        opacity: [0.1, 0.4, 0.1],
                         scale: [0.8, 1, 0.8],
-                        backgroundColor: i % 2 === 0 ? "rgba(59, 130, 246, 0.2)" : "rgba(255, 255, 255, 0.05)"
+                        backgroundColor: i % 2 === 0 ? "hsl(var(--primary) / 0.1)" : "hsl(var(--foreground) / 0.03)"
                     }}
                     transition={{ duration: 2, delay: i * 0.1, repeat: Infinity }}
-                    className="w-16 h-16 rounded-xl border border-white/5 flex items-center justify-center"
+                    className="w-16 h-16 rounded-xl border border-border/20 flex items-center justify-center"
                 >
-                    <Database className="h-6 w-6 text-white/20" />
+                    <Database className="h-6 w-6 text-foreground/20" />
                 </motion.div>
             ))}
         </div>
@@ -90,11 +90,11 @@ const GeoPostersVisual = () => (
                     rotateZ: [-10, -10, -10]
                 }}
                 transition={{ duration: 4, delay: i * 0.5, repeat: Infinity, ease: "easeInOut" }}
-                className="absolute w-64 h-48 bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl flex items-center justify-center overflow-hidden"
+                className="absolute w-64 h-48 bg-background/40 backdrop-blur-xl border border-border/30 rounded-2xl shadow-2xl flex items-center justify-center overflow-hidden"
             >
-                <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-transparent opacity-50" />
-                <Globe className="h-20 w-20 text-white/10" />
-                <div className="absolute bottom-4 left-4 right-4 h-2 bg-white/5 rounded-full overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent opacity-50" />
+                <Globe className="h-20 w-20 text-foreground/10" />
+                <div className="absolute bottom-4 left-4 right-4 h-2 bg-muted/20 rounded-full overflow-hidden">
                     <motion.div
                         animate={{ width: ["0%", "100%", "0%"] }}
                         transition={{ duration: 3, delay: i, repeat: Infinity }}
@@ -108,16 +108,16 @@ const GeoPostersVisual = () => (
 
 const CivicApiVisual = () => (
     <div className="relative w-full h-full flex items-center justify-center p-8">
-        <div className="w-full max-w-md bg-[#0A0A0A] rounded-2xl border border-white/10 shadow-2xl overflow-hidden font-mono text-[10px] leading-tight">
-            <div className="bg-white/5 p-2 flex gap-1.5 px-4">
+        <div className="w-full max-w-md bg-zinc-950 dark:bg-black rounded-2xl border border-border/40 shadow-2xl overflow-hidden font-mono text-[10px] leading-tight">
+            <div className="bg-muted/30 p-2 flex gap-1.5 px-4">
                 <div className="w-2.5 h-2.5 rounded-full bg-red-500/50" />
                 <div className="w-2.5 h-2.5 rounded-full bg-amber-500/50" />
                 <div className="w-2.5 h-2.5 rounded-full bg-green-500/50" />
             </div>
             <div className="p-4 space-y-2">
                 <div className="text-primary">GET /v1/intelligence/bills</div>
-                <div className="text-white/40">{`{`}</div>
-                <div className="pl-4 text-white/60">
+                <div className="text-muted-foreground/40">{`{`}</div>
+                <div className="pl-4 text-muted-foreground/60">
                     <div>"status": "success",</div>
                     <div>"data": [</div>
                     <motion.div
@@ -129,7 +129,7 @@ const CivicApiVisual = () => (
                     </motion.div>
                     <div>]</div>
                 </div>
-                <div className="text-white/40">{`}`}</div>
+                <div className="text-muted-foreground/40">{`}`}</div>
                 <motion.div
                     animate={{ opacity: [1, 0] }}
                     transition={{ duration: 0.8, repeat: Infinity }}
@@ -150,16 +150,16 @@ const VaultVisual = () => (
         <motion.div
             animate={{ rotate: -360 }}
             transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
-            className="absolute w-48 h-48 border border-white/10 rounded-full border-dashed"
+            className="absolute w-48 h-48 border border-border/10 rounded-full border-dashed"
         />
-        <div className="relative z-10 p-10 bg-slate-900 border border-white/10 rounded-[2.5rem] shadow-2xl group-hover:scale-110 transition-transform duration-500">
+        <div className="relative z-10 p-10 bg-zinc-900 dark:bg-slate-900 border border-border/20 rounded-[3rem] shadow-2xl group-hover:scale-110 transition-transform duration-500">
             <Shield className="h-24 w-24 text-primary" strokeWidth={1} />
             <motion.div
                 animate={{ scale: [1, 1.2, 1] }}
                 transition={{ duration: 2, repeat: Infinity }}
                 className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
             >
-                <Lock className="h-8 w-8 text-white/40" />
+                <Lock className="h-8 w-8 text-foreground/40" />
             </motion.div>
         </div>
     </div>
@@ -182,7 +182,7 @@ const SovereignAIVisual = () => (
                     <React.Fragment key={i}>
                         <motion.line
                             x1="32" y1="32" x2={x} y2={y}
-                            stroke="rgba(59, 130, 246, 0.2)"
+                            stroke="hsl(var(--primary) / 0.1)"
                             strokeWidth="1"
                             animate={{ opacity: [0.2, 0.5, 0.2] }}
                             transition={{ duration: 2, delay: i * 0.3, repeat: Infinity }}
@@ -225,14 +225,14 @@ const FeatureSection = ({
         offset: ["start end", "end start"]
     });
 
-    const y = useTransform(scrollYProgress, [0, 1], [100, -100]);
+    const y = useTransform(scrollYProgress, [0, 1], [80, -80]);
     const opacity = useTransform(scrollYProgress, [0, 0.2, 0.8, 1], [0, 1, 1, 0]);
-    const scale = useTransform(scrollYProgress, [0, 0.2, 0.8, 1], [0.8, 1, 1, 0.8]);
+    const scale = useTransform(scrollYProgress, [0, 0.2, 0.8, 1], [0.95, 1, 1, 0.95]);
 
     const isEven = index % 2 === 0;
 
     return (
-        <section ref={containerRef} className="relative min-h-screen w-full flex items-center justify-center py-20 overflow-hidden">
+        <section ref={containerRef} className="relative min-h-[80vh] w-full flex items-center justify-center py-20 overflow-hidden">
             <motion.div
                 style={{ opacity, scale }}
                 className={cn(
@@ -246,23 +246,23 @@ const FeatureSection = ({
                         <Badge className="mb-6 bg-primary/10 text-primary border-primary/20 rounded-full px-4 py-1 text-[10px] font-bold tracking-widest uppercase">
                             {badge}
                         </Badge>
-                        <h2 className="text-4xl md:text-6xl font-black mb-8 tracking-tighter leading-tight">
+                        <h2 className="text-4xl md:text-5xl font-black mb-8 tracking-tighter leading-tight text-foreground">
                             {title}
                         </h2>
-                        <p className="text-xl md:text-2xl text-white/50 font-medium leading-relaxed mb-12">
+                        <p className="text-lg md:text-xl text-muted-foreground font-medium leading-relaxed mb-12">
                             {description}
                         </p>
 
                         <div className="flex flex-wrap gap-4">
                             {downloadUrl ? (
                                 <a href={downloadUrl} download={title.toLowerCase().replace(/\s+/g, '_') + '.apk'}>
-                                    <Button className="h-16 px-10 rounded-full bg-white text-black hover:bg-primary hover:text-white transition-all duration-500 font-bold text-lg group">
+                                    <Button className="h-16 px-10 rounded-2xl bg-primary text-primary-foreground hover:bg-primary/90 transition-all duration-500 font-bold text-lg group shadow-xl shadow-primary/20">
                                         Download APK <Download className="ml-2 h-5 w-5 group-hover:translate-y-0.5 transition-transform" />
                                     </Button>
                                 </a>
                             ) : siteUrl ? (
                                 <Button
-                                    className="h-16 px-10 rounded-full bg-white/5 text-white hover:bg-white hover:text-black border border-white/10 transition-all duration-500 font-bold text-lg group"
+                                    className="h-16 px-10 rounded-2xl bg-card text-foreground hover:bg-accent border border-border shadow-sm transition-all duration-500 font-bold text-lg group"
                                     onClick={() => window.open(siteUrl, '_blank')}
                                 >
                                     Launch Interface <ExternalLink className="ml-2 h-5 w-5 group-hover:translate-x-0.5 transition-transform" />
@@ -270,10 +270,10 @@ const FeatureSection = ({
                             ) : (
                                 <Button
                                     className={cn(
-                                        "h-16 px-10 rounded-full font-bold text-lg transition-all duration-500",
+                                        "h-16 px-10 rounded-2xl font-bold text-lg transition-all duration-500",
                                         status === 'Available'
-                                            ? "bg-white text-black hover:bg-primary hover:text-white"
-                                            : "bg-white/5 text-white/20 border border-white/5 cursor-not-allowed"
+                                            ? "bg-primary text-primary-foreground hover:bg-primary/90 shadow-xl shadow-primary/20"
+                                            : "bg-muted text-muted-foreground border border-border cursor-not-allowed"
                                     )}
                                     disabled={status !== 'Available'}
                                     onClick={() => status === 'Available' && (window.location.href = variant === 'premium' ? '/settings' : '/tools')}
@@ -295,8 +295,8 @@ const FeatureSection = ({
                 </div>
 
                 {/* Visual */}
-                <div className={cn("order-1 h-[400px] lg:h-[600px] relative rounded-[4rem] group overflow-hidden", !isEven ? "lg:order-1" : "lg:order-2")}>
-                    <div className="absolute inset-0 bg-gradient-to-br from-white/[0.03] to-transparent opacity-50 transition-opacity group-hover:opacity-100" />
+                <div className={cn("order-1 h-[400px] lg:h-[500px] relative rounded-[3rem] group overflow-hidden bg-muted/20 border border-border/40 hover:border-primary/20 transition-colors", !isEven ? "lg:order-1" : "lg:order-2")}>
+                    <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-50 transition-opacity group-hover:opacity-100" />
                     <Visual />
                 </div>
             </motion.div>
@@ -321,8 +321,8 @@ const Tools = () => {
 
     // Hero Transforms
     const heroOpacity = useTransform(scrollYProgress, [0, 0.1], [1, 0]);
-    const heroScale = useTransform(scrollYProgress, [0, 0.1], [1, 0.9]);
-    const heroY = useTransform(scrollYProgress, [0, 0.1], [0, -100]);
+    const heroScale = useTransform(scrollYProgress, [0, 0.1], [1, 0.95]);
+    const heroY = useTransform(scrollYProgress, [0, 0.1], [0, -40]);
 
     const toolset = [
         {
@@ -379,23 +379,27 @@ const Tools = () => {
     ];
 
     return (
-        <div ref={containerRef} className="bg-[#050505] text-white selection:bg-primary selection:text-white font-sans overflow-x-hidden">
+        <div ref={containerRef} className="bg-background text-foreground selection:bg-primary selection:text-primary-foreground font-sans overflow-x-hidden transition-colors duration-500">
             <Navbar />
 
             {/* Scroll Progress Indicator */}
-            <div className="fixed top-24 right-8 z-[120] hidden lg:flex flex-col gap-3">
+            <div className="fixed top-32 right-8 z-[120] hidden lg:flex flex-col gap-4">
                 {toolset.map((tool, i) => {
                     const step = 0.1 + (i / toolset.length) * 0.8;
                     return (
                         <motion.div
                             key={i}
-                            className="w-1.5 h-1.5 rounded-full bg-white/20 relative"
+                            className="w-1.5 h-1.5 rounded-full bg-muted-foreground/20 relative cursor-pointer hover:bg-primary/50 transition-colors"
+                            onClick={() => {
+                                const section = document.querySelectorAll('section')[i + 1];
+                                section?.scrollIntoView({ behavior: 'smooth' });
+                            }}
                             style={{
-                                backgroundColor: useTransform(smoothProgress, [step - 0.05, step, step + 0.05], ["rgba(255,255,255,0.2)", "rgba(59,130,246,1)", "rgba(255,255,255,0.2)"])
+                                backgroundColor: useTransform(smoothProgress, [step - 0.05, step, step + 0.05], ["hsl(var(--foreground) / 0.1)", "hsl(var(--primary) / 1)", "hsl(var(--foreground) / 0.1)"])
                             }}
                         >
                             <motion.div
-                                className="absolute left-6 top-1/2 -translate-y-1/2 text-[10px] font-black tracking-widest uppercase opacity-0 whitespace-nowrap"
+                                className="absolute left-6 top-1/2 -translate-y-1/2 text-[10px] font-black tracking-widest uppercase opacity-0 whitespace-nowrap text-foreground/60"
                                 style={{
                                     opacity: useTransform(smoothProgress, [step - 0.05, step, step + 0.05], [0, 1, 0]),
                                     x: useTransform(smoothProgress, [step - 0.05, step, step + 0.05], [-10, 0, -10])
@@ -409,34 +413,34 @@ const Tools = () => {
             </div>
 
             {/* Sticky Hero */}
-            <section className="relative h-screen flex flex-col items-center justify-center p-6 text-center">
+            <section className="relative h-[90vh] flex flex-col items-center justify-center p-6 text-center">
                 <motion.div
                     style={{ opacity: heroOpacity, scale: heroScale, y: heroY }}
                     className="z-10"
                 >
-                    <Badge className="mb-12 bg-white/5 text-white/40 border-none rounded-full px-6 py-2 text-xs font-bold tracking-[0.3em] uppercase">
-                        Empowering Civic Intelligence
+                    <Badge className="mb-8 bg-primary/5 text-primary border-primary/20 rounded-full px-6 py-2 text-xs font-bold tracking-[0.3em] uppercase">
+                        Unified Intelligence Infrastructure
                     </Badge>
-                    <h1 className="text-6xl md:text-9xl font-black tracking-tighter leading-none mb-10">
-                        CEKA <span className="text-primary">TOOLSET.</span>
+                    <h1 className="text-6xl md:text-8xl lg:text-9xl font-black tracking-tighter leading-none mb-10 text-foreground">
+                        CEKA <span className="text-transparent bg-clip-text bg-gradient-to-br from-primary to-primary-foreground">TOOLSET.</span>
                     </h1>
-                    <p className="text-xl md:text-2xl text-white/30 max-w-2xl mx-auto font-medium leading-relaxed mb-16">
+                    <p className="text-xl md:text-2xl text-muted-foreground max-w-2xl mx-auto font-medium leading-relaxed mb-16">
                         A sovereign infrastructure for accountability, investigative reporting, and data-driven governance.
                     </p>
                     <motion.div
-                        animate={{ y: [0, 10, 0] }}
+                        animate={{ y: [0, 8, 0] }}
                         transition={{ duration: 2, repeat: Infinity }}
-                        className="flex flex-col items-center gap-4 text-white/20"
+                        className="flex flex-col items-center gap-4 text-muted-foreground/40"
                     >
-                        <span className="text-[10px] uppercase tracking-[0.5em] font-black">Scroll to Begin</span>
+                        <span className="text-[10px] uppercase tracking-[0.5em] font-black">Begin Intelligence Journey</span>
                         <ChevronDown className="h-6 w-6" />
                     </motion.div>
                 </motion.div>
 
                 {/* Ambient Background */}
-                <div className="absolute inset-0 pointer-events-none">
-                    <div className="absolute top-1/4 left-1/4 w-[600px] h-[600px] bg-primary/20 rounded-full blur-[160px] animate-pulse" />
-                    <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] bg-sky-500/10 rounded-full blur-[140px] animate-pulse" />
+                <div className="absolute inset-0 pointer-events-none overflow-hidden">
+                    <div className="absolute top-1/4 left-1/4 w-[600px] h-[600px] bg-primary/10 dark:bg-primary/20 rounded-full blur-[160px] animate-pulse" />
+                    <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] bg-sky-500/5 dark:bg-sky-500/10 rounded-full blur-[140px] animate-pulse" />
                 </div>
             </section>
 
@@ -451,33 +455,33 @@ const Tools = () => {
             <section className="relative min-h-screen flex items-center justify-center py-20 overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-b from-transparent via-primary/5 to-transparent" />
                 <motion.div
-                    initial={{ opacity: 0, y: 50 }}
+                    initial={{ opacity: 0, y: 40 }}
                     whileInView={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 1 }}
+                    transition={{ duration: 0.8 }}
                     className="container mx-auto px-6 text-center relative z-10"
                 >
-                    <h2 className="text-5xl md:text-8xl font-black mb-10 leading-[0.9] tracking-tighter">
+                    <h2 className="text-5xl md:text-8xl font-black mb-10 leading-[0.9] tracking-tighter text-foreground">
                         READY TO <br />
-                        <span className="text-primary italic">GO HAM?</span>
+                        <span className="text-primary italic">BUILD THE FUTURE?</span>
                     </h2>
-                    <p className="text-xl md:text-2xl text-white/50 max-w-3xl mx-auto font-medium leading-relaxed mb-16">
+                    <p className="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto font-medium leading-relaxed mb-16">
                         The future of Kenya is built on reliable data and unyielding transparency. Join the infrastructure movement today.
                     </p>
                     <div className="flex flex-wrap justify-center gap-6">
                         <Button
                             size="lg"
-                            className="h-20 px-12 rounded-full bg-primary text-white hover:bg-white hover:text-black transition-all duration-500 font-bold text-xl shadow-2xl shadow-primary/20"
+                            className="h-20 px-12 rounded-2xl bg-primary text-primary-foreground hover:bg-primary/90 transition-all duration-500 font-bold text-xl shadow-2xl shadow-primary/20"
                             onClick={() => window.location.href = '/settings'}
                         >
-                            Request Developer Access
+                            Request Access
                         </Button>
                         <Button
                             size="lg"
                             variant="outline"
-                            className="h-20 px-12 rounded-full border-white/20 bg-white/5 hover:bg-white hover:text-black transition-all duration-500 font-bold text-xl"
+                            className="h-20 px-12 rounded-2xl border-border bg-card hover:bg-accent text-foreground transition-all duration-500 font-bold text-xl shadow-sm"
                             onClick={() => window.open('https://github.com/CEKA-HAM', '_blank')}
                         >
-                            Github Explorer
+                            GitHub Explorer
                         </Button>
                     </div>
                 </motion.div>
@@ -489,5 +493,3 @@ const Tools = () => {
 };
 
 export default Tools;
-
-
