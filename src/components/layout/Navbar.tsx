@@ -133,53 +133,37 @@ const Navbar = () => {
             <NavigationMenuList className="gap-1">
               {categories.map((cat) => (
                 <NavigationMenuItem key={cat.name}>
-                  {cat.name === translate('Tools', language) ? (
-                    <NavigationMenuLink asChild>
-                      <Link
-                        to="/tools"
-                        className={cn(
-                          navigationMenuTriggerStyle(),
-                          "rounded-2xl h-10 px-4 text-sm font-bold bg-transparent hover:bg-slate-100 dark:hover:bg-white/5 whitespace-nowrap"
-                        )}
-                      >
-                        {cat.name}
-                      </Link>
-                    </NavigationMenuLink>
-                  ) : (
-                    <>
-                      <NavigationMenuTrigger className="rounded-2xl h-10 px-4 text-sm font-bold gap-1 bg-transparent hover:bg-slate-100 dark:hover:bg-white/5 data-[state=open]:bg-slate-100 dark:data-[state=open]:bg-white/5">
-                        {cat.name}
-                      </NavigationMenuTrigger>
-                      <NavigationMenuContent>
-                        <ul className="w-[320px] p-2 rounded-[28px] bg-white/95 dark:bg-[#1C1C1E]/95 backdrop-blur-3xl">
-                          {cat.items.map((item) => {
-                            const Icon = getItemIcon(item.path);
-                            return (
-                              <li key={item.path}>
-                                <NavigationMenuLink asChild>
-                                  <Link
-                                    to={item.path}
-                                    className="flex items-center gap-4 p-3 rounded-2xl hover:bg-slate-50 dark:hover:bg-white/5 cursor-pointer group transition-colors"
-                                  >
-                                    <div className={cn(
-                                      "h-10 w-10 rounded-xl flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform",
-                                      getCategoryBgColor(cat.name)
-                                    )}>
-                                      <Icon className={cn("h-4 w-4", getCategoryColor(cat.name))} />
-                                    </div>
-                                    <div className="min-w-0 flex-1">
-                                      <p className="text-sm font-bold truncate">{item.name}</p>
-                                      <p className="text-[10px] text-muted-foreground truncate">{item.description}</p>
-                                    </div>
-                                  </Link>
-                                </NavigationMenuLink>
-                              </li>
-                            );
-                          })}
-                        </ul>
-                      </NavigationMenuContent>
-                    </>
-                  )}
+                  <NavigationMenuTrigger className="rounded-2xl h-10 px-4 text-sm font-bold gap-1 bg-transparent hover:bg-slate-100 dark:hover:bg-white/5 data-[state=open]:bg-slate-100 dark:data-[state=open]:bg-white/5">
+                    {cat.name}
+                  </NavigationMenuTrigger>
+                  <NavigationMenuContent>
+                    <ul className="w-[320px] p-2 rounded-[28px] bg-white/95 dark:bg-[#1C1C1E]/95 backdrop-blur-3xl">
+                      {cat.items.map((item) => {
+                        const Icon = getItemIcon(item.path);
+                        return (
+                          <li key={item.path}>
+                            <NavigationMenuLink asChild>
+                              <Link
+                                to={item.path}
+                                className="flex items-center gap-4 p-3 rounded-2xl hover:bg-slate-50 dark:hover:bg-white/5 cursor-pointer group transition-colors"
+                              >
+                                <div className={cn(
+                                  "h-10 w-10 rounded-xl flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform",
+                                  getCategoryBgColor(cat.name)
+                                )}>
+                                  <Icon className={cn("h-4 w-4", getCategoryColor(cat.name))} />
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                  <p className="text-sm font-bold truncate">{item.name}</p>
+                                  <p className="text-[10px] text-muted-foreground truncate">{item.description}</p>
+                                </div>
+                              </Link>
+                            </NavigationMenuLink>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </NavigationMenuContent>
                 </NavigationMenuItem>
               ))}
             </NavigationMenuList>
