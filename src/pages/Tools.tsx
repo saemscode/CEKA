@@ -1,460 +1,702 @@
-import React, { useRef, useEffect, useState } from 'react';
-import { motion, useScroll, useTransform, useInView, useSpring, MotionValue } from 'framer-motion';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
+import { Helmet } from 'react-helmet-async';
+import { Link, useNavigate } from 'react-router-dom';
+import { motion, useScroll, useTransform, useInView, AnimatePresence } from 'framer-motion';
 import {
     Download,
     Smartphone,
-    Database,
     Map as MapIcon,
-    Zap,
-    Shield,
-    Lock,
+    Users,
+    Radio,
     ArrowRight,
-    Globe,
-    Cpu,
     ExternalLink,
-    Terminal
+    Lock,
+    Globe,
+    RefreshCw,
+    AlertTriangle,
+    ChevronDown,
+    Star,
+    Zap,
+    Shield
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import Navbar from '@/components/layout/Navbar';
 import BottomNavbar from '@/components/layout/BottomNavbar';
+import { CEKALoader } from '@/components/ui/ceka-loader';
+import { cn } from '@/lib/utils';
 
-// ─── Feathered Visual Art per Tool ───────────────────────────────────────────
-const ToolVisual = ({ type, flip }: { type: string; flip: boolean }) => {
-    const visuals: Record<string, React.ReactNode> = {
-        smartphone: (
-            <svg viewBox="0 0 400 500" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
-                <defs>
-                    <radialGradient id="sg1" cx="50%" cy="40%" r="60%">
-                        <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.9" />
-                        <stop offset="100%" stopColor="#1e3a8a" stopOpacity="0" />
-                    </radialGradient>
-                    <radialGradient id="sg2" cx="70%" cy="70%" r="40%">
-                        <stop offset="0%" stopColor="#06b6d4" stopOpacity="0.7" />
-                        <stop offset="100%" stopColor="#0e7490" stopOpacity="0" />
-                    </radialGradient>
-                </defs>
-                <ellipse cx="200" cy="250" rx="180" ry="220" fill="url(#sg1)" opacity="0.5" />
-                <ellipse cx="260" cy="340" rx="120" ry="120" fill="url(#sg2)" opacity="0.6" />
-            </svg>
-        ),
-        database: (
-            <svg viewBox="0 0 400 500" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
-                <defs>
-                    <radialGradient id="dg1" cx="50%" cy="50%" r="60%">
-                        <stop offset="0%" stopColor="#8b5cf6" stopOpacity="0.8" />
-                        <stop offset="100%" stopColor="#4c1d95" stopOpacity="0" />
-                    </radialGradient>
-                </defs>
-                <ellipse cx="200" cy="250" rx="170" ry="200" fill="url(#dg1)" opacity="0.5" />
-            </svg>
-        ),
-        map: (
-            <svg viewBox="0 0 400 500" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
-                <defs>
-                    <radialGradient id="mg1" cx="50%" cy="50%" r="60%">
-                        <stop offset="0%" stopColor="#10b981" stopOpacity="0.8" />
-                        <stop offset="100%" stopColor="#065f46" stopOpacity="0" />
-                    </radialGradient>
-                </defs>
-                <ellipse cx="200" cy="250" rx="180" ry="200" fill="url(#mg1)" opacity="0.4" />
-            </svg>
-        ),
-        terminal: (
-            <svg viewBox="0 0 400 500" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
-                <defs>
-                    <radialGradient id="tg1" cx="50%" cy="50%" r="60%">
-                        <stop offset="0%" stopColor="#f59e0b" stopOpacity="0.8" />
-                        <stop offset="100%" stopColor="#78350f" stopOpacity="0" />
-                    </radialGradient>
-                </defs>
-                <ellipse cx="200" cy="250" rx="180" ry="200" fill="url(#tg1)" opacity="0.35" />
-            </svg>
-        ),
-        shield: (
-            <svg viewBox="0 0 400 500" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
-                <defs>
-                    <radialGradient id="shg1" cx="50%" cy="40%" r="60%">
-                        <stop offset="0%" stopColor="#22c55e" stopOpacity="0.8" />
-                        <stop offset="100%" stopColor="#14532d" stopOpacity="0" />
-                    </radialGradient>
-                </defs>
-                <ellipse cx="200" cy="250" rx="180" ry="200" fill="url(#shg1)" opacity="0.4" />
-            </svg>
-        ),
-        cpu: (
-            <svg viewBox="0 0 400 500" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
-                <defs>
-                    <radialGradient id="cg1" cx="50%" cy="50%" r="60%">
-                        <stop offset="0%" stopColor="#a855f7" stopOpacity="0.8" />
-                        <stop offset="100%" stopColor="#581c87" stopOpacity="0" />
-                    </radialGradient>
-                </defs>
-                <ellipse cx="200" cy="250" rx="180" ry="200" fill="url(#cg1)" opacity="0.4" />
-            </svg>
-        ),
-    };
-    return visuals[type] || visuals['smartphone'];
-};
+// ─── Types ────────────────────────────────────────────────────────────────────
+interface Tool {
+    id: string;
+    title: string;
+    tagline: string;
+    description: string;
+    longDescription: string;
+    icon: React.ComponentType<any>;
+    badge: string;
+    badgeVariant?: 'default' | 'secondary' | 'destructive' | 'outline';
+    status: 'Available' | 'Upcoming';
+    downloadUrl?: string;
+    siteUrl?: string;
+    githubUrl?: string;
+    features: string[];
+    image: string;
+}
 
-// ─── Feather Mask Wrapper ─────────────────────────────────────────────────────
-const FeatheredVisual = ({ type, flip, scrollProgress, image }: { type: string; flip: boolean; scrollProgress: MotionValue<number>; image: string }) => {
-    const scale = useTransform(scrollProgress, [0, 0.5, 1], [0.95, 1, 1.05]);
-    const rotate = useTransform(scrollProgress, [0, 1], [flip ? 2 : -2, flip ? -1 : 1]);
-    const opacity = useTransform(scrollProgress, [0, 0.2, 0.8, 1], [0, 1, 1, 0.4]);
+interface FeaturedSite {
+    id: string;
+    name: string;
+    description: string;
+    url: string;
+    category: string;
+}
+
+// ─── Real CEKA Tool Data ──────────────────────────────────────────────────────
+const TOOLS: Tool[] = [
+    {
+        id: 'nasaka-wewe',
+        title: 'Nasaka WEWE',
+        tagline: 'Encrypted Civic Messaging',
+        description: 'A secure messaging app built for Kenyan activists, journalists, and civic educators — forked from the Briar Project\'s battle-tested encrypted messaging engine.',
+        longDescription: 'Nasaka WEWE is a secure messaging app built for Kenyan activists, journalists, civic educators and anyone who needs a safe, resilient way to communicate — even during internet blackouts. Unlike traditional messaging apps, Nasaka WEWE doesn\'t rely on a central server — messages are synchronized directly between users\' devices. If the Internet\'s down, Nasaka WEWE can sync via Bluetooth, Wi-Fi or memory cards.',
+        icon: Smartphone,
+        badge: 'Alpha',
+        status: 'Available',
+        downloadUrl: 'https://www.civiceducationkenya.com',
+        githubUrl: 'https://github.com/saemscodes/Nasaka-WEWE',
+        features: [
+            'End-to-end encrypted messages',
+            'Works offline via Bluetooth & Wi-Fi',
+            'Tor network integration',
+            'No ads, no tracking',
+            'CEKA member auth or offline local account',
+            'Forked from Briar Project',
+        ],
+        image: '/images/nasaka.png',
+    },
+    {
+        id: 'nasaka-iebc',
+        title: 'Nasaka IEBC',
+        tagline: 'IEBC Office Finder',
+        description: 'Find your nearest IEBC registration center in seconds. Interactive map with turn-by-turn navigation to verified IEBC office locations across Kenya.',
+        longDescription: 'Nasaka IEBC is an independent civic platform by Civic Education Kenya (CEKA) that helps Kenyan citizens find official IEBC registration centers, verify office locations, and access electoral services with ease via interactive maps and directions.',
+        icon: MapIcon,
+        badge: 'Live',
+        status: 'Available',
+        siteUrl: '/nasaka-iebc',
+        features: [
+            '290+ geocoded IEBC offices',
+            'GPS-based nearest-office detection',
+            'Turn-by-turn navigation',
+            'Offline-capable map tiles',
+            'Android app available',
+            'Open source & auditable',
+        ],
+        image: '/images/geoposters.png',
+    },
+    {
+        id: 'peoples-audit',
+        title: "People's Audit",
+        tagline: 'National Economic Accountability',
+        description: 'A breakdown of the economic state of the nation. Structured audit of Kenya\'s public finances, expenditure, and debt for citizen comprehension.',
+        longDescription: 'The People\'s Audit provides a structured, citizen-accessible breakdown of Kenya\'s public finances. Tracking expenditure, debt and economic indicators in a way that every Kenyan can understand and act on.',
+        icon: Radio,
+        badge: 'HAM',
+        status: 'Available',
+        siteUrl: '/peoples-audit',
+        features: [
+            'Live public finance data',
+            'National debt tracker',
+            'Constituency expenditure maps',
+            'Budget cycle analysis',
+            'PDF export reports',
+            'Open data APIs',
+        ],
+        image: '/images/api.png',
+    },
+    {
+        id: 'shambles',
+        title: 'SHAmbles',
+        tagline: 'Investigation & Accountability',
+        description: 'Comprehensive investigation and accountability tracking infrastructure. Documenting and indexing corruption, malfeasance, and governance failures.',
+        longDescription: 'SHAmbles is CEKA\'s investigative infrastructure — a living index of documented corruption cases, governance failures, and accountability gaps in Kenya\'s public sector. Built to make impunity visible.',
+        icon: Shield,
+        badge: 'Live',
+        status: 'Available',
+        siteUrl: '/shambles',
+        features: [
+            'Documented corruption cases',
+            'Accountability timeline',
+            'Linked legislative evidence',
+            'Search & filter by county/sector',
+            'Whistleblower submission channel',
+            'Exportable case data',
+        ],
+        image: '/images/vault.png',
+    },
+];
+
+const FEATURED_SITES: FeaturedSite[] = [
+    {
+        id: 'mzalendo',
+        name: 'Mzalendo — MPs Performance',
+        description: 'Track the performance of Members of Parliament in Kenya\'s 13th National Assembly. Attendance, motions, bills, and contributions — all in one place.',
+        url: 'https://mzalendo.com/mps-performance/national-assembly/13th-parliament/',
+        category: 'Legislative Accountability',
+    },
+    {
+        id: 'open-elections',
+        name: 'Open Elections Kenya',
+        description: 'Interactive electoral map of Kenya. Visualize and explore election results, constituency data, and voting patterns across the country.',
+        url: 'https://open-elections-kenya.vercel.app/map',
+        category: 'Electoral Data',
+    },
+    {
+        id: 'kiongozi',
+        name: 'Kiongozi Online',
+        description: 'Kenya\'s civic leadership intelligence platform. Profiles and performance data on elected leaders and public servants.',
+        url: 'https://kiongozi.online/',
+        category: 'Leadership Accountability',
+    },
+];
+
+// ─── Ease constants ───────────────────────────────────────────────────────────
+const EASE_OUT_EXPO = [0.16, 1, 0.3, 1] as const;
+const EASE_IN_OUT = [0.4, 0, 0.2, 1] as const;
+
+// ─── Feature Image with Feathered Mask ───────────────────────────────────────
+const FeatheredImage = ({
+    src,
+    flip,
+    scrollProgress,
+}: {
+    src: string;
+    flip: boolean;
+    scrollProgress: any;
+}) => {
+    const scale = useTransform(scrollProgress, [0, 0.5, 1], [0.94, 1, 1.04]);
+    const y = useTransform(scrollProgress, [0, 1], [30, -30]);
+    const opacity = useTransform(scrollProgress, [0, 0.15, 0.85, 1], [0, 1, 1, 0.3]);
+
+    const maskStyle = flip
+        ? 'radial-gradient(ellipse 85% 85% at 25% 50%, black 45%, transparent 90%)'
+        : 'radial-gradient(ellipse 85% 85% at 75% 50%, black 45%, transparent 90%)';
 
     return (
         <motion.div
-            style={{ scale, rotate, opacity }}
+            style={{ scale, y, opacity }}
             className="relative w-full h-full flex items-center justify-center"
         >
-            {/* Feathered image container */}
             <div
-                className="relative w-full aspect-[4/5] md:aspect-square max-w-2xl rounded-[48px] overflow-hidden shadow-[0_40px_100px_rgba(0,0,0,0.6)]"
+                className="relative w-full max-w-xl rounded-3xl overflow-hidden aspect-[4/3] shadow-2xl"
                 style={{
-                    maskImage: flip
-                        ? 'radial-gradient(ellipse 90% 90% at 30% 50%, black 50%, transparent 95%)'
-                        : 'radial-gradient(ellipse 90% 90% at 70% 50%, black 50%, transparent 95%)',
-                    WebkitMaskImage: flip
-                        ? 'radial-gradient(ellipse 90% 90% at 30% 50%, black 50%, transparent 95%)'
-                        : 'radial-gradient(ellipse 90% 90% at 70% 50%, black 50%, transparent 95%)',
+                    maskImage: maskStyle,
+                    WebkitMaskImage: maskStyle,
                 }}
             >
                 <img
-                    src={image}
-                    className="w-full h-full object-cover"
+                    src={src}
                     alt=""
+                    className="w-full h-full object-cover"
+                    loading="lazy"
+                    onError={(e) => {
+                        // Graceful fallback: hide broken image
+                        (e.target as HTMLImageElement).style.display = 'none';
+                    }}
                 />
-                {/* Secondary gradient overlay for deep integration */}
-                <div className={`absolute inset-0 bg-gradient-to-${flip ? 'r' : 'l'} from-[#050505] via-transparent to-transparent opacity-60`} />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-transparent to-transparent opacity-40" />
-            </div>
-
-            {/* Background SVG glow – kept for atmospheric depth */}
-            <div className="absolute inset-0 -z-10 opacity-30 blur-[100px]">
-                <ToolVisual type={type} flip={flip} />
+                {/* Edge gradient overlays for CEKA bg integration */}
+                <div
+                    className={cn(
+                        'absolute inset-0 pointer-events-none',
+                        flip
+                            ? 'bg-gradient-to-r from-background via-transparent to-transparent opacity-70'
+                            : 'bg-gradient-to-l from-background via-transparent to-transparent opacity-70'
+                    )}
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent opacity-50 pointer-events-none" />
             </div>
         </motion.div>
     );
 };
 
-// ─── Scroll Feature Section ───────────────────────────────────────────────────
-const FeatureSection = ({
-    title, description, icon: Icon, badge, status, downloadUrl, siteUrl, variant, index,
-    visualType, tagline, image
-}: any) => {
-    const ref = useRef(null);
-    const isInView = useInView(ref, { once: false, margin: '-20% 0px -20% 0px' });
+// ─── Tool Feature Section ─────────────────────────────────────────────────────
+const ToolSection = ({ tool, index }: { tool: Tool; index: number }) => {
+    const ref = useRef<HTMLElement>(null);
+    const isInView = useInView(ref, { once: false, margin: '-10% 0px -10% 0px' });
     const { scrollYProgress } = useScroll({ target: ref, offset: ['start end', 'end start'] });
 
     const flip = index % 2 === 1;
+    const Icon = tool.icon;
 
-    const textX = useTransform(scrollYProgress, [0, 0.4, 0.6, 1], [flip ? 60 : -60, 0, 0, flip ? -30 : 30]);
+    const textDirection = flip ? 1 : -1;
+    const textX = useTransform(scrollYProgress, [0.1, 0.35, 0.65, 0.9], [textDirection * 40, 0, 0, textDirection * -20]);
     const textOpacity = useTransform(scrollYProgress, [0.1, 0.3, 0.7, 0.9], [0, 1, 1, 0]);
 
-    // Parallax background bleed
-    const bgY = useTransform(scrollYProgress, [0, 1], [-100, 100]);
-    const bgOpacity = useTransform(scrollYProgress, [0, 0.4, 0.6, 1], [0, 0.15, 0.15, 0]);
-
-    const accentColors: Record<string, string> = {
-        smartphone: '#3b82f6',
-        database: '#8b5cf6',
-        map: '#10b981',
-        terminal: '#f59e0b',
-        shield: '#22c55e',
-        cpu: '#a855f7',
+    const sectionVariants = {
+        hidden: { opacity: 0, y: 24 },
+        visible: (d: number) => ({
+            opacity: 1,
+            y: 0,
+            transition: { duration: 0.7, ease: EASE_OUT_EXPO, delay: d * 0.08 },
+        }),
     };
-
-    const accent = accentColors[visualType] || '#3b82f6';
 
     return (
         <section
             ref={ref}
-            className="relative min-h-[120vh] flex items-center overflow-hidden"
+            id={`tool-${tool.id}`}
+            className="relative py-20 md:py-32 overflow-hidden"
         >
-            {/* Background Image Bleed - Parallax */}
-            <motion.div
-                style={{ y: bgY, opacity: bgOpacity }}
-                className="absolute inset-x-0 -inset-y-40 z-0 pointer-events-none"
-            >
+            {/* Hairline separator */}
+            <div className="absolute top-0 left-8 right-8 h-px bg-border opacity-60" />
+
+            <div className="container mx-auto px-6">
                 <div
-                    className="w-full h-full bg-cover bg-center opacity-30 grayscale saturate-50"
-                    style={{ backgroundImage: `url(${image})` }}
-                />
-                <div className="absolute inset-0 bg-gradient-to-b from-[#050505] via-transparent to-[#050505]" />
-                <div className="absolute inset-0 bg-[#050505]/60" />
-            </motion.div>
-
-            {/* Hairline divider */}
-            <div className="absolute top-0 left-[10%] right-[10%] h-[1px] bg-gradient-to-r from-transparent via-white/10 to-transparent" />
-
-            <div className={`relative z-10 w-full max-w-7xl mx-auto px-8 md:px-16 grid md:grid-cols-2 items-center gap-16 ${flip ? 'direction-rtl' : ''}`}>
-
-                {/* Text Column */}
-                <motion.div
-                    style={{ x: textX, opacity: textOpacity }}
-                    className={`py-24 ${flip ? 'md:order-2 md:pl-12' : 'md:order-1 md:pr-12'}`}
-                >
-                    <motion.div
-                        initial={{ opacity: 0, y: 16 }}
-                        animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 16 }}
-                        transition={{ duration: 0.7, delay: 0.1 }}
-                        className="flex items-center gap-3 mb-6"
-                    >
-                        <div
-                            className="p-2.5 rounded-xl"
-                            style={{ background: `${accent}22`, boxShadow: `0 0 20px ${accent}30` }}
-                        >
-                            <Icon strokeWidth={1.5} className="h-5 w-5" style={{ color: accent }} />
-                        </div>
-                        {badge && (
-                            <span
-                                className="text-[10px] font-black tracking-[0.25em] uppercase px-3 py-1.5 rounded-full border"
-                                style={{ color: accent, borderColor: `${accent}40`, background: `${accent}12` }}
-                            >
-                                {badge}
-                            </span>
-                        )}
-                    </motion.div>
-
-                    {tagline && (
-                        <motion.p
-                            initial={{ opacity: 0, y: 16 }}
-                            animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 16 }}
-                            transition={{ duration: 0.7, delay: 0.15 }}
-                            className="text-sm font-bold tracking-[0.15em] uppercase mb-3 text-white/50"
-                        >
-                            {tagline}
-                        </motion.p>
+                    className={cn(
+                        'grid md:grid-cols-2 items-center gap-12 md:gap-20',
+                        flip && 'md:grid-flow-col-dense'
                     )}
-
-                    <motion.h2
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-                        transition={{ duration: 0.9, delay: 0.2 }}
-                        className="text-5xl md:text-7xl font-black tracking-tighter leading-[0.9] mb-8 text-white"
-                    >
-                        {title}
-                    </motion.h2>
-
-                    <motion.p
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-                        transition={{ duration: 0.9, delay: 0.3 }}
-                        className="text-lg md:text-xl text-white/40 leading-relaxed mb-12 max-w-lg font-medium"
-                    >
-                        {description}
-                    </motion.p>
-
-                    <motion.div
-                        initial={{ opacity: 0, y: 16 }}
-                        animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 16 }}
-                        transition={{ duration: 0.7, delay: 0.4 }}
-                    >
-                        {downloadUrl ? (
-                            <a href={downloadUrl} download={title.toLowerCase().replace(/\s+/g, '_') + '.apk'}>
-                                <button
-                                    className="group flex items-center gap-3 h-14 px-8 rounded-2xl font-bold text-base transition-all duration-500 bg-white text-black hover:bg-white/90"
-                                    style={{ boxShadow: '0 20px 40px rgba(255,255,255,0.1)' }}
-                                >
-                                    Download APK
-                                    <Download className="h-4 w-4 transition-transform group-hover:translate-y-0.5" />
-                                </button>
-                            </a>
-                        ) : siteUrl ? (
-                            <button
-                                className="group flex items-center gap-3 h-14 px-8 rounded-2xl font-bold text-base border border-white/10 bg-white/5 text-white/80 hover:bg-white hover:text-black transition-all duration-500"
-                                onClick={() => window.open(siteUrl, '_blank')}
-                            >
-                                Launch Site
-                                <ExternalLink className="h-4 w-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
-                            </button>
-                        ) : status === 'Available' ? (
-                            <button
-                                className="group flex items-center gap-3 h-14 px-8 rounded-2xl font-bold text-base transition-all duration-500 bg-white text-black hover:bg-white/90"
-                                onClick={() => { window.location.href = variant === 'premium' ? '/settings' : '/tools'; }}
-                            >
-                                {variant === 'premium' ? 'Get API Key' : 'View Source'}
-                                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-                            </button>
-                        ) : (
-                            <button
-                                disabled
-                                className="flex items-center gap-3 h-14 px-8 rounded-2xl font-bold text-base border border-white/5 bg-white/5 text-white/20 cursor-not-allowed"
-                            >
-                                In Development
-                                <Lock className="h-4 w-4 opacity-40" />
-                            </button>
-                        )}
-                    </motion.div>
-                </motion.div>
-
-                {/* Visual Column - Integration of Live Images with Feathered Masks */}
-                <div
-                    className={`relative min-h-[60vh] md:min-h-[80vh] flex items-center justify-center ${flip ? 'md:order-1' : 'md:order-2'}`}
                 >
-                    <FeatheredVisual type={visualType} flip={flip} scrollProgress={scrollYProgress} image={image} />
+                    {/* Text column */}
+                    <motion.div
+                        style={{ x: textX, opacity: textOpacity }}
+                        className={cn('space-y-6', flip ? 'md:col-start-2' : 'md:col-start-1')}
+                    >
+                        {/* Tag row */}
+                        <motion.div
+                            custom={0}
+                            variants={sectionVariants}
+                            initial="hidden"
+                            animate={isInView ? 'visible' : 'hidden'}
+                            className="flex flex-wrap items-center gap-2"
+                        >
+                            <div className="h-8 w-8 rounded-lg bg-primary/10 dark:bg-primary/20 flex items-center justify-center">
+                                <Icon className="h-4 w-4 text-primary" strokeWidth={1.75} />
+                            </div>
+                            <Badge variant="outline" className="text-[10px] font-black tracking-widest uppercase border-primary/30 text-primary">
+                                {tool.badge}
+                            </Badge>
+                            <span className="text-xs font-semibold text-muted-foreground tracking-widest uppercase">
+                                {tool.tagline}
+                            </span>
+                        </motion.div>
+
+                        {/* Title */}
+                        <motion.h2
+                            custom={1}
+                            variants={sectionVariants}
+                            initial="hidden"
+                            animate={isInView ? 'visible' : 'hidden'}
+                            className="text-4xl md:text-5xl lg:text-6xl font-black tracking-tighter leading-tight text-foreground"
+                        >
+                            {tool.title}
+                        </motion.h2>
+
+                        {/* Description */}
+                        <motion.p
+                            custom={2}
+                            variants={sectionVariants}
+                            initial="hidden"
+                            animate={isInView ? 'visible' : 'hidden'}
+                            className="text-base md:text-lg text-muted-foreground leading-relaxed max-w-lg"
+                        >
+                            {tool.description}
+                        </motion.p>
+
+                        {/* Features list */}
+                        <motion.ul
+                            custom={3}
+                            variants={sectionVariants}
+                            initial="hidden"
+                            animate={isInView ? 'visible' : 'hidden'}
+                            className="grid grid-cols-1 sm:grid-cols-2 gap-2"
+                        >
+                            {tool.features.map((feat) => (
+                                <li key={feat} className="flex items-start gap-2 text-sm text-muted-foreground">
+                                    <div className="mt-1 h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
+                                    {feat}
+                                </li>
+                            ))}
+                        </motion.ul>
+
+                        {/* CTA */}
+                        <motion.div
+                            custom={4}
+                            variants={sectionVariants}
+                            initial="hidden"
+                            animate={isInView ? 'visible' : 'hidden'}
+                            className="flex flex-wrap gap-3 pt-2"
+                        >
+                            {tool.downloadUrl ? (
+                                <Button
+                                    className="group gap-2 font-bold"
+                                    onClick={() => window.open(tool.downloadUrl, '_blank')}
+                                >
+                                    <Download className="h-4 w-4 transition-transform group-hover:translate-y-0.5" />
+                                    Download APK
+                                </Button>
+                            ) : tool.siteUrl ? (
+                                <Button
+                                    className="group gap-2 font-bold"
+                                    onClick={() => {
+                                        if (tool.siteUrl?.startsWith('/')) {
+                                            window.location.href = tool.siteUrl;
+                                        } else {
+                                            window.open(tool.siteUrl, '_blank');
+                                        }
+                                    }}
+                                >
+                                    <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                                    Open Tool
+                                </Button>
+                            ) : null}
+
+                            {tool.githubUrl && (
+                                <Button
+                                    variant="outline"
+                                    className="group gap-2 font-semibold"
+                                    onClick={() => window.open(tool.githubUrl, '_blank')}
+                                >
+                                    <ExternalLink className="h-4 w-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                                    Source Code
+                                </Button>
+                            )}
+                        </motion.div>
+                    </motion.div>
+
+                    {/* Visual column */}
+                    <div className={cn('relative min-h-[300px] md:min-h-[450px]', flip ? 'md:col-start-1' : 'md:col-start-2')}>
+                        <FeatheredImage src={tool.image} flip={flip} scrollProgress={scrollYProgress} />
+                    </div>
                 </div>
             </div>
         </section>
     );
 };
 
-// ─── Scroll Progress Pill ─────────────────────────────────────────────────────
-const ScrollProgressPill = ({ progress }: { progress: MotionValue<number> }) => {
-    const scaleX = useSpring(progress, { stiffness: 200, damping: 40 });
+// ─── Featured Site Iframe Card ────────────────────────────────────────────────
+const FeaturedSiteCard = ({ site, isActive }: { site: FeaturedSite; isActive: boolean }) => {
+    const [loaded, setLoaded] = useState(false);
+    const [error, setError] = useState(false);
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        if (!isActive) {
+            setLoaded(false);
+            setMounted(false);
+            setError(false);
+            return;
+        }
+        const timer = setTimeout(() => setMounted(true), 150);
+        return () => clearTimeout(timer);
+    }, [isActive]);
+
+    const handleRetry = () => {
+        setError(false);
+        setLoaded(false);
+        setMounted(false);
+        setTimeout(() => setMounted(true), 150);
+    };
 
     return (
-        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-4 py-2.5 rounded-full bg-white/5 backdrop-blur-2xl border border-white/10">
-            <span className="text-[10px] text-white/30 font-bold tracking-widest uppercase">CEKA</span>
-            <div className="w-24 h-[2px] bg-white/10 rounded-full overflow-hidden">
-                <motion.div className="h-full bg-white/60 rounded-full" style={{ scaleX, transformOrigin: 'left' }} />
+        <div className="flex flex-col h-full">
+            {/* Site meta */}
+            <div className="flex items-start justify-between gap-4 mb-4">
+                <div>
+                    <div className="flex items-center gap-2 mb-1">
+                        <Badge variant="secondary" className="text-[10px] font-bold tracking-widest uppercase">
+                            {site.category}
+                        </Badge>
+                    </div>
+                    <h3 className="text-lg font-bold text-foreground">{site.name}</h3>
+                    <p className="text-sm text-muted-foreground mt-1 leading-relaxed">{site.description}</p>
+                </div>
+                <Button
+                    variant="outline"
+                    size="sm"
+                    className="shrink-0 gap-2 font-semibold"
+                    onClick={() => window.open(site.url, '_blank')}
+                >
+                    <ExternalLink className="h-3.5 w-3.5" />
+                    Open
+                </Button>
             </div>
-            <span className="text-[10px] text-white/30 font-bold tracking-widest uppercase">HAM</span>
+
+            {/* Iframe container */}
+            <div className="flex-1 relative rounded-2xl overflow-hidden border border-border bg-muted/30 min-h-[480px]">
+                {/* Loading state */}
+                {!loaded && !error && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-muted/20">
+                        <CEKALoader variant="scanning" size="md" text={`Loading ${site.name}...`} />
+                    </div>
+                )}
+
+                {/* Error state */}
+                {error && (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 p-8">
+                        <div className="h-12 w-12 rounded-full bg-destructive/10 flex items-center justify-center">
+                            <AlertTriangle className="h-6 w-6 text-destructive" />
+                        </div>
+                        <div className="text-center">
+                            <p className="font-semibold text-foreground">Unable to Load</p>
+                            <p className="text-sm text-muted-foreground mt-1">
+                                This site may not allow embedding. Try opening it directly.
+                            </p>
+                        </div>
+                        <div className="flex gap-2">
+                            <Button variant="outline" size="sm" className="gap-2" onClick={handleRetry}>
+                                <RefreshCw className="h-3.5 w-3.5" />
+                                Retry
+                            </Button>
+                            <Button size="sm" className="gap-2" onClick={() => window.open(site.url, '_blank')}>
+                                <ExternalLink className="h-3.5 w-3.5" />
+                                Open Directly
+                            </Button>
+                        </div>
+                    </div>
+                )}
+
+                {/* Iframe */}
+                {mounted && !error && (
+                    <iframe
+                        src={site.url}
+                        className={cn(
+                            'w-full h-full border-none transition-opacity duration-500',
+                            loaded ? 'opacity-100' : 'opacity-0 absolute'
+                        )}
+                        style={{ minHeight: '480px', height: loaded ? '480px' : '1px' }}
+                        title={site.name}
+                        onLoad={() => { setLoaded(true); setError(false); }}
+                        onError={() => { setError(true); setLoaded(false); }}
+                        sandbox="allow-same-origin allow-scripts allow-forms allow-popups"
+                        referrerPolicy="strict-origin-when-cross-origin"
+                    />
+                )}
+            </div>
         </div>
     );
 };
 
-// ─── Feature Data ─────────────────────────────────────────────────────────────
-const FEATURES = [
-    {
-        title: "Nasaka WEWE",
-        tagline: "Mobile Intelligence",
-        description: "Professional-grade mobile experience for civic monitoring. Seeded with geocoded IEBC office locations and offline legislative data.",
-        icon: Smartphone,
-        badge: "Alpha",
-        status: "Available",
-        variant: "premium",
-        downloadUrl: "/binaries/nasaka_universal.apk",
-        visualType: "smartphone",
-        image: "/images/nasaka.png"
-    },
-    {
-        title: "Master-Pack Q1",
-        tagline: "Legislative Intelligence",
-        description: "Quarterly consolidated legislative intelligence. JSON, CSV, and Markdown exports for all bills spanning 2024–2027.",
-        icon: Database,
-        badge: "2026.Q1",
-        status: "Available",
-        siteUrl: "https://ceka.sovereign.ke/data",
-        visualType: "database",
-        image: "/images/masterpack.png"
-    },
-    {
-        title: "GeoPosters Engine",
-        tagline: "Visual Evidence Layer",
-        description: "High-resolution visual evidence of regional governance, healthcare infrastructure, and IEBC office proximity across Kenya.",
-        icon: MapIcon,
-        badge: "Live",
-        status: "Available",
-        variant: "premium",
-        visualType: "map",
-        image: "/images/geoposters.png"
-    },
-    {
-        title: "Civic API",
-        tagline: "Data Infrastructure",
-        description: "Zero-trust legislative and audit streams. Built for journalists, developers, and researchers who demand sovereign data.",
-        icon: Terminal,
-        badge: "v1 HAM",
-        status: "Available",
-        variant: "premium",
-        visualType: "terminal",
-        image: "/images/api.png"
-    },
-    {
-        title: "The Vault",
-        tagline: "Secure Submissions",
-        description: "Encrypted submission and storage for investigative documents and whistleblower evidence. Built on zero-knowledge architecture.",
-        icon: Shield,
-        badge: "Secure",
-        status: "Available",
-        siteUrl: "https://vault.ceka.sovereign.ke",
-        visualType: "shield",
-        image: "/images/vault.png"
-    },
-    {
-        title: "Sovereign AI",
-        tagline: "Constitutional Alignment",
-        description: "Pre-trained weights and context for Kenyan constitutional alignment AI models. The future of accountable machine intelligence.",
-        icon: Cpu,
-        badge: "Restricted",
-        status: "Upcoming",
-        visualType: "cpu",
-        image: "/images/ai.png"
-    },
-];
-
-// ─── Main Tools Component ─────────────────────────────────────────────────────
-const Tools = () => {
-    const containerRef = useRef(null);
-    const { scrollYProgress } = useScroll({ target: containerRef, offset: ['start start', 'end end'] });
-
-    const heroScale = useTransform(scrollYProgress, [0, 0.15], [1, 0.85]);
-    const heroOpacity = useTransform(scrollYProgress, [0, 0.1], [1, 0]);
+// ─── Featured Section ─────────────────────────────────────────────────────────
+const FeaturedSection = () => {
+    const [activeTab, setActiveTab] = useState(0);
 
     return (
-        <div ref={containerRef} className="min-h-screen bg-[#050505] text-white selection:bg-white selection:text-black overflow-x-hidden">
-            <Navbar />
-            <ScrollProgressPill progress={scrollYProgress} />
+        <section id="featured" className="py-20 md:py-32">
+            {/* Hairline */}
+            <div className="absolute left-8 right-8 h-px bg-border opacity-60" />
 
-            {/* ── Hero Section ──────────────────────────────────────────── */}
-            <section className="relative h-screen flex flex-col items-center justify-center px-6 overflow-hidden sticky top-0">
+            <div className="container mx-auto px-6">
                 <motion.div
-                    style={{ scale: heroScale, opacity: heroOpacity }}
-                    className="relative z-10 text-center max-w-5xl"
-                >
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ duration: 1.2, ease: [0.21, 0.47, 0.32, 0.98] }}
-                    >
-                        <h1 className="text-7xl md:text-[clamp(5rem,14vw,12rem)] font-black tracking-tighter leading-[0.82] mb-12">
-                            POWER TO <br />
-                            THE PEOPLE.
-                        </h1>
-                        <p className="text-xl md:text-3xl text-white/40 max-w-3xl mx-auto font-medium leading-relaxed tracking-[-0.01em]">
-                            Civic intelligence infrastructure engineered for sovereign accountability.
-                        </p>
-                    </motion.div>
-                </motion.div>
-            </section>
-
-            {/* ── Feature Sections ──────────────────────────────────────── */}
-            <div className="relative z-10">
-                {FEATURES.map((feature, index) => (
-                    <FeatureSection
-                        key={feature.title}
-                        index={index}
-                        {...feature}
-                    />
-                ))}
-            </div>
-
-            {/* ── Call To Action ────────────────────────────────────────── */}
-            <section className="relative min-h-screen flex items-center justify-center px-8 py-40 overflow-hidden">
-                <motion.div
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    whileInView={{ opacity: 1, scale: 1 }}
-                    transition={{ duration: 1, ease: [0.21, 0.47, 0.32, 0.98] }}
+                    initial={{ opacity: 0, y: 24 }}
+                    whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
-                    className="text-center"
+                    transition={{ duration: 0.7, ease: EASE_OUT_EXPO }}
+                    className="mb-10"
                 >
-                    <h2 className="text-6xl md:text-8xl font-black tracking-tighter mb-12">
-                        Build the Future.
+                    <div className="flex items-center gap-2 mb-3">
+                        <div className="h-7 w-7 rounded-lg bg-primary/10 flex items-center justify-center">
+                            <Globe className="h-3.5 w-3.5 text-primary" />
+                        </div>
+                        <span className="text-xs font-black tracking-widest uppercase text-primary">Featured</span>
+                    </div>
+                    <h2 className="text-3xl md:text-5xl font-black tracking-tighter text-foreground mb-3">
+                        Civic Intelligence Network
                     </h2>
-                    <Button
-                        size="lg"
-                        className="h-16 px-14 rounded-full bg-white text-black hover:bg-white/90 text-lg font-bold"
-                        onClick={() => { window.location.href = '/settings'; }}
-                    >
-                        Get API Key <Zap className="ml-3 h-5 w-5 fill-current" />
-                    </Button>
+                    <p className="text-muted-foreground text-lg max-w-2xl leading-relaxed">
+                        Linked civic platforms we endorse and collaborate with. Live previews powered directly from source.
+                    </p>
                 </motion.div>
-            </section>
 
-            <BottomNavbar />
-        </div>
+                {/* Tab selector */}
+                <div className="flex gap-2 mb-8 flex-wrap">
+                    {FEATURED_SITES.map((site, i) => (
+                        <button
+                            key={site.id}
+                            onClick={() => setActiveTab(i)}
+                            className={cn(
+                                'px-4 py-2 rounded-xl text-sm font-bold transition-all duration-300',
+                                activeTab === i
+                                    ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20'
+                                    : 'bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground'
+                            )}
+                        >
+                            {site.name.split('—')[0].trim()}
+                        </button>
+                    ))}
+                </div>
+
+                {/* Active site panel */}
+                <AnimatePresence mode="wait">
+                    <motion.div
+                        key={activeTab}
+                        initial={{ opacity: 0, y: 16 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -8 }}
+                        transition={{ duration: 0.4, ease: EASE_IN_OUT }}
+                    >
+                        <FeaturedSiteCard site={FEATURED_SITES[activeTab]} isActive={true} />
+                    </motion.div>
+                </AnimatePresence>
+
+                {/* Other site cards (summary) */}
+                <div className="mt-10 grid sm:grid-cols-3 gap-4">
+                    {FEATURED_SITES.map((site, i) => (
+                        <motion.button
+                            key={site.id}
+                            initial={{ opacity: 0, y: 16 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            viewport={{ once: true }}
+                            transition={{ duration: 0.5, ease: EASE_OUT_EXPO, delay: i * 0.08 }}
+                            onClick={() => setActiveTab(i)}
+                            className={cn(
+                                'text-left p-4 rounded-2xl border transition-all duration-300 group',
+                                activeTab === i
+                                    ? 'border-primary/40 bg-primary/5 shadow-md shadow-primary/10'
+                                    : 'border-border hover:border-primary/30 hover:bg-muted/40'
+                            )}
+                        >
+                            <div className="flex items-center gap-2 mb-2">
+                                <Badge variant="secondary" className="text-[9px] font-bold tracking-widest uppercase">
+                                    {site.category}
+                                </Badge>
+                                {activeTab === i && (
+                                    <div className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+                                )}
+                            </div>
+                            <p className="font-bold text-sm text-foreground group-hover:text-primary transition-colors line-clamp-1">
+                                {site.name}
+                            </p>
+                            <p className="text-xs text-muted-foreground mt-1 line-clamp-2 leading-relaxed">
+                                {site.description}
+                            </p>
+                        </motion.button>
+                    ))}
+                </div>
+            </div>
+        </section>
+    );
+};
+
+// ─── Hero Section ─────────────────────────────────────────────────────────────
+const HeroSection = () => {
+    const ref = useRef<HTMLElement>(null);
+    const { scrollYProgress } = useScroll({ target: ref, offset: ['start start', 'end start'] });
+    const heroY = useTransform(scrollYProgress, [0, 1], [0, 120]);
+    const heroOpacity = useTransform(scrollYProgress, [0, 0.6], [1, 0]);
+    const featuredRef = useRef<HTMLElement | null>(null);
+
+    const scrollToFeatured = () => {
+        const el = document.getElementById('featured');
+        if (el) el.scrollIntoView({ behavior: 'smooth' });
+    };
+
+    return (
+        <section
+            ref={ref}
+            className="relative min-h-[80vh] lg:min-h-screen flex flex-col items-center justify-center overflow-hidden pt-16 pb-16"
+        >
+            {/* Background gradient */}
+            <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-background to-background pointer-events-none" />
+            <div className="absolute inset-0 bg-gradient-radial from-primary/5 to-transparent pointer-events-none" />
+
+            <motion.div
+                style={{ y: heroY, opacity: heroOpacity }}
+                className="relative z-10 text-center max-w-5xl mx-auto px-6"
+            >
+                <motion.div
+                    initial={{ opacity: 0, y: 20, scale: 0.96 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    transition={{ duration: 0.9, ease: EASE_OUT_EXPO }}
+                >
+                    <div className="inline-flex items-center gap-2 mb-6 px-4 py-1.5 rounded-full border border-primary/20 bg-primary/5 text-primary text-xs font-black tracking-[0.2em] uppercase">
+                        <Zap className="h-3 w-3" />
+                        CEKA HAM Infrastructure
+                    </div>
+
+                    <h1 className="text-5xl sm:text-7xl lg:text-8xl xl:text-9xl font-black tracking-tighter leading-[0.85] mb-8 text-foreground">
+                        Tools for <br />
+                        <span className="text-primary">Sovereign</span>{' '}
+                        <span className="text-secondary">Kenya.</span>
+                    </h1>
+
+                    <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto font-medium leading-relaxed mb-10">
+                        High-performance civic toolkits, investigative data streams, and encrypted communications infrastructure — built for the next generation of Kenyan accountability.
+                    </p>
+
+                    <div className="flex flex-wrap items-center justify-center gap-4">
+                        <Button
+                            size="lg"
+                            className="gap-2 font-bold h-12 px-8 rounded-2xl shadow-lg shadow-primary/20"
+                            onClick={() => {
+                                const el = document.getElementById('tool-nasaka-wewe');
+                                if (el) el.scrollIntoView({ behavior: 'smooth' });
+                            }}
+                        >
+                            Explore Toolset
+                            <ArrowRight className="h-4 w-4" />
+                        </Button>
+                        <Button
+                            variant="outline"
+                            size="lg"
+                            className="gap-2 font-bold h-12 px-8 rounded-2xl"
+                            onClick={scrollToFeatured}
+                        >
+                            <Globe className="h-4 w-4" />
+                            Featured Sites
+                        </Button>
+                    </div>
+                </motion.div>
+            </motion.div>
+
+            {/* Scroll indicator */}
+            <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 1.5, duration: 0.8 }}
+                className="absolute bottom-8 left-1/2 -translate-x-1/2"
+            >
+                <motion.div
+                    animate={{ y: [0, 6, 0] }}
+                    transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
+                >
+                    <ChevronDown className="h-6 w-6 text-muted-foreground/50" />
+                </motion.div>
+            </motion.div>
+        </section>
+    );
+};
+
+// ─── Main Tools Page ──────────────────────────────────────────────────────────
+const Tools = () => {
+    return (
+        <>
+            <Helmet>
+                <title>CEKA Tools — Civic Intelligence Infrastructure</title>
+                <meta
+                    name="description"
+                    content="CEKA's suite of civic tools including Nasaka WEWE encrypted messaging, Nasaka IEBC office finder, People's Audit, and SHAmbles accountability tracker."
+                />
+            </Helmet>
+
+            <div className="min-h-screen bg-background text-foreground">
+                <Navbar />
+
+                {/* Hero */}
+                <HeroSection />
+
+                {/* Tool Sections */}
+                {TOOLS.map((tool, index) => (
+                    <ToolSection key={tool.id} tool={tool} index={index} />
+                ))}
+
+                {/* Featured Sites */}
+                <FeaturedSection />
+
+                <BottomNavbar />
+            </div>
+        </>
     );
 };
 
