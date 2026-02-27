@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { motion, useScroll, useTransform, useInView, useSpring, MotionValue } from 'framer-motion';
 import {
     Download,
@@ -12,392 +12,444 @@ import {
     Globe,
     Cpu,
     ExternalLink,
-    Terminal,
-    ChevronDown
+    Terminal
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import Navbar from '@/components/layout/Navbar';
 import BottomNavbar from '@/components/layout/BottomNavbar';
-import { cn } from '@/lib/utils';
 
-// --- FEATHERED VISUAL ART PER TOOL (THEME-AWARE) ---
-
+// ─── Feathered Visual Art per Tool ───────────────────────────────────────────
 const ToolVisual = ({ type, flip }: { type: string; flip: boolean }) => {
     const visuals: Record<string, React.ReactNode> = {
         smartphone: (
             <svg viewBox="0 0 400 500" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
                 <defs>
                     <radialGradient id="sg1" cx="50%" cy="40%" r="60%">
-                        <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity="0.4" />
-                        <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity="0" />
+                        <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.9" />
+                        <stop offset="100%" stopColor="#1e3a8a" stopOpacity="0" />
                     </radialGradient>
                     <radialGradient id="sg2" cx="70%" cy="70%" r="40%">
-                        <stop offset="0%" stopColor="hsl(var(--secondary))" stopOpacity="0.2" />
-                        <stop offset="100%" stopColor="hsl(var(--secondary))" stopOpacity="0" />
+                        <stop offset="0%" stopColor="#06b6d4" stopOpacity="0.7" />
+                        <stop offset="100%" stopColor="#0e7490" stopOpacity="0" />
                     </radialGradient>
                 </defs>
-                <ellipse cx="200" cy="250" rx="180" ry="220" fill="url(#sg1)" opacity="0.3" />
-                <ellipse cx="260" cy="340" rx="120" ry="120" fill="url(#sg2)" opacity="0.3" />
-                <rect x="110" y="80" width="180" height="340" rx="36" className="fill-card stroke-border" strokeWidth="1.5" />
-                <rect x="122" y="115" width="156" height="260" rx="12" className="fill-muted/20" />
-                <line x1="134" y1="145" x2="266" y2="145" className="stroke-primary/30" strokeWidth="1" />
-                <line x1="134" y1="165" x2="230" y2="165" className="stroke-foreground/10" strokeWidth="1" />
-                <rect x="134" y="225" width="44" height="44" rx="12" className="fill-primary/10 stroke-primary/30" strokeWidth="1" />
-                <rect x="184" y="225" width="44" height="44" rx="12" className="fill-secondary/10 stroke-secondary/30" strokeWidth="1" />
-                <circle cx="200" cy="440" r="14" fill="none" className="stroke-foreground/10" strokeWidth="1.5" />
-                <circle cx="200" cy="95" r="4" className="fill-foreground/10" />
+                <ellipse cx="200" cy="250" rx="180" ry="220" fill="url(#sg1)" opacity="0.5" />
+                <ellipse cx="260" cy="340" rx="120" ry="120" fill="url(#sg2)" opacity="0.6" />
             </svg>
         ),
         database: (
             <svg viewBox="0 0 400 500" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
                 <defs>
                     <radialGradient id="dg1" cx="50%" cy="50%" r="60%">
-                        <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity="0.4" />
-                        <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity="0" />
+                        <stop offset="0%" stopColor="#8b5cf6" stopOpacity="0.8" />
+                        <stop offset="100%" stopColor="#4c1d95" stopOpacity="0" />
                     </radialGradient>
                 </defs>
-                <ellipse cx="200" cy="250" rx="170" ry="200" fill="url(#dg1)" opacity="0.3" />
-                {[120, 190, 260, 330].map((y, i) => (
-                    <g key={i}>
-                        <ellipse cx="200" cy={y} rx="110" ry="28" className="fill-primary/10 stroke-primary/30" strokeWidth="1" />
-                        <rect x="90" y={y} width="220" height="48" className="fill-primary/5" />
-                        <ellipse cx="200" cy={y + 48} rx="110" ry="28" className="fill-primary/10 stroke-primary/15" strokeWidth="1" />
-                    </g>
-                ))}
+                <ellipse cx="200" cy="250" rx="170" ry="200" fill="url(#dg1)" opacity="0.5" />
             </svg>
         ),
         map: (
             <svg viewBox="0 0 400 500" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
                 <defs>
                     <radialGradient id="mg1" cx="50%" cy="50%" r="60%">
-                        <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity="0.4" />
-                        <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity="0" />
+                        <stop offset="0%" stopColor="#10b981" stopOpacity="0.8" />
+                        <stop offset="100%" stopColor="#065f46" stopOpacity="0" />
                     </radialGradient>
                 </defs>
-                <ellipse cx="200" cy="250" rx="180" ry="200" fill="url(#mg1)" opacity="0.3" />
-                {[80, 130, 180, 230, 280, 330, 380].map((y, i) => (
-                    <path key={i} d={`M 60 ${y} Q ${100 + i * 10} ${y - 10} 340 ${y + 5}`} className="stroke-primary/10" strokeWidth="1" fill="none" />
-                ))}
-                <circle cx="200" cy="240" r="60" className="fill-primary/5 stroke-primary/20" strokeWidth="1" />
-                <circle cx="200" cy="240" r="20" className="fill-primary/20 stroke-primary/60" strokeWidth="1.5" />
-                <circle cx="200" cy="240" r="5" className="fill-primary" />
+                <ellipse cx="200" cy="250" rx="180" ry="200" fill="url(#mg1)" opacity="0.4" />
             </svg>
         ),
         terminal: (
             <svg viewBox="0 0 400 500" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
                 <defs>
                     <radialGradient id="tg1" cx="50%" cy="50%" r="60%">
-                        <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity="0.3" />
-                        <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity="0" />
+                        <stop offset="0%" stopColor="#f59e0b" stopOpacity="0.8" />
+                        <stop offset="100%" stopColor="#78350f" stopOpacity="0" />
                     </radialGradient>
                 </defs>
-                <ellipse cx="200" cy="250" rx="180" ry="200" fill="url(#tg1)" opacity="0.3" />
-                <rect x="80" y="100" width="240" height="300" rx="24" className="fill-card stroke-border shadow-2xl" strokeWidth="1" />
-                <rect x="80" y="100" width="240" height="40" rx="24" className="fill-muted/30" />
-                <circle cx="104" cy="120" r="6" className="fill-red-500/50" />
-                <circle cx="124" cy="120" r="6" className="fill-amber-500/50" />
-                <circle cx="144" cy="120" r="6" className="fill-primary/50" />
-                {[170, 200, 230, 260, 290].map((y, i) => (
-                    <rect key={i} x="100" y={y} width={100 + Math.random() * 100} height="10" rx="4" className="fill-foreground/10" />
-                ))}
-                <rect x="100" y="320" width="10" height="20" rx="2" className="fill-primary animate-pulse" />
+                <ellipse cx="200" cy="250" rx="180" ry="200" fill="url(#tg1)" opacity="0.35" />
             </svg>
         ),
         shield: (
             <svg viewBox="0 0 400 500" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
                 <defs>
                     <radialGradient id="shg1" cx="50%" cy="40%" r="60%">
-                        <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity="0.4" />
-                        <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity="0" />
+                        <stop offset="0%" stopColor="#22c55e" stopOpacity="0.8" />
+                        <stop offset="100%" stopColor="#14532d" stopOpacity="0" />
                     </radialGradient>
                 </defs>
-                <ellipse cx="200" cy="250" rx="180" ry="200" fill="url(#shg1)" opacity="0.3" />
-                <path d="M200 80 L320 120 L320 250 Q320 380 200 440 Q80 380 80 250 L80 120 Z" className="fill-primary/5 stroke-primary/30" strokeWidth="2" />
-                <path d="M180 250 L200 270 L240 230" className="stroke-primary" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+                <ellipse cx="200" cy="250" rx="180" ry="200" fill="url(#shg1)" opacity="0.4" />
             </svg>
         ),
         cpu: (
             <svg viewBox="0 0 400 500" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
                 <defs>
                     <radialGradient id="cg1" cx="50%" cy="50%" r="60%">
-                        <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity="0.4" />
-                        <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity="0" />
+                        <stop offset="0%" stopColor="#a855f7" stopOpacity="0.8" />
+                        <stop offset="100%" stopColor="#581c87" stopOpacity="0" />
                     </radialGradient>
                 </defs>
-                <ellipse cx="200" cy="250" rx="180" ry="200" fill="url(#cg1)" opacity="0.3" />
-                <rect x="120" y="160" width="160" height="160" rx="32" className="fill-card stroke-primary/30" strokeWidth="2" />
-                <rect x="150" y="190" width="100" height="100" rx="20" className="fill-primary/10 stroke-primary/20" />
-                {[145, 175, 205, 235, 265].map((pos) => (<React.Fragment key={pos}>
-                    <rect x={pos} y="150" width="10" height="15" rx="3" className="fill-primary/40" />
-                    <rect x={pos} y="315" width="10" height="15" rx="3" className="fill-primary/40" />
-                    <rect x="110" y={pos} width="15" height="10" rx="3" className="fill-primary/40" />
-                    <rect x="275" y={pos} width="15" height="10" rx="3" className="fill-primary/40" />
-                </React.Fragment>))}
+                <ellipse cx="200" cy="250" rx="180" ry="200" fill="url(#cg1)" opacity="0.4" />
             </svg>
         ),
     };
     return visuals[type] || visuals['smartphone'];
 };
 
-// --- FEATHERED VISUAL WRAPPER ---
-
-const FeatheredVisual = ({ type, flip, scrollProgress }: { type: string; flip: boolean; scrollProgress: MotionValue<number> }) => {
+// ─── Feather Mask Wrapper ─────────────────────────────────────────────────────
+const FeatheredVisual = ({ type, flip, scrollProgress, image }: { type: string; flip: boolean; scrollProgress: MotionValue<number>; image: string }) => {
     const scale = useTransform(scrollProgress, [0, 0.5, 1], [0.95, 1, 1.05]);
-    const opacity = useTransform(scrollProgress, [0, 0.3, 0.7, 1], [0, 1, 1, 0]);
+    const rotate = useTransform(scrollProgress, [0, 1], [flip ? 2 : -2, flip ? -1 : 1]);
+    const opacity = useTransform(scrollProgress, [0, 0.2, 0.8, 1], [0, 1, 1, 0.4]);
 
     return (
-        <motion.div style={{ scale, opacity }} className="relative w-full h-full">
+        <motion.div
+            style={{ scale, rotate, opacity }}
+            className="relative w-full h-full flex items-center justify-center"
+        >
+            {/* Feathered image container */}
             <div
-                className="w-full h-full p-12"
+                className="relative w-full aspect-[4/5] md:aspect-square max-w-2xl rounded-[48px] overflow-hidden shadow-[0_40px_100px_rgba(0,0,0,0.6)]"
                 style={{
-                    maskImage: 'radial-gradient(circle at center, black 30%, transparent 80%)',
-                    WebkitMaskImage: 'radial-gradient(circle at center, black 30%, transparent 80%)',
+                    maskImage: flip
+                        ? 'radial-gradient(ellipse 90% 90% at 30% 50%, black 50%, transparent 95%)'
+                        : 'radial-gradient(ellipse 90% 90% at 70% 50%, black 50%, transparent 95%)',
+                    WebkitMaskImage: flip
+                        ? 'radial-gradient(ellipse 90% 90% at 30% 50%, black 50%, transparent 95%)'
+                        : 'radial-gradient(ellipse 90% 90% at 70% 50%, black 50%, transparent 95%)',
                 }}
             >
+                <img
+                    src={image}
+                    className="w-full h-full object-cover"
+                    alt=""
+                />
+                {/* Secondary gradient overlay for deep integration */}
+                <div className={`absolute inset-0 bg-gradient-to-${flip ? 'r' : 'l'} from-[#050505] via-transparent to-transparent opacity-60`} />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-transparent to-transparent opacity-40" />
+            </div>
+
+            {/* Background SVG glow – kept for atmospheric depth */}
+            <div className="absolute inset-0 -z-10 opacity-30 blur-[100px]">
                 <ToolVisual type={type} flip={flip} />
             </div>
         </motion.div>
     );
 };
 
-// --- FEATURE SECTION ---
-
+// ─── Scroll Feature Section ───────────────────────────────────────────────────
 const FeatureSection = ({
-    title, tagline, description, icon: Icon, badge, status, downloadUrl, siteUrl, variant, index, visualType
+    title, description, icon: Icon, badge, status, downloadUrl, siteUrl, variant, index,
+    visualType, tagline, image
 }: any) => {
     const ref = useRef(null);
     const isInView = useInView(ref, { once: false, margin: '-20% 0px -20% 0px' });
     const { scrollYProgress } = useScroll({ target: ref, offset: ['start end', 'end start'] });
 
     const flip = index % 2 === 1;
-    const y = useTransform(scrollYProgress, [0, 1], [100, -100]);
-    const opacity = useTransform(scrollYProgress, [0, 0.2, 0.8, 1], [0, 1, 1, 0]);
+
+    const textX = useTransform(scrollYProgress, [0, 0.4, 0.6, 1], [flip ? 60 : -60, 0, 0, flip ? -30 : 30]);
+    const textOpacity = useTransform(scrollYProgress, [0.1, 0.3, 0.7, 0.9], [0, 1, 1, 0]);
+
+    // Parallax background bleed
+    const bgY = useTransform(scrollYProgress, [0, 1], [-100, 100]);
+    const bgOpacity = useTransform(scrollYProgress, [0, 0.4, 0.6, 1], [0, 0.15, 0.15, 0]);
+
+    const accentColors: Record<string, string> = {
+        smartphone: '#3b82f6',
+        database: '#8b5cf6',
+        map: '#10b981',
+        terminal: '#f59e0b',
+        shield: '#22c55e',
+        cpu: '#a855f7',
+    };
+
+    const accent = accentColors[visualType] || '#3b82f6';
 
     return (
-        <section ref={ref} className="relative min-h-screen flex items-center overflow-hidden py-32">
+        <section
+            ref={ref}
+            className="relative min-h-[120vh] flex items-center overflow-hidden"
+        >
+            {/* Background Image Bleed - Parallax */}
             <motion.div
-                style={{ opacity }}
-                className={cn(
-                    "container mx-auto px-6 grid md:grid-cols-2 gap-16 items-center",
-                    flip && "md:flex-row-reverse"
-                )}
+                style={{ y: bgY, opacity: bgOpacity }}
+                className="absolute inset-x-0 -inset-y-40 z-0 pointer-events-none"
             >
-                {/* Visual */}
-                <div className={cn("order-1 h-[400px] md:h-[600px] relative", flip && "md:order-2")}>
-                    <FeatheredVisual type={visualType} flip={flip} scrollProgress={scrollYProgress} />
-                </div>
+                <div
+                    className="w-full h-full bg-cover bg-center opacity-30 grayscale saturate-50"
+                    style={{ backgroundImage: `url(${image})` }}
+                />
+                <div className="absolute inset-0 bg-gradient-to-b from-[#050505] via-transparent to-[#050505]" />
+                <div className="absolute inset-0 bg-[#050505]/60" />
+            </motion.div>
 
-                {/* Content */}
-                <motion.div style={{ y }} className={cn("order-2 space-y-8", flip && "md:order-1")}>
-                    <div className="flex items-center gap-4">
-                        <div className="p-3 bg-primary/10 rounded-2xl">
-                            <Icon className="h-6 w-6 text-primary" strokeWidth={1.5} />
+            {/* Hairline divider */}
+            <div className="absolute top-0 left-[10%] right-[10%] h-[1px] bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+
+            <div className={`relative z-10 w-full max-w-7xl mx-auto px-8 md:px-16 grid md:grid-cols-2 items-center gap-16 ${flip ? 'direction-rtl' : ''}`}>
+
+                {/* Text Column */}
+                <motion.div
+                    style={{ x: textX, opacity: textOpacity }}
+                    className={`py-24 ${flip ? 'md:order-2 md:pl-12' : 'md:order-1 md:pr-12'}`}
+                >
+                    <motion.div
+                        initial={{ opacity: 0, y: 16 }}
+                        animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 16 }}
+                        transition={{ duration: 0.7, delay: 0.1 }}
+                        className="flex items-center gap-3 mb-6"
+                    >
+                        <div
+                            className="p-2.5 rounded-xl"
+                            style={{ background: `${accent}22`, boxShadow: `0 0 20px ${accent}30` }}
+                        >
+                            <Icon strokeWidth={1.5} className="h-5 w-5" style={{ color: accent }} />
                         </div>
                         {badge && (
-                            <Badge variant="outline" className="border-primary/30 text-primary uppercase tracking-widest text-[10px] py-1.5 px-4 font-black">
+                            <span
+                                className="text-[10px] font-black tracking-[0.25em] uppercase px-3 py-1.5 rounded-full border"
+                                style={{ color: accent, borderColor: `${accent}40`, background: `${accent}12` }}
+                            >
                                 {badge}
-                            </Badge>
+                            </span>
                         )}
-                    </div>
+                    </motion.div>
 
-                    <div className="space-y-4">
-                        <p className="text-primary font-black uppercase tracking-[0.3em] text-[10px]">{tagline}</p>
-                        <h2 className="text-5xl md:text-7xl font-black tracking-tighter leading-[0.9] text-foreground">
-                            {title}
-                        </h2>
-                    </div>
+                    {tagline && (
+                        <motion.p
+                            initial={{ opacity: 0, y: 16 }}
+                            animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 16 }}
+                            transition={{ duration: 0.7, delay: 0.15 }}
+                            className="text-sm font-bold tracking-[0.15em] uppercase mb-3 text-white/50"
+                        >
+                            {tagline}
+                        </motion.p>
+                    )}
 
-                    <p className="text-xl md:text-2xl text-muted-foreground font-medium leading-relaxed max-w-xl">
+                    <motion.h2
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+                        transition={{ duration: 0.9, delay: 0.2 }}
+                        className="text-5xl md:text-7xl font-black tracking-tighter leading-[0.9] mb-8 text-white"
+                    >
+                        {title}
+                    </motion.h2>
+
+                    <motion.p
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+                        transition={{ duration: 0.9, delay: 0.3 }}
+                        className="text-lg md:text-xl text-white/40 leading-relaxed mb-12 max-w-lg font-medium"
+                    >
                         {description}
-                    </p>
+                    </motion.p>
 
-                    <div className="pt-4">
+                    <motion.div
+                        initial={{ opacity: 0, y: 16 }}
+                        animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 16 }}
+                        transition={{ duration: 0.7, delay: 0.4 }}
+                    >
                         {downloadUrl ? (
-                            <a href={downloadUrl} download>
-                                <Button className="h-16 px-10 rounded-2xl bg-primary text-primary-foreground font-black text-lg gap-4 shadow-xl shadow-primary/20 hover:scale-[1.02] transition-transform">
-                                    Download APK <Download className="h-5 w-5" />
-                                </Button>
+                            <a href={downloadUrl} download={title.toLowerCase().replace(/\s+/g, '_') + '.apk'}>
+                                <button
+                                    className="group flex items-center gap-3 h-14 px-8 rounded-2xl font-bold text-base transition-all duration-500 bg-white text-black hover:bg-white/90"
+                                    style={{ boxShadow: '0 20px 40px rgba(255,255,255,0.1)' }}
+                                >
+                                    Download APK
+                                    <Download className="h-4 w-4 transition-transform group-hover:translate-y-0.5" />
+                                </button>
                             </a>
                         ) : siteUrl ? (
-                            <Button
+                            <button
+                                className="group flex items-center gap-3 h-14 px-8 rounded-2xl font-bold text-base border border-white/10 bg-white/5 text-white/80 hover:bg-white hover:text-black transition-all duration-500"
                                 onClick={() => window.open(siteUrl, '_blank')}
-                                className="h-16 px-10 rounded-2xl bg-foreground text-background font-black text-lg gap-4 hover:scale-[1.02] transition-transform"
                             >
-                                Launch Interface <ExternalLink className="h-5 w-5" />
-                            </Button>
+                                Launch Site
+                                <ExternalLink className="h-4 w-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                            </button>
+                        ) : status === 'Available' ? (
+                            <button
+                                className="group flex items-center gap-3 h-14 px-8 rounded-2xl font-bold text-base transition-all duration-500 bg-white text-black hover:bg-white/90"
+                                onClick={() => { window.location.href = variant === 'premium' ? '/settings' : '/tools'; }}
+                            >
+                                {variant === 'premium' ? 'Get API Key' : 'View Source'}
+                                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                            </button>
                         ) : (
-                            <Button
-                                disabled={status !== 'Available'}
-                                className={cn(
-                                    "h-16 px-10 rounded-2xl font-black text-lg gap-4 transition-all duration-500",
-                                    status === 'Available' ? "bg-primary text-primary-foreground shadow-xl shadow-primary/20" : "bg-muted text-muted-foreground/40"
-                                )}
+                            <button
+                                disabled
+                                className="flex items-center gap-3 h-14 px-8 rounded-2xl font-bold text-base border border-white/5 bg-white/5 text-white/20 cursor-not-allowed"
                             >
-                                {status === 'Available' ? (
-                                    <>Access Kit <ArrowRight className="h-5 w-5" /></>
-                                ) : (
-                                    <>Scheduled Deployment <Lock className="h-4 w-4" /></>
-                                )}
-                            </Button>
+                                In Development
+                                <Lock className="h-4 w-4 opacity-40" />
+                            </button>
                         )}
-                    </div>
+                    </motion.div>
                 </motion.div>
-            </motion.div>
+
+                {/* Visual Column - Integration of Live Images with Feathered Masks */}
+                <div
+                    className={`relative min-h-[60vh] md:min-h-[80vh] flex items-center justify-center ${flip ? 'md:order-1' : 'md:order-2'}`}
+                >
+                    <FeatheredVisual type={visualType} flip={flip} scrollProgress={scrollYProgress} image={image} />
+                </div>
+            </div>
         </section>
     );
 };
 
-// --- SCROLL PROGRESS PILL ---
-
+// ─── Scroll Progress Pill ─────────────────────────────────────────────────────
 const ScrollProgressPill = ({ progress }: { progress: MotionValue<number> }) => {
-    const scaleX = useSpring(progress, { stiffness: 100, damping: 30 });
+    const scaleX = useSpring(progress, { stiffness: 200, damping: 40 });
+
     return (
-        <div className="fixed bottom-12 left-1/2 -translate-x-1/2 z-[150] px-6 py-3 rounded-full bg-card/80 backdrop-blur-2xl border border-border shadow-2xl flex items-center gap-4">
-            <span className="text-[10px] font-black tracking-widest text-primary">Sovereign Progress</span>
-            <div className="w-32 h-1 bg-muted rounded-full overflow-hidden">
-                <motion.div className="h-full bg-primary" style={{ scaleX, transformOrigin: 'left' }} />
+        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-4 py-2.5 rounded-full bg-white/5 backdrop-blur-2xl border border-white/10">
+            <span className="text-[10px] text-white/30 font-bold tracking-widest uppercase">CEKA</span>
+            <div className="w-24 h-[2px] bg-white/10 rounded-full overflow-hidden">
+                <motion.div className="h-full bg-white/60 rounded-full" style={{ scaleX, transformOrigin: 'left' }} />
             </div>
+            <span className="text-[10px] text-white/30 font-bold tracking-widest uppercase">HAM</span>
         </div>
     );
 };
 
-// --- MAIN TOOLS PAGE ---
+// ─── Feature Data ─────────────────────────────────────────────────────────────
+const FEATURES = [
+    {
+        title: "Nasaka WEWE",
+        tagline: "Mobile Intelligence",
+        description: "Professional-grade mobile experience for civic monitoring. Seeded with geocoded IEBC office locations and offline legislative data.",
+        icon: Smartphone,
+        badge: "Alpha",
+        status: "Available",
+        variant: "premium",
+        downloadUrl: "/binaries/nasaka_universal.apk",
+        visualType: "smartphone",
+        image: "/images/nasaka.png"
+    },
+    {
+        title: "Master-Pack Q1",
+        tagline: "Legislative Intelligence",
+        description: "Quarterly consolidated legislative intelligence. JSON, CSV, and Markdown exports for all bills spanning 2024–2027.",
+        icon: Database,
+        badge: "2026.Q1",
+        status: "Available",
+        siteUrl: "https://ceka.sovereign.ke/data",
+        visualType: "database",
+        image: "/images/masterpack.png"
+    },
+    {
+        title: "GeoPosters Engine",
+        tagline: "Visual Evidence Layer",
+        description: "High-resolution visual evidence of regional governance, healthcare infrastructure, and IEBC office proximity across Kenya.",
+        icon: MapIcon,
+        badge: "Live",
+        status: "Available",
+        variant: "premium",
+        visualType: "map",
+        image: "/images/geoposters.png"
+    },
+    {
+        title: "Civic API",
+        tagline: "Data Infrastructure",
+        description: "Zero-trust legislative and audit streams. Built for journalists, developers, and researchers who demand sovereign data.",
+        icon: Terminal,
+        badge: "v1 HAM",
+        status: "Available",
+        variant: "premium",
+        visualType: "terminal",
+        image: "/images/api.png"
+    },
+    {
+        title: "The Vault",
+        tagline: "Secure Submissions",
+        description: "Encrypted submission and storage for investigative documents and whistleblower evidence. Built on zero-knowledge architecture.",
+        icon: Shield,
+        badge: "Secure",
+        status: "Available",
+        siteUrl: "https://vault.ceka.sovereign.ke",
+        visualType: "shield",
+        image: "/images/vault.png"
+    },
+    {
+        title: "Sovereign AI",
+        tagline: "Constitutional Alignment",
+        description: "Pre-trained weights and context for Kenyan constitutional alignment AI models. The future of accountable machine intelligence.",
+        icon: Cpu,
+        badge: "Restricted",
+        status: "Upcoming",
+        visualType: "cpu",
+        image: "/images/ai.png"
+    },
+];
 
+// ─── Main Tools Component ─────────────────────────────────────────────────────
 const Tools = () => {
     const containerRef = useRef(null);
     const { scrollYProgress } = useScroll({ target: containerRef, offset: ['start start', 'end end'] });
 
-    const heroOpacity = useTransform(scrollYProgress, [0, 0.15], [1, 0]);
-    const heroScale = useTransform(scrollYProgress, [0, 0.15], [1, 0.9]);
-
-    const toolset = [
-        {
-            title: "Nasaka WEWE",
-            tagline: "Mobile Intelligence",
-            description: "A professional-grade mobile toolset for field monitoring, featuring geocoded IEBC checkpoints and offline legislative intelligence.",
-            icon: Smartphone,
-            badge: "Operational - Alpha",
-            status: "Available",
-            variant: "premium",
-            downloadUrl: "/binaries/nasaka_universal.apk",
-            visualType: "smartphone"
-        },
-        {
-            title: "Master-Pack Q1",
-            tagline: "Data Extraction",
-            description: "The definitive legislative dataset for 2026. High-fidelity JSON and CSV exports for every bill, audit, and public expenditure.",
-            icon: Database,
-            badge: "Data Stream",
-            status: "Available",
-            variant: "default",
-            siteUrl: "https://ceka.sovereign.ke/data",
-            visualType: "database"
-        },
-        {
-            title: "GeoPosters Engine",
-            tagline: "Cartographic Evidence",
-            description: "High-resolution visual evidence of regional governance and infrastructure status. Visualizing accountability through maps.",
-            icon: MapIcon,
-            badge: "Live Visualization",
-            status: "Available",
-            variant: "premium",
-            visualType: "map"
-        },
-        {
-            title: "Civic API",
-            tagline: "Developer Infrastructure",
-            description: "Programmable endpoints for Kenyan civic data. Zero-trust architecture designed for researchers and high-frequency monitoring.",
-            icon: Terminal,
-            badge: "Developer Tier",
-            status: "Available",
-            variant: "premium",
-            visualType: "terminal"
-        },
-        {
-            title: "The Vault",
-            tagline: "Secure Submission",
-            description: "Military-grade encrypted repository for sensitive investigative documents and collective sovereign memory.",
-            icon: Shield,
-            badge: "Secure Storage",
-            status: "Available",
-            variant: "default",
-            siteUrl: "https://vault.ceka.sovereign.ke",
-            visualType: "shield"
-        },
-        {
-            title: "Sovereign AI",
-            tagline: "Neural Constitution",
-            description: "Constitutional LLM layers trained on the 2010 Constitution. Ensuring AI alignment with Kenyan sovereign values.",
-            icon: Cpu,
-            badge: "AI Evolution",
-            status: "Upcoming",
-            variant: "default",
-            visualType: "cpu"
-        }
-    ];
+    const heroScale = useTransform(scrollYProgress, [0, 0.15], [1, 0.85]);
+    const heroOpacity = useTransform(scrollYProgress, [0, 0.1], [1, 0]);
 
     return (
-        <div ref={containerRef} className="bg-background text-foreground transition-colors duration-500 overflow-x-hidden selection:bg-primary selection:text-primary-foreground">
+        <div ref={containerRef} className="min-h-screen bg-[#050505] text-white selection:bg-white selection:text-black overflow-x-hidden">
             <Navbar />
             <ScrollProgressPill progress={scrollYProgress} />
 
-            {/* Sticky Hero Section */}
-            <section className="h-screen sticky top-0 flex flex-col items-center justify-center p-6 text-center z-10">
-                <motion.div style={{ opacity: heroOpacity, scale: heroScale }} className="max-w-6xl space-y-12">
-                    <div className="space-y-4">
-                        <Badge className="bg-primary/5 text-primary border-primary/20 rounded-full px-8 py-3 text-xs font-black tracking-[0.5em] uppercase">
-                            Empowering The People
-                        </Badge>
-                        <h1 className="text-7xl md:text-[10rem] font-black tracking-tight leading-[0.8] mb-8">
+            {/* ── Hero Section ──────────────────────────────────────────── */}
+            <section className="relative h-screen flex flex-col items-center justify-center px-6 overflow-hidden sticky top-0">
+                <motion.div
+                    style={{ scale: heroScale, opacity: heroOpacity }}
+                    className="relative z-10 text-center max-w-5xl"
+                >
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ duration: 1.2, ease: [0.21, 0.47, 0.32, 0.98] }}
+                    >
+                        <h1 className="text-7xl md:text-[clamp(5rem,14vw,12rem)] font-black tracking-tighter leading-[0.82] mb-12">
                             POWER TO <br />
-                            <span className="text-transparent bg-clip-text bg-gradient-to-b from-foreground to-foreground/30">THE PEOPLE.</span>
+                            THE PEOPLE.
                         </h1>
-                    </div>
-                    <p className="text-2xl md:text-3xl text-muted-foreground/60 max-w-4xl mx-auto font-medium leading-relaxed">
-                        Civic intelligence infrastructure engineered for sovereign accountability.
-                    </p>
-                    <motion.div animate={{ y: [0, 10, 0] }} transition={{ duration: 2, repeat: Infinity }} className="pt-12 text-muted-foreground/20">
-                        <ChevronDown className="h-12 w-12 mx-auto" />
+                        <p className="text-xl md:text-3xl text-white/40 max-w-3xl mx-auto font-medium leading-relaxed tracking-[-0.01em]">
+                            Civic intelligence infrastructure engineered for sovereign accountability.
+                        </p>
                     </motion.div>
                 </motion.div>
-
-                {/* Ambient Glows */}
-                <div className="absolute inset-0 pointer-events-none z-0">
-                    <div className="absolute top-1/4 left-1/4 w-[800px] h-[800px] bg-primary/20 dark:bg-primary/10 rounded-full blur-[200px] animate-pulse" />
-                    <div className="absolute bottom-1/4 right-1/4 w-[600px] h-[600px] bg-secondary/10 dark:bg-secondary/5 rounded-full blur-[150px]" />
-                </div>
             </section>
 
-            {/* Feature Sections */}
-            <div className="relative z-20 bg-background/50 backdrop-blur-sm">
-                {toolset.map((tool, i) => (
-                    <FeatureSection key={tool.title} index={i} {...tool} />
+            {/* ── Feature Sections ──────────────────────────────────────── */}
+            <div className="relative z-10">
+                {FEATURES.map((feature, index) => (
+                    <FeatureSection
+                        key={feature.title}
+                        index={index}
+                        {...feature}
+                    />
                 ))}
             </div>
 
-            {/* Final CTA */}
-            <section className="min-h-screen flex items-center justify-center text-center px-6 relative z-30">
+            {/* ── Call To Action ────────────────────────────────────────── */}
+            <section className="relative min-h-screen flex items-center justify-center px-8 py-40 overflow-hidden">
                 <motion.div
-                    initial={{ opacity: 0, y: 50 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    className="max-w-4xl space-y-12"
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    whileInView={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 1, ease: [0.21, 0.47, 0.32, 0.98] }}
+                    viewport={{ once: true }}
+                    className="text-center"
                 >
-                    <h2 className="text-6xl md:text-9xl font-black tracking-tighter leading-none text-foreground">
-                        READY TO <br />
-                        <span className="italic text-primary underline decoration-primary/20 underline-offset-8">GOHAM?</span>
+                    <h2 className="text-6xl md:text-8xl font-black tracking-tighter mb-12">
+                        Build the Future.
                     </h2>
-                    <p className="text-xl md:text-2xl text-muted-foreground/60 font-medium leading-relaxed">
-                        Join the infrastructure of the next republic. Access the data, secure the record, and build the future.
-                    </p>
-                    <div className="flex flex-wrap justify-center gap-6 pt-6">
-                        <Button className="h-20 px-12 rounded-[2.5rem] bg-primary text-primary-foreground font-black text-xl shadow-2xl shadow-primary/20 hover:scale-[1.05] transition-transform">
-                            Request API Access
-                        </Button>
-                        <Button variant="outline" className="h-20 px-12 rounded-[2.5rem] border-primary/20 text-primary font-black text-xl hover:bg-primary/5">
-                            Documentation
-                        </Button>
-                    </div>
+                    <Button
+                        size="lg"
+                        className="h-16 px-14 rounded-full bg-white text-black hover:bg-white/90 text-lg font-bold"
+                        onClick={() => { window.location.href = '/settings'; }}
+                    >
+                        Get API Key <Zap className="ml-3 h-5 w-5 fill-current" />
+                    </Button>
                 </motion.div>
             </section>
 
