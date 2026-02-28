@@ -61,9 +61,9 @@ const TOOLS: Tool[] = [
         description: 'A secure messaging app built for Kenyan activists, journalists, and civic educators — forked from the Briar Project\'s battle-tested encrypted messaging engine.',
         longDescription: 'Nasaka WEWE is a secure messaging app built for Kenyan activists, journalists, civic educators and anyone who needs a safe, resilient way to communicate — even during internet blackouts. Unlike traditional messaging apps, Nasaka WEWE doesn\'t rely on a central server — messages are synchronized directly between users\' devices. If the Internet\'s down, Nasaka WEWE can sync via Bluetooth, Wi-Fi or memory cards.',
         icon: Smartphone,
-        badge: 'Alpha',
+        badge: 'Prototype',
         status: 'Available',
-        downloadUrl: 'https://www.civiceducationkenya.com',
+        downloadUrl: 'https://cajrvemigxghnfmyopiy.supabase.co/storage/v1/object/public/projects-outputs/nasakawewe-android-official-x86_64-debug.apk',
         githubUrl: 'https://github.com/saemscodes/Nasaka-WEWE',
         features: [
             'End-to-end encrypted messages',
@@ -102,7 +102,7 @@ const TOOLS: Tool[] = [
         description: 'A breakdown of the economic state of the nation. Structured audit of Kenya\'s public finances, expenditure, and debt for citizen comprehension.',
         longDescription: 'The People\'s Audit provides a structured, citizen-accessible breakdown of Kenya\'s public finances. Tracking expenditure, debt and economic indicators in a way that every Kenyan can understand and act on.',
         icon: Radio,
-        badge: 'HAM',
+        badge: 'Live',
         status: 'Available',
         siteUrl: '/peoples-audit',
         features: [
@@ -502,10 +502,10 @@ const FeaturedSection = () => {
                         <span className="text-xs font-black tracking-widest uppercase text-primary">Featured</span>
                     </div>
                     <h2 className="text-3xl md:text-5xl font-black tracking-tighter text-foreground mb-3">
-                        Civic Intelligence Network
+                        Featured Civic Tools For You
                     </h2>
                     <p className="text-muted-foreground text-lg max-w-2xl leading-relaxed">
-                        Linked civic platforms we endorse and collaborate with. Live previews powered directly from source.
+                        Linked civic platforms's projects we endorse and/or collaborate with. Live previews powered directly from source. Go support their work!
                     </p>
                 </motion.div>
 
@@ -612,17 +612,17 @@ const HeroSection = () => {
                 >
                     <div className="inline-flex items-center gap-2 mb-6 px-4 py-1.5 rounded-full border border-primary/20 bg-primary/5 text-primary text-xs font-black tracking-[0.2em] uppercase">
                         <Zap className="h-3 w-3" />
-                        CEKA HAM Infrastructure
+                        Civic Tools
                     </div>
 
                     <h1 className="text-5xl sm:text-7xl lg:text-8xl xl:text-9xl font-black tracking-tighter leading-[0.85] mb-8 text-foreground">
-                        Tools for <br />
-                        <span className="text-primary">Sovereign</span>{' '}
-                        <span className="text-secondary">Kenya.</span>
+                        Your <br />
+                        <span className="text-primary">CEKA</span>{' '}
+                        <span className="text-secondary">Tools</span>
                     </h1>
 
                     <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto font-medium leading-relaxed mb-10">
-                        High-performance civic toolkits, investigative data streams, and encrypted communications infrastructure — built for the next generation of Kenyan accountability.
+                        High-performance civic toolkits, investigative data streams, and encrypted communications infrastructure - all in one home.
                     </p>
 
                     <div className="flex flex-wrap items-center justify-center gap-4">
@@ -634,7 +634,7 @@ const HeroSection = () => {
                                 if (el) el.scrollIntoView({ behavior: 'smooth' });
                             }}
                         >
-                            Explore Toolset
+                            Explore Full Toolset
                             <ArrowRight className="h-4 w-4" />
                         </Button>
                         <Button
@@ -644,7 +644,7 @@ const HeroSection = () => {
                             onClick={scrollToFeatured}
                         >
                             <Globe className="h-4 w-4" />
-                            Featured Sites
+                            See Featured Tools
                         </Button>
                     </div>
                 </motion.div>
