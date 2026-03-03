@@ -57,7 +57,7 @@ const TOOLS: Tool[] = [
     {
         id: 'nasaka-wewe',
         title: 'Nasaka WEWE',
-        tagline: 'Encrypted Civic Messaging',
+        tagline: 'Wireless Encrypted Wide Exchange',
         description: 'A secure messaging app built for Kenyan activists, journalists, and civic educators — forked from the Briar Project\'s battle-tested encrypted messaging engine.',
         longDescription: 'Nasaka WEWE is a secure messaging app built for Kenyan activists, journalists, civic educators and anyone who needs a safe, resilient way to communicate — even during internet blackouts. Unlike traditional messaging apps, Nasaka WEWE doesn\'t rely on a central server — messages are synchronized directly between users\' devices. If the Internet\'s down, Nasaka WEWE can sync via Bluetooth, Wi-Fi or memory cards.',
         icon: Smartphone,
@@ -78,7 +78,7 @@ const TOOLS: Tool[] = [
     {
         id: 'nasaka-iebc',
         title: 'Nasaka IEBC',
-        tagline: 'IEBC Office Finder',
+        tagline: 'Register As A Voter | Find IEBC Office in Seconds',
         description: 'Find your nearest IEBC registration center in seconds. Interactive map with turn-by-turn navigation to verified IEBC office locations across Kenya.',
         longDescription: 'Nasaka IEBC is an independent civic platform by Civic Education Kenya (CEKA) that helps Kenyan citizens find official IEBC registration centers, verify office locations, and access electoral services with ease via interactive maps and directions.',
         icon: MapIcon,
@@ -98,7 +98,7 @@ const TOOLS: Tool[] = [
     {
         id: 'peoples-audit',
         title: "People's Audit",
-        tagline: 'National Economic Accountability',
+        tagline: 'Audit Report for Govt Spending',
         description: 'A breakdown of the economic state of the nation. Structured audit of Kenya\'s public finances, expenditure, and debt for citizen comprehension.',
         longDescription: 'The People\'s Audit provides a structured, citizen-accessible breakdown of Kenya\'s public finances. Tracking expenditure, debt and economic indicators in a way that every Kenyan can understand and act on.',
         icon: Radio,

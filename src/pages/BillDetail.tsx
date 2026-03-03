@@ -358,7 +358,7 @@ const BillDetail = () => {
                       </div>
                       <h4 className="text-xl font-black tracking-tighter uppercase">Public Discourse</h4>
                       <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
-                        Discuss this bill with 1,200 other citizens in the Assembly forum.
+                        Discuss this bill with 1,200 other citizens in the Community forum.
                       </p>
                     </div>
                     <Button variant="outline" className="w-full h-12 rounded-2xl border-kenya-green/20 text-kenya-green font-bold hover:bg-kenya-green/5" asChild>

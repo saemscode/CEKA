@@ -18,10 +18,10 @@ const Footer = () => {
             {translate('Empowering Kenyan citizens with civic knowledge and tools for meaningful participation in national governance.', language)}
           </p>
           <div className="flex items-center gap-4">
-            <a href="https://facebook.com/civicedkenya" target="_blank" className="h-10 w-10 rounded-xl bg-white dark:bg-white/5 flex items-center justify-center hover:text-primary transition-colors shadow-sm"><Facebook className="h-5 w-5" /></a>
+            <a href="https://facebook.com/civiceducationkenya" target="_blank" className="h-10 w-10 rounded-xl bg-white dark:bg-white/5 flex items-center justify-center hover:text-primary transition-colors shadow-sm"><Facebook className="h-5 w-5" /></a>
             <a href="https://twitter.com/civicedkenya" target="_blank" className="h-10 w-10 rounded-xl bg-white dark:bg-white/5 flex items-center justify-center hover:text-primary transition-colors shadow-sm"><Twitter className="h-5 w-5" /></a>
-            <a href="https://instagram.com/civicedkenya" target="_blank" className="h-10 w-10 rounded-xl bg-white dark:bg-white/5 flex items-center justify-center hover:text-primary transition-colors shadow-sm"><Instagram className="h-5 w-5" /></a>
-            <a href="https://linktr.ee/civicedkenya" target="_blank" className="h-10 w-10 rounded-xl bg-white dark:bg-white/5 flex items-center justify-center hover:text-primary transition-colors shadow-sm"><Globe className="h-5 w-5" /></a>
+            <a href="https://instagram.com/civiceducationke" target="_blank" className="h-10 w-10 rounded-xl bg-white dark:bg-white/5 flex items-center justify-center hover:text-primary transition-colors shadow-sm"><Instagram className="h-5 w-5" /></a>
+            <a href="https://linktr.ee/civiceducationke" target="_blank" className="h-10 w-10 rounded-xl bg-white dark:bg-white/5 flex items-center justify-center hover:text-primary transition-colors shadow-sm"><Globe className="h-5 w-5" /></a>
           </div>
         </div>
 
