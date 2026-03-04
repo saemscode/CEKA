@@ -4,481 +4,1102 @@ import time
 import json
 import logging
 import re
-from datetime import datetime
+import io
+import threading
+import base64
+from datetime import datetime, timezone
 from typing import List, Dict, Any, Optional, Tuple
 from urllib.parse import urljoin, unquote
+from pathlib import Path
 
-# Set up logging with utf-8 encoding to avoid errors on Windows
+# ---------------------------------------------------------------------------
+# Logging setup (UTF-8 safe for Windows)
+# ---------------------------------------------------------------------------
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s',
     handlers=[
         logging.FileHandler("legislative_scrape.log", encoding='utf-8'),
-        logging.StreamHandler(sys.stdout)
+        logging.StreamHandler(
+            io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+        )
     ]
 )
+logger = logging.getLogger(__name__)
 
-# Try to import optional PDF text extraction libraries
+# ---------------------------------------------------------------------------
+# Dependency detection
+# ---------------------------------------------------------------------------
 try:
     import requests
-    from PyPDF2 import PdfReader
-    PDF_SUPPORT = True
+    REQUESTS_OK = True
 except ImportError:
-    PDF_SUPPORT = False
-    logging.warning("PyPDF2 not installed. PDF text extraction will be skipped.")
+    REQUESTS_OK = False
+    logger.warning("requests not installed – PDF download disabled.")
+
+try:
+    import fitz  # PyMuPDF
+    FITZ_OK = True
+except ImportError:
+    FITZ_OK = False
+    logger.warning("PyMuPDF (fitz) not installed – PDF text extraction limited.")
+
+try:
+    from PyPDF2 import PdfReader
+    PYPDF2_OK = True
+except ImportError:
+    PYPDF2_OK = False
+
+try:
+    import pdfplumber
+    PDFPLUMBER_OK = True
+except ImportError:
+    PDFPLUMBER_OK = False
+
+# ---------------------------------------------------------------------------
+# Load environment variables from .env if python-dotenv is available
+# ---------------------------------------------------------------------------
+try:
+    from dotenv import load_dotenv
+    env_path = Path(__file__).resolve().parent.parent / ".env"
+    if env_path.exists():
+        load_dotenv(dotenv_path=str(env_path))
+        logger.info(f"Loaded environment from {env_path}")
+except ImportError:
+    logger.info("python-dotenv not installed – reading environment variables directly.")
 
 
+# ===================================================================
+#  RemoteOCREngine  –  Resilient OCR.space + Cloudmersive Fallback
+# ===================================================================
+class RemoteOCREngine:
+    """
+    Production-grade remote OCR engine with cascading provider fallback.
+
+    Provider chain:
+      1. OCR.space  (Engine 2 → Engine 1 swap on low quality)
+      2. Cloudmersive  (secondary fallback when OCR.space quota/rate limited)
+
+    Free-tier guardrails:
+      - OCR.space: 500 requests/day per IP, max 2 concurrent requests.
+      - File size: ≤5 MB per request (client-side enforcement).
+      - PDF page limit: 3 pages on free tier for searchable PDF.
+    """
+
+    OCR_SPACE_ENDPOINT = "https://api.ocr.space/parse/image"
+    CLOUDMERSIVE_ENDPOINT = "https://testapi.cloudmersive.com/ocr/pdf/toText"
+    CLOUDMERSIVE_IMAGE_ENDPOINT = "https://testapi.cloudmersive.com/ocr/image/toText"
+
+    # Quality thresholds
+    MIN_TEXT_LENGTH = 200
+    QUALITY_TOKENS = ["MEMORANDUM", "Bill", "An Act", "ENACTED", "PART I", "OBJECTS AND REASONS"]
+
+    # Free-tier limits
+    OCR_SPACE_DAILY_LIMIT = 500
+    MAX_CONCURRENT_FREE = 2
+    MAX_FILE_SIZE_BYTES = 1 * 1024 * 1024  # 1 MB (free tier); PRO = 5 MB
+
+    def __init__(self):
+        self.ocr_space_key = os.environ.get("OCR_SPACE_API_KEY", "")
+        self.cloudmersive_key = os.environ.get("CLOUDMERSIVE_API_KEY", "")
+
+        # Daily request counter (UTC-day based)
+        self._daily_counter_lock = threading.Lock()
+        self._daily_counter = 0
+        self._daily_counter_date = datetime.now(timezone.utc).date()
+
+        # Concurrency semaphore for free-tier OCR.space
+        self._ocr_space_semaphore = threading.Semaphore(self.MAX_CONCURRENT_FREE)
+
+        # Metrics
+        self.metrics = {
+            "ocr_requests_total": 0,
+            "ocr_requests_failed": 0,
+            "ocr_requests_quota_exhausted": 0,
+            "ocr_cloudmersive_total": 0,
+            "ocr_cloudmersive_failed": 0,
+            "total_processing_time_ms": 0,
+        }
+
+        # Audit log
+        self._audit_log: List[Dict[str, Any]] = []
+
+        if not self.ocr_space_key:
+            logger.warning("OCR_SPACE_API_KEY not set – OCR.space fallback disabled.")
+        if not self.cloudmersive_key:
+            logger.warning("CLOUDMERSIVE_API_KEY not set – Cloudmersive fallback disabled.")
+
+    # -------------------------------------------------------------------
+    #  Public API: ocr_fallback
+    # -------------------------------------------------------------------
+    def ocr_fallback(self, pdf_bytes: bytes, pdf_url: str = "", title: str = "") -> Dict[str, Any]:
+        """
+        Main entry point. Attempts OCR on the given PDF bytes.
+
+        Returns a dict with:
+          - text: str (cleaned OCR text)
+          - source: str ("ocr.space" | "cloudmersive" | "none")
+          - engine: int or str
+          - pages: list of page numbers processed
+          - confidence_estimate: float or None
+          - notes: str
+          - metadata: dict with provenance info
+        """
+        start_time = time.time()
+        result = {
+            "text": "",
+            "source": "none",
+            "engine": None,
+            "pages": [],
+            "confidence_estimate": None,
+            "notes": "",
+            "metadata": {}
+        }
+
+        file_size = len(pdf_bytes)
+        if file_size == 0:
+            result["notes"] = "Empty PDF bytes provided."
+            return result
+
+        # Pre-trim large PDFs to first 3 pages for free-tier compliance
+        if file_size > self.MAX_FILE_SIZE_BYTES:
+            logger.info(f"      [OCR] PDF is {file_size / 1024:.0f}KB (>{self.MAX_FILE_SIZE_BYTES / 1024:.0f}KB limit). Trimming to first 3 pages...")
+            pdf_bytes = self._extract_first_pages(pdf_bytes, max_pages=3)
+            file_size = len(pdf_bytes)
+            if file_size > self.MAX_FILE_SIZE_BYTES:
+                logger.warning(f"      [OCR] Trimmed PDF still {file_size / 1024:.0f}KB. Will try URL method if available.")
+
+        # --- Step 1: Try OCR.space ---
+        if self.ocr_space_key and not self._is_quota_exhausted():
+            ocr_space_result = self._try_ocr_space(pdf_bytes, pdf_url, title)
+            if ocr_space_result and self._passes_quality_gate(ocr_space_result.get("text", ""), title):
+                elapsed_ms = int((time.time() - start_time) * 1000)
+                self.metrics["total_processing_time_ms"] += elapsed_ms
+                result.update(ocr_space_result)
+                result["metadata"]["processing_time_ms"] = elapsed_ms
+                self._record_audit("ocr.space", file_size, elapsed_ms, True)
+                return result
+            elif ocr_space_result:
+                result["notes"] += "OCR.space returned text below quality gate. "
+
+        # --- Step 2: Try Cloudmersive ---
+        if self.cloudmersive_key:
+            cloudmersive_result = self._try_cloudmersive(pdf_bytes, pdf_url, title)
+            if cloudmersive_result and self._passes_quality_gate(cloudmersive_result.get("text", ""), title):
+                elapsed_ms = int((time.time() - start_time) * 1000)
+                self.metrics["total_processing_time_ms"] += elapsed_ms
+                result.update(cloudmersive_result)
+                result["metadata"]["processing_time_ms"] = elapsed_ms
+                self._record_audit("cloudmersive", file_size, elapsed_ms, True)
+                return result
+            elif cloudmersive_result:
+                result["notes"] += "Cloudmersive returned text below quality gate. "
+
+        # --- Step 3: Return best partial result ---
+        elapsed_ms = int((time.time() - start_time) * 1000)
+        self.metrics["total_processing_time_ms"] += elapsed_ms
+        if not result["text"]:
+            result["notes"] += "All remote OCR providers failed or quota exhausted."
+        result["metadata"]["processing_time_ms"] = elapsed_ms
+        self._record_audit("none", file_size, elapsed_ms, False)
+        return result
+
+    # -------------------------------------------------------------------
+    #  OCR.space Implementation
+    # -------------------------------------------------------------------
+    def _try_ocr_space(self, pdf_bytes: bytes, pdf_url: str, title: str) -> Optional[Dict[str, Any]]:
+        """
+        Attempt OCR via OCR.space with Engine 2 → Engine 1 cascade.
+        Sends the PDF as a file upload (or URL if file is too large).
+        """
+        # Try Engine 2 first (better for special chars, legislative docs)
+        result = self._call_ocr_space(pdf_bytes, pdf_url, engine=2)
+        if result and self._passes_quality_gate(result.get("text", ""), title):
+            result["notes"] = "OCR.space Engine 2 succeeded."
+            return result
+
+        # Engine 2 failed or low quality → swap to Engine 1
+        logger.info("      [OCR.space] Engine 2 insufficient, swapping to Engine 1...")
+        result_e1 = self._call_ocr_space(pdf_bytes, pdf_url, engine=1)
+        if result_e1 and result_e1.get("text", "").strip():
+            # Use whichever produced more text
+            if result and len(result.get("text", "")) > len(result_e1.get("text", "")):
+                result["notes"] = "OCR.space Engine 2 produced more text than Engine 1."
+                return result
+            result_e1["notes"] = "OCR.space fallback to Engine 1."
+            return result_e1
+
+        # Return whatever we got (might be partial)
+        return result
+
+    def _call_ocr_space(self, pdf_bytes: bytes, pdf_url: str, engine: int) -> Optional[Dict[str, Any]]:
+        """
+        Single call to OCR.space POST endpoint with retry logic.
+        Enforces daily quota and concurrency limits.
+        """
+        if self._is_quota_exhausted():
+            logger.warning("      [OCR.space] Daily quota exhausted (500/day).")
+            self.metrics["ocr_requests_quota_exhausted"] += 1
+            return None
+
+        self.metrics["ocr_requests_total"] += 1
+
+        # File size check – if over 5MB, try URL method if available
+        use_url = len(pdf_bytes) > self.MAX_FILE_SIZE_BYTES and pdf_url
+        if len(pdf_bytes) > self.MAX_FILE_SIZE_BYTES and not pdf_url:
+            logger.warning("      [OCR.space] File exceeds 5MB and no URL available. Sending first 3 pages.")
+            pdf_bytes = self._extract_first_pages(pdf_bytes, max_pages=3)
+
+        # Build request
+        headers = {"apikey": self.ocr_space_key}
+        data = {
+            "language": "eng",
+            "isOverlayRequired": "false",
+            "scale": "true",
+            "OCREngine": str(engine),
+            "isTable": "true",
+            "detectOrientation": "true",
+        }
+
+        acquired = self._ocr_space_semaphore.acquire(timeout=30)
+        if not acquired:
+            logger.warning("      [OCR.space] Concurrency limit reached (2 concurrent). Waiting timed out.")
+            return None
+
+        try:
+            for attempt in range(3):  # 3 retries with exponential backoff
+                try:
+                    if use_url:
+                        data["url"] = pdf_url
+                        response = requests.post(
+                            self.OCR_SPACE_ENDPOINT,
+                            headers=headers,
+                            data=data,
+                            timeout=120
+                        )
+                    else:
+                        files = {"file": ("document.pdf", io.BytesIO(pdf_bytes), "application/pdf")}
+                        response = requests.post(
+                            self.OCR_SPACE_ENDPOINT,
+                            headers=headers,
+                            data=data,
+                            files=files,
+                            timeout=120
+                        )
+
+                    if response.status_code == 429:
+                        logger.warning(f"      [OCR.space] Rate limited (429). Attempt {attempt + 1}/3.")
+                        time.sleep((2 ** attempt) * 1)
+                        continue
+
+                    if response.status_code >= 500:
+                        logger.warning(f"      [OCR.space] Server error ({response.status_code}). Attempt {attempt + 1}/3.")
+                        time.sleep((2 ** attempt) * 1)
+                        continue
+
+                    self._increment_daily_counter()
+                    resp_json = response.json()
+                    return self._parse_ocr_space_response(resp_json, engine)
+
+                except requests.exceptions.Timeout:
+                    logger.warning(f"      [OCR.space] Timeout. Attempt {attempt + 1}/3.")
+                    time.sleep((2 ** attempt) * 1)
+                except requests.exceptions.ConnectionError:
+                    logger.warning(f"      [OCR.space] Connection error. Attempt {attempt + 1}/3.")
+                    time.sleep((2 ** attempt) * 1)
+                except Exception as e:
+                    logger.error(f"      [OCR.space] Unexpected error: {e}")
+                    break
+
+            self.metrics["ocr_requests_failed"] += 1
+            return None
+        finally:
+            self._ocr_space_semaphore.release()
+
+    def _parse_ocr_space_response(self, resp_json: dict, engine: int) -> Optional[Dict[str, Any]]:
+        """Parse and validate the OCR.space JSON response."""
+        if resp_json.get("IsErroredOnProcessing", True):
+            error_msg = resp_json.get("ErrorMessage", "Unknown error")
+            logger.warning(f"      [OCR.space] Processing error: {error_msg}")
+            self.metrics["ocr_requests_failed"] += 1
+            return None
+
+        parsed_results = resp_json.get("ParsedResults", [])
+        if not parsed_results:
+            logger.warning("      [OCR.space] No parsed results returned.")
+            self.metrics["ocr_requests_failed"] += 1
+            return None
+
+        # Aggregate text from all pages
+        all_text = []
+        pages_processed = []
+        for i, pr in enumerate(parsed_results):
+            exit_code = pr.get("FileParseExitCode", -1)
+            if isinstance(exit_code, str):
+                try:
+                    exit_code = int(exit_code)
+                except ValueError:
+                    exit_code = -1
+
+            if exit_code == 1:
+                page_text = pr.get("ParsedText", "")
+                if page_text:
+                    all_text.append(page_text)
+                    pages_processed.append(i + 1)
+            else:
+                error_detail = pr.get("ErrorMessage", "No error message")
+                logger.warning(f"      [OCR.space] Page {i + 1} parse failed (exit {exit_code}): {error_detail}")
+
+        combined_text = "\n".join(all_text).strip()
+        processing_time = resp_json.get("ProcessingTimeInMilliseconds", "0")
+
+        logger.info(f"      [OCR.space] Engine {engine}: {len(combined_text)} chars from {len(pages_processed)} pages ({processing_time}ms)")
+
+        return {
+            "text": combined_text,
+            "source": "ocr.space",
+            "engine": engine,
+            "pages": pages_processed,
+            "confidence_estimate": None,  # OCR.space free doesn't return confidence
+            "notes": "",
+            "metadata": {
+                "ocr_processing_time_ms": processing_time,
+                "exit_code": resp_json.get("OCRExitCode"),
+                "pages_total": len(parsed_results),
+                "pages_successful": len(pages_processed),
+            }
+        }
+
+    # -------------------------------------------------------------------
+    #  Cloudmersive Implementation
+    # -------------------------------------------------------------------
+    def _try_cloudmersive(self, pdf_bytes: bytes, pdf_url: str, title: str) -> Optional[Dict[str, Any]]:
+        """
+        Attempt OCR via Cloudmersive as a secondary fallback.
+        Uses /ocr/pdf/toText for PDF files.
+        """
+        self.metrics["ocr_cloudmersive_total"] += 1
+
+        headers = {
+            "Apikey": self.cloudmersive_key,
+            "recognitionMode": "Advanced",
+            "language": "ENG",
+            "preprocessing": "Auto",
+        }
+
+        for attempt in range(3):
+            try:
+                files = {"imageFile": ("document.pdf", io.BytesIO(pdf_bytes), "application/pdf")}
+                response = requests.post(
+                    self.CLOUDMERSIVE_ENDPOINT,
+                    headers=headers,
+                    files=files,
+                    timeout=180
+                )
+
+                if response.status_code == 429:
+                    logger.warning(f"      [Cloudmersive] Rate limited (429). Attempt {attempt + 1}/3.")
+                    time.sleep((2 ** attempt) * 2)
+                    continue
+
+                if response.status_code >= 500:
+                    logger.warning(f"      [Cloudmersive] Server error ({response.status_code}). Attempt {attempt + 1}/3.")
+                    time.sleep((2 ** attempt) * 2)
+                    continue
+
+                if response.status_code == 401:
+                    logger.error("      [Cloudmersive] Authentication failed (401). Check CLOUDMERSIVE_API_KEY.")
+                    self.metrics["ocr_cloudmersive_failed"] += 1
+                    return None
+
+                resp_json = response.json()
+                return self._parse_cloudmersive_response(resp_json)
+
+            except requests.exceptions.Timeout:
+                logger.warning(f"      [Cloudmersive] Timeout. Attempt {attempt + 1}/3.")
+                time.sleep((2 ** attempt) * 2)
+            except requests.exceptions.ConnectionError:
+                logger.warning(f"      [Cloudmersive] Connection error. Attempt {attempt + 1}/3.")
+                time.sleep((2 ** attempt) * 2)
+            except Exception as e:
+                logger.error(f"      [Cloudmersive] Unexpected error: {e}")
+                break
+
+        self.metrics["ocr_cloudmersive_failed"] += 1
+        return None
+
+    def _parse_cloudmersive_response(self, resp_json: dict) -> Optional[Dict[str, Any]]:
+        """Parse and validate the Cloudmersive JSON response."""
+        if not resp_json.get("Successful", False):
+            logger.warning("      [Cloudmersive] OCR processing failed.")
+            self.metrics["ocr_cloudmersive_failed"] += 1
+            return None
+
+        ocr_pages = resp_json.get("OcrPages", [])
+        if not ocr_pages:
+            logger.warning("      [Cloudmersive] No OCR pages returned.")
+            self.metrics["ocr_cloudmersive_failed"] += 1
+            return None
+
+        all_text = []
+        pages_processed = []
+        total_confidence = 0
+        confidence_count = 0
+
+        for page in ocr_pages:
+            page_num = page.get("PageNumber", 0)
+            page_text = page.get("TextResult", "")
+            confidence = page.get("MeanConfidenceLevel", 0)
+
+            if page_text:
+                all_text.append(page_text)
+                pages_processed.append(page_num + 1)
+                if confidence:
+                    total_confidence += confidence
+                    confidence_count += 1
+
+        combined_text = "\n".join(all_text).strip()
+        mean_confidence = (total_confidence / confidence_count) if confidence_count > 0 else None
+
+        logger.info(f"      [Cloudmersive] {len(combined_text)} chars from {len(pages_processed)} pages (confidence: {mean_confidence})")
+
+        return {
+            "text": combined_text,
+            "source": "cloudmersive",
+            "engine": "Advanced",
+            "pages": pages_processed,
+            "confidence_estimate": mean_confidence,
+            "notes": "",
+            "metadata": {
+                "pages_total": len(ocr_pages),
+                "pages_successful": len(pages_processed),
+                "mean_confidence": mean_confidence,
+            }
+        }
+
+    # -------------------------------------------------------------------
+    #  Quality Gates
+    # -------------------------------------------------------------------
+    def _passes_quality_gate(self, text: str, title: str = "") -> bool:
+        """
+        Validates OCR output quality.
+        Accepts if text length >= MIN_TEXT_LENGTH OR contains key legislative tokens.
+        """
+        if not text or not text.strip():
+            return False
+
+        text_len = len(text.strip())
+        if text_len >= self.MIN_TEXT_LENGTH:
+            return True
+
+        # Check for legislative tokens even if text is short
+        text_upper = text.upper()
+        for token in self.QUALITY_TOKENS:
+            if token.upper() in text_upper:
+                return True
+
+        # Check if title appears in text
+        if title and title.lower()[:20] in text.lower():
+            return True
+
+        return False
+
+    # -------------------------------------------------------------------
+    #  Quota Management
+    # -------------------------------------------------------------------
+    def _is_quota_exhausted(self) -> bool:
+        """Check if the daily OCR.space free-tier quota (500/day) is exhausted."""
+        with self._daily_counter_lock:
+            today = datetime.now(timezone.utc).date()
+            if today != self._daily_counter_date:
+                self._daily_counter = 0
+                self._daily_counter_date = today
+            return self._daily_counter >= self.OCR_SPACE_DAILY_LIMIT
+
+    def _increment_daily_counter(self):
+        """Increment the daily request counter (thread-safe)."""
+        with self._daily_counter_lock:
+            today = datetime.now(timezone.utc).date()
+            if today != self._daily_counter_date:
+                self._daily_counter = 0
+                self._daily_counter_date = today
+            self._daily_counter += 1
+
+    # -------------------------------------------------------------------
+    #  Utility: Extract first N pages from PDF
+    # -------------------------------------------------------------------
+    def _extract_first_pages(self, pdf_bytes: bytes, max_pages: int = 3) -> bytes:
+        """Extract the first N pages from a PDF to stay within free-tier limits."""
+        if FITZ_OK:
+            try:
+                doc = fitz.open(stream=pdf_bytes, filetype="pdf")
+                if len(doc) <= max_pages:
+                    doc.close()
+                    return pdf_bytes
+                new_doc = fitz.open()
+                new_doc.insert_pdf(doc, from_page=0, to_page=max_pages - 1)
+                result = new_doc.tobytes()
+                new_doc.close()
+                doc.close()
+                logger.info(f"      [OCR] Trimmed PDF to first {max_pages} pages for free-tier compliance.")
+                return result
+            except Exception as e:
+                logger.warning(f"      [OCR] Page extraction failed: {e}")
+        return pdf_bytes
+
+    # -------------------------------------------------------------------
+    #  Audit & Metrics
+    # -------------------------------------------------------------------
+    def _record_audit(self, source: str, file_size: int, elapsed_ms: int, success: bool):
+        """Record an audit entry for the OCR request."""
+        self._audit_log.append({
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "source": source,
+            "request_size_bytes": file_size,
+            "processing_time_ms": elapsed_ms,
+            "success": success,
+            "daily_count": self._daily_counter,
+        })
+
+    def get_metrics(self) -> Dict[str, Any]:
+        """Return current metrics snapshot."""
+        return {
+            **self.metrics,
+            "daily_requests_used": self._daily_counter,
+            "daily_requests_remaining": max(0, self.OCR_SPACE_DAILY_LIMIT - self._daily_counter),
+        }
+
+
+# ===================================================================
+#  LegislativeScraper  –  Selective Deep Extraction Engine
+# ===================================================================
 class LegislativeScraper:
     """
-    GO-HAM Legislative Scraper for the Kenyan Parliament website.
+    Production-grade legislative scraper for the Kenyan Parliament website.
+
+    Extraction logic:
+      1. Scrape listing page for PDF links and metadata.
+      2. For Bills:
+         a. Attempt cascading PDF text extraction (PyMuPDF -> PyPDF2 -> pdfplumber).
+         b. If PDF is scanned (no text), trigger Remote OCR (OCR.space → Cloudmersive).
+         c. If remote OCR also fails, selectively visit the Bill's detail page (node)
+            to extract HTML-based summary and description.
+      3. For Non-Bill Docs: Scrape as-is (no deep parsing).
+
+    This route uses OCR.space free plan; daily quota 500/day; for high-volume use
+    upgrade to PRO or configure secondary provider (Cloudmersive).
     """
 
-    def __init__(self, headless=True, extract_pdf_text=True):
+    def __init__(self, headless: bool = True):
         self.targets_file = "scripts/scraping_targets.json"
         self.headless = headless
-        self.extract_pdf_text = extract_pdf_text and PDF_SUPPORT
-        self.data = []
-        self.seen_titles = set()
-        self.targets = self.load_targets()
+        self.data: List[Dict[str, Any]] = []
+        self.seen_titles: set = set()
+        self.targets = self._load_targets()
+        self.ocr_engine = RemoteOCREngine()
 
-    def load_targets(self):
+    def _load_targets(self) -> list:
         try:
-            with open(self.targets_file, 'r') as f:
+            with open(self.targets_file, 'r', encoding='utf-8') as f:
                 return json.load(f).get("targets", [])
         except Exception as e:
-            logging.error(f"Failed to load targets: {e}")
+            logger.error(f"Failed to load targets: {e}")
             return []
 
-    def scrape_all(self, max_pages=15):
-        logging.info("Initializing GO-HAM Legislative Sync Engine (Scheduled @ 09:00 EAT)")
-        logging.info(f"   Targets: {len(self.targets)}, Max pages per target: {max_pages}")
+    def scrape_all(self, max_pages: int = 15) -> List[Dict[str, Any]]:
+        logger.info("=" * 60)
+        logger.info("  GO-HAM Legislative Sync Engine  (Selective Deep v5 + Remote OCR)")
+        logger.info("=" * 60)
 
         try:
             from playwright.sync_api import sync_playwright
         except ImportError:
-            logging.error("Playwright not installed. Run: pip install playwright && playwright install chromium")
-            return self._scrape_with_requests(max_pages)
+            logger.error("Playwright not installed.")
+            return []
 
         with sync_playwright() as p:
             browser = p.chromium.launch(headless=self.headless)
-            context = browser.new_context(
-                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-                           "(KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+            ctx = browser.new_context(
+                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
             )
-            page = context.new_page()
+            page = ctx.new_page()
 
             for target in self.targets:
-                logging.info(f"Searching in: {target['name']}...")
+                logger.info(f"\n>>> Syncing: {target['name']}")
                 try:
-                    if target['type'] == "bills":
-                        self._extract_bills_playwright(page, target, max_pages)
-                    elif target['type'] == "order_papers":
-                        self._extract_order_papers_playwright(page, target)
-                    elif target['type'] == "gazette":
-                        self._extract_gazette_playwright(page, target)
+                    if target['type'] == 'bills':
+                        self._scrape_bills(page, target, max_pages)
+                    else:
+                        self._scrape_standard_docs(page, target)
                 except Exception as e:
-                    logging.error(f"Failed to scrape {target['name']}: {str(e)}")
+                    logger.error(f"  Target failed: {e}")
 
             browser.close()
 
-        logging.info(f"Total items scraped: {len(self.data)}")
+        # Log OCR metrics at end of run
+        metrics = self.ocr_engine.get_metrics()
+        logger.info(f"\n--- OCR Metrics ---")
+        logger.info(f"  OCR.space requests: {metrics['ocr_requests_total']} (failed: {metrics['ocr_requests_failed']}, quota exhausted: {metrics['ocr_requests_quota_exhausted']})")
+        logger.info(f"  Cloudmersive requests: {metrics['ocr_cloudmersive_total']} (failed: {metrics['ocr_cloudmersive_failed']})")
+        logger.info(f"  Daily quota remaining: {metrics['daily_requests_remaining']}/{self.ocr_engine.OCR_SPACE_DAILY_LIMIT}")
+        logger.info(f"  Total OCR processing time: {metrics['total_processing_time_ms']}ms")
+
+        logger.info(f"\nSync complete – {len(self.data)} items scraped")
         return self.data
 
-    def _scrape_with_requests(self, max_pages):
-        try:
-            import requests
-            from bs4 import BeautifulSoup
-        except ImportError:
-            logging.error("requests/beautifulsoup4 not installed")
-            return self.data
-
-        for target in self.targets:
-            if target['type'] != 'bills':
-                continue
-
-            logging.info(f"Scraping (requests fallback): {target['name']}")
-            base_url = target['url']
-
-            for page_num in range(0, max_pages):
-                page_url = f"{base_url}?title=%20&field_parliament_value=2022&page={page_num}"
-                logging.info(f"   Page {page_num + 1}: {page_url}")
-
-                try:
-                    resp = requests.get(page_url, timeout=30, headers={
-                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/131.0.0.0'
-                    })
-                    if resp.status_code != 200:
-                        logging.warning(f"   HTTP {resp.status_code} for {page_url}")
-                        break
-
-                    soup = BeautifulSoup(resp.text, 'html.parser')
-                    self._extract_bills_from_soup(soup, target, base_url)
-
-                    next_link = soup.select_one('li.pager-next a, li.next a, a[rel="next"]')
-                    if not next_link:
-                        logging.info(f"   No more pages after page {page_num + 1}")
-                        break
-
-                    time.sleep(1)
-
-                except Exception as e:
-                    logging.error(f"   Failed page {page_num + 1}: {e}")
-                    break
-
-        logging.info(f"Total items scraped: {len(self.data)}")
-        return self.data
-
-    def _extract_bills_from_soup(self, soup, target, base_url):
-        all_links = soup.find_all('a', href=True)
-
-        for link in all_links:
-            href = link['href']
-            if not href.lower().endswith('.pdf'):
-                continue
-            if 'petition' in href.lower() or 'contact' in href.lower():
-                continue
-
-            full_url = urljoin(base_url, href)
-            title = self._clean_bill_title(link.get_text(strip=True) or self._title_from_url(href))
-
-            if not title or title in self.seen_titles:
-                continue
-
-            self.seen_titles.add(title)
-            bill = self._build_bill_record(title, full_url, target)
-            self.data.append(bill)
-            logging.info(f"   - {title}")
-
-    def _extract_bills_playwright(self, page, target, max_pages):
+    def _scrape_bills(self, page, target: dict, max_pages: int):
         base_url = target['url']
 
-        for page_num in range(0, max_pages):
+        for page_num in range(max_pages):
             page_url = f"{base_url}?title=%20&field_parliament_value=2022&page={page_num}"
-            logging.info(f"   Page {page_num + 1}: {page_url}")
+            logger.info(f"  Page {page_num + 1}: {page_url}")
 
             try:
-                page.goto(page_url, wait_until="domcontentloaded", timeout=60000)
-                page.wait_for_timeout(3000)
-
-                pdf_links = page.evaluate("""() => {
-                    const links = document.querySelectorAll('a[href$=".pdf"], a[href*=".pdf"]');
-                    return Array.from(links).map(a => ({
-                        href: a.href,
-                        text: a.textContent.trim(),
-                        outerHTML: a.outerHTML
-                    })).filter(l =>
-                        !l.href.includes('petition') &&
-                        !l.href.includes('contact') &&
-                        l.text.length > 0
-                    );
+                page.goto(page_url, wait_until="networkidle", timeout=60000)
+                
+                # Extract potential bill rows with detail links
+                rows = page.evaluate("""() => {
+                    const rowSelector = '.views-row, tr:has(a)';
+                    return Array.from(document.querySelectorAll(rowSelector)).map(row => {
+                        const links = Array.from(row.querySelectorAll('a')).map(a => ({
+                            text: a.textContent.trim(),
+                            href: a.href,
+                            isPdf: a.href.toLowerCase().endsWith('.pdf')
+                        }));
+                        return {
+                            rowText: row.innerText.trim(),
+                            links: links
+                        };
+                    }).filter(r => r.links.some(l => l.isPdf));
                 }""")
 
-                if not pdf_links:
-                    logging.info(f"   No PDF links found on page {page_num + 1}. Trying alternate selectors...")
-                    pdf_links = page.evaluate("""() => {
-                        const container = document.querySelector('.view-content, .field-items, article, main');
-                        if (!container) return [];
-                        const links = container.querySelectorAll('a[href$=".pdf"], a[href*=".pdf"]');
-                        return Array.from(links).map(a => ({
-                            href: a.href,
-                            text: a.textContent.trim(),
-                            outerHTML: a.outerHTML
-                        })).filter(l => !l.href.includes('petition') && !l.href.includes('contact'));
-                    }""")
-
-                if not pdf_links:
-                    logging.warning(f"   Still no links found on page {page_num + 1}. Stopping pagination.")
-                    break
-
-                bills_on_page = 0
-                for link_data in pdf_links:
-                    href = link_data['href']
-                    text = link_data['text']
-
-                    title = self._clean_bill_title(text or self._title_from_url(href))
-                    if not title or title in self.seen_titles:
+                for row in rows:
+                    pdf_link = next(l for l in row['links'] if l['isPdf'])
+                    detail_link = next((l for l in row['links'] if not l['isPdf'] and 'node/' in l['href']), None)
+                    
+                    raw_title = pdf_link['text'] or self._title_from_url(pdf_link['href'])
+                    title = self._clean_title(raw_title)
+                    
+                    if not title or title in self.seen_titles: continue
+                    self.seen_titles.add(title)
+                    
+                    if not self._is_bill_document(title):
+                        self.data.append(self._build_non_bill_record(title, pdf_link['href'], target))
                         continue
 
-                    self.seen_titles.add(title)
-                    bill = self._build_bill_record(title, href, target)
-                    self.data.append(bill)
-                    bills_on_page += 1
-                    logging.info(f"   - {title}")
+                    # Deep Process Bill
+                    record = self._deep_process_bill(page, title, pdf_link['href'], detail_link['href'] if detail_link else None, target)
+                    self.data.append(record)
+                    logger.info(f"    [BILL] {title}")
 
-                logging.info(f"   Found {bills_on_page} new bills on page {page_num + 1}")
-
-                if bills_on_page == 0:
-                    logging.info(f"   No new bills on page {page_num + 1}, stopping.")
-                    break
-
-                has_next = page.evaluate("""() => {
-                    const nextLink = document.querySelector('li.pager-next a, li.next a, a[rel="next"]');
-                    return !!nextLink;
-                }""")
-
-                if not has_next:
-                    logging.info(f"   No next page link found. Done with {target['name']}.")
-                    break
-
-                time.sleep(2)
+                if not page.query_selector('li.pager-next a, a[rel="next"]'): break
+                time.sleep(0.5)
 
             except Exception as e:
-                logging.error(f"   Error on page {page_num + 1}: {e}")
+                logger.error(f"  Page {page_num} error: {e}")
                 break
 
-    def _extract_order_papers_playwright(self, page, target):
-        """Extract order papers (NOT PDF parsed)."""
-        try:
-            page.goto(target['url'], wait_until="domcontentloaded", timeout=60000)
-            page.wait_for_timeout(3000)
-
-            items = page.evaluate("""(selector) => {
-                const elements = document.querySelectorAll(selector);
-                return Array.from(elements).map(el => {
-                    const a = el.querySelector('a');
-                    return a ? { text: a.textContent.trim(), href: a.href } : null;
-                }).filter(Boolean);
-            }""", target['selector'])
-
-            for item in items:
-                title = f"Order Paper: {item['text']}"
-                if title in self.seen_titles:
-                    continue
-                self.seen_titles.add(title)
-                self.data.append({
-                    "title": title,
-                    "url": item['href'],
-                    "pdf_url": item['href'],
-                    "source": target['name'],
-                    "category": "Order Paper",
-                    "status": "Published",
-                    "sponsor": "National Assembly",
-                    "summary": f"Order Paper: {item['text']}",
-                    "date": datetime.now().strftime("%Y-%m-%d"),
-                    "created_at": datetime.now().isoformat()
-                })
-                logging.info(f"   - {title} (Scraped as-is)")
-        except Exception as e:
-            logging.error(f"Order Paper error: {e}")
-
-    def _extract_gazette_playwright(self, page, target):
-        """Extract gazette notices (NOT PDF parsed)."""
-        try:
-            page.goto(target['url'], wait_until="domcontentloaded", timeout=60000)
-            page.wait_for_timeout(3000)
-
-            items = page.evaluate("""(selector) => {
-                const elements = document.querySelectorAll(selector);
-                return Array.from(elements).map(el => {
-                    const a = el.querySelector('a');
-                    return {
-                        title: el.textContent.trim().split('\\n')[0],
-                        href: a ? a.href : ''
-                    };
-                });
-            }""", target['selector'])
-
-            for item in items:
-                title = item['title']
-                if not title or title in self.seen_titles:
-                    continue
-                self.seen_titles.add(title)
-                self.data.append({
-                    "title": title,
-                    "url": item['href'],
-                    "pdf_url": item['href'],
-                    "source": target['name'],
-                    "category": "Gazette",
-                    "status": "Notice",
-                    "sponsor": "",
-                    "summary": f"Kenya Gazette notice: {title}",
-                    "date": datetime.now().strftime("%Y-%m-%d"),
-                    "created_at": datetime.now().isoformat()
-                })
-                logging.info(f"   - {title} (Scraped as-is)")
-        except Exception as e:
-            logging.error(f"Gazette error: {e}")
-
-    def _download_and_extract_pdf_text(self, pdf_url: str) -> Optional[str]:
-        if not self.extract_pdf_text:
-            return None
-        try:
-            response = requests.get(pdf_url, timeout=30)
-            response.raise_for_status()
-            from io import BytesIO
-            with BytesIO(response.content) as open_pdf_file:
-                reader = PdfReader(open_pdf_file)
-                text = ""
-                for page in reader.pages:
-                    page_text = page.extract_text()
-                    if page_text:
-                        text += page_text + "\n"
-                return text.strip() if text else None
-        except Exception as e:
-            logging.debug(f"Failed to extract text from {pdf_url}: {e}")
-            return None
-
-    def _extract_date_from_url(self, url: str) -> Optional[str]:
-        match = re.search(r'/(20\d{2})[-/]?(0[1-9]|1[0-2])?[-/]?(0[1-9]|[12]\d|3[01])?', url)
-        if match:
-            year = match.group(1)
-            month = match.group(2) or "01"
-            day = match.group(3) or "01"
-            return f"{year}-{month}-{day}"
-        return None
-
-    def _extract_pdf_metadata(self, text: str) -> Dict[str, Any]:
-        metadata = {"description": None, "summary": None, "sponsor": None, "date": None, "objects": None}
-        if not text:
-            return metadata
-
-        text = re.sub(r'\n\s*\n', '\n', text)
-        desc_match = re.search(r'(?:A Bill for\s+AN ACT[^\n]*?)(.*?)(?=\s+ENACTED\s+by\s+the\s+Parliament\s+of\s+Kenya)', text, re.IGNORECASE | re.DOTALL)
-        if desc_match:
-            metadata["description"] = "A Bill for AN ACT " + desc_match.group(1).strip()
-        else:
-            desc_fallback = re.search(r'(A Bill for[^\n]*?)(?=\n\s*\n)', text, re.IGNORECASE | re.DOTALL)
-            if desc_fallback:
-                metadata["description"] = desc_fallback.group(1).strip()
-
-        objects_match = re.search(r'(?:3\.|Objects of the Act[^\n]*?)\s*(.*?)(?=\n\s*\d+\.|\Z)', text, re.IGNORECASE | re.DOTALL)
-        if objects_match:
-            metadata["objects"] = objects_match.group(1).strip()
-
-        memo_match = re.search(r'MEMORANDUM\s+OF\s+OBJECTS\s+AND\s+REASONS\s*(.*?)(?=\n\s*\n\s*\n|\Z)', text, re.IGNORECASE | re.DOTALL)
-        if memo_match:
-            metadata["summary"] = memo_match.group(1).strip()
-        else:
-            metadata["summary"] = metadata["objects"]
-
-        sponsor_match = re.search(r'([A-Z\'\s]+(?:MP|EGH|CBS|OGW|MBS|HON\.)?(?:,\s*[A-Za-z\s]+)?)\s*Dated\s+the', text[-2000:], re.IGNORECASE)
-        if sponsor_match:
-            metadata["sponsor"] = sponsor_match.group(1).strip()
-
-        date_match = re.search(r'Dated\s+the\s+(\d{1,2})(?:st|nd|rd|th)?\s+(\w+)\s+(\d{4})', text, re.IGNORECASE)
-        if date_match:
-            day, month_name, year = date_match.groups()
-            month_map = {'january':'01','february':'02','march':'03','april':'04','may':'05','june':'06','july':'07','august':'08','september':'09','october':'10','november':'11','december':'12'}
-            month = month_map.get(month_name.lower(), '01')
-            metadata["date"] = f"{year}-{month}-{day.zfill(2)}"
-
-        return metadata
-
-    def _build_bill_record(self, title: str, url: str, target: dict) -> dict:
-        """PDF parsed only for Bills."""
-        year = self._extract_year(title) or self._extract_year(url) or str(datetime.now().year)
-        status = self._infer_status(title)
-        bill_no = self._extract_bill_no(title)
-        house = "National Assembly"
-        if "Senate" in target['name'] or "senate" in title.lower():
-            house = "Senate"
-        category = self._infer_category(title)
+    def _deep_process_bill(self, page, title, pdf_url, detail_url, target) -> dict:
+        """Cascading extraction: PDF Text -> Remote OCR -> Screenshot OCR -> HTML Metadata Fallback."""
+        text = ""
+        method = None
+        is_scanned = False
+        ocr_metadata = {}
         
-        text_content = None
-        pdf_metadata = {}
-        
-        # User requested: ONLY parse PDF for actual Bills.
-        # Check if it's a Bill (not Hansard, not Order Paper)
-        is_bill = "bill" in title.lower() and "hansard" not in title.lower() and "order paper" not in title.lower()
-        
-        if self.extract_pdf_text and is_bill:
-            text_content = self._download_and_extract_pdf_text(url)
-            if text_content:
-                logging.info(f"   (PDF Parsed) {title}")
-                pdf_metadata = self._extract_pdf_metadata(text_content)
+        # 1. Primary: PDF Text Extraction (local cascade)
+        pdf_bytes = self._download_pdf(pdf_url, page)
+        if pdf_bytes:
+            text, method = self._extract_text_cascade(pdf_bytes)
+            if not text.strip():
+                is_scanned = True
         else:
-            logging.info(f"   (Scraped As-Is) {title}")
+            # PDF URL returned HTML (not a real PDF file)
+            is_scanned = True
+        
+        # 2. Secondary: Remote OCR Fallback on real PDF bytes
+        if is_scanned and pdf_bytes:
+            logger.info(f"      [OCR] Scanned PDF detected for: {title}")
+            ocr_result = self.ocr_engine.ocr_fallback(pdf_bytes, pdf_url=pdf_url, title=title)
+            if ocr_result["text"].strip():
+                text = ocr_result["text"]
+                method = f"remote_ocr:{ocr_result['source']}:engine_{ocr_result['engine']}"
+                is_scanned = False  # We got text via OCR!
+                ocr_metadata = {
+                    "ocr_source": ocr_result["source"],
+                    "ocr_engine": ocr_result["engine"],
+                    "ocr_pages": ocr_result["pages"],
+                    "ocr_confidence": ocr_result["confidence_estimate"],
+                    "ocr_notes": ocr_result["notes"],
+                }
+                logger.info(f"      [OCR] SUCCESS via {ocr_result['source']} (engine {ocr_result['engine']}): {len(text)} chars")
+            else:
+                logger.warning(f"      [OCR] PDF-based OCR failed for: {title}")
 
-        summary = pdf_metadata.get("summary") or pdf_metadata.get("objects") or (text_content[:1000] if text_content else f"Legislative document: {title}")
-        description = pdf_metadata.get("description") or summary
-        sponsor = pdf_metadata.get("sponsor") or self._extract_sponsor(title)
-        bill_date = pdf_metadata.get("date") or self._extract_date_from_url(url) or datetime.now().strftime("%Y-%m-%d")
+        # 3. Screenshot-based OCR: Navigate to the bill page, capture screenshots, OCR them
+        if is_scanned and (pdf_url or detail_url):
+            target_url = detail_url or pdf_url
+            logger.info(f"      [OCR] Attempting screenshot-based OCR on: {target_url}")
+            screenshot_text, screenshot_meta = self._ocr_page_screenshots(page, target_url, title)
+            if screenshot_text.strip():
+                text = screenshot_text
+                method = f"screenshot_ocr:{screenshot_meta.get('source', 'ocr.space')}"
+                is_scanned = False
+                ocr_metadata = screenshot_meta
+                logger.info(f"      [OCR] Screenshot OCR SUCCESS: {len(text)} chars")
+            else:
+                logger.warning(f"      [OCR] Screenshot OCR also failed for: {title}")
+
+        # 4. Tertiary: If still no text, fetch HTML metadata from detail page
+        html_metadata = {}
+        if is_scanned and detail_url:
+            html_metadata = self._scrape_bill_detail_page(page, detail_url)
+        
+        # 4. Parse and Merge
+        parsed_pdf = self._parse_bill_text(text) if text.strip() else {}
+        
+        # Final fields
+        sponsor = parsed_pdf.get('sponsor') or html_metadata.get('sponsor') or "Government"
+        status = html_metadata.get('status') or self._infer_status_from_text(text, title)
+        summary = parsed_pdf.get('summary') or html_metadata.get('summary')
+        description = parsed_pdf.get('description') or title
+
+        if not summary:
+            summary = f"Legislative bill tracked from {target['name']}. (Scanned PDF - detailed content unavailable)" if is_scanned else f"Bill: {title}"
+
+        year = self._extract_year(title) or str(datetime.now().year)
+        
+        extraction_method = method or ("html" if html_metadata else "none")
+        if ocr_metadata:
+            extracted_via = f"ocr:{ocr_metadata.get('ocr_source', 'unknown')}"
+        elif method and method.startswith("remote_ocr"):
+            extracted_via = method
+        elif method:
+            extracted_via = f"local:{method}"
+        else:
+            extracted_via = "html_fallback" if html_metadata else "none"
 
         return {
             "title": title,
-            "bill_no": bill_no,
-            "session_year": int(year) if year.isdigit() else datetime.now().year,
+            "bill_no": self._extract_bill_no(text or title),
+            "session_year": int(year),
             "sponsor": sponsor,
             "status": status,
-            "house": house,
-            "date": bill_date,
-            "url": url,
-            "pdf_url": url,
+            "house": "Senate" if "Senate" in target['name'] else "National Assembly",
+            "date": parsed_pdf.get('date') or html_metadata.get('date') or datetime.now().strftime("%Y-%m-%d"),
+            "url": pdf_url,
+            "pdf_url": pdf_url,
             "source": target['name'],
-            "category": category,
-            "summary": summary,
-            "description": description,
-            "text_content": text_content,
-            "neural_summary": summary if text_content else None,
-            "analysis_status": "pending",
-            "peoples_audit_eligible": any(kw in category for kw in ["Finance"]),
-            "is_high_impact": any(kw in title for kw in ["Finance", "Constitution", "Land"]),
-            "stages": [],
-            "comments": [],
-            "constitutional_section": ", ".join(set(re.findall(r'\bArticle\s+(\d+(?:[A-Za-z])?)', text_content)[:5])) if text_content else None,
-            "sources": [target['url']],
-            "views_count": 0,
-            "vault_id": None,
-            "vault_metadata": {},
-            "follow_count": 0,
-            "history": [],
+            "category": self._infer_category(title),
+            "summary": summary[:3000],
+            "description": description[:2000],
+            "text_content": text if text.strip() else None,
             "metadata": {
                 "scraped_at": datetime.now().isoformat(),
-                "master_pack_version": "2026.Q1.HAM",
-                "pdf_metadata": pdf_metadata,
-                "is_pdf_parsed": bool(text_content)
+                "extraction_method": extraction_method,
+                "extracted_via": extracted_via,
+                "is_scanned": is_scanned,
+                **ocr_metadata,
             },
             "created_at": datetime.now().isoformat()
         }
 
-    def _clean_bill_title(self, raw: str) -> str:
-        if not raw: return ""
-        title = re.sub(r'\.(pdf|docx?|html?)$', '', raw, flags=re.IGNORECASE).strip()
-        return re.sub(r'\s+', ' ', title).strip()
+    def _ocr_page_screenshots(self, page, url: str, title: str) -> Tuple[str, dict]:
+        """
+        Navigate to a bill's page, capture full-page screenshots, and OCR them.
+        Used when the parliament site serves HTML instead of a downloadable PDF.
+        Returns (text, metadata_dict).
+        """
+        if not self.ocr_engine.ocr_space_key:
+            return "", {}
 
-    def _extract_bill_no(self, text: str) -> str:
-        match = re.search(r'(?:Bill\s*)?No\.?\s*(\d+)(?:\s*of\s*(\d{4}))?', text, re.IGNORECASE)
-        if match:
-            return f"No. {match.group(1)} of {match.group(2)}" if match.group(2) else f"No. {match.group(1)}"
-        return ""
+        try:
+            dp = page.context.new_page()
+            dp.goto(url, wait_until="domcontentloaded", timeout=30000)
+            time.sleep(1)  # Let page render
+
+            # Get the main content area height to determine how many screenshots
+            viewport_height = dp.viewport_size["height"]
+            page_height = dp.evaluate("document.body.scrollHeight")
+            max_screenshots = min(3, max(1, page_height // viewport_height + 1))
+
+            all_text = []
+            pages_processed = []
+
+            for i in range(max_screenshots):
+                # Scroll to position
+                scroll_y = i * viewport_height
+                dp.evaluate(f"window.scrollTo(0, {scroll_y})")
+                time.sleep(0.3)
+
+                # Capture screenshot as PNG bytes
+                screenshot_bytes = dp.screenshot(type="png")
+
+                if len(screenshot_bytes) > self.ocr_engine.MAX_FILE_SIZE_BYTES:
+                    logger.warning(f"      [Screenshot OCR] Screenshot {i+1} exceeds 1MB ({len(screenshot_bytes)} bytes), skipping.")
+                    continue
+
+                # Send to OCR.space
+                if self.ocr_engine._is_quota_exhausted():
+                    logger.warning("      [Screenshot OCR] OCR.space daily quota exhausted.")
+                    break
+
+                try:
+                    # Encode as base64 for OCR.space
+                    b64_data = base64.b64encode(screenshot_bytes).decode('utf-8')
+                    b64_string = f"data:image/png;base64,{b64_data}"
+
+                    response = requests.post(
+                        self.ocr_engine.OCR_SPACE_ENDPOINT,
+                        headers={"apikey": self.ocr_engine.ocr_space_key},
+                        data={
+                            "base64Image": b64_string,
+                            "language": "eng",
+                            "isOverlayRequired": "false",
+                            "scale": "true",
+                            "OCREngine": "1",
+                        },
+                        timeout=120
+                    )
+                    self.ocr_engine._increment_daily_counter()
+                    self.ocr_engine.metrics["ocr_requests_total"] += 1
+
+                    rj = response.json()
+                    if not rj.get("IsErroredOnProcessing", True):
+                        for pr in rj.get("ParsedResults", []):
+                            exit_code = pr.get("FileParseExitCode")
+                            if isinstance(exit_code, str):
+                                try: exit_code = int(exit_code)
+                                except: exit_code = -1
+                            if exit_code == 1:
+                                pt = pr.get("ParsedText", "")
+                                if pt.strip():
+                                    all_text.append(pt)
+                                    pages_processed.append(i + 1)
+                        logger.info(f"      [Screenshot OCR] Page {i+1}: {len(all_text[-1]) if all_text else 0} chars")
+                    else:
+                        err = rj.get("ErrorMessage", "Unknown")
+                        logger.warning(f"      [Screenshot OCR] Page {i+1} error: {err}")
+                        self.ocr_engine.metrics["ocr_requests_failed"] += 1
+
+                except Exception as e:
+                    logger.warning(f"      [Screenshot OCR] Request failed for page {i+1}: {e}")
+                    self.ocr_engine.metrics["ocr_requests_failed"] += 1
+
+            dp.close()
+
+            combined = "\n".join(all_text).strip()
+            meta = {
+                "ocr_source": "ocr.space",
+                "ocr_engine": 1,
+                "ocr_method": "screenshot",
+                "ocr_pages": pages_processed,
+                "ocr_notes": f"Screenshot-based OCR on {len(pages_processed)} viewport captures",
+            }
+            return combined, meta
+
+        except Exception as e:
+            logger.warning(f"      [Screenshot OCR] Failed: {e}")
+            return "", {}
+
+    def _scrape_bill_detail_page(self, page, url) -> dict:
+        """Visit the bill's node page for HTML metadata."""
+        try:
+            logger.info(f"      [Fallback] Scraped Detail Page: {url}")
+            dp = page.context.new_page()
+            dp.goto(url, wait_until="domcontentloaded", timeout=30000)
+            data = dp.evaluate("""() => {
+                const results = {};
+                // Look for common metadata labels
+                document.querySelectorAll('tr, .field').forEach(el => {
+                    const text = el.innerText.toLowerCase();
+                    if (text.includes('sponsor')) results.sponsor = el.innerText.split(':').pop().trim();
+                    if (text.includes('status') || text.includes('stage')) results.status = el.innerText.split(':').pop().trim();
+                    if (text.includes('date')) results.date = el.innerText.split(':').pop().trim();
+                });
+                // Look for summary/digest
+                const digest = document.querySelector('.field-name-field-bill-digest, .content, #block-system-main');
+                if (digest) results.summary = digest.innerText.trim().substring(0, 3000);
+                return results;
+            }""")
+            dp.close()
+            return data
+        except Exception as e:
+            logger.warning(f"      Detail page scrape failed: {e}")
+            return {}
+
+    def _extract_text_cascade(self, pdf_bytes: bytes) -> Tuple[str, Optional[str]]:
+        # PyMuPDF
+        if FITZ_OK:
+            try:
+                doc = fitz.open(stream=pdf_bytes, filetype="pdf")
+                text = "\n".join(p.get_text() for p in doc)
+                doc.close()
+                if text.strip(): return text, "pymupdf"
+            except: pass
+        # PyPDF2
+        if PYPDF2_OK:
+            try:
+                reader = PdfReader(io.BytesIO(pdf_bytes))
+                text = "\n".join(p.extract_text() or "" for p in reader.pages)
+                if text.strip(): return text, "pypdf2"
+            except: pass
+        # pdfplumber
+        if PDFPLUMBER_OK:
+            try:
+                with pdfplumber.open(io.BytesIO(pdf_bytes)) as pdf:
+                    text = "\n".join(p.extract_text() or "" for p in pdf.pages)
+                    if text.strip(): return text, "pdfplumber"
+            except: pass
+        return "", None
+
+    def _parse_bill_text(self, text: str) -> dict:
+        result = {}
+        # Simple regex for description and summary
+        memo = re.search(r'MEMORANDUM OF OBJECTS AND REASONS(.*)', text, re.S | re.I)
+        if memo: result['summary'] = re.sub(r'\s+', ' ', memo.group(1).strip())
+        
+        act = re.search(r'A Bill for\s+AN ACT\s+of Parliament to(.*?)(?:ENACTED|PART I)', text, re.S | re.I)
+        if act: result['description'] = "A Bill for AN ACT of Parliament to" + re.sub(r'\s+', ' ', act.group(1).strip())
+        
+        return result
+
+    def _scrape_standard_docs(self, page, target):
+        page.goto(target['url'], wait_until="networkidle")
+        links = page.evaluate("""(sel) => {
+            return Array.from(document.querySelectorAll(sel || 'a[href$=".pdf"]')).map(a => ({
+                text: a.innerText.trim(),
+                href: a.href
+            }));
+        }""", target.get('selector'))
+        for l in links:
+            if not l['text'] or l['text'] in self.seen_titles: continue
+            self.seen_titles.add(l['text'])
+            self.data.append(self._build_non_bill_record(l['text'], l['href'], target))
+            logger.info(f"    [DOC] {l['text']}")
+
+    def _build_non_bill_record(self, title, url, target):
+        return {
+            "title": title,
+            "url": url,
+            "source": target['name'],
+            "category": "Documentation",
+            "date": datetime.now().strftime("%Y-%m-%d"),
+            "document_type": "doc"
+        }
+
+    def _is_bill_document(self, title: str) -> bool:
+        t = title.lower()
+        if 'bill' not in t: return False
+        for kw in ('hansard', 'order paper', 'bill digest'):
+            if kw in t: return False
+        return True
+
+    def _clean_title(self, raw: str) -> str:
+        t = re.sub(r'\.(pdf|docx?|html?)$', '', raw, flags=re.I).strip()
+        return re.sub(r'\s+', ' ', t)
 
     def _title_from_url(self, url: str) -> str:
-        filename = unquote(url.split('/')[-1])
-        filename = re.sub(r'\.(pdf|docx?|html?)$', '', filename, flags=re.IGNORECASE)
-        return re.sub(r'[_-]+', ' ', filename).strip().title()
+        return unquote(url.split('/')[-1]).replace('.pdf','')
 
-    def _extract_year(self, text: str) -> str:
-        match = re.search(r'\b20(2[0-9]|3[0-9])\b', text)
-        return match.group(0) if match else ""
+    def _extract_year(self, text: str) -> Optional[str]:
+        m = re.search(r'\b(202[2-9])\b', text)
+        return m.group(0) if m else None
 
-    def _extract_sponsor(self, title: str) -> str:
-        t = title.lower()
-        if 'senate' in t: return "Senate"
-        if 'national assembly' in t: return "National Assembly"
-        return "Government"
+    def _extract_bill_no(self, text: str) -> str:
+        m = re.search(r'Bill No\.? (\d+)', text, re.I)
+        return f"No. {m.group(1)}" if m else ""
 
-    def _infer_status(self, title: str) -> str:
-        t = title.lower()
-        for s in ['assent', 'committee', 'second reading', 'first reading']:
-            if s in t: return s
-        return "publication"
+    def _infer_status_from_text(self, text: str, title: str) -> str:
+        t = title.lower() + " " + text[:500].lower()
+        if 'assent' in t: return "Assented"
+        if 'reading' in t: return "Reading"
+        return "Publication"
 
     def _infer_category(self, title: str) -> str:
-        t = title.lower()
-        maps = {"Finance": ['finance', 'tax', 'appropriation', 'budget'], "Education": ['education', 'learning'], "Healthcare": ['health', 'medical'], "Environment": ['environment', 'land', 'water'], "Governance Sector": ['parliament', 'judiciary', 'police', 'security', 'election']}
-        for cat, keywords in maps.items():
-            if any(kw in t for kw in keywords): return cat
         return "All Portfolios"
 
-    def save_data(self, output_dir="processed_data/legislative"):
-        os.makedirs(output_dir, exist_ok=True)
-        json_path = os.path.join(output_dir, f"legislation_sync_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json")
-        with open(json_path, 'w', encoding='utf-8') as f:
-            json.dump(self.data, f, indent=2, ensure_ascii=False)
-        logging.info(f"Saved {len(self.data)} records to {json_path}")
+    def _download_pdf(self, url: str, page=None) -> Optional[bytes]:
+        """Download a PDF, with PDF magic byte validation and Playwright fallback."""
+        pdf_bytes = None
 
+        # Method 1: Direct HTTP request
+        if REQUESTS_OK:
+            try:
+                r = requests.get(url, timeout=30, allow_redirects=True)
+                if r.content[:5] == b"%PDF-":
+                    pdf_bytes = r.content
+                    logger.info(f"      [DL] PDF downloaded via requests: {len(pdf_bytes)} bytes")
+                    return pdf_bytes
+                else:
+                    logger.info(f"      [DL] URL returned non-PDF content (Content-Type: {r.headers.get('Content-Type', 'unknown')}). Trying Playwright...")
+            except Exception as e:
+                logger.warning(f"      [DL] requests.get failed: {e}. Trying Playwright...")
+
+        # Method 2: Playwright-based download (uses browser session cookies)
+        if page:
+            try:
+                with page.context.expect_event("page") as page_info:
+                    page.evaluate(f"window.open('{url}')")
+                new_page = page_info.value
+                new_page.wait_for_load_state("load")
+                # Try to get the response body
+                response = new_page.goto(url, wait_until="load", timeout=30000)
+                if response:
+                    body = response.body()
+                    if body[:5] == b"%PDF-":
+                        pdf_bytes = body
+                        logger.info(f"      [DL] PDF downloaded via Playwright response: {len(pdf_bytes)} bytes")
+                new_page.close()
+                if pdf_bytes:
+                    return pdf_bytes
+            except Exception:
+                pass
+
+            # Method 3: Playwright download event handler
+            try:
+                with page.expect_download(timeout=30000) as download_info:
+                    page.evaluate(f"""() => {{
+                        const a = document.createElement('a');
+                        a.href = '{url}';
+                        a.download = 'bill.pdf';
+                        document.body.appendChild(a);
+                        a.click();
+                        a.remove();
+                    }}""")
+                download = download_info.value
+                temp_path = download.path()
+                if temp_path:
+                    with open(temp_path, 'rb') as f:
+                        pdf_bytes = f.read()
+                    if pdf_bytes and pdf_bytes[:5] == b"%PDF-":
+                        logger.info(f"      [DL] PDF downloaded via Playwright download: {len(pdf_bytes)} bytes")
+                        return pdf_bytes
+                    pdf_bytes = None
+            except Exception as e:
+                logger.warning(f"      [DL] Playwright download failed: {e}")
+
+            # Method 4: Use Playwright's request API to fetch with browser cookies
+            try:
+                api_response = page.context.request.get(url)
+                body = api_response.body()
+                if body[:5] == b"%PDF-":
+                    pdf_bytes = body
+                    logger.info(f"      [DL] PDF downloaded via Playwright API request: {len(pdf_bytes)} bytes")
+                    return pdf_bytes
+            except Exception as e:
+                logger.warning(f"      [DL] Playwright API request failed: {e}")
+
+        logger.warning(f"      [DL] All download methods failed for: {url}")
+        return None
+
+    def save_data(self):
+        fpath = f"processed_data/legislative/legislation_sync_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+        os.makedirs(os.path.dirname(fpath), exist_ok=True)
+        with open(fpath, 'w', encoding='utf-8') as f:
+            json.dump(self.data, f, indent=2, ensure_ascii=False)
+        logger.info(f"Saved to {fpath}")
 
 if __name__ == "__main__":
-    scraper = LegislativeScraper(headless=True, extract_pdf_text=True)
-    results = scraper.scrape_all(max_pages=2)
+    scraper = LegislativeScraper(headless=True)
+    scraper.scrape_all(max_pages=2)
     scraper.save_data()
