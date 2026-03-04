@@ -87,7 +87,7 @@ class RemoteOCREngine:
     """
 
     OCR_SPACE_ENDPOINT = "https://api.ocr.space/parse/image"
-    CLOUDMERSIVE_ENDPOINT = "https://testapi.cloudmersive.com/ocr/pdf/toText"
+    CLOUDMERSIVE_ENDPOINT = "https://api.cloudmersive.com/ocr/pdf/toText"
     CLOUDMERSIVE_IMAGE_ENDPOINT = "https://testapi.cloudmersive.com/ocr/image/toText"
 
     # Quality thresholds
@@ -161,13 +161,22 @@ class RemoteOCREngine:
             result["notes"] = "Empty PDF bytes provided."
             return result
 
-        # Pre-trim large PDFs to first 3 pages for free-tier compliance
+        # Pre-trim large PDFs to maximize page extraction within 1MB free-tier limit
         if file_size > self.MAX_FILE_SIZE_BYTES:
-            logger.info(f"      [OCR] PDF is {file_size / 1024:.0f}KB (>{self.MAX_FILE_SIZE_BYTES / 1024:.0f}KB limit). Trimming to first 3 pages...")
-            pdf_bytes = self._extract_first_pages(pdf_bytes, max_pages=3)
+            logger.info(f"      [OCR] PDF {file_size / 1024:.0f}KB exceeds 1MB free-tier limit. Adapting...")
+            # Try to get as much as possible (usually first 3-5 pages depending on density)
+            pdf_bytes = self._extract_first_pages(pdf_bytes, max_pages=5)
             file_size = len(pdf_bytes)
-            if file_size > self.MAX_FILE_SIZE_BYTES:
-                logger.warning(f"      [OCR] Trimmed PDF still {file_size / 1024:.0f}KB. Will try URL method if available.")
+            
+            # If still over 1MB, progressively drop pages until it fits
+            for pages in [4, 3, 2, 1]:
+                if file_size <= self.MAX_FILE_SIZE_BYTES:
+                    break
+                logger.info(f"      [OCR] Still too large ({file_size / 1024:.0f}KB). Trimming to {pages} pages...")
+                pdf_bytes = self._extract_first_pages(pdf_bytes, max_pages=pages)
+                file_size = len(pdf_bytes)
+
+            logger.info(f"      [OCR] Final trimmed size: {file_size / 1024:.0f}KB ({len(pdf_bytes)} bytes)")
 
         # --- Step 1: Try OCR.space ---
         if self.ocr_space_key and not self._is_quota_exhausted():
