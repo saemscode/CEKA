@@ -101,13 +101,14 @@ serve(async (req) => {
         }
       }
     )
-  } catch (error) {
-    const status = error.message.includes('Unauthorized') ? 401 : 400
-    console.error(`[${requestId}] Vault error:`, error.message)
+  } catch (error: any) {
+    const errorMsg = error instanceof Error ? error.message : String(error)
+    const status = errorMsg.includes('Unauthorized') ? 401 : 400
+    console.error(`[${requestId}] Vault error:`, errorMsg)
 
     return new Response(
       JSON.stringify({
-        error: error.message,
+        error: errorMsg,
         request_id: requestId
       }),
       {
