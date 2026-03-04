@@ -139,6 +139,13 @@ const TOOLS: Tool[] = [
 
 const FEATURED_SITES: FeaturedSite[] = [
     {
+        id: 'mtetezi',
+        name: 'Mtetezi — Digital Panic Button',
+        description: 'A high-risk safety application by Defenders Coalition featuring a one-tap panic alert system. Instantly notifies response teams and securely shares your live location during emergencies.',
+        url: 'https://play.google.com/store/apps/details?id=org.defenderscoalition.mteteziapp',
+        category: 'Digital Security',
+    },
+    {
         id: 'mzalendo',
         name: 'Mzalendo — MPs Performance',
         description: 'Track the performance of Members of Parliament in Kenya\'s 13th National Assembly. Attendance, motions, bills, and contributions — all in one place.',

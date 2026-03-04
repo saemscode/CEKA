@@ -4,7 +4,9 @@ import * as AWS from 'https://esm.sh/aws-sdk@2.1332.0'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Max-Age': '86400', // 24 hours
   'X-RateLimit-Limit': '100',
   'X-RateLimit-Remaining': '99',
 }
@@ -19,7 +21,7 @@ serve(async (req) => {
   const startTime = Date.now()
 
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    return new Response(null, { status: 204, headers: corsHeaders })
   }
 
   try {
