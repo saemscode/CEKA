@@ -11,7 +11,7 @@ import {
     Menu, X, ChevronDown, Bell, User, MoreVertical, Globe, Settings, Shield, Search, ChevronRight,
     FileText, PenTool, MessageSquare, Calendar, Heart, LayoutGrid, Radio, Users, Home, BookOpen,
     PlusCircle, Edit3, Activity, TrendingUp, Eye, UserCheck, Clock, AlertTriangle, Download,
-    RefreshCw, Plus, Sparkles, Zap
+    RefreshCw, Plus, Sparkles, Zap, PieChart as LucidePieChart
 } from 'lucide-react';
 import { adminService, AdminDashboardStats, UserActivityStats, ModerationQueueItem } from '@/services/adminService';
 import { AdminSessionManager } from './AdminSessionManager';
@@ -280,7 +280,7 @@ const EnhancedAdminDashboard = () => {
                             Analytics
                         </TabsTrigger>
                         <TabsTrigger value="polls" className="rounded-xl px-4 py-3 font-medium data-[state=active]:shadow-lg">
-                            <PieChart className="h-4 w-4 mr-2" />
+                            <LucidePieChart className="h-4 w-4 mr-2" />
                             Polls
                         </TabsTrigger>
                         <TabsTrigger value="appraisal" className="rounded-xl px-4 py-3 gap-2 font-medium data-[state=active]:shadow-lg">

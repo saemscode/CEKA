@@ -119,7 +119,7 @@ const GlobalAIAssistant = () => {
         if (usageRef.current >= MAX_MESSAGES_PER_DAY) {
             setMessages(prev => [...prev, {
                 role: 'ai',
-                content: `You've reached your daily limit of ${MAX_MESSAGES_PER_DAY} AI queries. Come back tomorrow! 🇰🇪`
+                content: `You've used your daily limit of ${MAX_MESSAGES_PER_DAY} queries. Please check back tomorrow – we'll be here to help.`
             }]);
             return;
         }
@@ -140,10 +140,21 @@ const GlobalAIAssistant = () => {
             if (error) throw error;
 
             if (data.error) {
-                console.error('AI Strategy Error:', data.message, data.diagnostic);
+                // Contextual error messages based on failure type
+                let userMessage: string;
+                if (data.exhausted) {
+                    userMessage = "All of our AI systems are currently at capacity. This is a temporary spike in demand – please try again in a few minutes. Your question is important to us.";
+                } else if (data.message?.includes('rate limit') || data.message?.includes('429')) {
+                    userMessage = "Our AI systems are experiencing high demand right now. We're working to connect you to an alternative provider – please try again in a moment.";
+                } else if (data.message?.includes('timeout') || data.message?.includes('timed out')) {
+                    userMessage = "Your question is taking a bit longer than usual to process. Please try again – we might need a moment to reconnect.";
+                } else {
+                    userMessage = data.message || "Something went wrong on our end. We're working to fix it – please try again shortly.";
+                }
+
                 setMessages(prev => [...prev, {
                     role: 'ai',
-                    content: `I'm currently recalibrating. Diagnosis: ${data.message}. Please try again shortly.`
+                    content: userMessage
                 }]);
                 return;
             }
@@ -155,11 +166,19 @@ const GlobalAIAssistant = () => {
                 role: 'ai',
                 content: data.answer || "I couldn't process that request. Please try again."
             }]);
-        } catch (err) {
-            console.error('AI Assistant error:', err);
+        } catch (err: any) {
+            // Contextual catch-level messages (network, connection, etc.)
+            let errorMessage: string;
+            if (err?.message?.includes('FetchError') || err?.message?.includes('network') || err?.message?.includes('Failed to fetch')) {
+                errorMessage = "We're having trouble reaching our AI service. Please check your internet connection and try again.";
+            } else if (err?.message?.includes('timeout')) {
+                errorMessage = "The request took too long to complete. Our servers might be busy – please try again in a moment.";
+            } else {
+                errorMessage = "Something went wrong on our end. We're working to fix it – please try again shortly.";
+            }
             setMessages(prev => [...prev, {
                 role: 'ai',
-                content: "I'm having trouble connecting. Please try again in a moment."
+                content: errorMessage
             }]);
         } finally {
             setLoading(false);

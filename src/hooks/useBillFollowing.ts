@@ -37,7 +37,7 @@ export function useBillFollowing(billId: string) {
       const following = await billFollowingService.isFollowingBill(billId, signal);
       if (active) setIsFollowing(following);
     } catch (error: any) {
-      if (active && error.name !== 'AbortError' && error.message !== 'Aborted') {
+      if (active && error.name !== 'AbortError' && error.message !== 'Aborted' && !error?.message?.includes('AbortError') && !error?.message?.includes('signal is aborted')) {
         console.error('Error checking follow status:', error);
       }
     } finally {
@@ -50,7 +50,7 @@ export function useBillFollowing(billId: string) {
       const count = await billFollowingService.getFollowCount(billId, signal);
       if (active) setFollowCount(count);
     } catch (error: any) {
-      if (active && error.name !== 'AbortError' && error.message !== 'Aborted') {
+      if (active && error.name !== 'AbortError' && error.message !== 'Aborted' && !error?.message?.includes('AbortError') && !error?.message?.includes('signal is aborted')) {
         console.error('Error getting follow count:', error);
       }
     }
