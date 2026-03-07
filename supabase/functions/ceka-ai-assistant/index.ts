@@ -8503,7 +8503,9 @@ Deno.serve(async (req) => {
       if (isConstitutionalQuery && primaryConfig.apiKey) {
          try {
             const supabase = createClient(
+               // @ts-ignore
                Deno.env.get('SUPABASE_URL')!,
+               // @ts-ignore
                Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
             );
 
