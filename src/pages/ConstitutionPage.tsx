@@ -10,12 +10,10 @@ import MegaResources from '@/components/resources/MegaResources';
 import CommunityProfileForm from '@/components/community/CommunityProfileForm';
 import VolunteerOpportunityDialog from '@/components/volunteer/VolunteerOpportunityDialog';
 import InteractiveConstitution from '@/components/constitution/InteractiveConstitution';
-import ConstitutionChat from '@/components/constitution/ConstitutionChat';
 
 const ConstitutionPage = () => {
   return (
     <Layout>
-      <ConstitutionChat />
       <div className="container py-8 md:py-12">
         {/* Kenya-themed projects carousel */}
         <div className="mb-10">
@@ -54,7 +52,7 @@ const ConstitutionPage = () => {
                   </a>
                 </Button>
                 <Button variant="outline" asChild>
-                  <Link to="/resources/1">
+                  <Link to="/resources/647caa0e-6ffd-44b1-8962-4bb96ae7dfb3">
                     <ExternalLink className="mr-2 h-4 w-4" />
                     View Details
                   </Link>
@@ -123,7 +121,7 @@ const ConstitutionPage = () => {
                   </p>
                   <div className="flex mb-4">
                     <Button variant="outline" asChild className="mr-3">
-                      <Link to="/resources/9">
+                      <Link to="/resources/647caa0e-6ffd-44b1-8962-4bb96ae7dfb3">
                         <BookOpen className="mr-2 h-4 w-4" />
                         View NCEF Document
                       </Link>
@@ -211,7 +209,7 @@ const ConstitutionPage = () => {
                     Comprehensive document explaining Kenya's devolved system of government.
                   </p>
                   <Button variant="outline" size="sm" asChild>
-                    <Link to="/resources/10">View Resource</Link>
+                    <Link to="/resources/647caa0e-6ffd-44b1-8962-4bb96ae7dfb3">View Resource</Link>
                   </Button>
                 </CardContent>
               </Card>
@@ -222,7 +220,7 @@ const ConstitutionPage = () => {
                     A handbook for civil society organizations on effective engagement with government.
                   </p>
                   <Button variant="outline" size="sm" asChild>
-                    <Link to="/resources/11">View Resource</Link>
+                    <Link to="/resources/647caa0e-6ffd-44b1-8962-4bb96ae7dfb3">View Resource</Link>
                   </Button>
                 </CardContent>
               </Card>

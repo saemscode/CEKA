@@ -76,7 +76,7 @@ const GlobalAIAssistant = () => {
     useEffect(() => { loadingRef.current = loading; }, [loading]);
 
     // Hide on pages that already have their own AI implementation
-    const hiddenPaths = ['/constitution'];
+    const hiddenPaths = [] as string[]; // Enable on all paths including constitution
     const shouldHide = hiddenPaths.some(p => location.pathname.startsWith(p));
 
     useEffect(() => {

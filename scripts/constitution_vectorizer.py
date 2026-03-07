@@ -57,43 +57,33 @@ class ConstitutionVectorizer:
         except Exception as e:
             logging.error(f"⚠️ Initialization warning: {e}")
 
-    def extract_and_parse_pdf(self) -> List[Dict[str, Any]]:
-        logging.info(f"📂 Loading PDF: {PDF_PATH}")
+    def load_articles_from_json(self) -> List[Dict[str, Any]]:
+        json_path = "d:/CEKA/ceka v010/CEKA/scripts/constitution_articles.json"
+        logging.info(f"📂 Loading Articles from JSON: {json_path}")
         try:
-            reader = PdfReader(PDF_PATH)
-            full_text = ""
-            for page in reader.pages:
-                full_text += page.extract_text() + "\n"
+            if not os.path.exists(json_path):
+                logging.error(f"❌ JSON file not found: {json_path}")
+                return []
+            with open(json_path, 'r', encoding='utf-8') as f:
+                articles_data = json.load(f)
+            
+            # Map JSON structure to vectorizer structure
+            articles = []
+            for art in articles_data:
+                clause_ref = f"Article {art['article_number']}"
+                content = f"{art['title_en']}\n{art['content_en']}"
+                articles.append({
+                    "clause_ref": clause_ref,
+                    "content": content,
+                    "chapter": str(art['chapter_number']),
+                    "category": "Constitution"
+                })
+            
+            logging.info(f"⚖️ Loaded {len(articles)} Articles from JSON.")
+            return articles
         except Exception as e:
-            logging.error(f"❌ Failed to load PDF: {e}")
+            logging.error(f"❌ Failed to load JSON: {e}")
             return []
-
-        # Split by Articles using Regex
-        # Matches "Article 1.", "Article 27.", etc.
-        articles = []
-        
-        # Heuristic: Split on "Article [Number]"
-        pattern = r"(Article\s+\d+\.)"
-        parts = re.split(pattern, full_text)
-        
-        current_chapter = "General"
-        
-        for i in range(1, len(parts), 2):
-            header = parts[i].strip()
-            content = parts[i+1].strip() if i+1 < len(parts) else ""
-            
-            # Simple cleanup
-            article_id = header.replace(".", "")
-            
-            articles.append({
-                "clause_ref": article_id,
-                "content": f"{header}\n{content}".strip(),
-                "chapter": current_chapter, 
-                "category": "Constitution"
-            })
-            
-        logging.info(f"⚖️ Parsed {len(articles)} Articles from the Constitution.")
-        return articles
 
     def generate_embeddings(self, articles: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         logging.info(f"🧠 Generating embeddings for {len(articles)} units...")
@@ -111,7 +101,7 @@ class ConstitutionVectorizer:
                 )
                 article['embedding'] = result['embedding']
                 processed_articles.append(article)
-                if i % 10 == 0:
+                if i % 20 == 0:
                     logging.info(f"✅ Embedded {i}/{len(articles)}")
             except Exception as e:
                 logging.error(f"❌ Embedding failed for {article['clause_ref']}: {str(e)}")
@@ -130,7 +120,7 @@ class ConstitutionVectorizer:
                 "content": item['content'],
                 "category": item['category'],
                 "embedding": item['embedding'],
-                "metadata": {"source": "The_Constitution_of_Kenya_2010.pdf"}
+                "metadata": {"source": "constitution_articles.json"}
             } for item in batch]
             
             try:
@@ -141,9 +131,9 @@ class ConstitutionVectorizer:
 
     def run(self):
         logging.info("🚀 Starting Constitution Vectorization...")
-        articles = self.extract_and_parse_pdf()
+        articles = self.load_articles_from_json()
         if not articles:
-            logging.error("❌ No articles extracted. Aborting.")
+            logging.error("❌ No articles loaded. Aborting.")
             return
 
         articles_with_embeddings = self.generate_embeddings(articles)

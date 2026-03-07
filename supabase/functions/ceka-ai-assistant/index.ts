@@ -1,5 +1,7 @@
 // @ts-ignore
 import { GoogleGenerativeAI } from 'https://esm.sh/@google/generative-ai@0.21.0'
+// @ts-ignore
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
    'Access-Control-Allow-Origin': '*',
@@ -1482,8 +1484,47 @@ Deno.serve(async (req) => {
       }
 
       // Prepare the system prompt with context and date
-      const systemPromptWithDate = SYSTEM_PROMPT.replace('%CONTEXT%', context)
+      let systemPromptWithDate = SYSTEM_PROMPT.replace('%CONTEXT%', context)
          .replace(/YYYY-MM-DD/g, new Date().toISOString().split('T')[0]);
+
+      // --- RAG INTEGRATION: RETRIEVE CONSTITUTIONAL CONTEXT ---
+      let ragContext = "";
+      const isConstitutionalQuery = query.toLowerCase().includes('constitution') ||
+         query.toLowerCase().includes('article') ||
+         context.includes('/constitution');
+
+      if (isConstitutionalQuery && primaryConfig.apiKey) {
+         try {
+            const supabase = createClient(
+               Deno.env.get('SUPABASE_URL')!,
+               Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+            );
+
+            // 1. Generate embedding for the query using Gemini
+            const genAI = new GoogleGenerativeAI(primaryConfig.apiKey);
+            const embeddingModel = genAI.getGenerativeModel({ model: "text-embedding-004" });
+            const embeddingResult = await embeddingModel.embedContent(query);
+            const queryEmbedding = embeddingResult.embedding.values;
+
+            // 2. Search for relevant articles using the match_constitution RPC
+            const { data: matchedSections, error: matchError } = await supabase.rpc('match_constitution', {
+               query_embedding: queryEmbedding,
+               match_threshold: 0.5,
+               match_count: 3
+            });
+
+            if (!matchError && matchedSections && matchedSections.length > 0) {
+               ragContext = "\n\n# 📜 Relevant Constitutional Context\n" +
+                  matchedSections.map((s: any) => `[${s.clause_ref}: ${s.chapter}]\n${s.content}`).join('\n\n');
+
+               systemPromptWithDate += `\n\nINSTRUCTION: You have been provided with the following verified segments from the Constitution of Kenya (2010). Use them to provide accurate, evidence-based answers. If the information is not contained here, state that you are using your general knowledge.\n${ragContext}`;
+            }
+         } catch (ragErr) {
+            // Fail silently - don't break the whole assistant if RAG fails
+            console.error("RAG Error:", ragErr);
+         }
+      }
+      // --- END RAG INTEGRATION ---
 
       // Try each provider in the chain until one succeeds
       let answer: string | null = null;

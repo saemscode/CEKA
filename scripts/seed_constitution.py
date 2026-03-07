@@ -9,6 +9,24 @@ from supabase import create_client, Client
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
+def load_env_file():
+    env_path = "d:/CEKA/ceka v010/CEKA/.env"
+    try:
+        if os.path.exists(env_path):
+            with open(env_path, 'r') as f:
+                for line in f:
+                    line = line.strip()
+                    if not line or line.startswith('#'):
+                        continue
+                    if '=' in line:
+                        key, value = line.split('=', 1)
+                        os.environ[key.strip()] = value.strip()
+            logging.info(f"Loaded environment variables from {env_path}")
+    except Exception as e:
+        logging.error(f"Failed to load .env file: {str(e)}")
+
+load_env_file()
+
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
 SUPABASE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
 
@@ -24,15 +42,24 @@ def load_constitution_data():
     
     # Load chapters
     chapters_file = os.path.join(script_dir, 'constitution_chapters.json')
-    with open(chapters_file, 'r', encoding='utf-8') as f:
-        data = json.load(f)
+    data = {"chapters": [], "sections": []}
+    
+    if os.path.exists(chapters_file):
+        with open(chapters_file, 'r', encoding='utf-8') as f:
+            chapters_data = json.load(f)
+            data["chapters"] = chapters_data.get("chapters", [])
+            data["sections"] = chapters_data.get("sections", [])
     
     # Load additional articles if exists
     articles_file = os.path.join(script_dir, 'constitution_articles.json')
     if os.path.exists(articles_file):
         with open(articles_file, 'r', encoding='utf-8') as f:
             additional = json.load(f)
-            data['sections'].extend(additional.get('sections', []))
+            if isinstance(additional, list):
+                # Our new parser output
+                data['sections'].extend(additional)
+            elif isinstance(additional, dict):
+                data['sections'].extend(additional.get('sections', []))
     
     return data
 
@@ -63,7 +90,7 @@ def seed_sections(sections):
         try:
             chapter_id = chapter_map.get(section['chapter_number'])
             if not chapter_id:
-                logging.warning(f"  ⚠ No chapter found for Article {section['article_number']}")
+                logging.warning(f"  ⚠ No chapter found for Article {section['article_number']} (Chapter {section.get('chapter_number')})")
                 continue
             
             result = supabase.table('constitution_sections').upsert({
@@ -87,8 +114,11 @@ def main():
     
     data = load_constitution_data()
     
-    seed_chapters(data['chapters'])
-    seed_sections(data['sections'])
+    if data['chapters']:
+        seed_chapters(data['chapters'])
+    
+    if data['sections']:
+        seed_sections(data['sections'])
     
     logging.info("=" * 60)
     logging.info(f"COMPLETE: {len(data['chapters'])} chapters, {len(data['sections'])} articles")
