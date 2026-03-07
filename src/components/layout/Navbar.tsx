@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
   Menu, X, ChevronDown, Bell, User, MoreVertical, Globe, Settings, Shield, Search, ChevronRight,
-  FileText, PenTool, MessageSquare, Calendar, Heart, LayoutGrid, Radio, Users, Home, MapPin, Image
+  FileText, PenTool, MessageSquare, Calendar, Heart, LayoutGrid, Radio, Users, Home, MapPin, Image, Info
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Logo from '@/components/ui/Logo';
@@ -40,6 +40,7 @@ import { NotificationDropdown } from '@/components/notifications/NotificationDro
 // Icon mapping for menu items
 const getItemIcon = (path: string) => {
   switch (path) {
+    case '/about': return Info;
     case '/legislative-tracker': return FileText;
     case '/resources': return Shield;
     case '/blog': return PenTool;
@@ -91,6 +92,7 @@ const Navbar = () => {
     {
       name: translate('Discover', language),
       items: [
+        { name: translate('About CEKA', language), path: '/about', description: translate('Our mission, platform features, and how to partner with us', language) },
         { name: translate('Legislative Tracker', language), path: '/legislative-tracker', description: translate('Stay informed about bills and legislative changes in Kenya', language) },
         { name: translate('Resource Hub', language), path: '/resources', description: translate('Central hub for all civic documents', language) },
         { name: translate('Pieces', language), path: '/pieces', description: translate('Interactive educational carousels and PDF series', language) },
