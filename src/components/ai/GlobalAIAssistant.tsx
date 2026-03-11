@@ -286,7 +286,7 @@ const GlobalAIAssistant = () => {
                             {loading && (
                                 <div className="flex justify-start">
                                     <div className="bg-white/10 dark:bg-gray-800/20 border border-white/20 dark:border-white/10 p-3 rounded-2xl rounded-tl-none shadow-lg backdrop-blur-md">
-                                        <CEKALoader variant="ios" size="sm" />
+                                        <CEKALoader variant="default" size="sm" />
                                     </div>
                                 </div>
                             )}
