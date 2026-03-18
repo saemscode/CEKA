@@ -36,8 +36,8 @@ const CEKA_SOCIALS = [
     {
         platform: 'Instagram',
         handle: '@civiceducationke',
-        followers: '3,300+',
-        reach: '200,000 avg monthly',
+        followers: '5,000+',
+        reach: '500,000 avg monthly',
         url: 'https://instagram.com/civiceducationke',
         icon: Instagram,
         color: 'bg-gradient-to-br from-purple-500 via-pink-500 to-orange-400',
@@ -56,7 +56,7 @@ const CEKA_SOCIALS = [
     {
         platform: 'X (Twitter)',
         handle: '@CivicEdKe',
-        followers: '260+',
+        followers: '500+',
         reach: null,
         url: 'https://x.com/CivicEdKe',
         icon: Twitter,
