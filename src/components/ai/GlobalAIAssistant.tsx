@@ -1,9 +1,9 @@
 // Global AI Assistant FAB - positioned above donation button
+// Credit warnings at 10, 5, 2 remaining — Vercel feature flags integrated
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Sparkles, Send, X, Bot, HelpCircle } from 'lucide-react';
+import { Sparkles, Send, X, Bot, HelpCircle, AlertTriangle, Flame } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLocation } from 'react-router-dom';
@@ -11,8 +11,30 @@ import ReactMarkdown from 'react-markdown';
 import { cn } from '@/lib/utils';
 import { CEKALoader } from '@/components/ui/ceka-loader';
 
-// Rate limiting per user session
-const MAX_MESSAGES_PER_DAY = 20;
+// ============================================================================
+// VERCEL FEATURE FLAGS
+// These are read from environment variables set in your Vercel project dashboard.
+// To override them: Vercel Dashboard → Project → Settings → Environment Variables
+// Redeploy after changing any flag for it to take effect.
+//
+// FLAG REFERENCE:
+//   VITE_FLAG_AI_ENABLED          → "true" / "false"  — kill switch for the entire assistant
+//   VITE_FLAG_DAILY_LIMIT         → number as string   — daily message cap (default: "20")
+//   VITE_FLAG_WARN_THRESHOLD_HIGH → number as string   — first warning (default: "10")
+//   VITE_FLAG_WARN_THRESHOLD_MID  → number as string   — second warning (default: "5")
+//   VITE_FLAG_WARN_THRESHOLD_LOW  → number as string   — final warning (default: "2")
+// ============================================================================
+const FLAGS = {
+    AI_ENABLED: import.meta.env.VITE_FLAG_AI_ENABLED !== 'false',
+    DAILY_LIMIT: parseInt(import.meta.env.VITE_FLAG_DAILY_LIMIT ?? '20', 10),
+    WARN_HIGH: parseInt(import.meta.env.VITE_FLAG_WARN_THRESHOLD_HIGH ?? '10', 10),
+    WARN_MID: parseInt(import.meta.env.VITE_FLAG_WARN_THRESHOLD_MID ?? '5', 10),
+    WARN_LOW: parseInt(import.meta.env.VITE_FLAG_WARN_THRESHOLD_LOW ?? '2', 10),
+} as const;
+
+// ============================================================================
+// RATE LIMITING
+// ============================================================================
 const RATE_LIMIT_KEY = 'ceka_ai_usage';
 
 const getUsageToday = (): number => {
@@ -32,11 +54,127 @@ const incrementUsage = () => {
     return count;
 };
 
+// ============================================================================
+// CREDIT WARNING LOGIC
+// Returns the warning tier for the current remaining count, or null if safe.
+// ============================================================================
+type WarningTier = 'high' | 'mid' | 'low' | null;
+
+const getWarningTier = (remaining: number): WarningTier => {
+    if (remaining <= FLAGS.WARN_LOW) return 'low';
+    if (remaining <= FLAGS.WARN_MID) return 'mid';
+    if (remaining <= FLAGS.WARN_HIGH) return 'high';
+    return null;
+};
+
+const WARNING_CONFIG: Record<
+    Exclude<WarningTier, null>,
+    { label: string | ((r: number) => string); colour: string; bgColour: string; borderColour: string; icon: React.ReactNode }
+> = {
+    high: {
+        label: 'queries remaining today',
+        colour: 'text-amber-600 dark:text-amber-400',
+        bgColour: 'bg-amber-50 dark:bg-amber-900/20',
+        borderColour: 'border-amber-200 dark:border-amber-700/40',
+        icon: <AlertTriangle className="h-3 w-3 text-amber-500 shrink-0" />,
+    },
+    mid: {
+        label: 'queries left — use them wisely',
+        colour: 'text-orange-600 dark:text-orange-400',
+        bgColour: 'bg-orange-50 dark:bg-orange-900/20',
+        borderColour: 'border-orange-200 dark:border-orange-700/40',
+        icon: <AlertTriangle className="h-3 w-3 text-orange-500 shrink-0" />,
+    },
+    low: {
+        label: (r: number) => r === 1 ? 'query left — last one!' : 'queries left — almost out!',
+        colour: 'text-red-600 dark:text-red-400',
+        bgColour: 'bg-red-50 dark:bg-red-900/20',
+        borderColour: 'border-red-200 dark:border-red-700/40',
+        icon: <Flame className="h-3 w-3 text-red-500 shrink-0" />,
+    },
+};
+
+// ============================================================================
+// CREDIT WARNING BANNER
+// Renders inline above the input bar when approaching the daily limit.
+// ============================================================================
+interface CreditWarningProps {
+    remaining: number;
+}
+
+const CreditWarningBanner: React.FC<CreditWarningProps> = ({ remaining }) => {
+    const tier = getWarningTier(remaining);
+    if (!tier) return null;
+
+    const config = WARNING_CONFIG[tier];
+    const label = typeof config.label === 'function' ? config.label(remaining) : config.label;
+
+    return (
+        <AnimatePresence>
+            <motion.div
+                key={`warning-${tier}`}
+                initial={{ opacity: 0, y: 4, height: 0 }}
+                animate={{ opacity: 1, y: 0, height: 'auto' }}
+                exit={{ opacity: 0, y: -4, height: 0 }}
+                transition={{ duration: 0.25, ease: 'easeOut' }}
+                className={cn(
+                    'mx-4 mb-0 mt-2 px-3 py-2 rounded-xl border flex items-center gap-2',
+                    config.bgColour,
+                    config.borderColour
+                )}
+            >
+                {config.icon}
+                <span className={cn('text-[10px] font-semibold leading-tight', config.colour)}>
+                    <span className="font-bold">{remaining}</span> {label}
+                </span>
+            </motion.div>
+        </AnimatePresence>
+    );
+};
+
+// ============================================================================
+// COUNTER BADGE — shown in the header, colour-shifts with warning tier
+// ============================================================================
+interface CounterBadgeProps {
+    remaining: number;
+    total: number;
+}
+
+const CounterBadge: React.FC<CounterBadgeProps> = ({ remaining, total }) => {
+    const tier = getWarningTier(remaining);
+
+    const colourClass = tier === 'low'
+        ? 'text-red-500 dark:text-red-400'
+        : tier === 'mid'
+            ? 'text-orange-500 dark:text-orange-400'
+            : tier === 'high'
+                ? 'text-amber-500 dark:text-amber-400'
+                : 'text-slate-500 dark:text-slate-400';
+
+    return (
+        <motion.span
+            key={remaining}
+            initial={{ scale: 1.3, opacity: 0.6 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 0.2, ease: 'easeOut' }}
+            className={cn('text-[10px] font-semibold tabular-nums', colourClass)}
+        >
+            {remaining}/{total}
+        </motion.span>
+    );
+};
+
+// ============================================================================
+// TYPES
+// ============================================================================
 interface Message {
     role: 'user' | 'ai';
     content: string;
 }
 
+// ============================================================================
+// MAIN COMPONENT
+// ============================================================================
 const GlobalAIAssistant = () => {
     const [isOpen, setIsOpen] = useState(false);
     const [query, setQuery] = useState('');
@@ -44,25 +182,28 @@ const GlobalAIAssistant = () => {
     const [loading, setLoading] = useState(false);
     const [usage, setUsage] = useState(0);
     const [isVisible, setIsVisible] = useState(false);
-
     const [isIdle, setIsIdle] = useState(false);
     const [showPulse, setShowPulse] = useState(false);
     const [isHovering, setIsHovering] = useState(false);
+
     const queryRef = React.useRef(query);
     const usageRef = React.useRef(usage);
     const loadingRef = React.useRef(loading);
 
     const location = useLocation();
 
-    // engagement effects
+    const remaining = FLAGS.DAILY_LIMIT - usage;
+    const isExhausted = usage >= FLAGS.DAILY_LIMIT;
+
+    // Engagement effects
     useEffect(() => {
         const pulseTimer = setTimeout(() => {
             if (!isOpen) setShowPulse(true);
-        }, 15000); // 15s delay
+        }, 15000);
 
         const idleTimer = setTimeout(() => {
             if (!isOpen && !isHovering) setIsIdle(true);
-        }, 45000); // 45s delay
+        }, 45000);
 
         return () => {
             clearTimeout(pulseTimer);
@@ -75,8 +216,7 @@ const GlobalAIAssistant = () => {
     useEffect(() => { usageRef.current = usage; }, [usage]);
     useEffect(() => { loadingRef.current = loading; }, [loading]);
 
-    // Hide on pages that already have their own AI implementation
-    const hiddenPaths = [] as string[]; // Enable on all paths including constitution
+    const hiddenPaths = [] as string[];
     const shouldHide = hiddenPaths.some(p => location.pathname.startsWith(p));
 
     useEffect(() => {
@@ -86,7 +226,6 @@ const GlobalAIAssistant = () => {
             const { query: triggerQuery } = e.detail;
             setIsOpen(true);
             setQuery(triggerQuery);
-            // Pass directly to avoid state lag
             setTimeout(() => {
                 handleSend(triggerQuery);
             }, 50);
@@ -104,22 +243,20 @@ const GlobalAIAssistant = () => {
     }, []);
 
     useEffect(() => {
-        const handleSendNow = () => {
-            handleSend();
-        };
+        const handleSendNow = () => handleSend();
         document.addEventListener('ceka-ai-send-now', handleSendNow);
         return () => document.removeEventListener('ceka-ai-send-now', handleSendNow);
-    }, []); // No deps needed with refs
+    }, []);
 
     const handleSend = async (overrideQuery?: string) => {
         const activeQuery = overrideQuery !== undefined ? overrideQuery : queryRef.current;
 
         if (!activeQuery.trim() || loadingRef.current) return;
 
-        if (usageRef.current >= MAX_MESSAGES_PER_DAY) {
+        if (usageRef.current >= FLAGS.DAILY_LIMIT) {
             setMessages(prev => [...prev, {
                 role: 'ai',
-                content: `You've used your daily limit of ${MAX_MESSAGES_PER_DAY} queries. Please check back tomorrow – we'll be here to help.`
+                content: `You've used all ${FLAGS.DAILY_LIMIT} queries for today. Come back tomorrow — we'll be here.`
             }]);
             return;
         }
@@ -140,22 +277,18 @@ const GlobalAIAssistant = () => {
             if (error) throw error;
 
             if (data.error) {
-                // Contextual error messages based on failure type
                 let userMessage: string;
                 if (data.exhausted) {
-                    userMessage = "All of our AI systems are currently at capacity. This is a temporary spike in demand – please try again in a few minutes. Your question is important to us.";
+                    userMessage = "All of our AI systems are currently at capacity. This is a temporary spike in demand – please try again in a few minutes.";
                 } else if (data.message?.includes('rate limit') || data.message?.includes('429')) {
-                    userMessage = "Our AI systems are experiencing high demand right now. We're working to connect you to an alternative provider – please try again in a moment.";
+                    userMessage = "Our AI systems are experiencing high demand right now. Please try again in a moment.";
                 } else if (data.message?.includes('timeout') || data.message?.includes('timed out')) {
-                    userMessage = "Your question is taking a bit longer than usual to process. Please try again – we might need a moment to reconnect.";
+                    userMessage = "Your question is taking a bit longer than usual to process. Please try again.";
                 } else {
-                    userMessage = data.message || "Something went wrong on our end. We're working to fix it – please try again shortly.";
+                    userMessage = data.message || "Something went wrong on our end. Please try again shortly.";
                 }
 
-                setMessages(prev => [...prev, {
-                    role: 'ai',
-                    content: userMessage
-                }]);
+                setMessages(prev => [...prev, { role: 'ai', content: userMessage }]);
                 return;
             }
 
@@ -167,24 +300,22 @@ const GlobalAIAssistant = () => {
                 content: data.answer || "I couldn't process that request. Please try again."
             }]);
         } catch (err: any) {
-            // Contextual catch-level messages (network, connection, etc.)
             let errorMessage: string;
             if (err?.message?.includes('FetchError') || err?.message?.includes('network') || err?.message?.includes('Failed to fetch')) {
                 errorMessage = "We're having trouble reaching our AI service. Please check your internet connection and try again.";
             } else if (err?.message?.includes('timeout')) {
-                errorMessage = "The request took too long to complete. Our servers might be busy – please try again in a moment.";
+                errorMessage = "The request took too long to complete. Please try again in a moment.";
             } else {
-                errorMessage = "Something went wrong on our end. We're working to fix it – please try again shortly.";
+                errorMessage = "Something went wrong on our end. Please try again shortly.";
             }
-            setMessages(prev => [...prev, {
-                role: 'ai',
-                content: errorMessage
-            }]);
+            setMessages(prev => [...prev, { role: 'ai', content: errorMessage }]);
         } finally {
             setLoading(false);
         }
     };
 
+    // Kill switch: if the feature flag disables AI entirely, render nothing
+    if (!FLAGS.AI_ENABLED) return null;
     if (shouldHide) return null;
 
     return (
@@ -212,6 +343,7 @@ const GlobalAIAssistant = () => {
                         exit={{ opacity: 0, scale: 0.9 }}
                         className="w-80 bg-white/10 dark:bg-gray-900/10 backdrop-blur-xl border border-white/20 dark:border-gray-700/20 rounded-2xl shadow-2xl overflow-hidden flex flex-col h-[520px]"
                     >
+                        {/* Header */}
                         <div className="bg-gradient-to-r from-kenya-green/10 to-primary/10 p-4 border-b border-white/10 dark:border-gray-700/10">
                             <div className="flex justify-between items-center">
                                 <h3 className="font-bold text-lg flex items-center text-slate-800 dark:text-white">
@@ -222,9 +354,7 @@ const GlobalAIAssistant = () => {
                                     CEKA AI
                                 </h3>
                                 <div className="flex items-center gap-2">
-                                    <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">
-                                        {MAX_MESSAGES_PER_DAY - usage} left
-                                    </span>
+                                    <CounterBadge remaining={remaining} total={FLAGS.DAILY_LIMIT} />
                                     <button
                                         className="relative group rounded-full p-2 hover:bg-white/10 dark:hover:bg-gray-800/10 transition-all duration-300 backdrop-blur-sm"
                                         onClick={() => setIsOpen(false)}
@@ -236,6 +366,7 @@ const GlobalAIAssistant = () => {
                             </div>
                         </div>
 
+                        {/* Messages */}
                         <div className="flex-1 overflow-y-auto p-4 space-y-4 green-scrollbar">
                             {messages.length === 0 && (
                                 <div className="text-center py-8 space-y-4">
@@ -286,12 +417,26 @@ const GlobalAIAssistant = () => {
                             {loading && (
                                 <div className="flex justify-start">
                                     <div className="bg-white/10 dark:bg-gray-800/20 border border-white/20 dark:border-white/10 p-3 rounded-2xl rounded-tl-none shadow-lg backdrop-blur-md">
-                                        <CEKALoader variant="ios" size="sm" />
+                                        <CEKALoader variant="default" size="sm" />
                                     </div>
                                 </div>
                             )}
                         </div>
 
+                        {/* Credit warning banner — mounts between messages and input */}
+                        {!isExhausted && <CreditWarningBanner remaining={remaining} />}
+
+                        {/* Exhausted state banner */}
+                        {isExhausted && (
+                            <div className="mx-4 mt-2 px-3 py-2 rounded-xl border bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-700/40 flex items-center gap-2">
+                                <Flame className="h-3 w-3 text-red-500 shrink-0" />
+                                <span className="text-[10px] font-semibold text-red-600 dark:text-red-400 leading-tight">
+                                    Daily limit reached. Resets at midnight.
+                                </span>
+                            </div>
+                        )}
+
+                        {/* Input */}
                         <div className="p-4 border-t border-white/10 dark:border-gray-700/10 bg-white/5 dark:bg-black/20">
                             <div className="flex gap-2">
                                 <Input
@@ -300,13 +445,13 @@ const GlobalAIAssistant = () => {
                                     onChange={(e) => setQuery(e.target.value)}
                                     onKeyPress={(e) => e.key === 'Enter' && handleSend()}
                                     className="h-10 text-sm rounded-xl border-white/20 dark:border-white/10 bg-white/10 dark:bg-black/20 focus:ring-kenya-green/50 placeholder:text-slate-400"
-                                    disabled={usage >= MAX_MESSAGES_PER_DAY}
+                                    disabled={isExhausted}
                                 />
                                 <Button
                                     onClick={() => handleSend()}
                                     size="icon"
                                     className="h-10 w-10 rounded-xl bg-gradient-to-br from-kenya-green to-primary hover:from-primary hover:to-kenya-green text-white shrink-0 shadow-lg hover:scale-105 transition-all"
-                                    disabled={loading || usage >= MAX_MESSAGES_PER_DAY}
+                                    disabled={loading || isExhausted}
                                 >
                                     <Send className="h-4 w-4" />
                                 </Button>
