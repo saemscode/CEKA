@@ -48,3 +48,4 @@ GoogleService-Info.plist
 # Capacitor Live Updates
 .live-update/
 
+backup.sql
