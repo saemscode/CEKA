@@ -3,7 +3,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { ShieldCheck, ShieldAlert, Check, X, Info } from 'lucide-react';
+import { ShieldCheck, ShieldAlert, Check, X, Info, ExternalLink, Globe, FileText, Lock } from 'lucide-react';
 import { CEKALoader } from '@/components/ui/ceka-loader';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/providers/AuthProvider';
@@ -81,6 +81,14 @@ const OAuthConsent = () => {
         }
     };
 
+    // Derive branding values from app data, with sensible defaults
+    const brandColor = app?.brand_color || '#007AFF';
+    const logoUrl = app?.logo_url || null;
+    const appDescription = app?.description || null;
+    const websiteUrl = app?.website_url || null;
+    const privacyPolicyUrl = app?.privacy_policy_url || null;
+    const termsUrl = app?.terms_url || null;
+
     if (loading) return (
         <Layout>
             <div className="min-h-[70vh] flex flex-col items-center justify-center gap-6">
@@ -112,22 +120,85 @@ const OAuthConsent = () => {
                     className="w-full max-w-md"
                 >
                     <Card className="border-none shadow-ios-high rounded-[40px] overflow-hidden bg-white/70 dark:bg-black/40 backdrop-blur-2xl">
-                        <div className="h-32 bg-gradient-to-br from-primary/10 via-background to-transparent relative flex items-center justify-center">
-                            <div className="h-20 w-20 rounded-3xl bg-white dark:bg-[#1C1C1E] shadow-xl flex items-center justify-center border border-white/20">
-                                <span className="text-3xl font-black text-primary">{app.name.charAt(0)}</span>
+                        {/* Header with branded gradient or default */}
+                        <div
+                            className="h-36 relative flex items-center justify-center overflow-hidden"
+                            style={{
+                                background: `linear-gradient(135deg, ${brandColor}15, transparent 60%, ${brandColor}08)`
+                            }}
+                        >
+                            {/* Subtle animated ring behind the logo */}
+                            <div
+                                className="absolute w-28 h-28 rounded-full animate-pulse-slow opacity-30"
+                                style={{ background: `radial-gradient(circle, ${brandColor}30 0%, transparent 70%)` }}
+                            />
+
+                            {/* App Logo / Avatar */}
+                            <div className="h-20 w-20 rounded-3xl bg-white dark:bg-[#1C1C1E] shadow-xl flex items-center justify-center border border-white/20 relative z-10 overflow-hidden">
+                                {logoUrl ? (
+                                    <img
+                                        src={logoUrl}
+                                        alt={`${app.name} logo`}
+                                        className="w-12 h-12 object-contain"
+                                        onError={(e) => {
+                                            // Fallback to initial letter if logo fails to load
+                                            const target = e.currentTarget;
+                                            target.style.display = 'none';
+                                            const parent = target.parentElement;
+                                            if (parent) {
+                                                const fallback = document.createElement('span');
+                                                fallback.className = 'text-3xl font-black';
+                                                fallback.style.color = brandColor;
+                                                fallback.textContent = app.name.charAt(0);
+                                                parent.appendChild(fallback);
+                                            }
+                                        }}
+                                    />
+                                ) : (
+                                    <span className="text-3xl font-black" style={{ color: brandColor }}>{app.name.charAt(0)}</span>
+                                )}
                             </div>
-                            <div className="absolute -bottom-4 right-1/2 translate-x-1/2 h-8 w-8 rounded-full bg-kenya-green flex items-center justify-center text-white shadow-lg border-4 border-white dark:border-black">
+
+                            {/* Verified badge */}
+                            <div
+                                className="absolute -bottom-4 right-1/2 translate-x-1/2 h-8 w-8 rounded-full flex items-center justify-center text-white shadow-lg border-4 border-white dark:border-black"
+                                style={{ backgroundColor: app.is_verified ? '#34C759' : brandColor }}
+                            >
                                 <Check className="h-4 w-4 stroke-[4px]" />
                             </div>
                         </div>
 
                         <CardHeader className="pt-8 text-center px-8">
                             <div className="flex items-center justify-center gap-2 mb-2">
-                                <ShieldCheck className="h-4 w-4 text-kenya-green" />
-                                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-kenya-green">Verified Integration</span>
+                                {app.is_verified ? (
+                                    <>
+                                        <ShieldCheck className="h-4 w-4 text-kenya-green" />
+                                        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-kenya-green">Verified Integration</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <ShieldCheck className="h-4 w-4" style={{ color: brandColor }} />
+                                        <span className="text-[10px] font-black uppercase tracking-[0.2em]" style={{ color: brandColor }}>Integration Request</span>
+                                    </>
+                                )}
                             </div>
                             <CardTitle className="text-2xl font-black tracking-tight">{app.name}</CardTitle>
-                            <CardDescription className="text-sm font-medium pt-1">Requests access to your CEKA identity</CardDescription>
+                            <CardDescription className="text-sm font-medium pt-1">
+                                {appDescription || 'Requests access to your CEKA identity'}
+                            </CardDescription>
+                            {websiteUrl && (
+                                <a
+                                    href={websiteUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-1.5 text-[11px] font-semibold mt-2 transition-colors hover:opacity-80"
+                                    style={{ color: brandColor }}
+                                >
+                                    <Globe className="h-3 w-3" />
+                                    {websiteUrl.replace(/^https?:\/\//, '').replace(/\/$/, '')}
+                                    <ExternalLink className="h-2.5 w-2.5 opacity-60" />
+                                </a>
+                            )}
                         </CardHeader>
 
                         <CardContent className="px-8 pb-8">
@@ -136,11 +207,15 @@ const OAuthConsent = () => {
                                     <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-4">This app will be able to:</p>
                                     <ul className="space-y-4">
                                         <li className="flex items-start gap-3">
-                                            <div className="h-5 w-5 rounded-full bg-blue-500/10 flex items-center justify-center shrink-0 mt-0.5"><Check className="h-3 w-3 text-blue-500" /></div>
+                                            <div className="h-5 w-5 rounded-full flex items-center justify-center shrink-0 mt-0.5" style={{ backgroundColor: `${brandColor}15` }}>
+                                                <Check className="h-3 w-3" style={{ color: brandColor }} />
+                                            </div>
                                             <span className="text-sm font-bold">View your full name and avatar</span>
                                         </li>
                                         <li className="flex items-start gap-3">
-                                            <div className="h-5 w-5 rounded-full bg-blue-500/10 flex items-center justify-center shrink-0 mt-0.5"><Check className="h-3 w-3 text-blue-500" /></div>
+                                            <div className="h-5 w-5 rounded-full flex items-center justify-center shrink-0 mt-0.5" style={{ backgroundColor: `${brandColor}15` }}>
+                                                <Check className="h-3 w-3" style={{ color: brandColor }} />
+                                            </div>
                                             <span className="text-sm font-bold">View your primary email address</span>
                                         </li>
                                         {scope.includes('write') && (
@@ -152,8 +227,39 @@ const OAuthConsent = () => {
                                     </ul>
                                 </div>
 
-                                <div className="flex items-center gap-3 p-4 bg-primary/5 rounded-2xl">
-                                    <Info className="h-5 w-5 text-primary shrink-0" />
+                                {/* Legal links section */}
+                                {(privacyPolicyUrl || termsUrl) && (
+                                    <div className="flex items-center justify-center gap-4 text-[10px] font-semibold text-muted-foreground">
+                                        {privacyPolicyUrl && (
+                                            <a
+                                                href={privacyPolicyUrl}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="inline-flex items-center gap-1 transition-colors hover:text-foreground"
+                                            >
+                                                <Lock className="h-3 w-3" />
+                                                Privacy Policy
+                                            </a>
+                                        )}
+                                        {privacyPolicyUrl && termsUrl && (
+                                            <span className="text-muted-foreground/40">•</span>
+                                        )}
+                                        {termsUrl && (
+                                            <a
+                                                href={termsUrl}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="inline-flex items-center gap-1 transition-colors hover:text-foreground"
+                                            >
+                                                <FileText className="h-3 w-3" />
+                                                Terms of Service
+                                            </a>
+                                        )}
+                                    </div>
+                                )}
+
+                                <div className="flex items-center gap-3 p-4 rounded-2xl" style={{ backgroundColor: `${brandColor}08` }}>
+                                    <Info className="h-5 w-5 shrink-0" style={{ color: brandColor }} />
                                     <p className="text-[11px] font-medium leading-relaxed">
                                         By authorizing, you agree to share your data with <span className="font-bold">{app.name}</span>. You can revoke this anytime in CEKA Settings.
                                     </p>
@@ -165,7 +271,11 @@ const OAuthConsent = () => {
                             <Button
                                 onClick={handleApprove}
                                 disabled={authorizing}
-                                className="w-full h-14 rounded-2xl bg-primary hover:bg-primary/90 font-black uppercase tracking-widest text-xs shadow-xl shadow-primary/20 active:scale-[0.98] transition-all"
+                                className="w-full h-14 rounded-2xl font-black uppercase tracking-widest text-xs shadow-xl active:scale-[0.98] transition-all"
+                                style={{
+                                    backgroundColor: brandColor,
+                                    boxShadow: `0 10px 25px -5px ${brandColor}33`,
+                                }}
                             >
                                 {authorizing ? <CEKALoader variant="ios" size="sm" /> : 'Authorize Application'}
                             </Button>

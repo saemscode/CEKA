@@ -2096,31 +2096,49 @@ export type Database = {
       }
       third_party_apps: {
         Row: {
+          brand_color: string | null
           client_id: string
           client_secret: string
           created_at: string | null
+          description: string | null
           id: string
           is_verified: boolean | null
+          logo_url: string | null
           name: string
+          privacy_policy_url: string | null
           redirect_uris: string[] | null
+          terms_url: string | null
+          website_url: string | null
         }
         Insert: {
+          brand_color?: string | null
           client_id: string
           client_secret: string
           created_at?: string | null
+          description?: string | null
           id?: string
           is_verified?: boolean | null
+          logo_url?: string | null
           name: string
+          privacy_policy_url?: string | null
           redirect_uris?: string[] | null
+          terms_url?: string | null
+          website_url?: string | null
         }
         Update: {
+          brand_color?: string | null
           client_id?: string
           client_secret?: string
           created_at?: string | null
+          description?: string | null
           id?: string
           is_verified?: boolean | null
+          logo_url?: string | null
           name?: string
+          privacy_policy_url?: string | null
           redirect_uris?: string[] | null
+          terms_url?: string | null
+          website_url?: string | null
         }
         Relationships: []
       }
