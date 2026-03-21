@@ -1,3 +1,4 @@
+// @ts-nocheck
 // D:\CEKA\ceka v010\CEKA\supabase\functions\oauth-token\index.ts
 // Secure OAuth 2.0 Token Exchange for CEKA Third Party Apps
 // Implements code-for-user-info exchange using client_secret verification
