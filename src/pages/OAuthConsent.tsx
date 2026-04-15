@@ -49,14 +49,17 @@ const OAuthConsent = () => {
 
             try {
                 console.log('[OAuth] Resolving application metadata for:', clientId);
+                
+                // STRICT MODE: Avoid .single() to prevent 406 noise if app is missing
                 const { data, error: fetchError } = await supabase
                     .from('third_party_apps' as any)
                     .select('*')
-                    .eq('client_id', clientId)
-                    .single();
+                    .eq('client_id', clientId);
 
-                if (fetchError || !data) {
-                    console.error('[OAuth] Supabase Registry Lookup Failed:', fetchError?.message);
+                const appData = data && data.length > 0 ? data[0] : null;
+
+                if (fetchError || !appData) {
+                    if (fetchError) console.error('[OAuth] Registry error:', fetchError.message);
                     
                     // Fallback for Nasaka IEBC Client ID
                     if (clientId === 'nasaka_iebc_client_id' || clientId === 'd356516d-3cc7-427a-98eb-49f4ec18adbf') {
@@ -72,8 +75,8 @@ const OAuthConsent = () => {
                         throw new Error(`Unregistered Client: The ID "${clientId}" was not found in the CEKA Registry.`);
                     }
                 } else {
-                    console.log('[OAuth] Identity Marriage ready for:', data.name);
-                    setApp(data);
+                    console.log('[OAuth] Identity Marriage ready for:', appData.name);
+                    setApp(appData);
                 }
             } catch (err: any) {
                 console.error('[OAuth] Handshake breakdown:', err.message);
@@ -98,16 +101,22 @@ const OAuthConsent = () => {
         // Feedback Loop: premium 1.5s delay with Fingerprint ID animation
         setTimeout(async () => {
             try {
-                // 1. Get code from Supabase Auth Approve endpoint
-                const { data, error } = await (supabase.auth as any).admin.authorizeUser({
-                    client_id: clientId!,
-                    redirect_uri: redirectUri!,
-                    response_type: 'code',
-                    scope: scope,
-                    state: state || undefined
+                // STRICT MODE: Call the secure Edge Function instead of admin.authorizeUser
+                console.log('[OAuth] Delegating handshake to secure Edge Function for:', clientId);
+                
+                const { data, error } = await supabase.functions.invoke('oauth-authorize', {
+                    body: {
+                        client_id: clientId,
+                        redirect_uri: redirectUri,
+                        scope: scope,
+                        state: state || undefined
+                    }
                 });
 
-                if (error) throw error;
+                if (error || data?.error) {
+                    console.error('[OAuth] Edge Proxy Handshake Rejected:', error || data?.error);
+                    throw new Error(error?.message || data?.error || 'Authorization rejected by security server.');
+                }
 
                 if (data?.url) {
                     toast({
@@ -117,10 +126,13 @@ const OAuthConsent = () => {
                     });
                     
                     // Redirect back to consumer (e.g., Nasaka) with the code
+                    console.log('[OAuth] Handshake Success. Delivering code via Edge Proxy...');
                     window.location.href = data.url;
+                } else {
+                    throw new Error('Handshake succeeded but no redirect URL was returned.');
                 }
             } catch (err: any) {
-                console.error('Authorization failed:', err);
+                console.error('[OAuth] Authorization failure:', err);
                 toast({
                     title: "Authorization Failed",
                     description: err.message || "Could not complete handshake.",
