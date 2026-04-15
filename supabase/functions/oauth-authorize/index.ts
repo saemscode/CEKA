@@ -100,6 +100,21 @@ serve(async (req) => {
     }
 
     console.log(`[OAuth-Authorize] Phase 1 Location: ${phase1Location}`)
+    
+    // ENRICHMENT: If Supabase redirects us to our own consent page, ensure it has the necessary payloads
+    const enrich = (loc: string) => {
+      if (!loc.includes('/oauth/consent')) return loc
+      try {
+        const url = new URL(loc)
+        url.searchParams.set('client_id', client_id)
+        url.searchParams.set('redirect_uri', redirect_uri)
+        if (scope) url.searchParams.set('scope', scope)
+        if (state) url.searchParams.set('state', state)
+        if (code_challenge) url.searchParams.set('code_challenge', code_challenge)
+        if (code_challenge_method) url.searchParams.set('code_challenge_method', code_challenge_method)
+        return url.toString()
+      } catch (_) { return loc }
+    }
 
     // If Supabase returned the code directly (cached consent), we're done
     if (phase1Location.includes('code=')) {
@@ -115,15 +130,13 @@ serve(async (req) => {
       const consentUrl = new URL(phase1Location)
       authorizationId = consentUrl.searchParams.get('authorization_id')
     } catch (_) {
-      // phase1Location may be a relative URL — try parsing differently
       const match = phase1Location.match(/authorization_id=([^&]+)/)
       authorizationId = match?.[1] || null
     }
 
     if (!authorizationId) {
       console.error('[OAuth-Authorize] No authorization_id found in:', phase1Location)
-      return new Response(JSON.stringify({ error: 'no_authorization_id', details: phase1Location }), {
-        status: 400,
+      return new Response(JSON.stringify({ url: enrich(phase1Location) }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
     }
@@ -151,9 +164,9 @@ serve(async (req) => {
 
     const finalLocation = phase2.headers.get('location')
 
-    if ((phase2.status === 301 || phase2.status === 302 || phase2.status === 303) && finalLocation) {
-      console.log('[OAuth-Authorize] Phase 2 Approved! Final deliverable:', finalLocation)
-      return new Response(JSON.stringify({ url: finalLocation }), {
+    if (finalLocation) {
+      console.log('[OAuth-Authorize] Phase 2 Handshake. Deliverable:', finalLocation)
+      return new Response(JSON.stringify({ url: enrich(finalLocation) }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
     }
@@ -164,7 +177,8 @@ serve(async (req) => {
     return new Response(JSON.stringify({
       error: 'consent_approval_failed',
       status: phase2.status,
-      details: errorBody
+      details: errorBody,
+      recovery_url: enrich(phase1Location)
     }), {
       status: phase2.status >= 400 ? phase2.status : 400,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
