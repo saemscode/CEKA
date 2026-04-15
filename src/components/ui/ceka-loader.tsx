@@ -51,7 +51,7 @@ export const CEKALoader: React.FC<CEKALoaderProps> = ({
         if (!showProgressMessages) return;
         const interval = setInterval(() => {
             setMessageIndex((prev) => (prev + 1) % PROGRESS_MESSAGES.length);
-        }, 2500);
+        }, 3000);
         return () => clearInterval(interval);
     }, [showProgressMessages]);
 
@@ -60,210 +60,97 @@ export const CEKALoader: React.FC<CEKALoaderProps> = ({
     const sizes = {
         xs: { wrapper: 'w-8 h-8', icon: 16, text: 'text-[10px]' },
         sm: { wrapper: 'w-16 h-16', icon: 24, text: 'text-xs' },
-        md: { wrapper: 'w-24 h-24', icon: 36, text: 'text-sm' },
-        lg: { wrapper: 'w-32 h-32', icon: 48, text: 'text-base' },
-        xl: { wrapper: 'w-48 h-48', icon: 64, text: 'text-lg' }
+        md: { wrapper: 'w-24 h-24', icon: 34, text: 'text-sm' },
+        lg: { wrapper: 'w-32 h-32', icon: 44, text: 'text-base' },
+        xl: { wrapper: 'w-48 h-48', icon: 60, text: 'text-lg' }
     };
 
     const s = sizes[size];
 
-    // Progressive message component
     const renderMessage = () => (
-        <>
+        <AnimatePresence mode="wait">
             {displayMessage && (
-                <AnimatePresence mode="wait">
-                    <motion.p
-                        key={displayMessage}
-                        initial={{ opacity: 0, y: 5 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -5 }}
-                        className={`${s.text} font-bold text-slate-600 dark:text-slate-300 tracking-tight text-center max-w-[240px] mt-6 px-4`}
-                        style={{ willChange: 'opacity, transform' }}
-                    >
-                        {displayMessage}
-                    </motion.p>
-                </AnimatePresence>
+                <motion.p
+                    key={displayMessage}
+                    initial={{ opacity: 0, y: 8, filter: 'blur(4px)' }}
+                    animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+                    exit={{ opacity: 0, y: -8, filter: 'blur(4px)' }}
+                    transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+                    className={`${s.text} font-semibold uppercase tracking-[0.15em] text-slate-500/80 dark:text-slate-400/80 text-center max-w-[280px] mt-8 px-6 font-mono`}
+                >
+                    {displayMessage}
+                </motion.p>
             )}
-            <span className="sr-only">Loading...</span>
-        </>
+        </AnimatePresence>
     );
 
     const renderContent = () => {
-        if (variant === 'scanning') {
-            return (
-                <div className={`${s.wrapper} relative flex items-center justify-center`}>
-                    {/* Concentric rings like in the image */}
-                    {[0.6, 0.8, 1.0].map((scale, i) => (
-                        <div
-                            key={i}
-                            className="absolute border border-black/5 dark:border-white/10 rounded-full"
-                            style={{
-                                width: `${scale * 100}%`,
-                                height: `${scale * 100}%`
-                            }}
-                        />
-                    ))}
-
-                    {/* Rotating segments */}
-                    {[0, 1, 2].map((i) => (
-                        <motion.div
-                            key={`seg-${i}`}
-                            className="absolute rounded-full"
-                            style={{
-                                width: `${70 + i * 15}%`,
-                                height: `${70 + i * 15}%`,
-                                border: '3px solid transparent',
-                                borderTopColor: [COLORS.kenyaGreen, COLORS.black, COLORS.kenyaRed][i],
-                                borderLeftColor: i === 1 ? COLORS.white : 'transparent',
-                                opacity: i === 1 && theme === 'light' ? 0.8 : 1,
-                                filter: 'blur(0.5px)'
-                            }}
-                            animate={{ rotate: 360 }}
-                            transition={{
-                                duration: 1.5 + i * 0.5,
-                                repeat: Infinity,
-                                ease: "linear"
-                            }}
-                        />
-                    ))}
-
-                    <motion.div
-                        className="relative z-10 p-2 rounded-full bg-white/10 backdrop-blur-sm"
-                        animate={{ opacity: [0.7, 1, 0.7], scale: [0.95, 1.05, 0.95] }}
-                        transition={{ duration: 2, repeat: Infinity }}
-                    >
-                        <img
-                            src={logoSrc}
-                            alt="CEKA"
-                            className={cn(
-                                "object-contain",
-                                size === 'xs' ? 'h-3' : size === 'sm' ? 'h-4' : size === 'md' ? 'h-6' : size === 'lg' ? 'h-10' : 'h-14'
-                            )}
-                        />
-                    </motion.div>
-                </div>
-            );
-        }
-
-        if (variant === 'ios') {
+        // SIGNATURE: The Unified CEKA Design
+        // Blends iOS elegance with the Kenyan Identity
+        if (variant === 'default' || variant === 'ios' || variant === 'scanning') {
             const segments = 12;
+            const isScanning = variant === 'scanning';
+            
             return (
                 <div className={`${s.wrapper} relative flex items-center justify-center`}>
-                    {[...Array(segments)].map((_, i) => (
-                        <motion.div
-                            key={i}
-                            className="absolute bg-current rounded-full"
-                            style={{
-                                width: '10%',
-                                height: '28%',
-                                top: '36%',
-                                left: '45%',
-                                transformOrigin: 'center -100%',
-                                borderRadius: '1rem',
-                                color: i % 4 === 0 ? COLORS.green : (i % 4 === 2 ? COLORS.red : COLORS.black),
-                                opacity: 0.2
-                            }}
-                            animate={{
-                                opacity: [0.2, 1, 0.2],
-                                transform: `rotate(${i * (360 / segments)}deg) translateY(-80%)`,
-                            }}
-                            transition={{
-                                duration: 0.8,
-                                repeat: Infinity,
-                                delay: i * (0.8 / segments),
-                                ease: "linear"
-                            }}
-                        />
-                    ))}
-                </div>
-            );
-        }
-
-        if (variant === 'bars') {
-            return (
-                <div className="flex items-end gap-1.5 h-10">
-                    {[0, 1, 2, 3, 4].map((i) => (
-                        <motion.div
-                            key={i}
-                            className="w-2.5 rounded-full"
-                            style={{
-                                background: `linear-gradient(to bottom, ${COLORS.red}, ${COLORS.black}, ${COLORS.green})`,
-                                willChange: 'transform',
-                            }}
-                            animate={{
-                                scaleY: [0.3, 1, 0.3],
-                            }}
-                            transition={{
-                                duration: 1,
-                                repeat: Infinity,
-                                delay: i * 0.15,
-                                ease: 'easeInOut',
-                            }}
-                        />
-                    ))}
-                </div>
-            );
-        }
-
-        if (variant === 'pulse') {
-            return (
-                <div className={`${s.wrapper} relative flex items-center justify-center`}>
-                    <motion.div
-                        className="absolute inset-0 rounded-full bg-kenya-green/10"
-                        animate={{ scale: [1, 1.8, 1], opacity: [0.3, 0, 0.3] }}
-                        transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                        style={{ willChange: 'transform, opacity' }}
+                    {/* 1. Signature Aura Flush (Kenyan Identity) */}
+                    <motion.div 
+                        className="absolute inset-0 rounded-full bg-gradient-to-tr from-green-500/10 via-black/5 to-red-500/10 blur-2xl"
+                        animate={{ 
+                            scale: [1, 1.2, 1],
+                            opacity: [0.3, 0.5, 0.3],
+                            rotate: [0, 90, 180, 270, 360]
+                        }}
+                        transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
                     />
-                    <motion.div
-                        className="absolute inset-0 rounded-full border border-kenya-red/20"
-                        animate={{ scale: [1, 1.4, 1], opacity: [0.5, 0, 0.5] }}
-                        transition={{ duration: 2, repeat: Infinity, delay: 0.5, ease: "easeInOut" }}
-                        style={{ willChange: 'transform, opacity' }}
-                    />
-                    <div className="relative z-10 flex items-center justify-center">
-                        <img
-                            src={logoSrc}
-                            alt="CEKA"
-                            className={cn(
-                                "object-contain transition-all duration-500",
-                                size === 'xs' ? 'h-4' : size === 'sm' ? 'h-6' : size === 'md' ? 'h-10' : size === 'lg' ? 'h-14' : 'h-20'
-                            )}
-                        />
-                    </div>
-                </div>
-            );
-        }
 
-        if (variant === 'orbit') {
-            return (
-                <div className={`${s.wrapper} relative flex items-center justify-center`}>
-                    <motion.div
-                        className="absolute inset-0 flex items-center justify-center"
-                        animate={{ rotateZ: 360 }}
-                        transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
-                        style={{ perspective: 1000, willChange: 'transform' }}
-                    >
-                        {[0, 1, 2].map((i) => (
-                            <div
-                                key={i}
-                                className="absolute"
-                                style={{
-                                    transform: `rotateZ(${i * 120}deg) translateY(-35px)`
-                                }}
-                            >
+                    {/* 2. Premium iOS Segments with Fixed Math & Signature Colors */}
+                    <div className="absolute inset-0 flex items-center justify-center">
+                        {[...Array(segments)].map((_, i) => {
+                            // Cycle through Kenyan colors for the signature trail
+                            const segmentColor = i % 3 === 0 ? COLORS.kenyaGreen : (i % 3 === 1 ? (theme === 'dark' ? '#333' : COLORS.black) : COLORS.kenyaRed);
+                            
+                            return (
                                 <motion.div
-                                    className="w-4 h-4 rounded-full blur-[1px]"
+                                    key={i}
+                                    className="absolute rounded-full"
                                     style={{
-                                        backgroundColor: [COLORS.green, COLORS.black, COLORS.red][i],
-                                        boxShadow: `0 0 10px ${[COLORS.green, COLORS.black, COLORS.red][i]}40`
+                                        width: '6%',
+                                        height: '22%',
+                                        backgroundColor: segmentColor,
+                                        transform: `rotate(${i * (360 / segments)}deg) translateY(-140%)`,
+                                        transformOrigin: '50% 50%',
+                                        opacity: 0.1,
+                                        boxShadow: isScanning ? `0 0 10px ${segmentColor}40` : 'none'
                                     }}
-                                    animate={{ scale: [0.8, 1.2, 0.8] }}
-                                    transition={{ duration: 1.5, repeat: Infinity, delay: i * 0.5 }}
+                                    animate={{ 
+                                        opacity: [0.1, 1, 0.1],
+                                        scale: isScanning ? [1, 1.2, 1] : 1
+                                    }}
+                                    transition={{
+                                        duration: 1.2,
+                                        repeat: Infinity,
+                                        delay: i * (1.2 / segments),
+                                        ease: "linear"
+                                    }}
                                 />
-                            </div>
-                        ))}
-                    </motion.div>
-                    <div className="relative z-10 flex items-center justify-center scale-75">
+                            );
+                        })}
+                    </div>
+
+                    {/* 3. The "Pulse" Core (CEKA Identity) */}
+                    <motion.div
+                        className="relative z-10 flex items-center justify-center bg-background/40 backdrop-blur-md rounded-full p-3 shadow-xl border border-white/20 dark:border-white/5"
+                        animate={{ 
+                            scale: [1, 1.05, 1],
+                            boxShadow: [
+                                '0 10px 40px -10px rgba(0,0,0,0.1)',
+                                '0 10px 60px -5px rgba(0,0,0,0.2)',
+                                '0 10px 40px -10px rgba(0,0,0,0.1)'
+                            ]
+                        }}
+                        transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                    >
                         <img
                             src={logoSrc}
                             alt="CEKA"
@@ -272,48 +159,83 @@ export const CEKALoader: React.FC<CEKALoaderProps> = ({
                                 size === 'xs' ? 'h-3' : size === 'sm' ? 'h-5' : size === 'md' ? 'h-8' : size === 'lg' ? 'h-12' : 'h-16'
                             )}
                         />
-                    </div>
+                    </motion.div>
+
+                    {/* 4. Scanning Ring (Optional Overlay) */}
+                    {isScanning && (
+                        <motion.div 
+                            className="absolute inset-0 rounded-full border-2 border-primary/20"
+                            animate={{ scale: [1, 1.5], opacity: [0.5, 0] }}
+                            transition={{ duration: 1.5, repeat: Infinity, ease: "easeOut" }}
+                        />
+                    )}
                 </div>
             );
         }
 
-        // Default Triple Ring
-        return (
-            <div className={`${s.wrapper} relative flex items-center justify-center`}>
-                <motion.div
-                    className="absolute inset-0 rounded-full border-[3px] border-kenya-green/10"
-                    style={{ borderTopColor: COLORS.green, borderLeftColor: COLORS.green, willChange: 'transform' }}
-                    animate={{ rotateZ: 360 }}
-                    transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut" }}
-                />
-                <motion.div
-                    className="absolute inset-3 rounded-full border-[3px] border-black/10 dark:border-white/20"
-                    style={{ borderTopColor: theme === 'dark' ? '#ffffff' : COLORS.black, willChange: 'transform' }}
-                    animate={{ rotateZ: -360 }}
-                    transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
-                />
-                <motion.div
-                    className="absolute inset-6 rounded-full border-[3px] border-kenya-red/10"
-                    style={{ borderTopColor: COLORS.red, borderRightColor: COLORS.red, willChange: 'transform' }}
-                    animate={{ rotateZ: 360 }}
-                    transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
-                />
-                <motion.div
-                    className="absolute inset-0 flex items-center justify-center"
-                    animate={{ opacity: [0.6, 1, 0.6], scale: [0.98, 1.02, 0.98] }}
-                    transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                >
-                    <img
-                        src={logoSrc}
-                        alt="CEKA"
-                        className={cn(
-                            "object-contain",
-                            size === 'xs' ? 'h-3' : size === 'sm' ? 'h-4' : size === 'md' ? 'h-6' : size === 'lg' ? 'h-10' : 'h-14'
-                        )}
+        if (variant === 'bars') {
+            return (
+                <div className="flex items-end gap-2 h-12">
+                    {[0, 1, 2, 3, 4].map((i) => (
+                        <motion.div
+                            key={i}
+                            className="w-1.5 rounded-full"
+                            style={{
+                                background: `linear-gradient(to top, ${COLORS.kenyaGreen}, ${COLORS.white}, ${COLORS.kenyaRed})`,
+                                height: '100%',
+                            }}
+                            animate={{
+                                scaleY: [0.2, 1, 0.2],
+                                opacity: [0.5, 1, 0.5]
+                            }}
+                            transition={{
+                                duration: 1,
+                                repeat: Infinity,
+                                delay: i * 0.1,
+                                ease: 'easeInOut',
+                            }}
+                        />
+                    ))}
+                </div>
+            );
+        }
+
+        if (variant === 'pulse' || variant === 'orbit') {
+            return (
+                <div className={`${s.wrapper} relative flex items-center justify-center`}>
+                    <motion.div
+                        className="absolute inset-0 rounded-full border-2 border-dashed border-primary/20"
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
                     />
-                </motion.div>
-            </div>
-        );
+                    <motion.div
+                        className="absolute inset-4 rounded-full border border-primary/10"
+                        animate={{ rotate: -360 }}
+                        transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
+                    />
+                    
+                    <motion.div
+                        className="relative z-10"
+                        animate={{ 
+                            scale: [0.95, 1.05, 0.95],
+                            filter: ['drop-shadow(0 0 0px transparent)', 'drop-shadow(0 0 20px rgba(59, 130, 246, 0.3))', 'drop-shadow(0 0 0px transparent)']
+                        }}
+                        transition={{ duration: 3, repeat: Infinity }}
+                    >
+                        <img
+                            src={logoSrc}
+                            alt="CEKA"
+                            className={cn(
+                                "object-contain",
+                                size === 'xs' ? 'h-4' : size === 'sm' ? 'h-8' : size === 'md' ? 'h-12' : size === 'lg' ? 'h-16' : 'h-24'
+                            )}
+                        />
+                    </motion.div>
+                </div>
+            );
+        }
+
+        return null; // Should not happen with current logic
     };
 
     return (
