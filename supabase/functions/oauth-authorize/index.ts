@@ -130,17 +130,18 @@ serve(async (req) => {
 
     console.log(`[OAuth-Authorize] Phase 2 — Approving authorization_id: ${authorizationId}`)
 
-    // ── PHASE 2: APPROVE CONSENT ────────────────────────────────────────────
-    const phase2 = await fetch(`${SUPABASE_URL}/auth/v1/oauth/authorize`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'apikey': SUPABASE_ANON_KEY,
-        'Authorization': userAuthHeader,
-      },
-      body: new URLSearchParams({ authorization_id: authorizationId }),
-      redirect: 'manual',
-    })
+    // ── PHASE 2: APPROVE CONSENT (GET — GoTrue /oauth/authorize is GET-only) ─
+    const phase2 = await fetch(
+      `${SUPABASE_URL}/auth/v1/oauth/authorize?` + new URLSearchParams({ authorization_id: authorizationId }),
+      {
+        method: 'GET',
+        headers: {
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': userAuthHeader,
+        },
+        redirect: 'manual',
+      }
+    )
 
     const finalLocation = phase2.headers.get('location')
 
