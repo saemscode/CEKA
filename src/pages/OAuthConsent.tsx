@@ -51,11 +51,11 @@ const OAuthConsent = () => {
 
             try {
                 console.log('[OAuth] Resolving application metadata for:', clientId);
-                
+
                 // STRICT MODE: Multi-ID Support
                 // Map the slug ID to the primary UUID if necessary to ensure the official registry record is used.
                 const searchId = clientId === 'nasaka-iebc-v1' ? 'd356516d-3cc7-427a-98eb-49f4ec18adbf' : clientId;
-                
+
                 // STRICT MODE: Avoid .single() to prevent 406 noise if app is missing
                 const { data, error: fetchError } = await supabase
                     .from('third_party_apps' as any)

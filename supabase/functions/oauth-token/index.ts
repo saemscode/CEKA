@@ -9,7 +9,7 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 }
 
-serve(async (req: { method: string; json: () => PromiseLike<{ code: any; redirect_uri: any; code_verifier: any }> | { code: any; redirect_uri: any; code_verifier: any } }) => {
+serve(async (req: Request) => {
   // 0. HANDLE PREFLIGHT
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
