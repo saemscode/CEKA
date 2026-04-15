@@ -26,7 +26,7 @@ async function generateCodeChallenge(verifier: string): Promise<string> {
     .replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '')
 }
 
-serve(async (req) => {
+serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
   try {
@@ -128,14 +128,12 @@ serve(async (req) => {
       })
     }
 
-    console.log(`[OAuth-Authorize] Phase 2 — Approving authorization_id: ${authorizationId}`)
-
-    // ── PHASE 2: APPROVE CONSENT (Requires POST + Full Payload)
+    // ── PHASE 2: APPROVE CONSENT (Requires POST + authorization_id in URL)
     console.log(`[OAuth-Authorize] Phase 2 — Approving authorization_id: ${authorizationId}`)
     
-    const phase2Body = new URLSearchParams({
+    const phase2Payload = new URLSearchParams({
       authorization_id: authorizationId,
-      allow: 'true', // The "Approve" signal
+      allow: 'true',
       client_id: client_id,
       redirect_uri: redirect_uri,
       scope: scope || 'openid profile email',
@@ -146,7 +144,7 @@ serve(async (req) => {
     })
 
     const phase2 = await fetch(
-      `${SUPABASE_URL}/auth/v1/oauth/authorize`,
+      `${SUPABASE_URL}/auth/v1/oauth/authorize?authorization_id=${authorizationId}`, // <== REFINED: Add to query string
       {
         method: 'POST',
         headers: { 
@@ -154,7 +152,7 @@ serve(async (req) => {
           'Authorization': userAuthHeader,
           'Content-Type': 'application/x-www-form-urlencoded'
         },
-        body: phase2Body,
+        body: phase2Payload,
         redirect: 'manual',
       }
     )
