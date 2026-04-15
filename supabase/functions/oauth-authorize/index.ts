@@ -8,49 +8,59 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
-  // Handle CORS preflight
+  // 1. HANDLE PREFLIGHT (CRITICAL)
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
 
   try {
     const { client_id, redirect_uri, state, scope = 'profile email' } = await req.json()
+    
+    // We get the user's JWT from the request headers (passed by supabase.functions.invoke)
+    const authHeader = req.headers.get('Authorization')
+    if (!authHeader) throw new Error('Unauthorized: Missing identity token.')
 
-    console.log(`[OAuth-Authorize] Initializing secure handshake for client: ${client_id}`);
+    const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
+    const ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!
 
-    const supabaseAdmin = createClient(
-        Deno.env.get('SUPABASE_URL') || '',
-        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
-    )
+    console.log(`[OAuth-Authorize] Initializing Handshake for: ${client_id}`);
 
-    // Using admin.authorizeUser to get the redirect URL with the code securely
-    const { data, error } = await supabaseAdmin.auth.admin.authorizeUser({
+    // STRICT MODE: Direct API Handshake
+    // We hit the authorize endpoint directly since the SDK might not have the Beta method
+    const response = await fetch(`${SUPABASE_URL}/auth/v1/oauth/authorize`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': authHeader,
+        'apikey': ANON_KEY
+      },
+      body: JSON.stringify({
         client_id,
         redirect_uri,
         response_type: 'code',
         scope,
         state: state || undefined
+      })
     })
 
-    if (error) {
-        console.error('[OAuth-Authorize] Handshake Rejection:', error.message);
-        return new Response(JSON.stringify({ error: error.message }), { 
-            status: 400, 
-            headers: { ...corsHeaders, "Content-Type": "application/json" } 
-        })
+    const data = await response.json()
+
+    if (!response.ok) {
+      console.error('[OAuth-Authorize] Handshake Rejection:', data);
+      throw new Error(data.msg || data.message || 'Authorization rejected by security server.');
     }
 
-    console.log('[OAuth-Authorize] Handshake URL generated successfully');
+    console.log('[OAuth-Authorize] Handshake successful');
     
     return new Response(JSON.stringify({ url: data?.url }), { 
-        headers: { ...corsHeaders, "Content-Type": "application/json" } 
+      headers: { ...corsHeaders, "Content-Type": "application/json" } 
     })
 
   } catch (error: any) {
-    console.error('[OAuth-Authorize] System Failure:', error.message);
+    console.error('[OAuth-Authorize] Critical Failure:', error.message);
     return new Response(JSON.stringify({ error: error.message }), { 
-        status: 500, 
-        headers: { ...corsHeaders, "Content-Type": "application/json" } 
+      status: 500, 
+      headers: { ...corsHeaders, "Content-Type": "application/json" } 
     })
   }
 })
