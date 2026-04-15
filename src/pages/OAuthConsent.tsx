@@ -130,6 +130,16 @@ const OAuthConsent = () => {
                 }
 
                 if (data?.url) {
+                    // Logic Guard: If the Edge Proxy says we are NOT auto-approved, 
+                    // it means it handed back the consent page. We should NOT redirect, 
+                    // otherwise we loop. We just stay here and let the user decide.
+                    if (data.auto_approved === false) {
+                        console.warn('[OAuth] Identity Sync requires manual activation.');
+                        setAuthorizing(false);
+                        setShowFingerprint(false);
+                        return;
+                    }
+
                     toast({
                         title: "Identity Verified",
                         description: "Authenticating your identity with Fingerprint ID...",

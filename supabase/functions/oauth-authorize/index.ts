@@ -130,43 +130,51 @@ serve(async (req) => {
 
     console.log(`[OAuth-Authorize] Phase 2 — Approving authorization_id: ${authorizationId}`)
 
-    // ── PHASE 2: APPROVE CONSENT (Using GET + allow=true to avoid 405)
+    // ── PHASE 2: APPROVE CONSENT (Requires POST + Full Payload)
     console.log(`[OAuth-Authorize] Phase 2 — Approving authorization_id: ${authorizationId}`)
     
+    const phase2Body = new URLSearchParams({
+      authorization_id: authorizationId,
+      allow: 'true', // The "Approve" signal
+      client_id: client_id,
+      redirect_uri: redirect_uri,
+      scope: scope || 'openid profile email',
+      state: state || '',
+      code_challenge: code_challenge,
+      code_challenge_method: code_challenge_method,
+      response_type: 'code'
+    })
+
     const phase2 = await fetch(
-      `${SUPABASE_URL}/auth/v1/oauth/authorize?` + new URLSearchParams({
-        authorization_id: authorizationId,
-        client_id: client_id,
-        redirect_uri: redirect_uri,
-        code_challenge: code_challenge,
-        code_challenge_method: code_challenge_method,
-        allow: 'true' // <== Signals approval to GoTrue
-      }),
+      `${SUPABASE_URL}/auth/v1/oauth/authorize`,
       {
-        method: 'GET',
+        method: 'POST',
         headers: { 
           'apikey': SUPABASE_ANON_KEY, 
-          'Authorization': userAuthHeader
+          'Authorization': userAuthHeader,
+          'Content-Type': 'application/x-www-form-urlencoded'
         },
+        body: phase2Body,
         redirect: 'manual',
       }
     )
 
     const finalLocation = phase2.headers.get('location')
-    console.log(`[OAuth-Authorize] Phase 2 Approval Result (${phase2.status}). Location: ${finalLocation}`)
+    console.log(`[OAuth-Authorize] Phase 2 Handshake Result (${phase2.status}). Deliverable: ${finalLocation}`)
 
     if (finalLocation) {
-      // Check if we still got redirected back to consent (approval ignored)
+      // Check if we still got redirected back to consent (e.g., user needs to confirm something)
       if (finalLocation.includes('/oauth/consent')) {
-        console.warn(`[OAuth-Authorize] Still redirected to consent page despite allow=true. Manual approval required.`)
+        console.warn(`[OAuth-Authorize] Auto-approval insufficient. Manual interaction required.`)
+        // Return 200 to indicate we're handing back control to the UI, not a failure
         return new Response(
-          JSON.stringify({ url: finalLocation, error: 'Awaiting manual consent' }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          JSON.stringify({ url: finalLocation, auto_approved: false, message: 'Awaiting manual consent' }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
       }
 
-      console.log(`[OAuth-Authorize] Handshake Complete! Final deliverable: ${finalLocation}`)
-      return new Response(JSON.stringify({ url: finalLocation }), {
+      console.log(`[OAuth-Authorize] Handshake Complete! Code delivery ready.`)
+      return new Response(JSON.stringify({ url: finalLocation, auto_approved: true }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
     }
@@ -185,7 +193,7 @@ serve(async (req) => {
 
   } catch (error: unknown) {
     const msg = error instanceof Error ? error.message : String(error)
-    console.error('[OAuth-Authorize] Critical Handshake Failure:', msg)
+    console.error('[OAuth-Authorize] Handshake Breakdown:', msg)
     return new Response(JSON.stringify({ error: msg }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
