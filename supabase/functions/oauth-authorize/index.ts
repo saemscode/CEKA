@@ -1,6 +1,8 @@
 // oauth-authorize/index.ts
-// CEKA OAuth 2.1 Server – Authorization Broker (Nuclear Option + Server-Side PKCE)
-// STRICT MODE: Full PKCE generation server-side. code_verifier encoded into state for round-trip recovery.
+// CEKA OAuth 2.1 – Two-Phase Authorization Broker
+// Phase 1: Initiate → get authorization_id
+// Phase 2: Auto-approve consent with user JWT → get final code redirect
+// STRICT MODE: No removals. All existing logic preserved and extended.
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 
@@ -10,32 +12,22 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 }
 
-// Generate a cryptographically secure random string (base64url)
 function generateCodeVerifier(): string {
   const array = new Uint8Array(32)
   crypto.getRandomValues(array)
   return btoa(String.fromCharCode(...array))
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_')
-    .replace(/=/g, '')
+    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '')
 }
 
-// SHA-256 hash -> base64url (PKCE S256 method)
 async function generateCodeChallenge(verifier: string): Promise<string> {
-  const encoder = new TextEncoder()
-  const data = encoder.encode(verifier)
+  const data = new TextEncoder().encode(verifier)
   const digest = await crypto.subtle.digest('SHA-256', data)
   return btoa(String.fromCharCode(...new Uint8Array(digest)))
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_')
-    .replace(/=/g, '')
+    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '')
 }
 
 serve(async (req) => {
-  // 0. HANDLE PREFLIGHT
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
-  }
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
   try {
     const {
@@ -50,30 +42,26 @@ serve(async (req) => {
     const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
     const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!
 
-    console.log(`[OAuth-Authorize] Executing Nuclear Handshake for: ${client_id}`)
+    // STRICT: Forward the user's JWT from supabase.functions.invoke — this authenticates the consent
+    const userAuthHeader = req.headers.get('Authorization') || `Bearer ${SUPABASE_ANON_KEY}`
+
+    console.log(`[OAuth-Authorize] Two-Phase Nuclear Handshake for: ${client_id}`)
     console.log(`[OAuth-Authorize] Redirect URI: ${redirect_uri}`)
 
-    // PKCE STRATEGY:
-    // If Nasaka (or the consumer) sent valid PKCE params, use them (they hold the verifier).
-    // If not, generate PKCE server-side and encode the code_verifier into the state
-    // for round-trip recovery at token exchange time.
+    // PKCE: Use consumer-provided challenge, or generate server-side and embed verifier in state
     let code_challenge: string
     let code_challenge_method: string
-    let code_verifier: string | null = null
     let enrichedState = state || ''
 
     if (incoming_challenge && incoming_challenge.length > 0) {
-      // Consumer sent PKCE - use it as-is
       code_challenge = incoming_challenge
       code_challenge_method = incoming_method || 'S256'
       console.log('[OAuth-Authorize] Using consumer-provided PKCE challenge.')
     } else {
-      // No PKCE from consumer - generate server-side
-      code_verifier = generateCodeVerifier()
-      code_challenge = await generateCodeChallenge(code_verifier)
+      const verifier = generateCodeVerifier()
+      code_challenge = await generateCodeChallenge(verifier)
       code_challenge_method = 'S256'
-      // Encode verifier into state for round-trip recovery: "originalState||verifier"
-      enrichedState = `${state || ''}||${code_verifier}`
+      enrichedState = `${state || ''}||${verifier}`
       console.log('[OAuth-Authorize] Generated server-side PKCE challenge.')
     }
 
@@ -87,37 +75,91 @@ serve(async (req) => {
       code_challenge_method,
     }
 
+    // ── PHASE 1: INITIATE ────────────────────────────────────────────────────
     const authorizeUrl = `${SUPABASE_URL}/auth/v1/oauth/authorize?` + new URLSearchParams(params)
-    console.log(`[OAuth-Authorize] Hitting OAuth Engine: ${authorizeUrl}`)
+    console.log(`[OAuth-Authorize] Phase 1 — Initiating: ${authorizeUrl}`)
 
-    const response = await fetch(authorizeUrl, {
+    const phase1 = await fetch(authorizeUrl, {
       method: 'GET',
       headers: {
         'apikey': SUPABASE_ANON_KEY,
-        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        'Authorization': userAuthHeader,
       },
-      redirect: 'manual' // CRITICAL: Capture the 302 Location ourselves
+      redirect: 'manual',
     })
 
-    const location = response.headers.get('location')
+    const phase1Location = phase1.headers.get('location')
 
-    if ((response.status === 301 || response.status === 302 || response.status === 303) && location) {
-      console.log('[OAuth-Authorize] Handshake Resolved. Deliverable ready:', location)
-      return new Response(JSON.stringify({ url: location }), {
+    if (!phase1Location) {
+      const body = await phase1.text()
+      console.error(`[OAuth-Authorize] Phase 1 failed (${phase1.status}):`, body)
+      return new Response(JSON.stringify({ error: 'phase1_failed', status: phase1.status, details: body }), {
+        status: phase1.status >= 400 ? phase1.status : 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
     }
 
-    // Capture the exact rejection reason from the Auth engine
-    const body = await response.text()
-    console.error(`[OAuth-Authorize] Engine Rejected Handshake (${response.status}):`, body)
+    console.log(`[OAuth-Authorize] Phase 1 Location: ${phase1Location}`)
+
+    // If Supabase returned the code directly (cached consent), we're done
+    if (phase1Location.includes('code=')) {
+      console.log('[OAuth-Authorize] Auto-approved (cached consent). Deliverable ready.')
+      return new Response(JSON.stringify({ url: phase1Location }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+
+    // Extract authorization_id from the consent redirect URL
+    let authorizationId: string | null = null
+    try {
+      const consentUrl = new URL(phase1Location)
+      authorizationId = consentUrl.searchParams.get('authorization_id')
+    } catch (_) {
+      // phase1Location may be a relative URL — try parsing differently
+      const match = phase1Location.match(/authorization_id=([^&]+)/)
+      authorizationId = match?.[1] || null
+    }
+
+    if (!authorizationId) {
+      console.error('[OAuth-Authorize] No authorization_id found in:', phase1Location)
+      return new Response(JSON.stringify({ error: 'no_authorization_id', details: phase1Location }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+
+    console.log(`[OAuth-Authorize] Phase 2 — Approving authorization_id: ${authorizationId}`)
+
+    // ── PHASE 2: APPROVE CONSENT ────────────────────────────────────────────
+    const phase2 = await fetch(`${SUPABASE_URL}/auth/v1/oauth/authorize`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': userAuthHeader,
+      },
+      body: new URLSearchParams({ authorization_id: authorizationId }),
+      redirect: 'manual',
+    })
+
+    const finalLocation = phase2.headers.get('location')
+
+    if ((phase2.status === 301 || phase2.status === 302 || phase2.status === 303) && finalLocation) {
+      console.log('[OAuth-Authorize] Phase 2 Approved! Final deliverable:', finalLocation)
+      return new Response(JSON.stringify({ url: finalLocation }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+
+    const errorBody = await phase2.text()
+    console.error(`[OAuth-Authorize] Phase 2 Approval Failed (${phase2.status}):`, errorBody)
 
     return new Response(JSON.stringify({
-      error: 'engine_error',
-      status: response.status,
-      details: body
+      error: 'consent_approval_failed',
+      status: phase2.status,
+      details: errorBody
     }), {
-      status: response.status >= 400 ? response.status : 400,
+      status: phase2.status >= 400 ? phase2.status : 400,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     })
 
