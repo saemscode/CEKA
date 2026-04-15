@@ -20,8 +20,9 @@ serve(async (req) => {
 
     console.log(`[OAuth-Authorize] Executing Nuclear Handshake for: ${client_id}`);
 
-    // STRICT MODE: SDK-Independent Direct Handshake
-    const response = await fetch(`${Deno.env.get('SUPABASE_URL')}/auth/v1/authorize?` + new URLSearchParams({
+    // STRICT MODE: Corrected Handshake Endpoint for Supabase OAuth Server (BETA)
+    // We MUST use /oauth/authorize instead of /authorize to avoid "Unsupported provider" errors.
+    const response = await fetch(`${Deno.env.get('SUPABASE_URL')}/auth/v1/oauth/authorize?` + new URLSearchParams({
         client_id,
         redirect_uri,
         response_type: 'code',

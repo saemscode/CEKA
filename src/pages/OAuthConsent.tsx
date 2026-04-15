@@ -52,17 +52,21 @@ const OAuthConsent = () => {
             try {
                 console.log('[OAuth] Resolving application metadata for:', clientId);
                 
+                // STRICT MODE: Multi-ID Support
+                // Map the slug ID to the primary UUID if necessary to ensure the official registry record is used.
+                const searchId = clientId === 'nasaka-iebc-v1' ? 'd356516d-3cc7-427a-98eb-49f4ec18adbf' : clientId;
+                
                 // STRICT MODE: Avoid .single() to prevent 406 noise if app is missing
                 const { data, error: fetchError } = await supabase
                     .from('third_party_apps' as any)
                     .select('*')
-                    .eq('client_id', clientId);
+                    .eq('client_id', searchId);
 
                 const appData = (data as any)?.[0];
 
                 if (fetchError || !appData) {
                     if (fetchError) console.error('[OAuth] Registry error:', fetchError.message);
-                    
+
                     // Fallback for Nasaka IEBC Client ID
                     if (clientId === 'nasaka_iebc_client_id' || clientId === 'd356516d-3cc7-427a-98eb-49f4ec18adbf') {
                         setApp({
@@ -103,12 +107,15 @@ const OAuthConsent = () => {
         // Feedback Loop: premium 1.5s delay with Fingerprint ID animation
         setTimeout(async () => {
             try {
-                // STRICT MODE: Call the secure Edge Function instead of admin.authorizeUser
-                console.log('[OAuth] Delegating handshake to secure Edge Function for:', clientId);
-                
+                // STRICT MODE: Secure Handshake ID resolution
+                // Supabase requires a UUID format. We prioritize the official ID from our Registry.
+                const handshakeId = app?.client_id || clientId;
+
+                console.log('[OAuth] Delegating handshake to secure Edge Function for:', handshakeId);
+
                 const { data, error } = await supabase.functions.invoke('oauth-authorize', {
                     body: {
-                        client_id: clientId,
+                        client_id: handshakeId,
                         redirect_uri: redirectUri,
                         scope: scope,
                         state: state || undefined,
@@ -128,7 +135,7 @@ const OAuthConsent = () => {
                         description: "Authenticating your identity with Fingerprint ID...",
                         className: "bg-blue-600 text-white font-bold border-none shadow-2xl"
                     });
-                    
+
                     // Redirect back to consumer (e.g., Nasaka) with the code
                     console.log('[OAuth] Handshake Success. Delivering code via Edge Proxy...');
                     window.location.href = data.url;
@@ -214,7 +221,7 @@ const OAuthConsent = () => {
                             className="flex flex-col items-center gap-8"
                         >
                             <div className="relative">
-                                <motion.div 
+                                <motion.div
                                     className="absolute -inset-4 rounded-full bg-blue-500/20 blur-xl"
                                     animate={{ scale: [1, 1.2, 1], opacity: [0.5, 0.8, 0.5] }}
                                     transition={{ duration: 2, repeat: Infinity }}
@@ -279,7 +286,7 @@ const OAuthConsent = () => {
                                     <CardDescription className="text-sm font-medium pt-1 text-foreground/80">
                                         {appDescription}
                                     </CardDescription>
-                                    
+
                                     {websiteUrl && (
                                         <a
                                             href={websiteUrl}
@@ -343,7 +350,7 @@ const OAuthConsent = () => {
                                         <div className="flex items-center gap-3 p-4 rounded-2xl" style={{ backgroundColor: `${brandColor}08` }}>
                                             <Info className="h-5 w-5 shrink-0" style={{ color: brandColor }} />
                                             <p className="text-[11px] font-medium leading-relaxed">
-                                                By authorizing, you marry your CEKA identity with <span className="font-bold uppercase tracking-tighter" style={{ color: brandColor }}>{app.name}</span>. You can revoke this anytime in CEKA Settings.
+                                                By authorizing, you are now bridging your CEKA account with <span className="font-bold uppercase tracking-tighter" style={{ color: brandColor }}>{app.name}</span>. You can revoke this anytime in CEKA Settings.
                                             </p>
                                         </div>
                                     </div>

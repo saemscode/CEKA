@@ -9,7 +9,7 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 }
 
-serve(async (req) => {
+serve(async (req: { method: string; json: () => PromiseLike<{ code: any; redirect_uri: any; code_verifier: any }> | { code: any; redirect_uri: any; code_verifier: any } }) => {
   // 0. HANDLE PREFLIGHT
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -17,13 +17,13 @@ serve(async (req) => {
 
   try {
     const { code, redirect_uri, code_verifier } = await req.json()
-    
+
     console.log(`[OAuth-Token] Marriage Exchange for: ${CLIENT_ID}`);
 
     // 1. Exchange code for Access Token via Supabase Auth Internal
     const response = await fetch(`${Deno.env.get('SUPABASE_URL')}/auth/v1/oauth/token`, {
       method: 'POST',
-      headers: { 
+      headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
         'apikey': Deno.env.get('SUPABASE_ANON_KEY')!
       },
@@ -40,17 +40,17 @@ serve(async (req) => {
     const data = await response.json()
 
     if (!response.ok) {
-        console.error('[OAuth-Token] Handshake Rejected by Engine:', data);
-        return new Response(JSON.stringify(data), { 
-            status: response.status, 
-            headers: { ...corsHeaders, "Content-Type": "application/json" } 
-        });
+      console.error('[OAuth-Token] Handshake Rejected by Engine:', data);
+      return new Response(JSON.stringify(data), {
+        status: response.status,
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
     }
 
     console.log('[OAuth-Token] Marriage Handshake Successful');
 
-    return new Response(JSON.stringify(data), { 
-        headers: { ...corsHeaders, "Content-Type": "application/json" } 
+    return new Response(JSON.stringify(data), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" }
     })
 
   } catch (error: any) {
