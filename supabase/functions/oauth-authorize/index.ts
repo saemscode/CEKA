@@ -132,7 +132,10 @@ serve(async (req) => {
 
     // ── PHASE 2: APPROVE CONSENT (GET — GoTrue /oauth/authorize is GET-only) ─
     const phase2 = await fetch(
-      `${SUPABASE_URL}/auth/v1/oauth/authorize?` + new URLSearchParams({ authorization_id: authorizationId }),
+      `${SUPABASE_URL}/auth/v1/oauth/authorize?` + new URLSearchParams({ 
+        authorization_id: authorizationId,
+        client_id: client_id 
+      }),
       {
         method: 'GET',
         headers: {
