@@ -16,6 +16,7 @@ const OAuthConsent = () => {
     const { user, loading: authLoading } = useAuth();
     const { toast } = useToast();
 
+    const authorizationId = searchParams.get('authorization_id');
     const urlClientId = searchParams.get('client_id');
     const urlRedirectUri = searchParams.get('redirect_uri');
     const scope = searchParams.get('scope') || localStorage.getItem('ceka_oauth_scope') || 'profile email';
@@ -56,9 +57,9 @@ const OAuthConsent = () => {
         }
 
         const fetchAppDetails = async () => {
-            if (!clientId) {
-                console.error('[OAuth] Missing Client ID payload');
-                setError('Security violation: Missing Client ID in handshake request.');
+            if (!clientId && !authorizationId) {
+                console.error('[OAuth] Missing identity context (no client_id or authorization_id)');
+                setError('Security violation: Missing identity context. Handshake cannot proceed.');
                 setLoading(false);
                 return;
             }
@@ -121,7 +122,17 @@ const OAuthConsent = () => {
         // Feedback Loop: premium 1.5s delay with Fingerprint ID animation
         setTimeout(async () => {
             try {
-                // STRICT MODE: Secure Handshake ID resolution
+                if (authorizationId) {
+                    // MODERN FLOW: Direct approval via authorization_id as per Master Prompt
+                    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+                    const finalClientId = clientId || 'nasaka-iebc-v1';
+                    
+                    console.log('[OAuth] Handshake Approved. Redirecting to final authorization point...');
+                    window.location.href = `${supabaseUrl}/auth/v1/oauth/authorize?authorization_id=${authorizationId}&client_id=${finalClientId}&decide=true`;
+                    return;
+                }
+
+                // LEGACY FALLBACK: Secure Handshake ID resolution
                 // Supabase requires a UUID format. We prioritize the official ID from our Registry.
                 const handshakeId = app?.client_id || clientId;
 
