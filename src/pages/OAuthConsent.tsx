@@ -20,6 +20,8 @@ const OAuthConsent = () => {
     const redirectUri = searchParams.get('redirect_uri');
     const scope = searchParams.get('scope') || 'profile email';
     const state = searchParams.get('state');
+    const codeChallenge = searchParams.get('code_challenge');
+    const codeChallengeMethod = searchParams.get('code_challenge_method');
 
     const [app, setApp] = useState<any>(null);
     const [loading, setLoading] = useState(true);
@@ -56,7 +58,7 @@ const OAuthConsent = () => {
                     .select('*')
                     .eq('client_id', clientId);
 
-                const appData = data && data.length > 0 ? data[0] : null;
+                const appData = (data as any)?.[0];
 
                 if (fetchError || !appData) {
                     if (fetchError) console.error('[OAuth] Registry error:', fetchError.message);
@@ -109,7 +111,9 @@ const OAuthConsent = () => {
                         client_id: clientId,
                         redirect_uri: redirectUri,
                         scope: scope,
-                        state: state || undefined
+                        state: state || undefined,
+                        code_challenge: codeChallenge || undefined,
+                        code_challenge_method: codeChallengeMethod || undefined
                     }
                 });
 

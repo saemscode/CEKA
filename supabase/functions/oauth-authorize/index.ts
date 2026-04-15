@@ -14,7 +14,15 @@ serve(async (req) => {
   }
 
   try {
-    const { client_id, redirect_uri, state, scope = 'profile email' } = await req.json()
+    const body = await req.json()
+    const { 
+      client_id, 
+      redirect_uri, 
+      state, 
+      scope = 'profile email',
+      code_challenge,
+      code_challenge_method
+    } = body
     
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) throw new Error('Unauthorized: Missing identity token.')
@@ -22,65 +30,51 @@ serve(async (req) => {
     const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
     const ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!
 
-    console.log(`[OAuth-Authorize] Initiating Handshake for: ${client_id}`);
+    console.log(`[OAuth-Authorize] Initializing PKCE Handshake for: ${client_id}`);
 
-    // STRICT MODE: Advanced Handshake Handling
-    // We use redirect: 'manual' because the Auth engine might return a 302 location 
-    const response = await fetch(`${SUPABASE_URL}/auth/v1/oauth/authorize`, {
-      method: 'POST',
-      redirect: 'manual', // Do not automatically follow redirects
+    // 2. CONSTRUCT AUTHORIZATION URL (Standard GET Handshake)
+    const authUrl = new URL(`${SUPABASE_URL}/auth/v1/oauth/authorize`)
+    authUrl.searchParams.set('client_id', client_id)
+    authUrl.searchParams.set('redirect_uri', redirect_uri)
+    authUrl.searchParams.set('response_type', 'code')
+    authUrl.searchParams.set('scope', scope)
+    if (state) authUrl.searchParams.set('state', state)
+    if (code_challenge) authUrl.searchParams.set('code_challenge', code_challenge)
+    if (code_challenge_method) authUrl.searchParams.set('code_challenge_method', code_challenge_method)
+
+    // 3. SECURE REDIRECT CAPTURE
+    const response = await fetch(authUrl.toString(), {
+      method: 'GET',
+      redirect: 'manual', // Intercept the 302/303 redirect containing the code
       headers: {
-        'Content-Type': 'application/json',
         'Authorization': authHeader,
         'apikey': ANON_KEY
-      },
-      body: JSON.stringify({
-        client_id,
-        redirect_uri,
-        response_type: 'code',
-        scope,
-        state: state || undefined
-      })
+      }
     })
 
-    // 2. CAPTURE THE REDIRECT (This is where the 'code' is delivered)
     const redirectUrl = response.headers.get('location')
     
-    // If it's a redirect, we've succeeded!
-    if (response.status === 302 && redirectUrl) {
-      console.log('[OAuth-Authorize] Handshake Redirect Captured');
+    // Status 302/303 + Location Header = SUCCESSFUL HANDSHAKE
+    if ((response.status === 302 || response.status === 303) && redirectUrl) {
+      console.log('[OAuth-Authorize] Identity Married Server-Side. Delivering Code...');
       return new Response(JSON.stringify({ url: redirectUrl }), { 
         headers: { ...corsHeaders, "Content-Type": "application/json" } 
       })
     }
 
-    // 3. FALLBACK FOR JSON RESPONSES (If not a redirect)
-    let data;
-    const contentType = response.headers.get("content-type");
-    if (contentType && contentType.includes("application/json")) {
-        data = await response.json();
-    } else {
-        const text = await response.text();
-        console.warn('[OAuth-Authorize] Non-JSON Response received:', text);
-        // If it's a success status but not JSON/Redirect, something is odd but maybe okay
-        if (response.ok) {
-            throw new Error('Auth engine returned success but no redirect URL or JSON body.');
-        } else {
-            throw new Error(`Auth Error: ${text || 'Internal Handshake Failure'}`);
-        }
+    // 4. DETAILED ERROR LOGGING
+    const text = await response.text();
+    console.error(`[OAuth-Authorize] Handshake Rejection: ${response.status} - ${text}`);
+    
+    // If the error indicates missing PKCE, we know exactly what's wrong
+    if (text.includes('code_challenge')) {
+        throw new Error('PKCE Mismatch: Your Nasaka project requires a code_challenge. Please ensure it is passed in the authorize URL.');
     }
 
-    if (!response.ok) {
-      console.error('[OAuth-Authorize] Handshake Rejection:', data);
-      throw new Error(data.msg || data.message || 'Authorization rejected by security server.');
-    }
-
-    return new Response(JSON.stringify({ url: data?.url }), { 
-      headers: { ...corsHeaders, "Content-Type": "application/json" } 
-    })
+    throw new Error(`Auth Engine Rejected Handshake (${response.status}): ${text || 'Unknown Internal Error'}`);
 
   } catch (error: any) {
-    console.error('[OAuth-Authorize] Critical Failure:', error.message);
+    console.error('[OAuth-Authorize] Critical Handshake Failure:', error.message);
     return new Response(JSON.stringify({ error: error.message }), { 
       status: 500, 
       headers: { ...corsHeaders, "Content-Type": "application/json" } 
