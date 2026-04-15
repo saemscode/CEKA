@@ -16,33 +16,18 @@ const OAuthConsent = () => {
     const { user, loading: authLoading } = useAuth();
     const { toast } = useToast();
 
-    const authorizationId = searchParams.get('authorization_id');
-    const urlClientId = searchParams.get('client_id');
-    const urlRedirectUri = searchParams.get('redirect_uri');
-    const scope = searchParams.get('scope') || localStorage.getItem('ceka_oauth_scope') || 'profile email';
-    const state = searchParams.get('state') || localStorage.getItem('ceka_oauth_state');
-    const codeChallenge = searchParams.get('code_challenge') || localStorage.getItem('ceka_oauth_code_challenge');
-    const codeChallengeMethod = searchParams.get('code_challenge_method') || localStorage.getItem('ceka_oauth_code_challenge_method');
-
-    // PERSISTENCE: Handle the Supabase "Query Drop" during auth redirects
-    const clientId = urlClientId || localStorage.getItem('ceka_oauth_client_id');
-    const redirectUri = urlRedirectUri || localStorage.getItem('ceka_oauth_redirect_uri');
+    const clientId = searchParams.get('client_id');
+    const redirectUri = searchParams.get('redirect_uri');
+    const scope = searchParams.get('scope') || 'profile email';
+    const state = searchParams.get('state');
+    const codeChallenge = searchParams.get('code_challenge');
+    const codeChallengeMethod = searchParams.get('code_challenge_method');
 
     const [app, setApp] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [authorizing, setAuthorizing] = useState(false);
     const [showFingerprint, setShowFingerprint] = useState(false);
-
-    useEffect(() => {
-        // Cache parameters to handle Supabase redirect cycles
-        if (urlClientId) localStorage.setItem('ceka_oauth_client_id', urlClientId);
-        if (urlRedirectUri) localStorage.setItem('ceka_oauth_redirect_uri', urlRedirectUri);
-        if (searchParams.get('scope')) localStorage.setItem('ceka_oauth_scope', searchParams.get('scope')!);
-        if (searchParams.get('state')) localStorage.setItem('ceka_oauth_state', searchParams.get('state')!);
-        if (searchParams.get('code_challenge')) localStorage.setItem('ceka_oauth_code_challenge', searchParams.get('code_challenge')!);
-        if (searchParams.get('code_challenge_method')) localStorage.setItem('ceka_oauth_code_challenge_method', searchParams.get('code_challenge_method')!);
-    }, [urlClientId, urlRedirectUri, searchParams]);
 
     useEffect(() => {
         // STRICT MODE: Guard against premature redirects during auth initialization
@@ -57,9 +42,9 @@ const OAuthConsent = () => {
         }
 
         const fetchAppDetails = async () => {
-            if (!clientId && !authorizationId) {
-                console.error('[OAuth] Missing identity context (no client_id or authorization_id)');
-                setError('Security violation: Missing identity context. Handshake cannot proceed.');
+            if (!clientId) {
+                console.error('[OAuth] Missing Client ID payload');
+                setError('Security violation: Missing Client ID in handshake request.');
                 setLoading(false);
                 return;
             }
@@ -122,17 +107,7 @@ const OAuthConsent = () => {
         // Feedback Loop: premium 1.5s delay with Fingerprint ID animation
         setTimeout(async () => {
             try {
-                if (authorizationId) {
-                    // MODERN FLOW: Direct approval via authorization_id as per Master Prompt
-                    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-                    const finalClientId = clientId || 'nasaka-iebc-v1';
-                    
-                    console.log('[OAuth] Handshake Approved. Redirecting to final authorization point...');
-                    window.location.href = `${supabaseUrl}/auth/v1/oauth/authorize?authorization_id=${authorizationId}&client_id=${finalClientId}&decide=true`;
-                    return;
-                }
-
-                // LEGACY FALLBACK: Secure Handshake ID resolution
+                // STRICT MODE: Secure Handshake ID resolution
                 // Supabase requires a UUID format. We prioritize the official ID from our Registry.
                 const handshakeId = app?.client_id || clientId;
 
@@ -160,15 +135,6 @@ const OAuthConsent = () => {
                         description: "Authenticating your identity with Fingerprint ID...",
                         className: "bg-blue-600 text-white font-bold border-none shadow-2xl"
                     });
-
-                    // LOOP PREVENTION: If the Edge Function returns the consent page itself,
-                    // it means auto-approval failed. We should NOT redirect as it creates a loop.
-                    if (data.url.includes('/oauth/consent') && data.url.includes('authorization_id=')) {
-                        console.warn('[OAuth] Edge Proxy returned consent page again. Auto-approval failed. Awaiting manual consent.');
-                        setAuthorizing(false);
-                        setShowFingerprint(false);
-                        return;
-                    }
 
                     // Redirect back to consumer (e.g., Nasaka) with the code
                     console.log('[OAuth] Handshake Success. Delivering code via Edge Proxy...');
