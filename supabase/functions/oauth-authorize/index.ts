@@ -130,11 +130,14 @@ serve(async (req) => {
 
     console.log(`[OAuth-Authorize] Phase 2 — Approving authorization_id: ${authorizationId}`)
 
-    // ── PHASE 2: APPROVE CONSENT (GET — GoTrue /oauth/authorize is GET-only) ─
+    // ── PHASE 2: APPROVE CONSENT (REQUIRED: client_id + authorization_id + redirect_uri + PKCE)
     const phase2 = await fetch(
       `${SUPABASE_URL}/auth/v1/oauth/authorize?` + new URLSearchParams({ 
         authorization_id: authorizationId,
-        client_id: client_id 
+        client_id: client_id,
+        redirect_uri: redirect_uri,
+        code_challenge: code_challenge,
+        code_challenge_method: code_challenge_method
       }),
       {
         method: 'GET',
