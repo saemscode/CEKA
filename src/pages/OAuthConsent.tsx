@@ -81,7 +81,7 @@ const OAuthConsent = () => {
                         throw new Error(`Unregistered Client: The ID "${clientId}" was not found in the CEKA Registry.`);
                     }
                 } else {
-                    console.log('[OAuth] Identity Marriage ready for:', appData.name);
+                    console.log('[OAuth] Identity Sync ready for:', appData.name);
                     setApp(appData);
                 }
             } catch (err: any) {
@@ -186,7 +186,7 @@ const OAuthConsent = () => {
                 <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center mb-4">
                     <X className="w-8 h-8 text-destructive" />
                 </div>
-                <h1 className="text-2xl font-bold">Marriage Failed</h1>
+                <h1 className="text-2xl font-bold">Syncing Failed</h1>
                 <p className="text-muted-foreground max-w-md">{error}</p>
                 <Button onClick={() => navigate('/')} variant="outline" className="mt-4">
                     Return to Home
