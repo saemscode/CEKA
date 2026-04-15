@@ -130,35 +130,35 @@ serve(async (req) => {
 
     console.log(`[OAuth-Authorize] Phase 2 — Approving authorization_id: ${authorizationId}`)
 
-    // ── PHASE 2: APPROVE CONSENT (Explicitly signal 'allow' via POST)
+    // ── PHASE 2: APPROVE CONSENT (Using GET + allow=true to avoid 405)
+    console.log(`[OAuth-Authorize] Phase 2 — Approving authorization_id: ${authorizationId}`)
+    
     const phase2 = await fetch(
-      `${SUPABASE_URL}/auth/v1/oauth/authorize`,
+      `${SUPABASE_URL}/auth/v1/oauth/authorize?` + new URLSearchParams({
+        authorization_id: authorizationId,
+        client_id: client_id,
+        redirect_uri: redirect_uri,
+        code_challenge: code_challenge,
+        code_challenge_method: code_challenge_method,
+        allow: 'true' // <== Signals approval to GoTrue
+      }),
       {
-        method: 'POST',
+        method: 'GET',
         headers: { 
           'apikey': SUPABASE_ANON_KEY, 
-          'Authorization': userAuthHeader,
-          'Content-Type': 'application/x-www-form-urlencoded'
+          'Authorization': userAuthHeader
         },
-        body: new URLSearchParams({
-          authorization_id: authorizationId,
-          client_id: client_id,
-          redirect_uri: redirect_uri,
-          code_challenge: code_challenge,
-          code_challenge_method: code_challenge_method,
-          allow: 'true' // <== CRITICAL: Signals explicit approval to GoTrue
-        }),
         redirect: 'manual',
       }
     )
 
     const finalLocation = phase2.headers.get('location')
-    console.log(`[OAuth-Authorize] Phase 2 Approval Result Location: ${finalLocation}`)
+    console.log(`[OAuth-Authorize] Phase 2 Approval Result (${phase2.status}). Location: ${finalLocation}`)
 
     if (finalLocation) {
-      // Check if we got redirected back to consent (loop detection)
+      // Check if we still got redirected back to consent (approval ignored)
       if (finalLocation.includes('/oauth/consent')) {
-        console.warn(`[OAuth-Authorize] Redirected back to consent page. Auto-approval likely requires user interaction.`)
+        console.warn(`[OAuth-Authorize] Still redirected to consent page despite allow=true. Manual approval required.`)
         return new Response(
           JSON.stringify({ url: finalLocation, error: 'Awaiting manual consent' }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
