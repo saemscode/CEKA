@@ -128,64 +128,19 @@ serve(async (req: Request) => {
       })
     }
 
-    // ── PHASE 2: APPROVE CONSENT (Requires POST + authorization_id in URL)
-    console.log(`[OAuth-Authorize] Phase 2 — Approving authorization_id: ${authorizationId}`)
+    // ── PHASE 2: DELEGATE TO BROWSER ─────────────────────────────────────────
+    // programmatic consent approval (POST) is often blocked by CSRF/Session guards.
+    // We return the authorizationId to the frontend, which will then perform 
+    // the final POST from the browser context (leveraging native cookies).
     
-    const phase2Payload = new URLSearchParams({
+    console.log(`[OAuth-Authorize] Phase 1 Success. Handing off authorization_id: ${authorizationId}`)
+    
+    return new Response(JSON.stringify({ 
+      url: phase1Location,
       authorization_id: authorizationId,
-      allow: 'true',
-      client_id: client_id,
-      redirect_uri: redirect_uri,
-      scope: scope || 'openid profile email',
-      state: state || '',
-      code_challenge: code_challenge,
-      code_challenge_method: code_challenge_method,
-      response_type: 'code'
-    })
-
-    const phase2 = await fetch(
-      `${SUPABASE_URL}/auth/v1/oauth/authorize?authorization_id=${authorizationId}`, // <== REFINED: Add to query string
-      {
-        method: 'POST',
-        headers: { 
-          'apikey': SUPABASE_ANON_KEY, 
-          'Authorization': userAuthHeader,
-          'Content-Type': 'application/x-www-form-urlencoded'
-        },
-        body: phase2Payload,
-        redirect: 'manual',
-      }
-    )
-
-    const finalLocation = phase2.headers.get('location')
-    console.log(`[OAuth-Authorize] Phase 2 Handshake Result (${phase2.status}). Deliverable: ${finalLocation}`)
-
-    if (finalLocation) {
-      // Check if we still got redirected back to consent (e.g., user needs to confirm something)
-      if (finalLocation.includes('/oauth/consent')) {
-        console.warn(`[OAuth-Authorize] Auto-approval insufficient. Manual interaction required.`)
-        // Return 200 to indicate we're handing back control to the UI, not a failure
-        return new Response(
-          JSON.stringify({ url: finalLocation, auto_approved: false, message: 'Awaiting manual consent' }),
-          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        )
-      }
-
-      console.log(`[OAuth-Authorize] Handshake Complete! Code delivery ready.`)
-      return new Response(JSON.stringify({ url: finalLocation, auto_approved: true }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      })
-    }
-
-    const errorBody = await phase2.text()
-    console.error(`[OAuth-Authorize] Phase 2 Approval Failed (${phase2.status}):`, errorBody)
-
-    return new Response(JSON.stringify({
-      error: 'consent_approval_failed',
-      status: phase2.status,
-      details: errorBody
+      auto_approved: false, // UI will now handle the click
+      message: 'Awaiting manual consent'
     }), {
-      status: phase2.status >= 400 ? phase2.status : 400,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     })
 

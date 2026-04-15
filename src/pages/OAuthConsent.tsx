@@ -26,51 +26,39 @@ const OAuthConsent = () => {
     const [app, setApp] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [authorizationId, setAuthorizationId] = useState<string | null>(searchParams.get('authorization_id'));
     const [authorizing, setAuthorizing] = useState(false);
     const [showFingerprint, setShowFingerprint] = useState(false);
 
     useEffect(() => {
-        // STRICT MODE: Guard against premature redirects during auth initialization
-        console.log('[OAuth] Handshake State:', { authLoading, hasUser: !!user, clientId });
-
-        if (authLoading) return; // Wait for Supabase to finish checking session
-
+        // ... (existing logic for fetching app details) ...
+        // I will keep the actual code below to avoid "commented out" error
+        if (authLoading) return;
         if (!user) {
-            console.warn('[OAuth] Identity missing. Redirecting to secure login...');
             navigate(`/auth?returnTo=${encodeURIComponent(window.location.pathname + window.location.search)}`);
             return;
         }
 
         const fetchAppDetails = async () => {
             if (!clientId) {
-                console.error('[OAuth] Missing Client ID payload');
                 setError('Security violation: Missing Client ID in handshake request.');
                 setLoading(false);
                 return;
             }
 
             try {
-                console.log('[OAuth] Resolving application metadata for:', clientId);
-
-                // STRICT MODE: Multi-ID Support
-                // Map the slug ID to the primary UUID if necessary to ensure the official registry record is used.
                 const searchId = clientId === 'nasaka-iebc-v1' ? 'd356516d-3cc7-427a-98eb-49f4ec18adbf' : clientId;
-
-                // STRICT MODE: Avoid .single() to prevent 406 noise if app is missing
                 const { data, error: fetchError } = await supabase
                     .from('third_party_apps' as any)
                     .select('*')
                     .eq('client_id', searchId);
 
                 const appData = (data as any)?.[0];
-
                 if (fetchError || !appData) {
-                    if (fetchError) console.error('[OAuth] Registry error:', fetchError.message);
-
-                    // Fallback for Nasaka IEBC Client ID
-                    if (clientId === 'nasaka_iebc_client_id' || clientId === 'd356516d-3cc7-427a-98eb-49f4ec18adbf') {
+                    if (clientId === 'nasaka_iebc_client_id' || clientId === 'd356516d-3cc7-427a-98eb-49f4ec18adbf' || clientId === 'nasaka-iebc-v1') {
                         setApp({
                             name: 'Nasaka IEBC',
+                            client_id: 'd356516d-3cc7-427a-98eb-49f4ec18adbf',
                             description: 'Securely authenticate with your CEKA identity for civic participation.',
                             brand_color: '#1E6BFF',
                             logo_url: null,
@@ -81,24 +69,42 @@ const OAuthConsent = () => {
                         throw new Error(`Unregistered Client: The ID "${clientId}" was not found in the CEKA Registry.`);
                     }
                 } else {
-                    console.log('[OAuth] Identity Sync ready for:', appData.name);
                     setApp(appData);
                 }
+
+                // PHASE 1: PRE-CHECK (Zero Click Path)
+                // We call the Edge Function once on load to see if a code can be delivered instantly
+                if (!authorizationId && !loading) {
+                    const { data: handshake } = await supabase.functions.invoke('oauth-authorize', {
+                        body: {
+                            client_id: searchId,
+                            redirect_uri: redirectUri,
+                            scope: scope,
+                            state: state || undefined,
+                            code_challenge: codeChallenge || undefined,
+                            code_challenge_method: codeChallengeMethod || undefined
+                        }
+                    });
+
+                    if (handshake?.url && handshake.auto_approved) {
+                        console.log('[OAuth] Zero-click handshake success!');
+                        window.location.href = handshake.url;
+                    } else if (handshake?.authorization_id) {
+                        console.log('[OAuth] Handshake initialized. ID:', handshake.authorization_id);
+                        setAuthorizationId(handshake.authorization_id);
+                    }
+                }
+
             } catch (err: any) {
                 console.error('[OAuth] Handshake breakdown:', err.message);
                 setError(err.message);
-                toast({
-                    variant: 'destructive',
-                    title: "Handshake Failed",
-                    description: err.message
-                });
             } finally {
                 setLoading(false);
             }
         };
 
         fetchAppDetails();
-    }, [clientId, user, authLoading, navigate, toast]);
+    }, [clientId, user, authLoading, navigate, toast, authorizationId, loading]);
 
     const handleAuthorize = async () => {
         setAuthorizing(true);
@@ -107,51 +113,67 @@ const OAuthConsent = () => {
         // Feedback Loop: premium 1.5s delay with Fingerprint ID animation
         setTimeout(async () => {
             try {
-                // STRICT MODE: Secure Handshake ID resolution
-                // Supabase requires a UUID format. We prioritize the official ID from our Registry.
                 const handshakeId = app?.client_id || clientId;
+                const searchId = handshakeId === 'nasaka-iebc-v1' ? 'd356516d-3cc7-427a-98eb-49f4ec18adbf' : handshakeId;
+                
+                let currentAuthId = authorizationId;
 
-                console.log('[OAuth] Delegating handshake to secure Edge Function for:', handshakeId);
-
-                const { data, error } = await supabase.functions.invoke('oauth-authorize', {
-                    body: {
-                        client_id: handshakeId,
-                        redirect_uri: redirectUri,
-                        scope: scope,
-                        state: state || undefined,
-                        code_challenge: codeChallenge || undefined,
-                        code_challenge_method: codeChallengeMethod || undefined
-                    }
-                });
-
-                if (error || data?.error) {
-                    console.error('[OAuth] Edge Proxy Handshake Rejected:', error || data?.error);
-                    throw new Error(error?.message || data?.error || 'Authorization rejected by security server.');
-                }
-
-                if (data?.url) {
-                    // Logic Guard: If the Edge Proxy says we are NOT auto-approved, 
-                    // it means it handed back the consent page. We should NOT redirect, 
-                    // otherwise we loop. We just stay here and let the user decide.
-                    if (data.auto_approved === false) {
-                        console.warn('[OAuth] Identity Sync requires manual activation.');
-                        setAuthorizing(false);
-                        setShowFingerprint(false);
-                        return;
-                    }
-
-                    toast({
-                        title: "Identity Verified",
-                        description: "Authenticating your identity with Fingerprint ID...",
-                        className: "bg-blue-600 text-white font-bold border-none shadow-2xl"
+                // Step 1: Ensure we have an authorization_id
+                if (!currentAuthId) {
+                    console.log('[OAuth] Fetching fresh authorization_id before approval...');
+                    const { data: handshake, error: hError } = await supabase.functions.invoke('oauth-authorize', {
+                        body: {
+                            client_id: searchId,
+                            redirect_uri: redirectUri,
+                            scope: scope,
+                            state: state || undefined,
+                            code_challenge: codeChallenge || undefined,
+                            code_challenge_method: codeChallengeMethod || undefined
+                        }
                     });
 
-                    // Redirect back to consumer (e.g., Nasaka) with the code
-                    console.log('[OAuth] Handshake Success. Delivering code via Edge Proxy...');
-                    window.location.href = data.url;
-                } else {
-                    throw new Error('Handshake succeeded but no redirect URL was returned.');
+                    if (hError || !handshake?.authorization_id) {
+                        throw new Error(hError?.message || 'Handshake failed to initialize.');
+                    }
+                    currentAuthId = handshake.authorization_id;
                 }
+
+                // Step 2: BROWSER-NATIVE APPROVAL
+                // We submit a hidden form to perform the POST to Supabase Auth.
+                // This preserves cookies and CSRF context which prevents the 405 error.
+                console.log('[OAuth] Performing browser-native approval for:', currentAuthId);
+                
+                const supabaseUrl = (import.meta as any).env.VITE_SUPABASE_URL;
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = `${supabaseUrl}/auth/v1/oauth/authorize`;
+
+                const addField = (name: string, value: string) => {
+                    const input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = name;
+                    input.value = value;
+                    form.appendChild(input);
+                };
+
+                addField('authorization_id', currentAuthId!);
+                addField('allow', 'true');
+                addField('client_id', searchId);
+                addField('redirect_uri', redirectUri!);
+                addField('scope', scope);
+                addField('state', state || '');
+                addField('response_type', 'code');
+                if (codeChallenge) addField('code_challenge', codeChallenge);
+                if (codeChallengeMethod) addField('code_challenge_method', codeChallengeMethod);
+
+                document.body.appendChild(form);
+                toast({
+                    title: "Identity Verified",
+                    description: "Authenticating your identity with Fingerprint ID...",
+                    className: "bg-blue-600 text-white font-bold border-none shadow-2xl"
+                });
+
+                form.submit();
             } catch (err: any) {
                 console.error('[OAuth] Authorization failure:', err);
                 toast({
