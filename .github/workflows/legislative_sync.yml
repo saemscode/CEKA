@@ -1,16 +1,26 @@
-name: Legislative Data Sync
+name: CEKA Sovereign Intelligence Sync
 
 on:
   schedule:
-    # 9AM EAT (06:00 UTC) and 4PM EAT (13:00 UTC)
-    - cron: '0 6 * * *'
+    # 4AM EAT (01:00 UTC) - Primary Daily Sync
+    - cron: '0 1 * * *'
+    # 4PM EAT (13:00 UTC) - Afternoon Update
     - cron: '0 13 * * *'
   workflow_dispatch:
 
 jobs:
-  scrape:
+  sync:
     runs-on: ubuntu-latest
     
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      B2_S3_ENDPOINT: ${{ secrets.B2_S3_ENDPOINT }}
+      B2_KEY_ID: ${{ secrets.B2_KEY_ID }}
+      B2_APPLICATION_KEY: ${{ secrets.B2_APPLICATION_KEY }}
+      OCR_SPACE_API_KEY: ${{ secrets.OCR_SPACE_API_KEY }}
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -24,45 +34,20 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install playwright pandas beautifulsoup4 requests supabase rapidfuzz
-          playwright install chromium
-          playwright install-deps
+          pip install playwright supabase requests pymupdf python-dotenv google-generativeai
+          playwright install chromium --with-deps
 
-      - name: Run Scraper
-        run: python scripts/legislative_scraper.py
+      - name: Run Sovereign Sync Master
+        run: python CEKA/scripts/sovereign_sync_master.py
         env:
           PYTHONIOENCODING: utf-8
 
-      - name: Verify Scrape Output
-        run: |
-          echo "### Scrape Results" >> $GITHUB_STEP_SUMMARY
-          LATEST=$(ls -t processed_data/legislative/bills_*.json 2>/dev/null | head -1)
-          if [ -z "$LATEST" ]; then
-            echo "❌ No output file found" >> $GITHUB_STEP_SUMMARY
-            exit 1
-          fi
-          COUNT=$(python3 -c "import json; print(len(json.load(open('$LATEST'))))")
-          echo "- File: $LATEST" >> $GITHUB_STEP_SUMMARY
-          echo "- Bills scraped: $COUNT" >> $GITHUB_STEP_SUMMARY
-          if [ "$COUNT" -eq 0 ]; then
-            echo "⚠️ Warning: Scraper produced 0 bills. Website may have changed." >> $GITHUB_STEP_SUMMARY
-          fi
-
-      - name: Sync to Supabase
-        env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-        run: python scripts/sync_to_supabase.py
-
-      - name: Upload Artifacts
+      - name: Upload Intelligence Logs
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: scraped-bills-${{ github.run_number }}
-          path: processed_data/legislative/
-          retention-days: 30
-
-      - name: Summary
-        run: |
-          echo "### Legislative Sync Complete 🏛️" >> $GITHUB_STEP_SUMMARY
-          echo "- Run: ${{ github.run_number }}" >> $GITHUB_STEP_SUMMARY
-          echo "- Time: $(date)" >> $GITHUB_STEP_SUMMARY
+          name: intelligence-logs-${{ github.run_number }}
+          path: |
+            CEKA/scripts/*.log
+            CEKA/scripts/processed_data/
+          retention-days: 14

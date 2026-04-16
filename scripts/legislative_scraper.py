@@ -13,6 +13,26 @@ from urllib.parse import urljoin, unquote
 from pathlib import Path
 
 # ---------------------------------------------------------------------------
+# B2 Vault Integration
+# ---------------------------------------------------------------------------
+try:
+    from backblaze_utils import BackblazeVault
+    B2_OK = True
+except ImportError:
+    B2_OK = False
+    logging.getLogger(__name__).warning("backblaze_utils not importable – B2 upload disabled.")
+
+# ---------------------------------------------------------------------------
+# Stage Detector Integration
+# ---------------------------------------------------------------------------
+try:
+    from stage_detector import detect_stage_from_text, extract_date_from_order_paper
+    STAGE_DETECTOR_OK = True
+except ImportError:
+    STAGE_DETECTOR_OK = False
+    logging.getLogger(__name__).warning("stage_detector not importable – stage detection disabled.")
+
+# ---------------------------------------------------------------------------
 # Logging setup (UTF-8 safe for Windows)
 # ---------------------------------------------------------------------------
 logging.basicConfig(
@@ -606,6 +626,13 @@ class LegislativeScraper:
         self.seen_titles: set = set()
         self.targets = self._load_targets()
         self.ocr_engine = RemoteOCREngine()
+        self.b2_vault = None
+        if B2_OK:
+            try:
+                self.b2_vault = BackblazeVault()
+                logger.info("B2 Vault initialized for PDF mirroring.")
+            except Exception as e:
+                logger.warning(f"B2 Vault init failed (non-fatal): {e}")
 
     def _load_targets(self) -> list:
         try:
@@ -627,9 +654,20 @@ class LegislativeScraper:
             return []
 
         with sync_playwright() as p:
-            browser = p.chromium.launch(headless=self.headless)
+            browser = p.chromium.launch(
+                headless=self.headless,
+                args=[
+                    "--disable-blink-features=AutomationControlled",
+                    "--disable-dev-shm-usage",
+                    "--no-sandbox",
+                ]
+            )
             ctx = browser.new_context(
-                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+                extra_http_headers={
+                    "Accept-Language": "en-US,en;q=0.9",
+                    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+                }
             )
             page = ctx.new_page()
 
@@ -787,6 +825,28 @@ class LegislativeScraper:
         else:
             extracted_via = "html_fallback" if html_metadata else "none"
 
+        # --- B2 Vault: Mirror PDF to Backblaze ---
+        b2_url = None
+        if self.b2_vault and pdf_bytes:
+            safe_title = re.sub(r'[^a-zA-Z0-9_\-]', '_', title)[:80]
+            remote_path = f"public-docs/bills/{year}/{safe_title}.pdf"
+            try:
+                if not self.b2_vault.file_exists(remote_path):
+                    b2_url = self.b2_vault.upload_bytes(pdf_bytes, remote_path, content_type="application/pdf")
+                    logger.info(f"      [B2] Mirrored to vault: {remote_path}")
+                else:
+                    b2_url = self.b2_vault.get_public_url(remote_path)
+                    logger.info(f"      [B2] Already in vault: {remote_path}")
+            except Exception as e:
+                logger.warning(f"      [B2] Upload failed (non-fatal): {e}")
+
+        # --- Date: extract real date from text if possible ---
+        real_date = parsed_pdf.get('date') or html_metadata.get('date')
+        if not real_date and text.strip() and STAGE_DETECTOR_OK:
+            real_date = extract_date_from_order_paper(text)
+        if not real_date:
+            real_date = datetime.now().strftime("%Y-%m-%d")
+
         return {
             "title": title,
             "bill_no": self._extract_bill_no(text or title),
@@ -794,9 +854,10 @@ class LegislativeScraper:
             "sponsor": sponsor,
             "status": status,
             "house": "Senate" if "Senate" in target['name'] else "National Assembly",
-            "date": parsed_pdf.get('date') or html_metadata.get('date') or datetime.now().strftime("%Y-%m-%d"),
+            "date": real_date,
             "url": pdf_url,
             "pdf_url": pdf_url,
+            "b2_url": b2_url,
             "source": target['name'],
             "category": self._infer_category(title),
             "summary": summary[:3000],
@@ -807,6 +868,7 @@ class LegislativeScraper:
                 "extraction_method": extraction_method,
                 "extracted_via": extracted_via,
                 "is_scanned": is_scanned,
+                "b2_url": b2_url,
                 **ocr_metadata,
             },
             "created_at": datetime.now().isoformat()
@@ -963,13 +1025,86 @@ class LegislativeScraper:
 
     def _parse_bill_text(self, text: str) -> dict:
         result = {}
-        # Simple regex for description and summary
-        memo = re.search(r'MEMORANDUM OF OBJECTS AND REASONS(.*)', text, re.S | re.I)
-        if memo: result['summary'] = re.sub(r'\s+', ' ', memo.group(1).strip())
-        
-        act = re.search(r'A Bill for\s+AN ACT\s+of Parliament to(.*?)(?:ENACTED|PART I)', text, re.S | re.I)
-        if act: result['description'] = "A Bill for AN ACT of Parliament to" + re.sub(r'\s+', ' ', act.group(1).strip())
-        
+
+        # --- Summary extraction (cascading patterns) ---
+        summary_patterns = [
+            # Pattern 1: MEMORANDUM OF OBJECTS AND REASONS (most common)
+            re.compile(r'MEMORANDUM\s+OF\s+OBJECTS\s+AND\s+REASONS(.*?)(?:$|Dated\s+the|\Z)', re.S | re.I),
+            # Pattern 2: OBJECTS AND REASONS
+            re.compile(r'OBJECTS\s+AND\s+REASONS(.*?)(?:$|Dated\s+the|\Z)', re.S | re.I),
+            # Pattern 3: OBJECTS OF THE BILL
+            re.compile(r'OBJECTS\s+OF\s+THE\s+BILL(.*?)(?:PART\s+I|ENACTED|Dated|\Z)', re.S | re.I),
+            # Pattern 4: STATEMENT OF JUSTIFICATION
+            re.compile(r'STATEMENT\s+OF\s+(?:THE\s+)?JUSTIFICATION(.*?)(?:$|Dated|\Z)', re.S | re.I),
+            # Pattern 5: PURPOSE OF THE BILL
+            re.compile(r'PURPOSE\s+OF\s+THE\s+BILL(.*?)(?:PART\s+I|ENACTED|Dated|\Z)', re.S | re.I),
+            # Pattern 6: ARRANGEMENT OF CLAUSES (fall back to clause listing)
+            re.compile(r'ARRANGEMENT\s+OF\s+CLAUSES(.*?)(?:A\s+Bill\s+for|PART\s+I|\Z)', re.S | re.I),
+        ]
+        for pat in summary_patterns:
+            m = pat.search(text)
+            if m:
+                extracted = re.sub(r'\s+', ' ', m.group(1).strip())
+                if len(extracted) > 30:
+                    result['summary'] = extracted[:3000]
+                    break
+
+        # --- Description extraction (cascading patterns) ---
+        desc_patterns = [
+            # Pattern 1: "A Bill for AN ACT of Parliament to..."
+            re.compile(r'(A\s+Bill\s+for\s+AN\s+ACT\s+of\s+Parliament\s+to.*?)(?:ENACTED|PART\s+I|BE\s+IT\s+ENACTED)', re.S | re.I),
+            # Pattern 2: "AN ACT of Parliament to..."
+            re.compile(r'(AN\s+ACT\s+of\s+Parliament\s+to.*?)(?:ENACTED|PART\s+I|BE\s+IT\s+ENACTED)', re.S | re.I),
+            # Pattern 3: "An Act to..." (shorter form)
+            re.compile(r'(An\s+Act\s+to.*?)(?:ENACTED|PART\s+I|BE\s+IT\s+ENACTED)', re.S | re.I),
+            # Pattern 4: Long title after bill number
+            re.compile(r'Bill\s+No\.?\s*\d+.*?\n(.*?)(?:PART\s+I|ARRANGEMENT)', re.S | re.I),
+        ]
+        for pat in desc_patterns:
+            m = pat.search(text)
+            if m:
+                extracted = re.sub(r'\s+', ' ', m.group(1).strip())
+                if len(extracted) > 20:
+                    result['description'] = extracted[:2000]
+                    break
+
+        # --- Sponsor extraction ---
+        sponsor_patterns = [
+            re.compile(r'(?:Moved|Tabled|Introduced|Presented)\s+by[:\s]+(?:The\s+)?(?:Hon\.?\s+)?(.*?)(?:\s*,\s*M\.?P\.?|\s*,\s*MP|\n|$)', re.I),
+            re.compile(r'(?:Cabinet\s+Secretary\s+for\s+)(\w[\w\s,]+?)(?:\.|\n|$)', re.I),
+            re.compile(r'(?:Authored\s+by|Sponsored\s+by)[:\s]+(.*?)(?:\.|\n|$)', re.I),
+        ]
+        for pat in sponsor_patterns:
+            m = pat.search(text[:2000])
+            if m:
+                sponsor = m.group(1).strip()
+                if len(sponsor) > 2 and len(sponsor) < 200:
+                    result['sponsor'] = sponsor
+                    break
+
+        # --- Date extraction from text ---
+        date_patterns = [
+            re.compile(r'Dated\s+the\s+(\d{1,2})\s*(?:st|nd|rd|th)?\s+(January|February|March|April|May|June|July|August|September|October|November|December)\s*,?\s*(\d{4})', re.I),
+            re.compile(r'(\d{1,2})\s*(?:st|nd|rd|th)?\s+(January|February|March|April|May|June|July|August|September|October|November|December)\s*,?\s*(\d{4})', re.I),
+        ]
+        MONTHS = {
+            'january': 1, 'february': 2, 'march': 3, 'april': 4,
+            'may': 5, 'june': 6, 'july': 7, 'august': 8,
+            'september': 9, 'october': 10, 'november': 11, 'december': 12
+        }
+        for pat in date_patterns:
+            m = pat.search(text)
+            if m:
+                try:
+                    day = int(m.group(1))
+                    month = MONTHS.get(m.group(2).lower(), 0)
+                    year = int(m.group(3))
+                    if month and 1 <= day <= 31:
+                        result['date'] = f"{year}-{month:02d}-{day:02d}"
+                        break
+                except (ValueError, IndexError):
+                    pass
+
         return result
 
     def _scrape_standard_docs(self, page, target):

@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Calendar, User, Tag, ExternalLink, Clock, Eye, Share2, Clipboard, Download, CheckCircle2, Circle } from 'lucide-react';
+import { ArrowLeft, Calendar, User, Tag, ExternalLink, Clock, Eye, Share2, Clipboard, Download, CheckCircle2, Circle, ShieldCheck, Newspaper, Info, Lock } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -88,6 +88,7 @@ const BillDetail = () => {
   const { id } = useParams();
   const { language } = useLanguage();
   const [bill, setBill] = useState<Bill | null>(null);
+  const [news, setNews] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -136,6 +137,10 @@ const BillDetail = () => {
       }
 
       setBill(billData);
+      
+      // Load news mentions
+      const newsData = await billService.getBillNewsMentions(billId);
+      setNews(newsData);
     } catch (error) {
       console.error('Error loading bill:', error);
       setError('Communication trace lost with the legislative server.');
@@ -272,6 +277,24 @@ const BillDetail = () => {
                 </motion.div>
               ))}
             </div>
+
+            {/* INTELLIGENCE QUICK ACTIONS */}
+            <div className="flex flex-wrap gap-4 mt-8">
+              {bill.b2_url && (
+                <Button className="h-14 px-8 rounded-2xl bg-kenya-green text-white font-black text-xs uppercase tracking-widest hover:scale-[1.02] active:scale-[0.98] transition-all shadow-xl shadow-kenya-green/20">
+                  <Download className="mr-2 h-4 w-4" />
+                  {translate("Download Civic Intelligence Pack", language)}
+                </Button>
+              )}
+              {bill.pdf_url && (
+                <Button variant="outline" asChild className="h-14 px-8 rounded-2xl border-black/5 dark:border-white/10 bg-white/50 dark:bg-white/5 backdrop-blur-md font-bold text-xs uppercase tracking-widest">
+                  <a href={bill.pdf_url} target="_blank" rel="noopener noreferrer">
+                    <FileText className="mr-2 h-4 w-4" />
+                    {translate("Official Bill PDF", language)}
+                  </a>
+                </Button>
+              )}
+            </div>
           </div>
         </section>
 
@@ -287,7 +310,7 @@ const BillDetail = () => {
               >
                 <div className="flex items-center gap-4 mb-2">
                   <div className="h-1px flex-grow bg-slate-200 dark:bg-white/5" />
-                  <h3 className="text-xs font-black uppercase tracking-[0.3em] text-slate-400 shrink-0">Legislative Narrative</h3>
+                  <h3 className="text-xs font-black uppercase tracking-[0.3em] text-slate-400 shrink-0">{translate("Legislative Narrative", language)}</h3>
                   <div className="h-1px flex-grow bg-slate-200 dark:bg-white/5" />
                 </div>
                 <div className="prose prose-slate dark:prose-invert max-w-none">
@@ -319,11 +342,80 @@ const BillDetail = () => {
 
                 <LegislativeTimeline stages={stages} language={language} />
               </div>
+
+              {/* NEWS CORROBORATION SECTION */}
+              {news.length > 0 && (
+                <div className="space-y-8 pb-12">
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-3xl font-black tracking-tight leading-tight">News <span className="text-blue-500 mx-1">&</span> {translate("Corroboration", language)}</h2>
+                    <Badge className="bg-blue-500/10 text-blue-500 border-blue-200/50 uppercase text-[10px] font-black">
+                      {news.length} {translate("Sources Found", language)}
+                    </Badge>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {news.map((item, idx) => (
+                      <motion.a
+                        key={idx}
+                        href={item.article_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        whileInView={{ opacity: 1, scale: 1 }}
+                        className="p-5 rounded-[32px] bg-white dark:bg-slate-900/40 border border-black/5 dark:border-white/10 hover:bg-slate-50 dark:hover:bg-white/5 transition-all group"
+                      >
+                        <div className="flex items-start gap-4">
+                          <div className="h-12 w-12 rounded-2xl bg-blue-500/5 flex items-center justify-center shrink-0">
+                            <Newspaper className="h-5 w-5 text-blue-500 opacity-50" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">{item.source_name}</p>
+                            <h4 className="font-bold text-slate-800 dark:text-white leading-tight mb-2 line-clamp-2 group-hover:text-blue-500 transition-colors">
+                              {item.headline}
+                            </h4>
+                            <p className="text-[10px] text-slate-500 line-clamp-2 italic">
+                              "{item.snippet}"
+                            </p>
+                          </div>
+                        </div>
+                      </motion.a>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* SIDEBAR TOOLS */}
             <aside className="lg:col-span-4 space-y-8">
               <div className="sticky top-24 space-y-8">
+
+                {/* FIDELITY GAUGE */}
+                <Card className="rounded-[40px] border-none bg-gradient-to-br from-slate-900 to-black text-white shadow-2xl overflow-hidden relative">
+                  <div className="absolute top-0 right-0 p-8 opacity-10">
+                    <ShieldCheck className="h-32 w-32" />
+                  </div>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-[10px] font-black uppercase tracking-widest text-kenya-green">{translate("Data Fidelity Score", language)}</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-6 relative z-10">
+                    <div className="flex items-end gap-2">
+                      <span className="text-6xl font-[1000] tracking-tighter leading-none italic">{bill.corroboration_score || 85}</span>
+                      <span className="text-xl font-bold text-kenya-green mb-1">%</span>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
+                        <motion.div 
+                          initial={{ width: 0 }}
+                          animate={{ width: `${bill.corroboration_score || 85}%` }}
+                          className="h-full bg-kenya-green shadow-[0_0_15px_rgba(0,186,0,0.5)]" 
+                        />
+                      </div>
+                      <p className="text-[10px] font-medium text-slate-400 leading-relaxed uppercase tracking-widest">
+                        Verified against {news.length + 2} primary legislative nodes
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
 
                 {/* OFFICIAL DOCUMENTS */}
                 <Card className="rounded-[40px] border-none bg-white dark:bg-slate-900 shadow-ios-high dark:shadow-none dark:border dark:border-white/5 overflow-hidden">

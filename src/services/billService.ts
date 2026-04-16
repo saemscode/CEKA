@@ -18,6 +18,10 @@ export interface Bill {
   neural_summary?: string | null;
   text_content?: string | null;
   pdf_url?: string | null;
+  b2_url?: string | null;
+  corroboration_score?: number;
+  analysis_status?: 'pending' | 'processing' | 'completed' | 'failed';
+  sources?: any[];
   views_count?: number;
   follow_count?: number;
 }
@@ -111,6 +115,22 @@ class BillService {
     } catch (error) {
       console.error('Error fetching bill stats:', error);
       return { total: 0, byStatus: {}, byCategory: {} };
+    }
+  }
+
+  async getBillNewsMentions(billId: string): Promise<any[]> {
+    try {
+      const { data, error } = await supabase
+        .from('bill_news_mentions')
+        .select('*')
+        .eq('bill_id', billId)
+        .order('scraped_at', { ascending: false });
+
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error('Error fetching bill news mentions:', error);
+      return [];
     }
   }
 }

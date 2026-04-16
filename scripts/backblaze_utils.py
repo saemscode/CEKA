@@ -1,4 +1,5 @@
 import os
+import io
 import boto3
 from botocore.exceptions import NoCredentialsError
 import logging
@@ -29,6 +30,30 @@ class BackblazeVault:
             logging.error(f"Backblaze upload failed: {e}")
             return None
 
+    def upload_bytes(self, file_bytes, remote_path, content_type="application/pdf"):
+        """Upload raw bytes directly to B2 without needing a local file."""
+        try:
+            self.s3.upload_fileobj(
+                io.BytesIO(file_bytes),
+                self.bucket_name,
+                remote_path,
+                ExtraArgs={"ContentType": content_type}
+            )
+            url = f"{self.endpoint}/{self.bucket_name}/{remote_path}"
+            logging.info(f"B2 upload OK: {remote_path} ({len(file_bytes)} bytes)")
+            return url
+        except Exception as e:
+            logging.error(f"Backblaze bytes upload failed: {e}")
+            return None
+
+    def file_exists(self, remote_path):
+        """Check if a file already exists in B2."""
+        try:
+            self.s3.head_object(Bucket=self.bucket_name, Key=remote_path)
+            return True
+        except Exception:
+            return False
+
     def get_signed_url(self, remote_path, expires_in=3600):
         try:
             url = self.s3.generate_presigned_url(
@@ -40,4 +65,7 @@ class BackblazeVault:
         except Exception as e:
             logging.error(f"Failed to generate signed URL: {e}")
             return None
-破
+
+    def get_public_url(self, remote_path):
+        """Return the direct public URL for a file in B2."""
+        return f"{self.endpoint}/{self.bucket_name}/{remote_path}"

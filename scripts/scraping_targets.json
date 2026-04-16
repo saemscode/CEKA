@@ -5,28 +5,56 @@
             "url": "http://www.parliament.go.ke/the-national-assembly/house-business/bills",
             "selector": "a[href$='.pdf']",
             "type": "bills",
-            "freq": "daily_0900_eat"
+            "freq": "daily_0400_eat"
         },
         {
             "name": "Senate Bills",
             "url": "http://www.parliament.go.ke/the-senate/house-business/bills",
             "selector": "a[href$='.pdf']",
             "type": "bills",
-            "freq": "daily_0900_eat"
+            "freq": "daily_0400_eat"
         },
         {
             "name": "National Assembly Order Papers",
             "url": "http://www.parliament.go.ke/the-national-assembly/house-business/order-paper",
             "selector": ".view-content .views-row",
             "type": "order_papers",
-            "freq": "daily_0900_eat"
+            "freq": "daily_0415_eat"
+        },
+        {
+            "name": "Senate Order Papers",
+            "url": "http://www.parliament.go.ke/the-senate/house-business/order-paper",
+            "selector": ".view-content .views-row",
+            "type": "order_papers",
+            "freq": "daily_0415_eat"
+        },
+        {
+            "name": "National Assembly Hansard",
+            "url": "http://www.parliament.go.ke/the-national-assembly/house-business/hansard",
+            "selector": "a[href$='.pdf']",
+            "type": "hansard",
+            "freq": "daily_0430_eat"
+        },
+        {
+            "name": "Senate Hansard",
+            "url": "http://www.parliament.go.ke/the-senate/house-business/hansard",
+            "selector": "a[href$='.pdf']",
+            "type": "hansard",
+            "freq": "daily_0430_eat"
+        },
+        {
+            "name": "National Assembly Committee Reports",
+            "url": "http://www.parliament.go.ke/the-national-assembly/house-business/committee-reports",
+            "selector": "a[href$='.pdf']",
+            "type": "committee_reports",
+            "freq": "daily_0445_eat"
         },
         {
             "name": "Kenya Gazette (Official)",
             "url": "http://kenyalaw.org/kenya_gazette/",
             "selector": ".view-content .views-row, .gazette-item",
             "type": "gazette",
-            "freq": "weekly_friday_0900_eat"
+            "freq": "weekly_friday_0500_eat"
         }
     ]
 }

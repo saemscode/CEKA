@@ -106,6 +106,44 @@ export const translations: Record<string, Record<Language, string>> = {
     sw: "Jiunge na mapigo ya ushiriki wa uraia nchini Kenya. Taarifa za wakati halisi, ufuatiliaji wa sera, na sauti za kijamii tunapoelekea 2027.",
     ksl: "Join civic heartbeat Kenya 2027",
     br: "⠚⠕⠊⠝ ⠞⠓⠑ ⠓⠑⠁⠗⠞⠃⠑⠁⠞ ⠕⠋ ⠅⠑⠝⠽⠁⠝ ⠉⠊⠧⠊⠉ ⠏⠁⠗⠞⠊⠉⠊⠏⠁⠞⠊⠕⠝⠲"
+  },
+
+  // Legislative Intelligence (Sovereign Engine)
+  "Download Civic Intelligence Pack": {
+    en: "Download Civic Intelligence Pack",
+    sw: "Pakua Kifurushi cha Ujasusi wa Kiraia",
+    ksl: "Download pack",
+    br: "⠙⠕⠺⠝⠇⠕⠁⠙ ⠏⠁⠉⠅"
+  },
+  "Official Bill PDF": {
+    en: "Official Bill PDF",
+    sw: "Mswada Rasmi wa PDF",
+    ksl: "Bill PDF",
+    br: "⠃⠊⠇⠇ ⠏⠙⠋"
+  },
+  "News & Corroboration": {
+    en: "News & Corroboration",
+    sw: "Habari na Uthibitisho",
+    ksl: "News proof",
+    br: "⠝⠑⠺⠎ ⠏⠗⠕⠕⠋"
+  },
+  "Sources Found": {
+    en: "Sources Found",
+    sw: "Vyanzo Vimepatikana",
+    ksl: "Sources",
+    br: "⠎⠕⠥⠗⠉⠑⠎"
+  },
+  "Data Fidelity Score": {
+    en: "Data Fidelity Score",
+    sw: "Alama ya Ukweli wa Data",
+    ksl: "Fidelity score",
+    br: "⠋⠊⠙⠑⠇⠊⠞⠽"
+  },
+  "Legislative Narrative": {
+    en: "Legislative Narrative",
+    sw: "Maelezo ya Sheria",
+    ksl: "Legislation notes",
+    br: "⠝⠁⠗⠗⠁⠞⠊⠧⠑"
   }
 };
 

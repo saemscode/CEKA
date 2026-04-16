@@ -5,6 +5,8 @@ export interface BillFollow {
   id: string;
   user_id: string;
   bill_id: string;
+  vault_url?: string | null;
+  vault_refreshed_at?: string | null;
   created_at: string;
 }
 
@@ -71,8 +73,12 @@ export class BillFollowingService {
           category,
           date,
           created_at,
-          updated_at
-        )
+          updated_at,
+          b2_url,
+          corroboration_score
+        ),
+        vault_url,
+        vault_refreshed_at
       `)
       .eq('user_id', user.id);
 
