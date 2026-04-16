@@ -87,7 +87,7 @@ def is_valid_keyword(term: str) -> bool:
         return False
     if len(term) > 100:          # unlikely to be a real trend
         return False
-    if term.startswith(("http://", "https://", "www.")):
+    if "http://" in term or "https://" in term or "www." in term:
         return False
     # must contain at least one letter (not just numbers/punctuation)
     if not any(c.isalpha() for c in term):

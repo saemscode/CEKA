@@ -9,6 +9,8 @@ from update_keywords import (
 )
 from unittest.mock import patch, MagicMock
 from bs4 import BeautifulSoup
+import pandas as pd
+from datetime import datetime
 
 # ------------------------------------------------------------
 # Tests for utility functions
@@ -63,7 +65,8 @@ def test_update_meta_keywords_appends_not_overwrites(tmp_path):
 
 def test_update_meta_keywords_no_change_if_same_content(tmp_path):
     html = tmp_path / "index.html"
-    html.write_text('<html><head><meta name="keywords" content="a, b"></head></html>')
+    today_str = datetime.utcnow().strftime("%Y-%m-%d")
+    html.write_text(f'<html><head><meta name="keywords" content="a, b"><meta name="last-updated" content="{today_str}"></head></html>')
     changed, added = update_meta_keywords(html, ["b", "a"], dry_run=False)  # same set, order might differ
     # merge_keywords preserves order, so will become "a, b, b, a"? Actually existing = ["a","b"], new = ["b","a"] -> after merge: a,b,b,a? But our merge only appends if not already present, so "b" and "a" already exist, no new added. So merged = ["a","b"].
     assert changed is False
@@ -96,7 +99,6 @@ def test_fetch_top_trends_success(mock_trendreq):
     mock_instance = MagicMock()
     mock_trendreq.return_value = mock_instance
     # Mock the trending_searches DataFrame
-    import pandas as pd
     df = pd.DataFrame(["trend1", "trend2", "invalid_http://x", ""])
     mock_instance.trending_searches.return_value = df
 
