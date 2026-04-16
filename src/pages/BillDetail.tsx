@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Calendar, User, Tag, ExternalLink, Clock, Eye, Share2, Clipboard, Download, CheckCircle2, Circle, ShieldCheck, Newspaper, Info, Lock } from 'lucide-react';
+import { ArrowLeft, Calendar, User, Tag, ExternalLink, Clock, Eye, Share2, Clipboard, Download, CheckCircle2, Circle, ShieldCheck, Newspaper, Info, Lock, FileText } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
