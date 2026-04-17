@@ -114,8 +114,8 @@ def generate_search_terms(bill_title: Any) -> List[str]:
     }
     abbr_term = clean.lower()
     for full, short in abbreviations.items():
-        if str(full) in abbr_term:
-            abbr_term = abbr_term.replace(str(full), str(short))
+        if str(full).lower() in str(abbr_term).lower():
+            abbr_term = str(abbr_term).replace(str(full).lower(), str(short))
     
     abbr_term = re.sub(r'\b(the|a|an|of|and|for|to|in|on|by|bill|act)\b', '', abbr_term)
     abbr_term = re.sub(r'\s+', ' ', abbr_term).strip()
@@ -137,8 +137,10 @@ def generate_search_terms(bill_title: Any) -> List[str]:
             unique.append(tc)
     
     final_unique: List[str] = []
-    for i in range(min(4, len(unique))):
-        final_unique.append(unique[i])
+    # Use explicit loop instead of slice to satisfy Pyre2
+    for i in range(len(unique)):
+        if i >= 4: break
+        final_unique.append(str(unique[i]))
     return final_unique
 
 def content_hash(text: Any) -> str:
@@ -279,64 +281,87 @@ class NewsIntelligenceEngine:
             return final_filtered
         return []
 
+    def summarize_article(self, headline: str, body: str) -> str:
+        """Use Gemini to summarize the article into high-fidelity intelligence."""
+        try:
+            import google.generativeai as genai
+            api_key = os.getenv("GEMINI_API_KEY")
+            if not api_key: return body[:2000]
+            
+            genai.configure(api_key=api_key)
+            model = genai.GenerativeModel('gemini-1.5-flash')
+            b_str: str = str(body)
+            h_str: str = str(headline)
+            prompt = f"Summarize this Kenyan news article into a few concise, factual bullet points focusing on legislative or civic impact. Headline: {h_str}. Content: {b_str[:6000]}"
+            resp = model.generate_content(prompt)
+            return str(resp.text) if resp and resp.text else b_str[:2000]
+        except Exception:
+            return str(body)[:2000]
+
     def scrape_article(self, page: Any, url: str, source: Dict[str, Any]) -> Dict[str, str]:
         """Extract headline, body, and date from a news article URL."""
         html = self.scraper.fetch_html(url)
         if not html or BeautifulSoup is None:
             return {"headline": "", "body": "", "date": ""}
             
-        soup = BeautifulSoup(html, "html.parser")
-        headline = ""
-        for tag in ["h1", "title"]:
-            found = soup.find(tag)
-            if found:
-                headline = str(found.get_text()).strip()
-                break
-        
-        paragraphs = soup.find_all("p")
-        p_texts = []
-        for p in paragraphs:
-            pt = str(p.get_text()).strip()
-            if len(pt) > 50: p_texts.append(pt)
-        body_all = "\n".join(p_texts)
-        # Manual slice for Pyre compliance
-        body_res = ""
-        for i in range(min(5000, len(body_all))):
-            body_res += body_all[i]
-        return {"headline": headline, "body": body_res, "date": ""}
+        try:
+            # Explicitly cast BeautifulSoup to Any to avoid "Expected a callable" error
+            soup_parser: Any = BeautifulSoup
+            soup = soup_parser(html, "html.parser")
+            headline = ""
+            for tag in ["h1", "title"]:
+                found = soup.find(tag)
+                if found:
+                    headline = str(found.get_text()).strip()
+                    break
+            
+            paragraphs = soup.find_all("p")
+            p_texts = []
+            for p in paragraphs:
+                pt = str(p.get_text()).strip()
+                if len(pt) > 50: p_texts.append(pt)
+            body_all = "\n".join(p_texts)
+            # Summarize for high-fidelity intelligence
+            intelligence = self.summarize_article(str(headline), str(body_all))
+            return {"headline": str(headline), "body": str(intelligence), "date": ""}
+        except Exception:
+            return {"headline": "", "body": "", "date": ""}
 
     def run_for_bill(self, page: Any, bill_data: Dict[str, Any]) -> int:
         """Process news intelligence for a specific bill."""
-        bill_id = str(bill_data.get("id", ""))
-        bill_title = str(bill_data.get("title", ""))
-        logger.info(f"  🔍 Scanning news: {bill_title[:60]}...")
+        bill_id: str = str(bill_data.get("id", ""))
+        bill_title: str = str(bill_data.get("title", ""))
+        logger.info(f"  🔍 Scanning news: {bill_title[0:60]}...")
         
-        existing_hashes = self.get_existing_mention_hashes(bill_id)
+        existing_hashes: Set[str] = self.get_existing_mention_hashes(bill_id)
         search_terms = generate_search_terms(bill_title)
-        new_mentions_count = 0
+        new_mentions_count: int = 0
 
         for query in search_terms:
             for source in NEWS_SOURCES:
-                links = self.scrape_search_results(page, source, query)
+                links = self.scrape_search_results(page, source, str(query))
                 if not links or not isinstance(links, list): continue
 
                 for link in links:
                     if not isinstance(link, dict): continue
-                    url = str(link.get("url", ""))
+                    url: str = str(link.get("url", ""))
                     if not url: continue
                     
-                    l_hash = content_hash(url)
+                    l_hash: str = content_hash(url)
                     if l_hash in existing_hashes: continue
 
                     article = self.scrape_article(page, url, source)
-                    if not str(article.get("body", "")).strip(): continue
+                    body_val: str = str(article.get("body", ""))
+                    if not body_val.strip(): continue
 
+                    h_str: str = str(article.get("headline") or link.get("text", ""))
+                    s_str: str = str(article.get("body", ""))
                     mention = {
                         "bill_id": bill_id,
                         "source_name": str(source.get("name", "")),
                         "source_domain": str(source.get("domain", "")),
-                        "headline": str(article.get("headline") or link.get("text", ""))[:500],
-                        "snippet": str(article.get("body", ""))[:2000],
+                        "headline": h_str[:500],
+                        "snippet": s_str[:2000],
                         "article_url": url,
                         "article_date": str(article.get("date", "")),
                         "content_hash": l_hash,
@@ -344,7 +369,7 @@ class NewsIntelligenceEngine:
                     }
 
                     if self.store_mention(mention):
-                        new_mentions_count += 1
+                        new_mentions_count = int(new_mentions_count + 1)
                         existing_hashes.add(l_hash)
                     time.sleep(1.0)
         return int(new_mentions_count)
@@ -355,14 +380,15 @@ class NewsIntelligenceEngine:
         bills = self.get_active_bills()
         if not bills: return
 
-        total = 0
+        total: int = 0
         with sync_playwright() as p:
             browser = p.chromium.launch(headless=True)
             ctx = browser.new_context()
             page = ctx.new_page()
             for bill in bills:
                 try:
-                    total += int(self.run_for_bill(page, bill))
+                    res_count: int = int(self.run_for_bill(page, bill))
+                    total = int(total + res_count)
                 except Exception: pass
             browser.close()
         logger.info(f"Complete. New: {total}")

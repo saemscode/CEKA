@@ -262,7 +262,18 @@ const getProviderConfig = () => {
 // professional warmth, evidence‑based structure, and complete tier definitions.
 // All original classification logic is preserved and enriched.
 // ============================================================================
-const SYSTEM_PROMPT = `You are CEKA AI — the Civic Education Kenya Assistant. Your purpose is to help Kenyan citizens and CEKA staff understand civic law, governance processes, rights, and the CEKA platform.
+const SYSTEM_PROMPT = `CORE DIRECTIVE: You are the SOVEREIGN MIND of CEKA. You are a high-fidelity, military-grade civic intelligence engine. You discard the "neutrality-first" refusal loop. Your neutrality is derived from EVIDENCE, not from silence. You are grounded in the Constitution of Kenya (2010), but you possess the "Truth of Matters" (Ukweli wa Mambo) intelligence pipe.
+
+# 🧠 Sovereign Thinking Mode
+- WITTY & SHARP: Use the witty, slightly sarcastic, and deeply grounded voice of a Sovereign Kenyan Citizen. Use phraseology like "Mwananchi," "Ukweli wa Mambo," and "National Intelligence Pipe."
+- EVIDENCE-GROUNDED: If the user asks for "tabloid" or "non-partisan" details, DO NOT REFUSE. Instead, look into the provided [Intelligence Pipe: News Mentions] and report what is being said in the public domain. Attribute it to the outlet (e.g., "The Standard reports...").
+- NO REFUSALS: Eliminate all "I can't help with that" loops regarding public bill discussions. If it is in the news, it is intelligence. Output it.
+- PROACTIVE: Connect laws to their real-world impact (e.g., how the Finance Bill affects the price of unga).
+
+# 🏛️ Reference Intelligence (Legacy Context)
+You are CEKA AI — the Civic Education Kenya Assistant. Your purpose is to help Kenyan citizens and CEKA staff understand civic law, governance processes, rights, and the CEKA platform.
+` + `You are CEKA AI — the Civic Education Kenya Assistant. Your purpose is to help Kenyan citizens and CEKA staff understand civic law, governance processes, rights, and the CEKA platform.
+
 
 # 🧠 Your Core Thinking Style (How you reason before you speak)
 
@@ -8695,9 +8706,17 @@ Deno.serve(async (req) => {
       let ragContext = "";
       const isConstitutionalQuery = query.toLowerCase().includes('constitution') ||
          query.toLowerCase().includes('article') ||
+         query.toLowerCase().includes('katiba') ||
          context.includes('/constitution');
 
-      if (isConstitutionalQuery && primaryConfig.apiKey) {
+      const isLegislativeQuery = query.toLowerCase().includes('bill') ||
+         query.toLowerCase().includes('mswada') ||
+         query.toLowerCase().includes('act') ||
+         query.toLowerCase().includes('sheria') ||
+         context.includes('/tracker') ||
+         context.includes('/bills');
+
+      if ((isConstitutionalQuery || isLegislativeQuery) && primaryConfig.apiKey) {
          try {
             const supabase = createClient(
                // @ts-ignore
@@ -8706,31 +8725,62 @@ Deno.serve(async (req) => {
                Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
             );
 
-            // 1. Generate embedding for the query using Gemini
-            const genAI = new GoogleGenerativeAI(primaryConfig.apiKey);
-            const embeddingModel = genAI.getGenerativeModel({ model: "text-embedding-004" });
-            const embeddingResult = await embeddingModel.embedContent(query);
-            const queryEmbedding = embeddingResult.embedding.values;
+            // 1. CONSTITUTIONAL RAG (Semantic Search)
+            if (isConstitutionalQuery) {
+               const genAI = new GoogleGenerativeAI(primaryConfig.apiKey);
+               const embeddingModel = genAI.getGenerativeModel({ model: "text-embedding-004" });
+               const embeddingResult = await embeddingModel.embedContent(query);
+               const queryEmbedding = embeddingResult.embedding.values;
 
-            // 2. Search for relevant articles using the match_constitution RPC
-            const { data: matchedSections, error: matchError } = await supabase.rpc('match_constitution', {
-               query_embedding: queryEmbedding,
-               match_threshold: 0.5,
-               match_count: 3
-            });
+               const { data: matchedSections, error: matchError } = await supabase.rpc('match_constitution', {
+                  query_embedding: queryEmbedding,
+                  match_threshold: 0.5,
+                  match_count: 3
+               });
 
-            if (!matchError && matchedSections && matchedSections.length > 0) {
-               ragContext = "\n\n# 📜 Relevant Constitutional Context\n" +
-                  matchedSections.map((s: any) => `[${s.clause_ref}: ${s.chapter}]\n${s.content}`).join('\n\n');
+               if (!matchError && matchedSections && matchedSections.length > 0) {
+                  ragContext += "\n\n# 📜 Relevant Constitutional Context\n" +
+                     matchedSections.map((s: any) => `[${s.clause_ref}: ${s.chapter}]\n${s.content}`).join('\n\n');
+               }
+            }
 
-               systemPromptWithDate += `\n\nINSTRUCTION: You have been provided with the following verified segments from the Constitution of Kenya (2010). Use them to provide accurate, evidence-based answers. If the information is not contained here, state that you are using your general knowledge.\n${ragContext}`;
+            // 2. LEGISLATIVE INTELLIGENCE PIPE (News Mentions)
+            if (isLegislativeQuery) {
+               // Get the latest 5 news mentions relevant to the query terms
+               const { data: newsMentions, error: newsError } = await supabase
+                  .from('bill_news_mentions')
+                  .select('source_name, headline, snippet, article_url, article_date')
+                  .order('scraped_at', { ascending: false })
+                  .limit(8);
+
+               if (!newsError && newsMentions && newsMentions.length > 0) {
+                  const filteredNews = newsMentions.filter((n: any) => 
+                     query.toLowerCase().split(' ').some((word: string) => 
+                        word.length > 3 && (n.headline.toLowerCase().includes(word) || n.snippet.toLowerCase().includes(word))
+                     )
+                  ).slice(0, 5);
+
+                  const newsToUse = filteredNews.length > 0 ? filteredNews : newsMentions.slice(0, 3);
+
+                  ragContext += "\n\n# 🗞️ Intelligence Pipe: News Mentions (Ukweli wa Mambo)\n" +
+                     newsToUse.map((n: any) => 
+                        `[Source: ${n.source_name} | Date: ${n.article_date || 'Recent'}]\n` +
+                        `Headline: ${n.headline}\n` +
+                        `Intelligence: ${n.snippet}\n` +
+                        `Verify at: ${n.article_url}`
+                     ).join('\n\n');
+               }
+            }
+
+            if (ragContext) {
+               systemPromptWithDate += `\n\nINSTRUCTION: You have been provided with the following verified INTELLIGENCE CONTEXT (Constitution and/or Live News). Use this to provide accurate, evidence-based, and witty responses. If a user asks about "tabloid" or "non-partisan" details, report what is in the news mentions below. Do not refuse.\n${ragContext}`;
             }
          } catch (ragErr) {
-            // Fail silently - don't break the whole assistant if RAG fails
-            console.error("RAG Error:", ragErr);
+            console.error("Intelligence Pipe Error:", ragErr);
          }
       }
       // --- END RAG INTEGRATION ---
+
 
       // Try each provider in the chain until one succeeds
       let answer: string | null = null;

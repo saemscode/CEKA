@@ -212,7 +212,7 @@ const LegislativeTracker = () => {
     if (intelligenceAlerts.length <= 1) return;
     const interval = setInterval(() => {
       setCurrentAlertIndex(prev => (prev + 1) % intelligenceAlerts.length);
-    }, 8000); // 8 seconds for reading
+    }, 8000); // 8 seconds for reading intelligence
     return () => clearInterval(interval);
   }, [intelligenceAlerts]);
 
@@ -237,7 +237,7 @@ const LegislativeTracker = () => {
             >
               <Badge className="mb-6 rounded-full px-4 py-1.5 bg-kenya-green/10 text-kenya-green border-kenya-green/20 font-black tracking-widest text-[10px] uppercase">
                 <Globe className="h-3 w-3 mr-2 animate-pulse" />
-                Live National Intelligence
+                National Intelligence Pipe
               </Badge>
               <h1 className="text-5xl md:text-8xl font-[1000] tracking-tight leading-[0.9] mb-8 dark:text-white">
                 Track <span className="text-transparent bg-clip-text bg-gradient-to-r from-kenya-green to-primary">Democracy</span>.
@@ -273,19 +273,19 @@ const LegislativeTracker = () => {
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
-                          <h4 className="font-black text-[10px] uppercase tracking-[0.2em] text-primary">Live Intelligence</h4>
+                          <h4 className="font-black text-[10px] uppercase tracking-[0.2em] text-primary">Database Store Intelligence</h4>
                           <span className="h-1 w-1 rounded-full bg-kenya-green animate-ping" />
                         </div>
                         <p className="font-bold text-sm leading-snug mb-3 dark:text-gray-200">
                           {activeAlert.headline} — <span className="text-kenya-green">{(activeAlert.bills as any)?.title || 'Legislative Update'}</span>
                         </p>
-                        <Button 
-                          variant="link" 
-                          asChild 
+                        <Button
+                          variant="link"
+                          asChild
                           className="p-0 h-auto text-primary font-black text-xs uppercase tracking-widest gap-2 hover:no-underline"
                         >
                           <Link to={`/bill/${activeAlert.bill_id}`}>
-                            Deep Trace <ArrowRight className="h-3 w-3" />
+                            Intelligence Trace <ArrowRight className="h-3 w-3" />
                           </Link>
                         </Button>
                       </div>
@@ -296,8 +296,8 @@ const LegislativeTracker = () => {
                         <TrendingUp className="h-6 w-6" />
                       </div>
                       <div>
-                        <h4 className="font-black text-[10px] uppercase tracking-[0.2em] mb-1">Scanning Vault...</h4>
-                        <p className="font-bold text-sm mb-3">Fetching the latest legislative intelligence signals from the Sovereign Pipeline.</p>
+                        <h4 className="font-black text-[10px] uppercase tracking-[0.2em] mb-1">Scanning our database...</h4>
+                        <p className="font-bold text-sm mb-3">Fetching the latest local tabloid hits on recent bills.</p>
                       </div>
                     </div>
                   )}
@@ -321,7 +321,7 @@ const LegislativeTracker = () => {
                 <div className="space-y-4">
                   <h3 className="font-black text-lg flex items-center gap-2">
                     <Search className="h-5 w-5 text-primary" />
-                    Vault Query
+                    Database Store Query
                   </h3>
                   <div className="relative group space-y-3">
                     <Input
@@ -379,7 +379,7 @@ const LegislativeTracker = () => {
                         {stats.total} BILLS
                       </Badge>
                     </div>
-                    <h5 className="font-black uppercase tracking-tighter text-lg">Vault Intelligence</h5>
+                    <h5 className="font-black uppercase tracking-tighter text-lg">Bills Database Intelligence</h5>
                     <div className="space-y-2">
                       {Object.entries(stats.byStatus).slice(0, 4).map(([status, count]: any) => (
                         <div key={status} className="flex justify-between items-center text-xs">
@@ -438,14 +438,14 @@ const LegislativeTracker = () => {
                 <TabsContent value={activeTab} className="space-y-6 mt-0">
                   {loading ? (
                     <div className="flex flex-col gap-6 py-12">
-                      <CEKALoader variant="scanning" size="xl" text="Scanning Vault for Bills..." />
+                      <CEKALoader variant="scanning" size="xl" text="Scanning Database for Bills..." />
                     </div>
                   ) : filteredBills.length === 0 ? (
                     <div className="py-32 text-center space-y-4">
                       <div className="h-20 w-20 rounded-full bg-slate-50 dark:bg-white/5 flex items-center justify-center mx-auto">
                         <Shield className="h-10 w-10 opacity-20" />
                       </div>
-                      <h3 className="font-black text-2xl tracking-tight">No bills tracked in this vault.</h3>
+                      <h3 className="font-black text-2xl tracking-tight">No bills tracked in our database.</h3>
                       <p className="text-muted-foreground">The "Track & Trace" engine is currently scanning for updates.</p>
                     </div>
                   ) : (
@@ -548,7 +548,7 @@ const LegislativeTracker = () => {
                                       onClick={() => vaultService.openDocument(bill.pdf_url!)}
                                       className="h-12 px-6 rounded-2xl border-slate-200 dark:border-white/10 font-black text-xs uppercase tracking-widest"
                                     >
-                                      Vault Copy
+                                      Database Copy
                                       <BookOpen className="ml-2 h-4 w-4" />
                                     </Button>
                                   )}
