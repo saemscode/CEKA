@@ -1,5 +1,6 @@
 import os
 import re
+import requests
 import io
 import json
 import time
@@ -9,6 +10,7 @@ from datetime import datetime, timezone
 from typing import List, Dict, Any, Optional
 from pathlib import Path
 from urllib.parse import quote_plus, urljoin
+from bs4 import BeautifulSoup
 
 # ---------------------------------------------------------------------------
 # Load environment variables from .env if python-dotenv is available
@@ -275,6 +277,106 @@ def content_hash(text: str) -> str:
     return hashlib.md5(text.encode('utf-8')).hexdigest()[:12]
 
 
+class SovereignScraper:
+    """
+    Multi-provider scraping and search failover system.
+    Prioritizes high-quota APIs (ScrapingRobot, ScrapingDog) to minimize local resource burn.
+    """
+    def __init__(self):
+        self.scrapingrobot_key = os.getenv("SCRAPINGROBOT_API_KEY")
+        self.scrapingdog_key = os.getenv("SCRAPINGDOG_API_KEY")
+        self.serpapi_key = os.getenv("SERPAPI_API_KEY")
+        
+        # Endpoints
+        self.scrapingrobot_endpoint = "http://api.scraping.rayobyte.com/"
+        self.scrapingdog_endpoint = "https://api.scrapingdog.com/scrape"
+        self.scrapingdog_google_endpoint = "https://api.scrapingdog.com/google"
+
+    def fetch_html(self, url: str) -> Optional[str]:
+        """Fetch full HTML content using tiered proxy providers."""
+        
+        # 1. Try ScrapingRobot (Rayobyte) - 5,000 credits
+        if self.scrapingrobot_key and "your_scraping_robot_key" not in self.scrapingrobot_key:
+            try:
+                response = requests.post(
+                    self.scrapingrobot_endpoint,
+                    params={"token": self.scrapingrobot_key},
+                    json={"url": url, "module": "HtmlRequestScraper"},
+                    timeout=30
+                )
+                if response.status_code == 200:
+                    data = response.json()
+                    # Rayobyte structure: result or body
+                    html = data.get("result") or data.get("body")
+                    if html:
+                        logger.info(f"    📡 Scraped via ScrapingRobot: {url[:50]}")
+                        return html
+            except Exception as e:
+                logger.debug(f"    ScrapingRobot failed: {e}")
+
+        # 2. Try ScrapingDog - 1,000 credits
+        if self.scrapingdog_key and "your_scraping_dog_key" not in self.scrapingdog_key:
+            try:
+                response = requests.get(
+                    self.scrapingdog_endpoint,
+                    params={"api_key": self.scrapingdog_key, "url": url},
+                    timeout=30
+                )
+                if response.status_code == 200:
+                    logger.info(f"    🐶 Scraped via ScrapingDog: {url[:50]}")
+                    return response.text
+            except Exception as e:
+                logger.debug(f"    ScrapingDog failed: {e}")
+
+        return None
+
+    def search_google(self, query: str) -> List[Dict[str, str]]:
+        """Perform Google Search using tiered API providers."""
+        results = []
+
+        # 1. Try SerpApi (Highest Precision)
+        if self.serpapi_key:
+            try:
+                # We use a dynamic import to avoid dependency issues if not installed
+                from serpapi import GoogleSearch
+                search = GoogleSearch({
+                    "q": query,
+                    "location": "Kenya",
+                    "api_key": self.serpapi_key,
+                    "num": 5
+                })
+                res = search.get_dict()
+                if "organic_results" in res:
+                    for r in res["organic_results"]:
+                        results.append({"url": r.get("link"), "text": r.get("title")})
+                    if results:
+                        logger.info(f"    🔍 SerpApi hit for query: {query[:40]}")
+                        return results
+            except Exception as e:
+                logger.debug(f"    SerpApi search failed: {e}")
+
+        # 2. Try ScrapingDog Google Search
+        if self.scrapingdog_key and "your_scraping_dog_key" not in self.scrapingdog_key:
+            try:
+                response = requests.get(
+                    self.scrapingdog_google_endpoint,
+                    params={"api_key": self.scrapingdog_key, "query": query, "results": 5},
+                    timeout=30
+                )
+                if response.status_code == 200:
+                    data = response.json()
+                    for r in data.get("organic_results", []):
+                        results.append({"url": r.get("link"), "text": r.get("title")})
+                    if results:
+                        logger.info(f"    🔍 ScrapingDog search hit for query: {query[:40]}")
+                        return results
+            except Exception as e:
+                logger.debug(f"    ScrapingDog search failed: {e}")
+
+        return results
+
+
+
 class NewsIntelligenceEngine:
     """
     Scrapes Kenyan news sources for mentions of active bills.
@@ -293,6 +395,9 @@ class NewsIntelligenceEngine:
         self.max_articles_per_source = 3
         self.scrape_delay_min = 1.5
         self.scrape_delay_max = 4.0
+        
+        # Initialize the Sovereign Scraper Failover System
+        self.scraper = SovereignScraper()
 
     def get_active_bills(self) -> List[Dict[str, Any]]:
         """Fetch all bills that are currently being tracked."""
@@ -318,7 +423,8 @@ class NewsIntelligenceEngine:
                 "content_hash"
             ).eq("bill_id", bill_id).execute()
             return {r["content_hash"] for r in (response.data or []) if r.get("content_hash")}
-        except Exception:
+        except Exception as e:
+            logger.debug(f"  Could not fetch hashes: {e}")
             return set()
 
     def store_mention(self, mention: Dict[str, Any]) -> bool:
@@ -342,8 +448,17 @@ class NewsIntelligenceEngine:
     def scrape_search_results(self, page, source: Dict, query: str) -> List[Dict[str, str]]:
         """
         Navigate to a news source's search page and extract article links.
-        Returns list of {url, text}.
+        Uses SovereignScraper failover (APIs -> Playwright).
         """
+        # 1. Try Sovereign Google Search first for broader reach
+        results = self.scraper.search_google(query)
+        if results:
+            # Filter results to the current source domain
+            filtered = [r for r in results if source["domain"] in r["url"]]
+            if filtered:
+                return filtered[:self.max_articles_per_source]
+
+        # 2. Fallback: Direct Site Scraping via Playwright
         search_url = source["search_url"].format(query=quote_plus(query))
         results = []
 
@@ -368,16 +483,42 @@ class NewsIntelligenceEngine:
             results = links[:self.max_articles_per_source]
 
         except Exception as e:
-            logger.warning(f"    Search failed on {source['name']}: {e}")
+            logger.warning(f"    Direct search failed on {source['name']}: {e}")
 
         return results
 
     def scrape_article(self, page, url: str, source: Dict) -> Dict[str, str]:
         """
         Visit an article page and extract headline, body text, and date.
+        APIs -> Playwright.
         """
         result = {"headline": "", "body": "", "date": "", "url": url}
 
+        # 1. Try Sovereign Scraper (ScrapingRobot/ScrapingDog)
+        html = self.scraper.fetch_html(url)
+        if html:
+            try:
+                soup = BeautifulSoup(html, 'html.parser')
+                
+                # Extract headline
+                h_el = soup.select_one(source["headline_selector"])
+                if h_el: result["headline"] = h_el.get_text().strip()[:500]
+
+                # Extract body
+                b_els = soup.select(source["body_selector"])
+                if b_els:
+                    result["body"] = "\n".join(el.get_text().strip() for el in b_els)[:5000]
+
+                # Extract date
+                d_el = soup.select_one(source["date_selector"])
+                if d_el:
+                    result["date"] = (d_el.get('datetime') or d_el.get_text().strip())[:50]
+                
+                if result["body"]: return result
+            except Exception as e:
+                logger.debug(f"    BS4 Parse failed for {url[:50]}: {e}")
+
+        # 2. Fallback: Playwright
         try:
             page.goto(url, wait_until="domcontentloaded", timeout=30000)
             time.sleep(1)

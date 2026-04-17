@@ -2,11 +2,15 @@ name: CEKA Sovereign Intelligence Sync
 
 on:
   schedule:
-    # 4AM EAT (01:00 UTC) - Primary Daily Sync
-    - cron: '0 1 * * *'
-    # 4PM EAT (13:00 UTC) - Afternoon Update
-    - cron: '0 13 * * *'
+    # Every 3 hours (East Africa Time: 3, 6, 9, 12, 15, 18, 21, 00)
+    # UTC: 00, 03, 06, 09, 12, 15, 18, 21
+    - cron: '0 0,3,6,9,12,15,18,21 * * *'
   workflow_dispatch:
+    inputs:
+      force_news:
+        description: 'Force news corroboration search'
+        type: boolean
+        default: false
 
 jobs:
   sync:
@@ -20,6 +24,8 @@ jobs:
       B2_KEY_ID: ${{ secrets.B2_KEY_ID }}
       B2_APPLICATION_KEY: ${{ secrets.B2_APPLICATION_KEY }}
       OCR_SPACE_API_KEY: ${{ secrets.OCR_SPACE_API_KEY }}
+      SCRAPINGROBOT_API_KEY: ${{ secrets.SCRAPINGROBOT_API_KEY }}
+      SCRAPINGDOG_API_KEY: ${{ secrets.SCRAPINGDOG_API_KEY }}
 
     steps:
       - name: Checkout repository
@@ -31,16 +37,36 @@ jobs:
           python-version: '3.11'
           cache: 'pip'
 
+      - name: Cache Playwright Browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('**/requirements.txt') }}
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install playwright supabase requests pymupdf python-dotenv google-generativeai
+          pip install playwright supabase requests pymupdf python-dotenv google-generativeai beautifulsoup4
           playwright install chromium --with-deps
+
+      - name: Determine News Sync
+        id: news_check
+        run: |
+          HOUR=$(date +%H)
+          # UTC 06=9AM, 12=3PM, 18=9PM EAT
+          if [[ "$HOUR" == "06" || "$HOUR" == "12" || "$HOUR" == "18" || "${{ github.event.inputs.force_news }}" == "true" ]]; then
+            echo "RUN_NEWS=true" >> $GITHUB_ENV
+            echo "✅ News Corroboration ENABLED."
+          else
+            echo "RUN_NEWS=false" >> $GITHUB_ENV
+            echo "⏳ News Corroboration SKIPPED (Tiered)."
+          fi
 
       - name: Run Sovereign Sync Master
         run: python CEKA/scripts/sovereign_sync_master.py
         env:
           PYTHONIOENCODING: utf-8
+          INCLUDE_NEWS: ${{ env.RUN_NEWS }}
 
       - name: Upload Intelligence Logs
         if: always()
