@@ -177,6 +177,46 @@ const LegislativeTracker = () => {
     });
   }, [billsData, searchTerm, selectedCategory, activeTab, sortBy, deepSearch]);
 
+  const [intelligenceAlerts, setIntelligenceAlerts] = useState<any[]>([]);
+  const [currentAlertIndex, setCurrentAlertIndex] = useState(0);
+
+  useEffect(() => {
+    const fetchIntelligence = async () => {
+      try {
+        const { data, error } = await (supabase as any)
+          .from('bill_news_mentions')
+          .select(`
+            id,
+            headline,
+            bill_id,
+            source_name,
+            bills (
+              id,
+              title
+            )
+          `)
+          .order('scraped_at', { ascending: false })
+          .limit(8);
+
+        if (error) throw error;
+        if (data) setIntelligenceAlerts(data);
+      } catch (err) {
+        console.error('Intelligence fetch error:', err);
+      }
+    };
+
+    fetchIntelligence();
+  }, []);
+
+  useEffect(() => {
+    if (intelligenceAlerts.length <= 1) return;
+    const interval = setInterval(() => {
+      setCurrentAlertIndex(prev => (prev + 1) % intelligenceAlerts.length);
+    }, 8000); // 8 seconds for reading
+    return () => clearInterval(interval);
+  }, [intelligenceAlerts]);
+
+  const activeAlert = intelligenceAlerts[currentAlertIndex];
   const trendingBill = trendingBills[0] || billsData[0] || { id: "trending-placeholder", title: "Finance Bill", created_at: new Date().toISOString() };
 
   return (
@@ -210,28 +250,58 @@ const LegislativeTracker = () => {
               </p>
             </motion.div>
 
-            {/* DYNAMIC TRENDING: Variable Based */}
+            {/* DYNAMIC INTELLIGENCE ALERT: Vertical Cycle */}
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.2 }}
-              className="mt-12 p-1 rounded-[32px] bg-gradient-to-r from-kenya-green/20 to-primary/20 max-w-md shadow-2xl overflow-hidden"
+              className="mt-12 p-[1px] rounded-[32px] bg-gradient-to-r from-kenya-green/30 via-primary/30 to-kenya-green/30 max-w-md shadow-2xl overflow-hidden"
             >
-              <div className="bg-white dark:bg-[#111] p-6 rounded-[28px] flex items-start gap-4">
-                <div className="h-12 w-12 rounded-2xl bg-kenya-green/10 flex items-center justify-center shrink-0">
-                  <TrendingUp className="h-6 w-6 text-kenya-green" />
-                </div>
-                <div>
-                  <h4 className="font-black text-xs uppercase tracking-[0.2em] mb-1 opacity-60">High Activity Trace</h4>
-                  <p className="font-bold text-sm mb-3">
-                    The <span className="text-kenya-green">{trendingBill.title}</span> is currently seeing 32% more tracking activity this week.
-                  </p>
-                  <Button variant="link" asChild className="p-0 h-auto text-primary font-black text-xs uppercase tracking-widest gap-2">
-                    <Link to={`/bill/${trendingBill.id || ''}`}>
-                      View Full Analysis <ArrowRight className="h-3 w-3" />
-                    </Link>
-                  </Button>
-                </div>
+              <div className="bg-white/90 dark:bg-[#0a0a0a]/90 backdrop-blur-xl p-6 rounded-[31px] min-h-[140px] flex flex-col justify-center">
+                <AnimatePresence mode="wait">
+                  {intelligenceAlerts.length > 0 ? (
+                    <motion.div
+                      key={activeAlert?.id || 'alert'}
+                      initial={{ opacity: 0, y: 20, filter: 'blur(10px)' }}
+                      animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+                      exit={{ opacity: 0, y: -20, filter: 'blur(10px)' }}
+                      transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+                      className="flex items-start gap-4"
+                    >
+                      <div className="h-12 w-12 rounded-2xl bg-kenya-green/10 flex items-center justify-center shrink-0 border border-kenya-green/5 shadow-inner">
+                        <TrendingUp className="h-6 w-6 text-kenya-green" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h4 className="font-black text-[10px] uppercase tracking-[0.2em] text-primary">Live Intelligence</h4>
+                          <span className="h-1 w-1 rounded-full bg-kenya-green animate-ping" />
+                        </div>
+                        <p className="font-bold text-sm leading-snug mb-3 dark:text-gray-200">
+                          {activeAlert.headline} — <span className="text-kenya-green">{(activeAlert.bills as any)?.title || 'Legislative Update'}</span>
+                        </p>
+                        <Button 
+                          variant="link" 
+                          asChild 
+                          className="p-0 h-auto text-primary font-black text-xs uppercase tracking-widest gap-2 hover:no-underline"
+                        >
+                          <Link to={`/bill/${activeAlert.bill_id}`}>
+                            Deep Trace <ArrowRight className="h-3 w-3" />
+                          </Link>
+                        </Button>
+                      </div>
+                    </motion.div>
+                  ) : (
+                    <div className="flex items-start gap-4 opacity-50">
+                      <div className="h-12 w-12 rounded-2xl bg-slate-100 dark:bg-white/5 flex items-center justify-center shrink-0">
+                        <TrendingUp className="h-6 w-6" />
+                      </div>
+                      <div>
+                        <h4 className="font-black text-[10px] uppercase tracking-[0.2em] mb-1">Scanning Vault...</h4>
+                        <p className="font-bold text-sm mb-3">Fetching the latest legislative intelligence signals from the Sovereign Pipeline.</p>
+                      </div>
+                    </div>
+                  )}
+                </AnimatePresence>
               </div>
             </motion.div>
           </div>
