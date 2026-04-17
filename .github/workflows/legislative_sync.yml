@@ -26,6 +26,7 @@ jobs:
       OCR_SPACE_API_KEY: ${{ secrets.OCR_SPACE_API_KEY }}
       SCRAPINGROBOT_API_KEY: ${{ secrets.SCRAPINGROBOT_API_KEY }}
       SCRAPINGDOG_API_KEY: ${{ secrets.SCRAPINGDOG_API_KEY }}
+      SERPAPI_API_KEY: ${{ secrets.SERPAPI_API_KEY }}
 
     steps:
       - name: Checkout repository
