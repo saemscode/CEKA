@@ -27,18 +27,10 @@ import FeaturedLegislationCarousel from '@/components/legislative/FeaturedLegisl
 import AIContextButton from '@/components/ai/AIContextButton';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { BILL_STAGES, STAGE_COUNT, getStageIndex, getStageColor } from '@/lib/billStages';
 
-// Actual Kenyan Legislative Stages
-const LEGISLATIVE_STAGES = [
-  { id: 'publication', label: 'Publication', desc: 'Bill published in Kenya Gazette' },
-  { id: 'first_reading', label: '1st Reading', desc: 'Formal introduction in Parliament' },
-  { id: 'committee_referral', label: 'Committee', desc: 'Scrutiny & Public Participation' },
-  { id: 'second_reading', label: '2nd Reading', desc: 'Debate on principles & merits' },
-  { id: 'whole_house', label: 'House Committee', desc: 'Detailed clause-by-clause review' },
-  { id: 'third_reading', label: '3rd Reading', desc: 'Final vote on the floor' },
-  { id: 'bicameral', label: 'Bicameral', desc: 'Processing by the other House' },
-  { id: 'assent', label: 'Assent', desc: 'Presidential signature into law' }
-];
+// BILL_STAGES and getStageIndex imported from shared billStages.ts
+// BILL_STAGES = 8 ordered stages, STAGE_COUNT = 8
 
 interface Bill {
   id: string;
@@ -126,16 +118,7 @@ const LegislativeTracker = () => {
         if (error) throw error;
 
         const processedData = (data || []).map(bill => {
-          const statusLower = bill.status?.toLowerCase() || '';
-          let stageIndex = 0;
-          if (statusLower.includes('assent')) stageIndex = 7;
-          else if (statusLower.includes('bicameral')) stageIndex = 6;
-          else if (statusLower.includes('third')) stageIndex = 5;
-          else if (statusLower.includes('whole house')) stageIndex = 4;
-          else if (statusLower.includes('second')) stageIndex = 3;
-          else if (statusLower.includes('committee')) stageIndex = 2;
-          else if (statusLower.includes('first')) stageIndex = 1;
-
+          const stageIndex = getStageIndex(bill.status); // -1 = Discarded, 0-7 = ordered stages
           return { ...bill, stage_index: stageIndex };
         });
 
@@ -160,14 +143,31 @@ const LegislativeTracker = () => {
 
   const filteredBills = useMemo(() => {
     return billsData.filter(bill => {
-      // If deepSearch is active, data is already filtered/searched by Supabase
       if (deepSearch && searchTerm) return true;
 
       const matchesSearch = bill.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         bill.summary.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesCategory = selectedCategory === 'all' || bill.category === selectedCategory;
-      const matchesTab = activeTab === 'all_stages' ||
-        bill.status.toLowerCase().replace(/ /g, '_').includes(activeTab);
+
+      // Tab matching using canonical stage IDs
+      let matchesTab = false;
+      if (activeTab === 'all_stages') {
+        matchesTab = true;
+      } else if (activeTab === 'discarded') {
+        matchesTab = (bill.stage_index || 0) === -1;
+      } else {
+        // Map tab value back to stage index and compare
+        const tabToIdx: Record<string, number> = {
+          pre_publication: 0, first_reading: 1, second_reading: 2,
+          committee: 3, committee_stage: 3, report: 4, report_stage: 4,
+          third: 5, third_reading: 5, assent: 6, presidential_assent: 6,
+          publication: 7,
+        };
+        const tabIdx = tabToIdx[activeTab];
+        matchesTab = tabIdx !== undefined
+          ? (bill.stage_index || 0) === tabIdx
+          : bill.status.toLowerCase().replace(/ /g, '_').includes(activeTab);
+      }
 
       return matchesSearch && matchesCategory && matchesTab;
     }).sort((a, b) => {
@@ -237,16 +237,16 @@ const LegislativeTracker = () => {
             >
               <Badge className="mb-6 rounded-full px-4 py-1.5 bg-kenya-green/10 text-kenya-green border-kenya-green/20 font-black tracking-widest text-[10px] uppercase">
                 <Globe className="h-3 w-3 mr-2 animate-pulse" />
-                National Intelligence Pipe
+                Civic Education Kenya (CEKA) presents
               </Badge>
               <h1 className="text-5xl md:text-8xl font-[1000] tracking-tight leading-[0.9] mb-8 dark:text-white">
-                Track <span className="text-transparent bg-clip-text bg-gradient-to-r from-kenya-green to-primary">Democracy</span>.
+                Kenya <span className="text-transparent bg-clip-text bg-gradient-to-r from-kenya-green to-primary">Bills Tracker</span>.
               </h1>
               <p className="text-xl md:text-2xl text-muted-foreground font-medium leading-relaxed max-w-2xl">
-                The most advanced legislative bridge in Kenya. Real-time updates from
+                The most advanced legislative tracker in Kenya. Real-time updates from
                 <span className="text-foreground font-bold"> National Assembly</span>,
                 <span className="text-foreground font-bold"> The Senate</span>, and
-                <span className="text-foreground font-bold"> The Gazette</span>.
+                <span className="text-foreground font-bold"> The Gazette</span>. The people’s smart guide to Kenyan lawmaking - tracking bills with clear explanations, constitutional grounding, and tools to act.
               </p>
             </motion.div>
 
@@ -273,7 +273,7 @@ const LegislativeTracker = () => {
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
-                          <h4 className="font-black text-[10px] uppercase tracking-[0.2em] text-primary">Database Store Intelligence</h4>
+                          <h4 className="font-black text-[10px] uppercase tracking-[0.2em] text-primary">Check Our Records</h4>
                           <span className="h-1 w-1 rounded-full bg-kenya-green animate-ping" />
                         </div>
                         <p className="font-bold text-sm leading-snug mb-3 dark:text-gray-200">
@@ -285,7 +285,7 @@ const LegislativeTracker = () => {
                           className="p-0 h-auto text-primary font-black text-xs uppercase tracking-widest gap-2 hover:no-underline"
                         >
                           <Link to={`/bill/${activeAlert.bill_id}`}>
-                            Intelligence Trace <ArrowRight className="h-3 w-3" />
+                            Trace Now <ArrowRight className="h-3 w-3" />
                           </Link>
                         </Button>
                       </div>
@@ -297,7 +297,7 @@ const LegislativeTracker = () => {
                       </div>
                       <div>
                         <h4 className="font-black text-[10px] uppercase tracking-[0.2em] mb-1">Scanning our database...</h4>
-                        <p className="font-bold text-sm mb-3">Fetching the latest local tabloid hits on recent bills.</p>
+                        <p className="font-bold text-sm mb-3">Fetching the latest from local tabloids...</p>
                       </div>
                     </div>
                   )}
@@ -321,7 +321,7 @@ const LegislativeTracker = () => {
                 <div className="space-y-4">
                   <h3 className="font-black text-lg flex items-center gap-2">
                     <Search className="h-5 w-5 text-primary" />
-                    Database Store Query
+                    Search Our Records
                   </h3>
                   <div className="relative group space-y-3">
                     <Input
@@ -351,7 +351,7 @@ const LegislativeTracker = () => {
                 <div className="space-y-4">
                   <h3 className="font-black text-lg flex items-center gap-2">
                     <Filter className="h-5 w-5 text-primary" />
-                    Governance Sector
+                    Categories
                   </h3>
                   <div className="grid grid-cols-1 gap-2">
                     {['all', 'Finance', 'Education', 'Healthcare', 'Environment'].map(cat => (
@@ -379,7 +379,7 @@ const LegislativeTracker = () => {
                         {stats.total} BILLS
                       </Badge>
                     </div>
-                    <h5 className="font-black uppercase tracking-tighter text-lg">Bills Database Intelligence</h5>
+                    <h5 className="font-black uppercase tracking-tighter text-lg">Bills Records</h5>
                     <div className="space-y-2">
                       {Object.entries(stats.byStatus).slice(0, 4).map(([status, count]: any) => (
                         <div key={status} className="flex justify-between items-center text-xs">
@@ -389,7 +389,7 @@ const LegislativeTracker = () => {
                       ))}
                     </div>
                     <p className="text-[10px] text-muted-foreground leading-relaxed pt-2 border-t border-kenya-green/10">
-                      Our "Track & Trace" engine synchronises with the Kenya Gazette and Parliament daily.
+                      We aim to deliver to you the most accurate data from credible sources across the country.
                     </p>
                   </CardContent>
                 </Card>
@@ -401,20 +401,34 @@ const LegislativeTracker = () => {
               <Tabs defaultValue="all_stages" onValueChange={setActiveTab} className="w-full">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10 border-b border-border/50 pb-2">
                   <TabsList className="bg-transparent h-auto p-0 flex-wrap justify-start gap-6 overflow-x-auto no-scrollbar">
-                    {['all_stages', 'publication', 'first_reading', 'committee', 'second_reading', 'assent'].map(tab => (
+                    {[
+                      { value: 'all_stages', label: 'All Stages' },
+                      { value: 'pre_publication', label: 'Pre-publication' },
+                      { value: 'first_reading', label: '1st Reading' },
+                      { value: 'second_reading', label: '2nd Reading' },
+                      { value: 'committee', label: 'Committee' },
+                      { value: 'report', label: 'Report' },
+                      { value: 'third', label: '3rd Reading' },
+                      { value: 'assent', label: 'Assent' },
+                      { value: 'publication', label: 'Published' },
+                      { value: 'discarded', label: 'Discarded' },
+                    ].map(tab => (
                       <TabsTrigger
-                        key={tab}
-                        value={tab}
+                        key={tab.value}
+                        value={tab.value}
                         className="p-0 bg-transparent border-none data-[state=active]:bg-transparent data-[state=active]:shadow-none relative h-10 px-1"
                       >
                         <span className="text-[10px] font-black uppercase tracking-widest opacity-60 group-data-[state=active]:opacity-100">
-                          {tab.replace('_', ' ')}
+                          {tab.label}
                         </span>
                         <AnimatePresence>
-                          {activeTab === tab && (
+                          {activeTab === tab.value && (
                             <motion.div
                               layoutId="tab_underline"
-                              className="absolute bottom-0 left-0 w-full h-1 bg-primary rounded-full"
+                              className={cn(
+                                "absolute bottom-0 left-0 w-full h-1 rounded-full",
+                                tab.value === 'discarded' ? 'bg-red-500' : 'bg-primary'
+                              )}
                             />
                           )}
                         </AnimatePresence>
@@ -445,8 +459,8 @@ const LegislativeTracker = () => {
                       <div className="h-20 w-20 rounded-full bg-slate-50 dark:bg-white/5 flex items-center justify-center mx-auto">
                         <Shield className="h-10 w-10 opacity-20" />
                       </div>
-                      <h3 className="font-black text-2xl tracking-tight">No bills tracked in our database.</h3>
-                      <p className="text-muted-foreground">The "Track & Trace" engine is currently scanning for updates.</p>
+                      <h3 className="font-black text-2xl tracking-tight">We've not captured this bill yet. Let us know.</h3>
+                      <p className="text-muted-foreground">The Legislative Tracker is currently scanning for updates on this bill.</p>
                     </div>
                   ) : (
                     filteredBills.map((bill) => (
@@ -466,23 +480,31 @@ const LegislativeTracker = () => {
                                 </div>
                                 <div className="space-y-1">
                                   <div className="text-[10px] font-black uppercase tracking-widest opacity-40">Current Stage</div>
-                                  <div className="text-sm font-black text-kenya-green">{bill.status}</div>
+                                  <div className={cn(
+                                    "text-sm font-black",
+                                    (bill.stage_index || 0) === -1 ? 'text-red-500' : 'text-kenya-green'
+                                  )}>{bill.status}</div>
                                 </div>
                               </div>
 
-                              {/* Actual Kenyan Stage Journey Mini-Visualizer */}
+                              {/* 8-rectangle stage journey mini-visualizer */}
                               <div className="grid grid-cols-8 gap-1 h-1.5 mt-8">
-                                {LEGISLATIVE_STAGES.map((_, idx) => (
-                                  <div
-                                    key={idx}
-                                    className={cn(
-                                      "rounded-full transition-all",
-                                      idx <= (bill.stage_index || 0)
-                                        ? "bg-kenya-green"
-                                        : "bg-slate-200 dark:bg-white/10"
-                                    )}
-                                  />
-                                ))}
+                                {BILL_STAGES.map((_, idx) => {
+                                  const isDiscarded = (bill.stage_index || 0) === -1;
+                                  return (
+                                    <div
+                                      key={idx}
+                                      className={cn(
+                                        "rounded-full transition-all",
+                                        isDiscarded
+                                          ? "bg-red-400 dark:bg-red-600" // all red when discarded
+                                          : idx <= (bill.stage_index || 0)
+                                            ? "bg-kenya-green"
+                                            : "bg-slate-200 dark:bg-white/10"
+                                      )}
+                                    />
+                                  );
+                                })}
                               </div>
                             </div>
 
@@ -513,7 +535,7 @@ const LegislativeTracker = () => {
                                   <div className="bg-kenya-green/[0.03] border border-kenya-green/10 rounded-3xl p-6 mb-4">
                                     <div className="flex items-center gap-2 text-kenya-green mb-3">
                                       <Globe className="h-4 w-4" />
-                                      <span className="text-[10px] font-black uppercase tracking-widest">Neural Insight (Gemini AI)</span>
+                                      <span className="text-[10px] font-black uppercase tracking-widest">Quick Summary</span>
                                     </div>
                                     <p className="text-sm font-medium leading-relaxed italic opacity-80">
                                       {bill.neural_summary}
@@ -548,7 +570,7 @@ const LegislativeTracker = () => {
                                       onClick={() => vaultService.openDocument(bill.pdf_url!)}
                                       className="h-12 px-6 rounded-2xl border-slate-200 dark:border-white/10 font-black text-xs uppercase tracking-widest"
                                     >
-                                      Database Copy
+                                      Download PDF
                                       <BookOpen className="ml-2 h-4 w-4" />
                                     </Button>
                                   )}
@@ -556,7 +578,7 @@ const LegislativeTracker = () => {
                                   <BillFollowButton billId={bill.id} variant="ghost" className="h-12 px-6 rounded-2xl" />
                                   <Button asChild className="h-12 px-10 rounded-2xl bg-kenya-green text-white font-black hover:bg-kenya-green/90 shadow-xl">
                                     <Link to={`/bill/${bill.id}`}>
-                                      Trace Progress
+                                      Follow Progress
                                       <ArrowRight className="ml-2 h-4 w-4" />
                                     </Link>
                                   </Button>

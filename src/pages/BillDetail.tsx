@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Calendar, User, Tag, ExternalLink, Clock, Eye, Share2, Clipboard, Download, CheckCircle2, Circle, ShieldCheck, Newspaper, Info, Lock, FileText } from 'lucide-react';
+import { ArrowLeft, Calendar, User, Tag, ExternalLink, Clock, Eye, Share2, Clipboard, Download, CheckCircle2, Circle, ShieldCheck, Newspaper, Info, Lock, FileText, XCircle } from 'lucide-react';
+import { buildTimeline, getStageColor, getStageIndex, BILL_STAGES } from '@/lib/billStages';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -13,29 +14,11 @@ import { useLanguage, Language } from '@/contexts/LanguageContext';
 import { BillResponseForm } from '@/components/bills/BillResponseForm';
 import { SocialShareDrawer } from '@/components/bills/SocialShareDrawer';
 
-const getStatusColor = (status: string) => {
-  switch (status) {
-    case 'First Reading':
-      return 'bg-blue-500/10 text-blue-600 border-blue-200 dark:bg-blue-500/20 dark:text-blue-400 dark:border-blue-800/50';
-    case 'Second Reading':
-      return 'bg-purple-500/10 text-purple-600 border-purple-200 dark:bg-purple-500/20 dark:text-purple-400 dark:border-purple-800/50';
-    case 'Committee Stage':
-      return 'bg-amber-500/10 text-amber-600 border-amber-200 dark:bg-amber-500/20 dark:text-amber-400 dark:border-amber-800/50';
-    case 'Third Reading':
-      return 'bg-pink-500/10 text-pink-600 border-pink-200 dark:bg-pink-500/20 dark:text-pink-400 dark:border-pink-800/50';
-    case 'Presidential Assent':
-      return 'bg-green-500/10 text-green-600 border-green-200 dark:bg-green-500/20 dark:text-green-400 dark:border-green-800/50';
-    case 'Enacted':
-      return 'bg-emerald-500/10 text-emerald-600 border-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-400 dark:border-emerald-800/50';
-    case 'Public Feedback':
-      return 'bg-yellow-500/10 text-yellow-600 border-yellow-200 dark:bg-yellow-500/20 dark:text-yellow-400 dark:border-yellow-800/50';
-    default:
-      return 'bg-gray-500/10 text-gray-600 border-gray-200 dark:bg-gray-500/20 dark:text-gray-400 dark:border-gray-800/50';
-  }
-};
+// Delegated to shared billStages utility — kept as thin alias
+const getStatusColor = (status: string) => getStageColor(status);
 
-const LegislativeTimeline = ({ stages, language }: { stages: any[], language: any }) => {
-  if (!Array.isArray(stages)) return (
+const LegislativeTimeline = ({ stages, language }: { stages: ReturnType<typeof buildTimeline>, language: any }) => {
+  if (!Array.isArray(stages) || stages.length === 0) return (
     <div className="p-8 text-center bg-slate-50 dark:bg-white/5 rounded-[32px] border border-dashed border-slate-200 dark:border-white/10">
       <p className="text-sm text-slate-400">Timeline data is currently being populated...</p>
     </div>
@@ -45,7 +28,7 @@ const LegislativeTimeline = ({ stages, language }: { stages: any[], language: an
     <div className="relative mt-8 space-y-8 before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-kenya-green before:via-slate-200 dark:before:via-white/5 before:to-slate-100 dark:before:to-transparent">
       {stages.map((stage, index) => (
         <motion.div
-          key={index}
+          key={stage.id}
           initial={{ opacity: 0, x: index % 2 === 0 ? -20 : 20 }}
           whileInView={{ opacity: 1, x: 0 }}
           viewport={{ once: true }}
@@ -54,29 +37,55 @@ const LegislativeTimeline = ({ stages, language }: { stages: any[], language: an
           {/* Icon/Dot */}
           <div className={cn(
             "flex items-center justify-center w-10 h-10 rounded-full border shadow-lg z-10 shrink-0 md:order-1",
-            stage.completed
-              ? "bg-kenya-green border-kenya-green text-white shadow-kenya-green/20"
-              : "bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10 text-slate-400"
+            stage.discarded
+              ? "bg-red-500 border-red-500 text-white shadow-red-500/20"
+              : stage.active
+                ? "bg-kenya-green border-kenya-green text-white shadow-kenya-green/30 ring-4 ring-kenya-green/20"
+                : stage.completed
+                  ? "bg-kenya-green border-kenya-green text-white shadow-kenya-green/20"
+                  : "bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10 text-slate-400"
           )}>
-            {stage.completed ? <CheckCircle2 className="h-5 w-5" /> : <Circle className="h-4 w-4" />}
+            {stage.discarded
+              ? <XCircle className="h-5 w-5" />
+              : stage.completed
+                ? <CheckCircle2 className="h-5 w-5" />
+                : <Circle className="h-4 w-4" />}
           </div>
 
           {/* Content Card */}
-          <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] p-5 rounded-[28px] bg-white dark:bg-slate-900/40 border border-black/5 dark:border-white/10 shadow-ios-soft dark:shadow-none hover:shadow-ios-high dark:hover:bg-white/5 transition-all duration-300">
+          <div className={cn(
+            "w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] p-5 rounded-[28px] border shadow-ios-soft dark:shadow-none hover:shadow-ios-high transition-all duration-300",
+            stage.discarded
+              ? "bg-red-50 dark:bg-red-900/10 border-red-200/50 dark:border-red-800/30"
+              : stage.active
+                ? "bg-kenya-green/[0.03] dark:bg-kenya-green/10 border-kenya-green/20 dark:border-kenya-green/30"
+                : "bg-white dark:bg-slate-900/40 border-black/5 dark:border-white/10 dark:hover:bg-white/5"
+          )}>
             <div className="flex items-center justify-between mb-2">
               <time className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-                {stage.date ? new Date(stage.date).toLocaleDateString(language === 'sw' ? 'sw-KE' : 'en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Pending'}
+                {stage.date
+                  ? new Date(stage.date).toLocaleDateString(language === 'sw' ? 'sw-KE' : 'en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                  : stage.completed || stage.discarded ? '—' : 'Pending'}
               </time>
               <Badge variant="outline" className={cn(
                 "font-bold text-[9px] uppercase tracking-tighter px-2",
-                stage.completed ? "bg-kenya-green/5 text-kenya-green border-kenya-green/20" : "bg-slate-50 dark:bg-white/5 text-slate-400 border-none"
+                stage.discarded
+                  ? "bg-red-500/5 text-red-500 border-red-200/50"
+                  : stage.active
+                    ? "bg-kenya-green/10 text-kenya-green border-kenya-green/20 animate-pulse"
+                    : stage.completed
+                      ? "bg-kenya-green/5 text-kenya-green border-kenya-green/20"
+                      : "bg-slate-50 dark:bg-white/5 text-slate-400 border-none"
               )}>
-                {stage.completed ? 'Completed' : 'Upcoming'}
+                {stage.discarded ? 'Discarded' : stage.active ? 'Current' : stage.completed ? 'Completed' : 'Upcoming'}
               </Badge>
             </div>
-            <h4 className="font-bold text-slate-900 dark:text-white mb-2">{translate(stage.name, language)}</h4>
+            <h4 className={cn(
+              "font-bold mb-2",
+              stage.discarded ? "text-red-600 dark:text-red-400" : "text-slate-900 dark:text-white"
+            )}>{translate(stage.name, language)}</h4>
             <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-              {stage.description || 'Stage summary will be updated as the bill progresses through the legislative house.'}
+              {stage.description}
             </p>
           </div>
         </motion.div>
@@ -140,7 +149,7 @@ const BillDetail = () => {
       }
 
       setBill(billData);
-      
+
       // Load news mentions
       const newsData = await billService.getBillNewsMentions(billId);
       setNews(newsData);
@@ -210,12 +219,13 @@ const BillDetail = () => {
     );
   }
 
-  const stages = Array.isArray(bill.stages) ? bill.stages : [
-    { name: "Publication", date: bill.date || bill.created_at, completed: true },
-    { name: "First Reading", date: null, completed: false },
-    { name: "Second Reading", date: null, completed: false },
-    { name: "Third Reading", date: null, completed: false }
-  ];
+  // Build canonical 9-stage timeline from DB data + status field
+  const dbStages = (() => {
+    if (!bill.stages) return null;
+    if (Array.isArray(bill.stages)) return bill.stages;
+    try { return JSON.parse(bill.stages as unknown as string); } catch { return null; }
+  })();
+  const stages = buildTimeline(bill.status, dbStages, bill.date || bill.created_at);
 
   return (
     <Layout>
@@ -235,7 +245,7 @@ const BillDetail = () => {
                 <div className="h-8 w-8 rounded-full bg-white dark:bg-white/5 flex items-center justify-center shadow-sm group-hover:-translate-x-1 transition-transform">
                   <ArrowLeft className="h-4 w-4" />
                 </div>
-                Legislative Tracker
+                Back to Legislative Tracker
               </Link>
 
               <div className="flex flex-wrap items-center gap-3 mb-6">
@@ -261,7 +271,7 @@ const BillDetail = () => {
                 { icon: <User className="h-4 w-4" />, label: "Mover / Sponsor", value: bill.sponsor, color: "text-blue-500 bg-blue-500/5" },
                 { icon: <Calendar className="h-4 w-4" />, label: "Date Introduced", value: new Date(bill.date || bill.created_at).toLocaleDateString(), color: "text-kenya-green bg-kenya-green/5" },
                 { icon: <Tag className="h-4 w-4" />, label: "Legislative Category", value: bill.category, color: "text-kenya-red bg-kenya-red/5" },
-                { icon: <Eye className="h-4 w-4" />, label: "Constitutional Anchor", value: bill.constitutional_section?.split(' - ')[0] || 'Unspecified', color: "text-amber-500 bg-amber-500/5" }
+                { icon: <Eye className="h-4 w-4" />, label: "Constitution Articles Reference", value: bill.constitutional_section?.split(' - ')[0] || 'Unspecified', color: "text-amber-500 bg-amber-500/5" }
               ].map((item, idx) => (
                 <motion.div
                   key={idx}
@@ -286,7 +296,7 @@ const BillDetail = () => {
               {bill.b2_url && (
                 <Button className="h-14 px-8 rounded-2xl bg-kenya-green text-white font-black text-xs uppercase tracking-widest hover:scale-[1.02] active:scale-[0.98] transition-all shadow-xl shadow-kenya-green/20">
                   <Download className="mr-2 h-4 w-4" />
-                  {translate("Download Civic Intelligence Pack", language)}
+                  {translate("Download Resource", language)}
                 </Button>
               )}
               {bill.pdf_url && (
@@ -318,7 +328,7 @@ const BillDetail = () => {
                 </div>
                 <div className="prose prose-slate dark:prose-invert max-w-none">
                   <p className="text-lg text-slate-600 dark:text-slate-300 leading-relaxed font-medium">
-                    {bill.description || 'This bill is currently undergoing active legislative processing. Comprehensive details regarding its subsections, specific clauses, and policy implications are being indexed into the CEKA engine for public review.'}
+                    {bill.description || 'This bill is currently undergoing active legislative processing. Comprehensive details regarding its subsections, specific clauses, and policy implications are being processed for public review.'}
                   </p>
                 </div>
 
@@ -396,7 +406,7 @@ const BillDetail = () => {
                 >
                   <div className="flex items-center justify-between">
                     <h2 className="text-2xl font-black tracking-tight leading-tight">
-                      🧠 Citizen <span className="text-amber-500 mx-1">&</span> AI Concerns
+                      Concerns <span className="text-amber-500 mx-1">to</span> Note
                     </h2>
                   </div>
                   <div className="grid grid-cols-1 gap-3">
@@ -422,7 +432,7 @@ const BillDetail = () => {
                 >
                   <div className="flex items-center justify-between">
                     <h2 className="text-2xl font-black tracking-tight leading-tight">
-                      ✍️ Your <span className="text-kenya-green mx-1">&</span> Voice
+                      ✍️ Raise <span className="text-kenya-green mx-1">Your</span> Voice
                     </h2>
                     <Button
                       variant="outline"
@@ -471,14 +481,14 @@ const BillDetail = () => {
                     </div>
                     <div className="space-y-2">
                       <div className="h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
-                        <motion.div 
+                        <motion.div
                           initial={{ width: 0 }}
                           animate={{ width: `${bill.corroboration_score || 85}%` }}
-                          className="h-full bg-kenya-green shadow-[0_0_15px_rgba(0,186,0,0.5)]" 
+                          className="h-full bg-kenya-green shadow-[0_0_15px_rgba(0,186,0,0.5)]"
                         />
                       </div>
                       <p className="text-[10px] font-medium text-slate-400 leading-relaxed uppercase tracking-widest">
-                        Verified against {news.length + 2} primary legislative nodes
+                        Verified against {news.length + 2} legislative sources pipelines
                       </p>
                     </div>
                   </CardContent>
@@ -487,7 +497,7 @@ const BillDetail = () => {
                 {/* OFFICIAL DOCUMENTS */}
                 <Card className="rounded-[40px] border-none bg-white dark:bg-slate-900 shadow-ios-high dark:shadow-none dark:border dark:border-white/5 overflow-hidden">
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-xs font-black uppercase tracking-widest text-slate-400">Governance Artifacts</CardTitle>
+                    <CardTitle className="text-xs font-black uppercase tracking-widest text-slate-400">Interact With The Bill</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="p-4 rounded-3xl bg-slate-50 dark:bg-white/5 border border-black/5 dark:border-white/5 flex items-center gap-4 group/doc hover:bg-slate-100 dark:hover:bg-white/10 transition-colors">
@@ -521,7 +531,7 @@ const BillDetail = () => {
                       </p>
                     </div>
                     <Button variant="outline" className="w-full h-12 rounded-2xl border-kenya-green/20 text-kenya-green font-bold hover:bg-kenya-green/5" asChild>
-                      <Link to="/blog">Join Discussion</Link>
+                      <Link to="/community">Join Discussion</Link>
                     </Button>
                   </CardContent>
                 </Card>
