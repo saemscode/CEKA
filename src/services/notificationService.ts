@@ -443,6 +443,68 @@ class NotificationService {
         return 'text-muted-foreground';
     }
   }
+
+  /**
+   * Request OS-level push notification permission and register the device's
+   * FCM token in the user's profiles row.
+   *
+   * Called after a user follows a bill so they receive status change pushes.
+   * Safe to call multiple times — returns cached token if already granted.
+   */
+  async requestPushPermission(): Promise<string | null> {
+    try {
+      // Guard: browser must support Notification API
+      if (typeof window === 'undefined' || !('Notification' in window)) {
+        return null;
+      }
+
+      // If already granted, try to get the token without re-prompting
+      if (Notification.permission === 'denied') {
+        return null;
+      }
+
+      const permission = await Notification.requestPermission();
+      if (permission !== 'granted') {
+        return null;
+      }
+
+      // Try to obtain an FCM token via the Firebase Messaging SDK.
+      // The SDK must be initialized in main.tsx or equivalent entry point.
+      let fcmToken: string | null = null;
+      try {
+        // Dynamic import so this doesn't crash if Firebase is not installed
+        const { getMessaging, getToken } = await import('firebase/messaging');
+        const { getApp } = await import('firebase/app');
+        const messaging = getMessaging(getApp());
+        const vapidKey = import.meta.env.VITE_FIREBASE_VAPID_KEY as string | undefined;
+        if (vapidKey) {
+          fcmToken = await getToken(messaging, { vapidKey });
+        }
+      } catch {
+        // Firebase Messaging SDK not available or VAPID key missing — skip token registration
+      }
+
+      if (!fcmToken) return null;
+
+      // Upsert the FCM token into the user's profile row
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          await supabase
+            .from('profiles')
+            .update({ fcm_token: fcmToken } as any)
+            .eq('id', user.id);
+        }
+      } catch {
+        // Non-fatal: push will still work on next token refresh
+      }
+
+      return fcmToken;
+    } catch (err) {
+      console.warn('[NotificationService] requestPushPermission failed:', err);
+      return null;
+    }
+  }
 }
 
 export const notificationService = new NotificationService();

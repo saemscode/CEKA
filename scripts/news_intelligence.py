@@ -281,29 +281,92 @@ class NewsIntelligenceEngine:
             return final_filtered
         return []
 
-    def summarize_article(self, headline: str, body: str) -> str:
-        """Use Gemini to summarize the article into high-fidelity intelligence."""
+    def summarize_article(self, headline: str, body: str) -> Dict[str, Any]:
+        """
+        Use Gemini to extract structured civic intelligence from a news article.
+        Returns a dict with: what_bill_does, concerns_kenyans_can_raise,
+        sentiment, key_stakeholders, tabloid_snippet.
+        Falls back to a plain text snippet if Gemini is unavailable.
+        """
+        fallback: Dict[str, Any] = {
+            "what_bill_does": str(body)[:500],
+            "concerns_kenyans_can_raise": [],
+            "sentiment": "neutral",
+            "key_stakeholders": [],
+            "tabloid_snippet": str(body)[:1000],
+        }
         try:
             import google.generativeai as genai
             api_key = os.getenv("GEMINI_API_KEY")
-            if not api_key: return body[:2000]
-            
+            if not api_key:
+                return fallback
+
             genai.configure(api_key=api_key)
             model = genai.GenerativeModel('gemini-1.5-flash')
             b_str: str = str(body)
             h_str: str = str(headline)
-            prompt = f"Summarize this Kenyan news article into a few concise, factual bullet points focusing on legislative or civic impact. Headline: {h_str}. Content: {b_str[:6000]}"
-            resp = model.generate_content(prompt)
-            return str(resp.text) if resp and resp.text else b_str[:2000]
-        except Exception:
-            return str(body)[:2000]
 
-    def scrape_article(self, page: Any, url: str, source: Dict[str, Any]) -> Dict[str, str]:
+            prompt = (
+                f"""You are a civic intelligence analyst for Kenya. Your audience is
+""" +
+                """everyday Kenyan citizens. They speak English and Swahili.
+""" +
+                """Given the news article below, extract EXACTLY this JSON and nothing else:
+""" +
+                """{
+""" +
+                '  "what_bill_does": "<1-2 sentences plain English + Swahili note if relevant>",' +
+                "\n" +
+                '  "concerns_kenyans_can_raise": [' +
+                "\n" +
+                '    "<Concern 1 — practical citizen impact en/sw>",' +
+                "\n" +
+                '    "<Concern 2 — practical citizen impact en/sw>",' +
+                "\n" +
+                '    "<Concern 3 — practical citizen impact en/sw>"' +
+                "\n" +
+                '  ],' +
+                "\n" +
+                '  "sentiment": "positive|negative|neutral",' +
+                "\n" +
+                '  "key_stakeholders": ["<stakeholder 1>", "<stakeholder 2>"],' +
+                "\n" +
+                '  "tabloid_snippet": "<3-sentence plain-language summary a Kenyan tabloid would run, in English>"' +
+                "\n" +
+                "}"
+                f"\n\nHeadline: {h_str}"
+                f"\nContent: {b_str[:6000]}"
+                "\n\nReturn ONLY valid JSON. Do not include markdown code fences."
+            )
+
+            resp = model.generate_content(prompt)
+            if not resp or not resp.text:
+                return fallback
+
+            raw = resp.text.strip()
+            # Strip markdown fences if model disobeyed
+            if raw.startswith("```"):
+                raw = raw.split("```")[1]
+                if raw.startswith("json"):
+                    raw = raw[4:]
+            parsed: Dict[str, Any] = json.loads(raw)
+            # Ensure required keys exist
+            parsed.setdefault("what_bill_does", fallback["what_bill_does"])
+            parsed.setdefault("concerns_kenyans_can_raise", [])
+            parsed.setdefault("sentiment", "neutral")
+            parsed.setdefault("key_stakeholders", [])
+            parsed.setdefault("tabloid_snippet", fallback["tabloid_snippet"])
+            return parsed
+        except Exception as exc:
+            logger.warning(f"[summarize_article] Gemini extraction failed: {exc}")
+            return fallback
+
+    def scrape_article(self, page: Any, url: str, source: Dict[str, Any]) -> Dict[str, Any]:
         """Extract headline, body, and date from a news article URL."""
         html = self.scraper.fetch_html(url)
         if not html or BeautifulSoup is None:
-            return {"headline": "", "body": "", "date": ""}
-            
+            return {"headline": "", "body": "", "date": "", "intelligence": {}}
+
         try:
             # Explicitly cast BeautifulSoup to Any to avoid "Expected a callable" error
             soup_parser: Any = BeautifulSoup
@@ -314,54 +377,125 @@ class NewsIntelligenceEngine:
                 if found:
                     headline = str(found.get_text()).strip()
                     break
-            
+
             paragraphs = soup.find_all("p")
             p_texts = []
             for p in paragraphs:
                 pt = str(p.get_text()).strip()
-                if len(pt) > 50: p_texts.append(pt)
+                if len(pt) > 50:
+                    p_texts.append(pt)
             body_all = "\n".join(p_texts)
-            # Summarize for high-fidelity intelligence
-            intelligence = self.summarize_article(str(headline), str(body_all))
-            return {"headline": str(headline), "body": str(intelligence), "date": ""}
+
+            # Structured intelligence extraction via Gemini
+            intelligence: Dict[str, Any] = self.summarize_article(str(headline), str(body_all))
+            snippet: str = intelligence.get("tabloid_snippet", body_all[:1000])
+            return {
+                "headline": str(headline),
+                "body": str(snippet),
+                "date": "",
+                "intelligence": intelligence,
+            }
         except Exception:
-            return {"headline": "", "body": "", "date": ""}
+            return {"headline": "", "body": "", "date": "", "intelligence": {}}
+
+    def _upsert_bill_intelligence(self, bill_id: str, all_concerns: List[str], tabloid_snippets: List[str]) -> None:
+        """
+        After scanning all articles for a bill, upsert the aggregated
+        ai_concerns (JSONB) and tabloid_summary (TEXT) directly into bills table.
+        This makes the data immediately available to sovereign_corroborator.
+        """
+        client = self.supabase
+        if client is None:
+            return
+        try:
+            # Deduplicate concerns while preserving order
+            seen_c: Set[str] = set()
+            unique_concerns: List[str] = []
+            for c in all_concerns:
+                c_lower = str(c).lower().strip()
+                if c_lower and c_lower not in seen_c:
+                    seen_c.add(c_lower)
+                    unique_concerns.append(str(c).strip())
+
+            # Use the most informative tabloid snippet as the summary
+            best_snippet: str = ""
+            for sn in tabloid_snippets:
+                if len(str(sn)) > len(best_snippet):
+                    best_snippet = str(sn)[:2000]
+
+            update_payload: Dict[str, Any] = {}
+            if unique_concerns:
+                import json as _json
+                update_payload["ai_concerns"] = _json.dumps(unique_concerns)
+            if best_snippet:
+                update_payload["tabloid_summary"] = best_snippet
+
+            if update_payload:
+                client.table("bills").update(update_payload).eq("id", bill_id).execute()
+                logger.info(f"    [INTEL] Upserted {len(unique_concerns)} concerns + tabloid_summary for bill {bill_id}")
+        except Exception as exc:
+            logger.warning(f"    [INTEL] Failed to upsert bill intelligence: {exc}")
 
     def run_for_bill(self, page: Any, bill_data: Dict[str, Any]) -> int:
         """Process news intelligence for a specific bill."""
         bill_id: str = str(bill_data.get("id", ""))
         bill_title: str = str(bill_data.get("title", ""))
         logger.info(f"  🔍 Scanning news: {bill_title[0:60]}...")
-        
+
         existing_hashes: Set[str] = self.get_existing_mention_hashes(bill_id)
         search_terms = generate_search_terms(bill_title)
         new_mentions_count: int = 0
 
+        # Accumulators for bill-level intelligence
+        all_concerns: List[str] = []
+        all_tabloid_snippets: List[str] = []
+
         for query in search_terms:
             for source in NEWS_SOURCES:
                 links = self.scrape_search_results(page, source, str(query))
-                if not links or not isinstance(links, list): continue
+                if not links or not isinstance(links, list):
+                    continue
 
                 for link in links:
-                    if not isinstance(link, dict): continue
+                    if not isinstance(link, dict):
+                        continue
                     url: str = str(link.get("url", ""))
-                    if not url: continue
-                    
+                    if not url:
+                        continue
+
                     l_hash: str = content_hash(url)
-                    if l_hash in existing_hashes: continue
+                    if l_hash in existing_hashes:
+                        continue
 
                     article = self.scrape_article(page, url, source)
                     body_val: str = str(article.get("body", ""))
-                    if not body_val.strip(): continue
+                    if not body_val.strip():
+                        continue
 
                     h_str: str = str(article.get("headline") or link.get("text", ""))
                     s_str: str = str(article.get("body", ""))
+
+                    # Pull structured intelligence from the article
+                    intelligence: Dict[str, Any] = article.get("intelligence", {})
+                    if isinstance(intelligence, dict):
+                        concerns = intelligence.get("concerns_kenyans_can_raise", [])
+                        if isinstance(concerns, list):
+                            all_concerns.extend([str(c) for c in concerns if str(c).strip()])
+                        snip = intelligence.get("tabloid_snippet", "")
+                        if snip and str(snip).strip():
+                            all_tabloid_snippets.append(str(snip).strip())
+                        # Use what_bill_does as the canonical snippet for DB
+                        what_bill_does: str = str(intelligence.get("what_bill_does", ""))
+                        snippet_for_db: str = what_bill_does if what_bill_does else s_str
+                    else:
+                        snippet_for_db = s_str
+
                     mention = {
                         "bill_id": bill_id,
                         "source_name": str(source.get("name", "")),
                         "source_domain": str(source.get("domain", "")),
                         "headline": h_str[:500],
-                        "snippet": s_str[:2000],
+                        "snippet": snippet_for_db[:2000],
                         "article_url": url,
                         "article_date": str(article.get("date", "")),
                         "content_hash": l_hash,
@@ -372,6 +506,11 @@ class NewsIntelligenceEngine:
                         new_mentions_count = int(new_mentions_count + 1)
                         existing_hashes.add(l_hash)
                     time.sleep(1.0)
+
+        # After processing all articles for this bill, upsert intelligence
+        if all_concerns or all_tabloid_snippets:
+            self._upsert_bill_intelligence(bill_id, all_concerns, all_tabloid_snippets)
+
         return int(new_mentions_count)
 
     def run_full_scan(self):

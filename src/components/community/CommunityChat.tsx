@@ -11,7 +11,9 @@ import { Send, MessageCircle, Users } from 'lucide-react';
 import { CEKALoader } from '@/components/ui/ceka-loader';
 import { format } from 'date-fns';
 import { useToast } from '@/components/ui/use-toast';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
+import { billService, Bill } from '@/services/billService';
+import { BillCardAttachment } from '@/components/bills/BillCardAttachment';
 
 interface ChatMessage {
   id: string;
@@ -35,13 +37,43 @@ interface OnlineUser {
 const CommunityChat = () => {
   const { session, user } = useAuth();
   const { toast } = useToast();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [onlineUsers, setOnlineUsers] = useState<OnlineUser[]>([]);
+  const [billAttachment, setBillAttachment] = useState<Bill | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const roomId = 'general';
+
+  // ── Bill Response Bridge ──────────────────────────────────────────────
+  // When navigated from BillDetail with ?bill_id=X&response_text=Y,
+  // prefill the chat input and load the bill card attachment.
+  useEffect(() => {
+    const billId = searchParams.get('bill_id');
+    const responseText = searchParams.get('response_text');
+    if (!billId) return;
+
+    // Pre-fill the chat input with the user's response
+    if (responseText) {
+      try {
+        setNewMessage(decodeURIComponent(responseText));
+      } catch {
+        setNewMessage(responseText);
+      }
+    }
+
+    // Fetch bill data for the attachment card
+    billService.getBillById(billId).then((b) => {
+      if (b) setBillAttachment(b);
+    });
+
+    // Clear URL params so back-navigation doesn't re-trigger
+    setSearchParams({}, { replace: true });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  // ─────────────────────────────────────────────────────────────────────
 
   // Fetch initial messages
   useEffect(() => {
@@ -190,12 +222,18 @@ const CommunityChat = () => {
     if (!newMessage.trim() || !user || sending) return;
 
     setSending(true);
+
+    // If there is a bill attachment, prefix it into the message
+    const messageContent = billAttachment
+      ? `🏛️ Re: ${billAttachment.title}\n\n${newMessage.trim()}`
+      : newMessage.trim();
+
     const { error } = await supabase
       .from('chat_messages')
       .insert({
         user_id: user.id,
         room_id: roomId,
-        content: newMessage.trim()
+        content: messageContent,
       });
 
     if (error) {
@@ -207,6 +245,7 @@ const CommunityChat = () => {
       });
     } else {
       setNewMessage('');
+      setBillAttachment(null);
     }
     setSending(false);
   };
@@ -245,6 +284,21 @@ const CommunityChat = () => {
 
         <CardContent className="flex-1 p-0 overflow-hidden">
           <ScrollArea className="h-full p-4" ref={scrollRef}>
+            {/* Bill card attachment preview shown above the message list */}
+            {billAttachment && (
+              <div style={{ marginBottom: 12 }}>
+                <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.40)', marginBottom: 6 }}>
+                  📎 Attached from Legislative Tracker:
+                </p>
+                <BillCardAttachment
+                  billId={billAttachment.id}
+                  billTitle={billAttachment.title}
+                  billStatus={billAttachment.status}
+                  billSummary={billAttachment.summary}
+                  corroborationScore={billAttachment.corroboration_score}
+                />
+              </div>
+            )}
             {loading ? (
               <div className="flex items-center justify-center h-full">
                 <CEKALoader variant="ios" size="md" />

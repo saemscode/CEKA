@@ -1131,11 +1131,30 @@ class LegislativeScraper:
             "document_type": "doc"
         }
 
+    # --- Hardened Bill Classification ---
+    _BILL_BLOCKLIST = (
+        'hansard', 'order paper', 'bill digest', 'questions',
+        'notice of motion', 'petitions', 'committee report',
+        'sessional paper', 'supplement', 'gazette notice',
+        'votes and proceedings', 'speaker', 'adjournment',
+        'business paper', 'progress report', 'standing orders',
+        'procedural motion', 'government statement',
+        'swearing in', 'obituary', 'tributes',
+    )
+    _BILL_REQUIRED_PATTERN = re.compile(
+        r'\b(bill|bills|amendment\s+bill|finance\s+bill|appropriation\s+bill|supply\s+bill)\b',
+        re.I
+    )
+
     def _is_bill_document(self, title: str) -> bool:
         t = title.lower()
-        if 'bill' not in t: return False
-        for kw in ('hansard', 'order paper', 'bill digest'):
-            if kw in t: return False
+        # Must contain a valid bill pattern
+        if not self._BILL_REQUIRED_PATTERN.search(t):
+            return False
+        # Must not match any blocklisted document type
+        for kw in self._BILL_BLOCKLIST:
+            if kw in t:
+                return False
         return True
 
     def _clean_title(self, raw: str) -> str:

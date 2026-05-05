@@ -107,7 +107,9 @@ class SovereignCorroborator:
                 "status": bill.get("status"),
                 "sponsor": bill.get("sponsor"),
                 "date_introduced": bill.get("date"),
-                "official_text": bill.get("text_content", "")[:10000], # Limit for LLM context
+                "official_text": bill.get("text_content", "")[:10000],  # Limit for LLM context
+                "tabloid_summary": bill.get("tabloid_summary") or "",
+                "ai_concerns": bill.get("ai_concerns") or [],
                 "news_mentions": [
                     {
                         "source": m["source_name"],
@@ -167,16 +169,38 @@ class SovereignCorroborator:
                 "analysis_status": "completed",
                 "updated_at": datetime.now(timezone.utc).isoformat()
             }
-            
-            # Try to store policy implications and anchors in metadata or description
-            # Since we don't have explicit columns for all these yet, we put them in a structured summary
-            full_narrative = f"{analysis.get('summary')}\n\n**Policy Implications:**\n"
+
+            # Build the full enriched narrative
+            full_narrative = f"{analysis.get('summary', '')}\n\n**Policy Implications:**\n"
             for imp in analysis.get('policy_implications', []):
                 full_narrative += f"- {imp}\n"
-            
-            full_narrative += f"\n**Constitutional Anchors:**\n"
+
+            full_narrative += "\n**Constitutional Anchors:**\n"
             for anchor in analysis.get('constitutional_anchors', []):
                 full_narrative += f"- {anchor}\n"
+
+            # Stitch in tabloid data from news_intelligence pipeline
+            tabloid = context.get("tabloid_summary", "")
+            if tabloid and tabloid.strip():
+                full_narrative += f"\n\n**Media Context:**\n{tabloid.strip()}"
+
+            # Stitch in AI-identified citizen concerns
+            concerns_raw = context.get("ai_concerns", [])
+            concerns: List[Any] = []
+            if isinstance(concerns_raw, list):
+                concerns = concerns_raw
+            elif isinstance(concerns_raw, str):
+                try:
+                    parsed_concerns = json.loads(concerns_raw)
+                    if isinstance(parsed_concerns, list):
+                        concerns = parsed_concerns
+                except Exception:
+                    pass
+
+            if concerns:
+                full_narrative += "\n\n**Citizen Concerns (AI-identified):**\n"
+                for c in concerns:
+                    full_narrative += f"- {c}\n"
 
             update_data["summary"] = full_narrative[:3000]
 

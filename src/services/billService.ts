@@ -24,6 +24,9 @@ export interface Bill {
   sources?: any[];
   views_count?: number;
   follow_count?: number;
+  // Bill Pipeline Enhancement fields
+  ai_concerns?: string[] | null;
+  tabloid_summary?: string | null;
 }
 
 class BillService {
@@ -131,6 +134,40 @@ class BillService {
     } catch (error) {
       console.error('Error fetching bill news mentions:', error);
       return [];
+    }
+  }
+
+  async submitBillResponse(billId: string, responseText: string): Promise<boolean> {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return false;
+      const { error } = await supabase
+        .from('bill_responses' as any)
+        .insert({ bill_id: billId, user_id: user.id, response: responseText });
+      if (error) throw error;
+      return true;
+    } catch (error) {
+      console.error('Error submitting bill response:', error);
+      return false;
+    }
+  }
+
+  async getUserBillResponse(billId: string): Promise<string | null> {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return null;
+      const { data, error } = await supabase
+        .from('bill_responses' as any)
+        .select('response')
+        .eq('bill_id', billId)
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (error) return null;
+      return (data as any)?.response ?? null;
+    } catch {
+      return null;
     }
   }
 }

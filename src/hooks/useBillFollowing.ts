@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { billFollowingService } from '@/services/billFollowingService';
 import { useAuth } from '@/providers/AuthProvider';
+import { notificationService } from '@/services/notificationService';
 
 export function useBillFollowing(billId: string) {
   const [isFollowing, setIsFollowing] = useState(false);
@@ -68,6 +69,10 @@ export function useBillFollowing(billId: string) {
         await billFollowingService.followBill(billId);
         setIsFollowing(true);
         setFollowCount(prev => prev + 1);
+        // Prompt for OS-level push permission so user receives status change
+        // notifications via FCM for this bill and any future followed bills.
+        // Non-blocking — runs in background.
+        notificationService.requestPushPermission().catch(() => {});
       }
     } catch (error) {
       console.error('Error toggling follow:', error);

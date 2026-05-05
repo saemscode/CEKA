@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, Calendar, User, Tag, ExternalLink, Clock, Eye, Share2, Clipboard, Download, CheckCircle2, Circle, ShieldCheck, Newspaper, Info, Lock, FileText } from 'lucide-react';
@@ -11,6 +10,8 @@ import { billService, Bill } from '@/services/billService';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn, translate } from '@/lib/utils';
 import { useLanguage, Language } from '@/contexts/LanguageContext';
+import { BillResponseForm } from '@/components/bills/BillResponseForm';
+import { SocialShareDrawer } from '@/components/bills/SocialShareDrawer';
 
 const getStatusColor = (status: string) => {
   switch (status) {
@@ -91,6 +92,8 @@ const BillDetail = () => {
   const [news, setNews] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [shareDrawerOpen, setShareDrawerOpen] = useState(false);
+  const [userResponse, setUserResponse] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     if (id) {
@@ -382,6 +385,70 @@ const BillDetail = () => {
                     ))}
                   </div>
                 </div>
+              )}
+
+              {/* AI CITIZEN CONCERNS */}
+              {bill && Array.isArray(bill.ai_concerns) && bill.ai_concerns.length > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, y: 16 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  className="space-y-6 pb-8"
+                >
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-2xl font-black tracking-tight leading-tight">
+                      🧠 Citizen <span className="text-amber-500 mx-1">&</span> AI Concerns
+                    </h2>
+                  </div>
+                  <div className="grid grid-cols-1 gap-3">
+                    {(bill.ai_concerns as string[]).map((concern, i) => (
+                      <div
+                        key={i}
+                        className="flex gap-4 items-start p-4 rounded-2xl bg-amber-500/5 dark:bg-amber-500/10 border border-amber-200/30 dark:border-amber-500/20"
+                      >
+                        <span className="text-amber-500 font-black text-sm mt-0.5 shrink-0">{i + 1}.</span>
+                        <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">{concern}</p>
+                      </div>
+                    ))}
+                  </div>
+                </motion.div>
+              )}
+
+              {/* INTERACTION ZONE: response form + share */}
+              {bill && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  className="space-y-6 pb-12"
+                >
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-2xl font-black tracking-tight leading-tight">
+                      ✍️ Your <span className="text-kenya-green mx-1">&</span> Voice
+                    </h2>
+                    <Button
+                      variant="outline"
+                      onClick={() => setShareDrawerOpen(true)}
+                      className="h-10 px-5 rounded-2xl border-kenya-green/20 text-kenya-green font-bold text-xs uppercase tracking-widest hover:bg-kenya-green/5"
+                    >
+                      <Share2 className="mr-2 h-3.5 w-3.5" />
+                      Share
+                    </Button>
+                  </div>
+
+                  <BillResponseForm
+                    billId={bill.id}
+                    billTitle={bill.title}
+                    onSubmitSuccess={(text) => setUserResponse(text)}
+                  />
+
+                  <SocialShareDrawer
+                    billId={bill.id}
+                    billTitle={bill.title}
+                    billStatus={bill.status}
+                    userResponse={userResponse}
+                    isOpen={shareDrawerOpen}
+                    onClose={() => setShareDrawerOpen(false)}
+                  />
+                </motion.div>
               )}
             </div>
 
