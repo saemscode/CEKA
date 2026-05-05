@@ -13,7 +13,7 @@ try:
     from dotenv import load_dotenv
     env_path = Path(__file__).resolve().parent.parent / ".env"
     if env_path.exists():
-        load_dotenv(dotenv_path=str(env_path))
+        load_dotenv(dotenv_path=str(env_path), override=True)
 except ImportError:
     pass
 
@@ -22,14 +22,20 @@ try:
     SUPABASE_OK = True
 except ImportError:
     SUPABASE_OK = False
-    logging.warning("supabase-py not installed – DB sync disabled.")
+    logging.warning("supabase-py not installed – fallback to direct REST.")
 
 try:
-    from sovereign_ai_router import get_router
-    AI_ROUTER_OK = True
+    from supabase_direct import SupabaseDirect
+    DIRECT_OK = True
 except ImportError:
-    AI_ROUTER_OK = False
-    logging.warning("sovereign_ai_router not importable – AI synthesis disabled.")
+    DIRECT_OK = False
+
+try:
+    from multi_llm_orchestrator import MultiLLMOrchestrator
+    ORCHESTRATOR_OK = True
+except ImportError:
+    ORCHESTRATOR_OK = False
+    logging.getLogger(__name__).warning("multi_llm_orchestrator not found – High Fidelity AI synthesis disabled.")
 
 logging.basicConfig(
     level=logging.INFO,
@@ -72,50 +78,54 @@ class SovereignCorroborator:
     """
 
     def __init__(self):
-        self.supabase = None
-        if SUPABASE_OK:
-            url = os.getenv("SUPABASE_URL")
-            key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
-            if url and key:
-                self.supabase = create_client(url, key)
-                logger.info("Supabase client initialized for corroboration.")
+        self.db = None
+        try:
+            self.db = SupabaseDirect()
+            logger.info("SupabaseDirect client initialized for corroboration.")
+        except Exception as e:
+            logger.warning(f"Could not initialize SupabaseDirect: {e}")
         
-        self.router = None
-        if AI_ROUTER_OK:
-            self.router = get_router()
+        self.orchestrator = MultiLLMOrchestrator() if ORCHESTRATOR_OK else None
 
     def get_rich_context(self, bill_id: str) -> Optional[Dict[str, Any]]:
         """Fetch all data points for a bill to build the context object."""
-        if not self.supabase:
+        if not self.db:
             return None
 
         try:
             # 1. Fetch Bill
-            bill_resp = self.supabase.table("bills").select("*").eq("id", bill_id).single().execute()
-            bill = bill_resp.data
-            if not bill: return None
+            bills = self.db.select("bills", "*", eq="id", eq_val=bill_id)
+            if not bills or not isinstance(bills, list) or len(bills) == 0:
+                logger.warning(f"No bill found for id {bill_id}")
+                return None
+            bill = bills[0]
+            if not bill or not isinstance(bill, dict) or not bill.get("id"):
+                logger.warning(f"Malformed bill record for {bill_id}: {bill}")
+                return None
 
-            # 2. Fetch News Mentions
-            news_resp = self.supabase.table("bill_news_mentions").select("*").eq("bill_id", bill_id).execute()
-            news = news_resp.data or []
+            # 2. Fetch News Mentions (graceful — table may not exist)
+            try:
+                news = self.db.select("bill_news_mentions", "*", eq="bill_id", eq_val=bill_id) or []
+            except Exception:
+                news = []
 
             # 3. Assemble Context Object
             context = {
                 "bill_id": bill["id"],
-                "title": bill.get("title"),
-                "house": bill.get("house"),
-                "status": bill.get("status"),
-                "sponsor": bill.get("sponsor"),
-                "date_introduced": bill.get("date"),
-                "official_text": bill.get("text_content", "")[:10000],  # Limit for LLM context
+                "title": bill.get("title", "Unknown"),
+                "house": bill.get("house", ""),
+                "status": bill.get("status", ""),
+                "sponsor": bill.get("sponsor", ""),
+                "date_introduced": bill.get("date", ""),
+                "official_text": (bill.get("text_content") or "")[:10000],
                 "tabloid_summary": bill.get("tabloid_summary") or "",
                 "ai_concerns": bill.get("ai_concerns") or [],
                 "news_mentions": [
                     {
-                        "source": m["source_name"],
-                        "headline": m["headline"],
-                        "snippet": m["snippet"][:500] if m.get("snippet") else ""
-                    } for m in news
+                        "source": m.get("source_name", "Unknown"),
+                        "headline": m.get("headline", ""),
+                        "snippet": (m.get("snippet") or "")[:500]
+                    } for m in news if isinstance(m, dict)
                 ],
                 "stages_json": bill.get("stages", {})
             }
@@ -138,9 +148,12 @@ class SovereignCorroborator:
         return min(100, score)
 
     def process_bill(self, bill_id: str) -> bool:
-        """Generate analysis and update Supabase."""
-        if not self.router:
-            logger.error("AI Router not available.")
+        """Generate analysis and update DB."""
+        if not self.orchestrator:
+            logger.error("AI Orchestrator not available.")
+            return False
+        if not self.db:
+            logger.error("DB client not available.")
             return False
 
         context = self.get_rich_context(bill_id)
@@ -151,16 +164,20 @@ class SovereignCorroborator:
         prompt = f"Analyze the following Rich Context Object and produce the CEKA Intelligence Report:\n\n{json.dumps(context, indent=2)}"
         
         try:
-            response_raw = self.router.generate(prompt, system_instruction=CORROBORATOR_SYSTEM_PROMPT)
+            # High-fidelity synthesis — use full 10-provider chain (fastest/cheapest first)
+            response_raw = self.orchestrator.synthesize(
+                prompt,
+                system_prompt=CORROBORATOR_SYSTEM_PROMPT,
+                # No provider_chain override — use orchestrator default:
+                # cerebras → groq → deepseek → nvidia → openrouter → cohere → huggingface → gemini → anthropic → openai
+            )
             
-            # Clean JSON from response (remove markdown wrappers)
-            clean_json = response_raw.strip()
-            if clean_json.startswith("```json"):
-                clean_json = clean_json[7:-3].strip()
-            elif clean_json.startswith("```"):
-                clean_json = clean_json[3:-3].strip()
+            if not response_raw:
+                 raise Exception("All LLM providers failed for corroboration.")
 
-            analysis = json.loads(clean_json)
+            analysis = self.orchestrator.extract_json(response_raw)
+            if not analysis:
+                 raise Exception("Failed to extract valid JSON from LLM response.")
 
             # Update Supabase
             update_data = {
@@ -204,25 +221,24 @@ class SovereignCorroborator:
 
             update_data["summary"] = full_narrative[:3000]
 
-            self.supabase.table("bills").update(update_data).eq("id", bill_id).execute()
+            self.db.update("bills", update_data, eq="id", eq_val=bill_id)
             logger.info(f"✅ Analysis complete for: {context['title']}")
             return True
 
         except Exception as e:
             logger.error(f"Failed to process bill {bill_id}: {e}")
-            # Mark as failed in DB
-            self.supabase.table("bills").update({"analysis_status": "failed"}).eq("id", bill_id).execute()
+            try:
+                self.db.update("bills", {"analysis_status": "failed"}, eq="id", eq_val=bill_id)
+            except Exception:
+                pass
             return False
 
     def run_all_pending(self, limit: int = 10):
         """Process bills that need analysis."""
-        if not self.supabase: return
+        if not self.db: return
 
         try:
-            # Fetch bills pending analysis or with high priority
-            response = self.supabase.table("bills").select("id").eq("analysis_status", "pending").limit(limit).execute()
-            pending = response.data or []
-            
+            pending = self.db.select("bills", "id", limit=limit, eq="analysis_status", eq_val="pending")
             if not pending:
                 logger.info("No bills pending analysis.")
                 return
@@ -230,7 +246,7 @@ class SovereignCorroborator:
             logger.info(f"🚀 Found {len(pending)} bills for corroboration.")
             for item in pending:
                 self.process_bill(item["id"])
-                time.sleep(2) # Avoid rate limits
+                time.sleep(2)
         except Exception as e:
             logger.error(f"Batch corroboration failed: {e}")
 

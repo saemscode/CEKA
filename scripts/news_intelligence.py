@@ -14,13 +14,19 @@ except ImportError:
     requests = None
 
 try:
+    from multi_llm_orchestrator import MultiLLMOrchestrator
+    ORCHESTRATOR_OK = True
+except ImportError:
+    ORCHESTRATOR_OK = False
+
+try:
     from bs4 import BeautifulSoup
 except ImportError:
     BeautifulSoup = None
 
 try:
     from dotenv import load_dotenv
-    load_dotenv()
+    load_dotenv(override=True)
 except ImportError:
     pass
 
@@ -231,6 +237,8 @@ class NewsIntelligenceEngine:
             try:
                 self.supabase = create_client(self.supabase_url, self.supabase_key)
             except Exception: pass
+            
+        self.orchestrator = MultiLLMOrchestrator() if ORCHESTRATOR_OK else None
 
     def get_active_bills(self) -> List[Dict[str, Any]]:
         """Fetch all bills that are currently being tracked."""
@@ -283,10 +291,10 @@ class NewsIntelligenceEngine:
 
     def summarize_article(self, headline: str, body: str) -> Dict[str, Any]:
         """
-        Use Gemini to extract structured civic intelligence from a news article.
+        Use Multi-LLM Orchestrator to extract structured civic intelligence from a news article.
         Returns a dict with: what_bill_does, concerns_kenyans_can_raise,
         sentiment, key_stakeholders, tabloid_snippet.
-        Falls back to a plain text snippet if Gemini is unavailable.
+        Falls back to a plain text snippet if the orchestrator is unavailable.
         """
         fallback: Dict[str, Any] = {
             "what_bill_does": str(body)[:500],
@@ -295,62 +303,28 @@ class NewsIntelligenceEngine:
             "key_stakeholders": [],
             "tabloid_snippet": str(body)[:1000],
         }
+        
+        if not self.orchestrator:
+            return fallback
+
+        system_prompt = """You are a civic intelligence analyst for Kenya. Your audience is everyday Kenyan citizens. They speak English and Swahili.
+Extract structured intelligence from the news article provided. 
+Return EXACTLY a JSON object with these keys:
+{
+  "what_bill_does": "<1-2 sentences plain English + Swahili note if relevant>",
+  "concerns_kenyans_can_raise": ["<Concern 1 en/sw>", "<Concern 2 en/sw>"],
+  "sentiment": "positive|negative|neutral",
+  "key_stakeholders": ["<stakeholder 1>", "<stakeholder 2>"],
+  "tabloid_snippet": "<3-sentence plain-language summary in English>"
+}"""
+
+        prompt = f"Headline: {headline}\n\nContent: {body[:6000]}\n\nReturn ONLY valid JSON."
+        
         try:
-            import google.generativeai as genai
-            api_key = os.getenv("GEMINI_API_KEY")
-            if not api_key:
-                return fallback
-
-            genai.configure(api_key=api_key)
-            model = genai.GenerativeModel('gemini-1.5-flash')
-            b_str: str = str(body)
-            h_str: str = str(headline)
-
-            prompt = (
-                f"""You are a civic intelligence analyst for Kenya. Your audience is
-""" +
-                """everyday Kenyan citizens. They speak English and Swahili.
-""" +
-                """Given the news article below, extract EXACTLY this JSON and nothing else:
-""" +
-                """{
-""" +
-                '  "what_bill_does": "<1-2 sentences plain English + Swahili note if relevant>",' +
-                "\n" +
-                '  "concerns_kenyans_can_raise": [' +
-                "\n" +
-                '    "<Concern 1 — practical citizen impact en/sw>",' +
-                "\n" +
-                '    "<Concern 2 — practical citizen impact en/sw>",' +
-                "\n" +
-                '    "<Concern 3 — practical citizen impact en/sw>"' +
-                "\n" +
-                '  ],' +
-                "\n" +
-                '  "sentiment": "positive|negative|neutral",' +
-                "\n" +
-                '  "key_stakeholders": ["<stakeholder 1>", "<stakeholder 2>"],' +
-                "\n" +
-                '  "tabloid_snippet": "<3-sentence plain-language summary a Kenyan tabloid would run, in English>"' +
-                "\n" +
-                "}"
-                f"\n\nHeadline: {h_str}"
-                f"\nContent: {b_str[:6000]}"
-                "\n\nReturn ONLY valid JSON. Do not include markdown code fences."
-            )
-
-            resp = model.generate_content(prompt)
-            if not resp or not resp.text:
-                return fallback
-
-            raw = resp.text.strip()
-            # Strip markdown fences if model disobeyed
-            if raw.startswith("```"):
-                raw = raw.split("```")[1]
-                if raw.startswith("json"):
-                    raw = raw[4:]
-            parsed: Dict[str, Any] = json.loads(raw)
-            # Ensure required keys exist
+            parsed = self.orchestrator.get_structured_intelligence(prompt, system_prompt)
+            if not parsed: return fallback
+            
+            # Ensure required keys exist (Preserve legacy structure)
             parsed.setdefault("what_bill_does", fallback["what_bill_does"])
             parsed.setdefault("concerns_kenyans_can_raise", [])
             parsed.setdefault("sentiment", "neutral")
@@ -358,7 +332,7 @@ class NewsIntelligenceEngine:
             parsed.setdefault("tabloid_snippet", fallback["tabloid_snippet"])
             return parsed
         except Exception as exc:
-            logger.warning(f"[summarize_article] Gemini extraction failed: {exc}")
+            logger.warning(f"[summarize_article] Multi-LLM extraction failed: {exc}")
             return fallback
 
     def scrape_article(self, page: Any, url: str, source: Dict[str, Any]) -> Dict[str, Any]:

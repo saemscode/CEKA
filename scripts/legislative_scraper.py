@@ -33,6 +33,24 @@ except ImportError:
     logging.getLogger(__name__).warning("stage_detector not importable – stage detection disabled.")
 
 # ---------------------------------------------------------------------------
+# Multi-LLM & local OCR Integration
+# ---------------------------------------------------------------------------
+try:
+    from multi_llm_orchestrator import MultiLLMOrchestrator
+    ORCHESTRATOR_OK = True
+except ImportError:
+    ORCHESTRATOR_OK = False
+    logging.getLogger(__name__).warning("multi_llm_orchestrator not found – high fidelity distillation disabled.")
+
+try:
+    import pytesseract
+    from PIL import Image
+    TESSERACT_OK = True
+except ImportError:
+    TESSERACT_OK = False
+    logging.getLogger(__name__).warning("pytesseract or PIL not installed – local OCR fallback disabled.")
+
+# ---------------------------------------------------------------------------
 # Logging setup (UTF-8 safe for Windows)
 # ---------------------------------------------------------------------------
 logging.basicConfig(
@@ -83,7 +101,7 @@ try:
     from dotenv import load_dotenv
     env_path = Path(__file__).resolve().parent.parent / ".env"
     if env_path.exists():
-        load_dotenv(dotenv_path=str(env_path))
+        load_dotenv(dotenv_path=str(env_path), override=True)
         logger.info(f"Loaded environment from {env_path}")
 except ImportError:
     logger.info("python-dotenv not installed – reading environment variables directly.")
@@ -633,6 +651,13 @@ class LegislativeScraper:
                 logger.info("B2 Vault initialized for PDF mirroring.")
             except Exception as e:
                 logger.warning(f"B2 Vault init failed (non-fatal): {e}")
+        
+        self.orchestrator = MultiLLMOrchestrator() if ORCHESTRATOR_OK else None
+        if TESSERACT_OK:
+            # Attempt to locate tesseract on Windows if not in PATH
+            tess_path = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
+            if os.path.exists(tess_path):
+                pytesseract.pytesseract.tesseract_cmd = tess_path
 
     def _load_targets(self) -> list:
         try:
@@ -801,14 +826,43 @@ class LegislativeScraper:
         if is_scanned and detail_url:
             html_metadata = self._scrape_bill_detail_page(page, detail_url)
         
-        # 4. Parse and Merge
+        # 5. Deep local OCR as a last resort on first page
+        if is_scanned and not text.strip() and pdf_bytes and TESSERACT_OK:
+            try:
+                # Convert first page to image and run tesseract
+                doc = fitz.open(stream=pdf_bytes, filetype="pdf")
+                if len(doc) > 0:
+                    page0 = doc[0]
+                    pix = page0.get_pixmap(matrix=fitz.Matrix(2, 2))
+                    img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
+                    text = pytesseract.image_to_string(img)
+                    if text.strip():
+                        method = "local_tesseract"
+                        is_scanned = False
+                        logger.info(f"      [OCR] Local Tesseract SUCCESS: {len(text)} chars")
+                doc.close()
+            except Exception as e:
+                logger.warning(f"      [OCR] Local Tesseract failed: {e}")
+
+        # 6. Parse and Merge (High Fidelity Distillation)
+        intel = {}
+        if text.strip() and self.orchestrator:
+            logger.info(f"      [INTEL] Running Multi-LLM Distillation for: {title}")
+            intel = self._distill_bill_content(text, title)
+            if intel:
+                logger.info(f"      [INTEL] Distillation SUCCESS for: {title}")
+
+        # Legacy Parse (Maintain for safety/preservation)
         parsed_pdf = self._parse_bill_text(text) if text.strip() else {}
         
-        # Final fields
-        sponsor = parsed_pdf.get('sponsor') or html_metadata.get('sponsor') or "Government"
-        status = html_metadata.get('status') or self._infer_status_from_text(text, title)
-        summary = parsed_pdf.get('summary') or html_metadata.get('summary')
-        description = parsed_pdf.get('description') or title
+        # Final fields - Prioritize Intelligence extraction
+        sponsor = intel.get('sponsor') or parsed_pdf.get('sponsor') or html_metadata.get('sponsor') or "Government"
+        status = intel.get('status') or html_metadata.get('status') or self._infer_status_from_text(text, title)
+        summary = intel.get('summary') or parsed_pdf.get('summary') or html_metadata.get('summary')
+        description = intel.get('short_title') or parsed_pdf.get('description') or title
+        ai_concerns = intel.get('ai_concerns', [])
+        tabloid_summary = intel.get('tabloid_summary', "")
+        constitutional_section = intel.get('constitutional_section', "")
 
         if not summary:
             summary = f"Legislative bill tracked from {target['name']}. (Scanned PDF - detailed content unavailable)" if is_scanned else f"Bill: {title}"
@@ -863,16 +917,45 @@ class LegislativeScraper:
             "summary": summary[:3000],
             "description": description[:2000],
             "text_content": text if text.strip() else None,
+            "ai_concerns": ai_concerns,
+            "tabloid_summary": tabloid_summary,
+            "constitutional_section": constitutional_section,
             "metadata": {
-                "scraped_at": datetime.now().isoformat(),
+                "scraped_at": datetime.now(timezone.utc).isoformat(),
                 "extraction_method": extraction_method,
                 "extracted_via": extracted_via,
                 "is_scanned": is_scanned,
                 "b2_url": b2_url,
+                "distilled_via": "multi_llm" if intel else "regex",
                 **ocr_metadata,
             },
-            "created_at": datetime.now().isoformat()
+            "created_at": datetime.now(timezone.utc).isoformat()
         }
+
+    def _distill_bill_content(self, text: str, title: str) -> Dict[str, Any]:
+        """Use Multi-LLM Orchestrator to extract structured intelligence from bill text."""
+        if not self.orchestrator: return {}
+        
+        system_prompt = """You are a senior legislative analyst for the Parliament of Kenya.
+Extract high-fidelity intelligence from the provided Bill text.
+Return EXACTLY a JSON object with these keys:
+{
+  "short_title": "Action-oriented descriptive title",
+  "sponsor": "Exact name of the mover/sponsor Hon. X or Cabinet Secretary",
+  "summary": "Professional 2-paragraph summary of legal ramifications",
+  "constitutional_section": "List relevant chapters/sections of the Constitution of Kenya (e.g. Chapter 12, Article 201) affected",
+  "ai_concerns": ["List of 3-5 practical concerns for a common citizen in English and Swahili"],
+  "tabloid_summary": "Catchy 3-sentence summary in plain English for a general audience",
+  "status": "Current legislative status if explicitly stated in text (e.g. Published, First Reading, Second Reading)"
+}"""
+
+        prompt = f"Bill Title: {title}\n\nDocument Text:\n{text[:20000]}\n\nFinal Output (JSON):"
+        
+        try:
+            return self.orchestrator.get_structured_intelligence(prompt, system_prompt)
+        except Exception as e:
+            logger.error(f"      [INTEL] Distillation failed: {e}")
+            return {}
 
     def _ocr_page_screenshots(self, page, url: str, title: str) -> Tuple[str, dict]:
         """
