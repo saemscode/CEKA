@@ -13,6 +13,7 @@ import { cn, translate } from '@/lib/utils';
 import { useLanguage, Language } from '@/contexts/LanguageContext';
 import { BillResponseForm } from '@/components/bills/BillResponseForm';
 import { SocialShareDrawer } from '@/components/bills/SocialShareDrawer';
+import { BillFollowButton } from '@/components/legislative/BillFollowButton';
 
 // Delegated to shared billStages utility — kept as thin alias
 const getStatusColor = (status: string) => getStageColor(status);
@@ -500,21 +501,41 @@ const BillDetail = () => {
                     <CardTitle className="text-xs font-black uppercase tracking-widest text-slate-400">Interact With The Bill</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <div className="p-4 rounded-3xl bg-slate-50 dark:bg-white/5 border border-black/5 dark:border-white/5 flex items-center gap-4 group/doc hover:bg-slate-100 dark:hover:bg-white/10 transition-colors">
-                      <div className="h-12 w-12 rounded-2xl bg-white dark:bg-slate-800 shadow-sm flex items-center justify-center shrink-0 text-kenya-red">
-                        <Download className="h-5 w-5 group-hover/doc:scale-110 transition-transform" />
+                    {/* Full Gazette / Official PDF — real URL from DB */}
+                    {(bill.pdf_url || bill.b2_url) ? (
+                      <a
+                        href={bill.pdf_url || bill.b2_url!}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="p-4 rounded-3xl bg-slate-50 dark:bg-white/5 border border-black/5 dark:border-white/5 flex items-center gap-4 group/doc hover:bg-slate-100 dark:hover:bg-white/10 transition-colors no-underline block"
+                      >
+                        <div className="h-12 w-12 rounded-2xl bg-white dark:bg-slate-800 shadow-sm flex items-center justify-center shrink-0 text-kenya-red">
+                          <FileText className="h-5 w-5 group-hover/doc:scale-110 transition-transform" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-black text-slate-900 dark:text-white truncate">Full Gazette Version</p>
+                          <p className="text-[9px] text-slate-400 uppercase tracking-tighter">Official Bill PDF • Open or Download</p>
+                        </div>
+                        <ExternalLink className="h-3.5 w-3.5 text-slate-300" />
+                      </a>
+                    ) : (
+                      <div className="p-4 rounded-3xl bg-slate-50 dark:bg-white/5 border border-dashed border-black/10 dark:border-white/10 flex items-center gap-4 opacity-50">
+                        <div className="h-12 w-12 rounded-2xl bg-white dark:bg-slate-800 shadow-sm flex items-center justify-center shrink-0 text-slate-400">
+                          <FileText className="h-5 w-5" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-black text-slate-900 dark:text-white truncate">Full Gazette Version</p>
+                          <p className="text-[9px] text-slate-400 uppercase tracking-tighter">PDF not yet available</p>
+                        </div>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs font-black text-slate-900 dark:text-white truncate">Full Gazette Version</p>
-                        <p className="text-[9px] text-slate-400 uppercase tracking-tighter">PDF Document • 4.2 MB</p>
-                      </div>
-                      <ExternalLink className="h-3.5 w-3.5 text-slate-300" />
-                    </div>
+                    )}
 
-                    <Button className="w-full h-14 rounded-2xl bg-[#111] dark:bg-white text-white dark:text-black font-black text-xs uppercase tracking-widest hover:opacity-90 shadow-xl">
-                      Track this bill
-                      <CheckCircle2 className="ml-2 h-4 w-4" />
-                    </Button>
+                    {/* Follow This Bill — real follow state */}
+                    <BillFollowButton
+                      billId={bill.id}
+                      size="lg"
+                      className="w-full h-14 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl"
+                    />
                   </CardContent>
                 </Card>
 
