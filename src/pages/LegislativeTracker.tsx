@@ -1,5 +1,7 @@
 // src/pages/LegislativeTracker.tsx
 import { vaultService } from '@/services/vaultService';
+import { notificationService } from '@/services/notificationService'; // Added
+import { useAuth } from '@/providers/AuthProvider'; // Added
 import React, { useEffect, useState, useMemo } from 'react';
 import Layout from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
@@ -48,11 +50,16 @@ interface Bill {
   text_content?: string | null;
   pdf_url?: string | null;
   follow_count?: number;
+  tabloid_summary?: string | null;
+  bill_no?: string | null;
+  gazette_no?: string | null;
+  corroboration_score?: number | null;
 }
 
 type SortOption = 'date-desc' | 'date-asc' | 'alpha-asc' | 'alpha-desc' | 'status' | 'category';
 
 const LegislativeTracker = () => {
+  const { user } = useAuth(); // Added for notification sync
   const [billsData, setBillsData] = useState<Bill[]>([]);
   const [trendingBills, setTrendingBills] = useState<Bill[]>([]);
   const [loading, setLoading] = useState(true);
@@ -63,6 +70,7 @@ const LegislativeTracker = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [sortBy, setSortBy] = useState<SortOption>('date-desc');
   const [stats, setStats] = useState<{ total: number; byStatus: any }>({ total: 0, byStatus: {} });
+  const [realtimeFlash, setRealtimeFlash] = useState<string | null>(null);
 
   // Debounce search input - only trigger after 300ms of no typing and 3+ chars
   useEffect(() => {
@@ -140,6 +148,77 @@ const LegislativeTracker = () => {
 
     fetchData();
   }, [deepSearch, debouncedSearchTerm]);
+
+  // Real-time Intelligence Sync
+  useEffect(() => {
+    const channel = supabase
+      .channel('sovereign-hero-sync')
+      .on('postgres_changes' as any, { event: '*', table: 'bills', schema: 'public' }, (payload: any) => {
+        if (payload.eventType === 'UPDATE' || payload.eventType === 'INSERT') {
+          const newBill = payload.new;
+          setRealtimeFlash(newBill.id);
+          setTimeout(() => setRealtimeFlash(null), 3000);
+          
+          // Sovereign Notification Sync: Generate a system notification if a new tabloid summary appears
+          if (newBill.tabloid_summary && user) {
+            notificationService.create(
+              user.id,
+              'bill_update',
+              'Get Daily News Updates', // Strictly as requested
+              `${newBill.title}: ${newBill.tabloid_summary}`,
+              { 
+                sourceId: newBill.id, 
+                link: `/bill/${newBill.id}` 
+              }
+            );
+          }
+
+          // Silently update local data
+          setBillsData(prev => {
+            const index = prev.findIndex(b => b.id === newBill.id);
+            if (index !== -1) {
+              const updated = [...prev];
+              updated[index] = { ...updated[index], ...newBill, stage_index: getStageIndex(newBill.status) };
+              return updated;
+            }
+            return [{ ...newBill, stage_index: getStageIndex(newBill.status) }, ...prev];
+          });
+        }
+      })
+      .subscribe();
+    
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  const tabloidUpdates = useMemo(() => 
+    billsData.filter(b => b.tabloid_summary && b.tabloid_summary.trim().length > 0),
+    [billsData]
+  );
+
+  const tickerData = useMemo(() => {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    
+    // Monday-Friday of current week
+    const day = now.getDay();
+    const diff = now.getDate() - day + (day === 0 ? -6 : 1);
+    const monday = new Date(now.setDate(diff));
+    monday.setHours(0, 0, 0, 0);
+    
+    const friday = new Date(monday);
+    friday.setDate(monday.getDate() + 4);
+    friday.setHours(23, 59, 59, 999);
+
+    const todayItems = billsData.filter(b => new Date(b.created_at) >= today);
+    const weekItems = billsData.filter(b => {
+      const dt = new Date(b.created_at);
+      return dt >= monday && dt <= friday && dt < today;
+    });
+
+    return { today: todayItems, week: weekItems };
+  }, [billsData]);
 
   const filteredBills = useMemo(() => {
     return billsData.filter(bill => {
@@ -250,60 +329,129 @@ const LegislativeTracker = () => {
               </p>
             </motion.div>
 
-            {/* DYNAMIC INTELLIGENCE ALERT: Vertical Cycle */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.2 }}
-              className="mt-12 p-[1px] rounded-[32px] bg-gradient-to-r from-kenya-green/30 via-primary/30 to-kenya-green/30 max-w-md shadow-2xl overflow-hidden"
-            >
-              <div className="bg-white/90 dark:bg-[#0a0a0a]/90 backdrop-blur-xl p-6 rounded-[31px] min-h-[140px] flex flex-col justify-center">
-                <AnimatePresence mode="wait">
-                  {intelligenceAlerts.length > 0 ? (
-                    <motion.div
-                      key={activeAlert?.id || 'alert'}
-                      initial={{ opacity: 0, y: 20, filter: 'blur(10px)' }}
-                      animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-                      exit={{ opacity: 0, y: -20, filter: 'blur(10px)' }}
-                      transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-                      className="flex items-start gap-4"
-                    >
-                      <div className="h-12 w-12 rounded-2xl bg-kenya-green/10 flex items-center justify-center shrink-0 border border-kenya-green/5 shadow-inner">
-                        <TrendingUp className="h-6 w-6 text-kenya-green" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h4 className="font-black text-[10px] uppercase tracking-[0.2em] text-primary">Check Our Records</h4>
-                          <span className="h-1 w-1 rounded-full bg-kenya-green animate-ping" />
+            {/* DUAL-LAYER SOVEREIGN HERO: Intelligence Carousel + Bloomberg Ticker */}
+            <div className="mt-12 relative">
+              {/* Layer 1: The Tabloid Carousel (Upper Control) */}
+              <motion.div
+                initial={{ opacity: 0, scale: 0.98 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="relative z-20 p-[1px] rounded-[32px] bg-gradient-to-br from-kenya-green/40 via-primary/20 to-kenya-green/40 max-w-xl shadow-2xl overflow-hidden"
+              >
+                <div className="bg-white/80 dark:bg-black/80 backdrop-blur-3xl p-8 rounded-[31px] min-h-[180px] flex flex-col justify-center border border-white/20">
+                  <AnimatePresence mode="wait">
+                    {tabloidUpdates.length > 0 ? (
+                      <motion.div
+                        key={currentAlertIndex}
+                        initial={{ opacity: 0, x: 20, filter: 'blur(10px)' }}
+                        animate={{ opacity: 1, x: 0, filter: 'blur(0px)' }}
+                        exit={{ opacity: 0, x: -20, filter: 'blur(10px)' }}
+                        transition={{ duration: 0.5, ease: "circOut" }}
+                        className="space-y-4"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <h4 className="font-black text-[10px] uppercase tracking-[0.3em] text-kenya-green">Get Daily News Updates</h4>
+                            {tabloidUpdates[currentAlertIndex]?.status === 'ASSENT' && (
+                              <span className="flex h-2 w-2 rounded-full bg-kenya-green animate-pulse shadow-[0_0_8px_rgba(0,255,0,0.8)]" />
+                            )}
+                          </div>
+                          <Badge className="bg-primary/10 text-primary border-none font-black text-[9px] px-2 py-0.5 rounded-full">
+                            Sovereign Verified
+                          </Badge>
                         </div>
-                        <p className="font-bold text-sm leading-snug mb-3 dark:text-gray-200">
-                          {activeAlert.headline} — <span className="text-kenya-green">{(activeAlert.bills as any)?.title || 'Legislative Update'}</span>
+                        
+                        <p className="font-extrabold text-lg md:text-xl leading-tight dark:text-gray-100 tracking-tight">
+                          {tabloidUpdates[currentAlertIndex].tabloid_summary}
                         </p>
-                        <Button
-                          variant="link"
-                          asChild
-                          className="p-0 h-auto text-primary font-black text-xs uppercase tracking-widest gap-2 hover:no-underline"
+
+                        <div className="flex items-center justify-between pt-2">
+                          <div className="text-[10px] font-bold opacity-40 uppercase tracking-widest">
+                            Source: {tabloidUpdates[currentAlertIndex].title}
+                          </div>
+                          <Button
+                            variant="link"
+                            asChild
+                            className="p-0 h-auto text-primary font-black text-xs uppercase tracking-widest gap-2"
+                          >
+                            <Link to={`/bill/${tabloidUpdates[currentAlertIndex].id}`}>
+                              Trace Progress <ArrowRight className="h-3 w-3" />
+                            </Link>
+                          </Button>
+                        </div>
+                      </motion.div>
+                    ) : (
+                      <div className="flex items-center gap-6 opacity-40">
+                        <div className="h-14 w-14 rounded-2xl bg-slate-100 dark:bg-white/5 flex items-center justify-center shrink-0">
+                          <TrendingUp className="h-8 w-8" />
+                        </div>
+                        <div>
+                          <h4 className="font-black text-[10px] uppercase tracking-[0.2em] mb-1">Scanning Intelligence...</h4>
+                          <p className="font-bold text-sm">Deep-scanning tabloid summaries for the day...</p>
+                        </div>
+                      </div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              </motion.div>
+
+              {/* Layer 2: The Legislative Ticker (Bloomberg Sub-Layer) */}
+              <div className="absolute -bottom-6 left-4 right-4 z-10">
+                <div className="bg-black/10 dark:bg-white/5 backdrop-blur-md rounded-2xl h-10 border border-white/5 overflow-hidden flex items-center shadow-lg">
+                  <div className="bg-primary text-white text-[9px] font-black uppercase px-4 h-full flex items-center shrink-0 z-20 shadow-xl">
+                    Live Status
+                  </div>
+                  <div className="flex-1 overflow-hidden relative">
+                    <motion.div
+                      animate={{ x: [0, -2000] }}
+                      transition={{ duration: 40, repeat: Infinity, ease: "linear" }}
+                      className="flex whitespace-nowrap gap-12 items-center pl-8"
+                    >
+                      {/* NEW BILLS (TODAY) Segment */}
+                      <span className="text-[10px] font-black text-kenya-green uppercase tracking-tighter">New Bills (Today)</span>
+                      {tickerData.today.length > 0 ? tickerData.today.map(bill => (
+                        <Link 
+                          key={`today-${bill.id}`} 
+                          to={`/bill/${bill.id}`}
+                          className={cn(
+                            "flex items-center gap-3 group transition-colors",
+                            realtimeFlash === bill.id && "animate-pulse text-kenya-green"
+                          )}
                         >
-                          <Link to={`/bill/${activeAlert.bill_id}`}>
-                            Trace Now <ArrowRight className="h-3 w-3" />
-                          </Link>
-                        </Button>
-                      </div>
+                          <span className="text-xs font-bold dark:text-white group-hover:text-primary">
+                            {bill.title} | <span className="opacity-60 font-medium">{bill.summary?.substring(0, 40)}...</span>
+                          </span>
+                          <span className={cn(
+                            "h-2 w-2 rounded-full",
+                            bill.status === 'ASSENT' ? 'bg-kenya-green shadow-[0_0_8px_green]' : 'bg-primary'
+                          )} />
+                        </Link>
+                      )) : <span className="text-xs opacity-40">No new bills today</span>}
+
+                      {/* THIS WEEK Segment */}
+                      <span className="text-[10px] font-black text-primary uppercase tracking-tighter ml-8">This Week</span>
+                      {tickerData.week.length > 0 ? tickerData.week.map(bill => (
+                        <Link 
+                          key={`week-${bill.id}`} 
+                          to={`/bill/${bill.id}`}
+                          className="flex items-center gap-3 group"
+                        >
+                          <span className="text-xs font-bold dark:text-white group-hover:text-primary">
+                            {bill.title} | <span className="opacity-60 font-medium">{bill.summary?.substring(0, 40)}...</span>
+                          </span>
+                          <span className={cn(
+                            "h-2 w-2 rounded-full",
+                            bill.status === 'ASSENT' ? 'bg-kenya-green' : 'bg-slate-400'
+                          )} />
+                        </Link>
+                      )) : <span className="text-xs opacity-40">Quiet week so far</span>}
+
+                      {/* Repeat for Infinite Loop */}
+                      <span className="text-[10px] font-black text-kenya-green uppercase tracking-tighter opacity-20">Loop Continuing...</span>
                     </motion.div>
-                  ) : (
-                    <div className="flex items-start gap-4 opacity-50">
-                      <div className="h-12 w-12 rounded-2xl bg-slate-100 dark:bg-white/5 flex items-center justify-center shrink-0">
-                        <TrendingUp className="h-6 w-6" />
-                      </div>
-                      <div>
-                        <h4 className="font-black text-[10px] uppercase tracking-[0.2em] mb-1">Scanning our database...</h4>
-                        <p className="font-bold text-sm mb-3">Fetching the latest from local tabloids...</p>
-                      </div>
-                    </div>
-                  )}
-                </AnimatePresence>
+                  </div>
+                </div>
               </div>
-            </motion.div>
+            </div>
           </div>
         </section>
 
