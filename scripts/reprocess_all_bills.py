@@ -214,6 +214,8 @@ class BatchIntelligenceUpgrader:
             "description": intel.get("short_title") or current_bill.get("description"),
             "sponsor": intel.get("sponsor") or current_bill.get("sponsor") or "Government",
             "constitutional_section": intel.get("constitutional_section") or current_bill.get("constitutional_section"),
+            "is_money_bill": intel.get("is_money_bill"), # NEW
+            "concerns_counties": intel.get("concerns_counties"), # NEW
             "ai_concerns": ai_concerns_json,
             "tabloid_summary": intel.get("tabloid_summary"),
             "analysis_status": "completed",
