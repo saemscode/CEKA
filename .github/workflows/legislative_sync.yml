@@ -4,7 +4,7 @@ on:
   schedule:
     # Every 3 hours (East Africa Time: 3, 6, 9, 12, 15, 18, 21, 00)
     # UTC: 00, 03, 06, 09, 12, 15, 18, 21
-    - cron: '0 0,3,6,9,12,15,18,21 * * *'
+    - cron: '0 0,3,6,9,12,15,18,21 * * 1-5'
   workflow_dispatch:
     inputs:
       force_news:
@@ -94,6 +94,12 @@ jobs:
 
       - name: Run Legislative Scraper
         run: python CEKA/scripts/legislative_scraper.py
+        continue-on-error: true
+        env:
+          PYTHONIOENCODING: utf-8
+
+      - name: Supabase Sync Bridge
+        run: python CEKA/scripts/sync_to_supabase.py
         continue-on-error: true
         env:
           PYTHONIOENCODING: utf-8

@@ -58,7 +58,7 @@ DISTIL_SYSTEM = (
 
 def build_distil_prompt(title: str, text: str = "") -> str:
     if text and len(text) >= 50:
-        content_block = f"BILL TEXT (first 8000 chars):\n{text[:8000]}"
+        content_block = f"BILL TEXT (first 8500 chars):\n{text[:8500]}"
         mode = "full text"
     else:
         content_block = "(No bill text available — infer from title only)"
@@ -289,10 +289,22 @@ class BatchIntelligenceUpgrader:
         except Exception as e:
             logger.error(f"    ❌ Corroborator failed: {e}")
 
-    def run(self):
-        bills = self.fetch_all_bills()
+    def run(self, bill_ids: Optional[List[str]] = None):
+        if bill_ids:
+            logger.info(f"🚀 Targeted run for {len(bill_ids)} specific bills...")
+            bills = []
+            for bid in bill_ids:
+                res = self.db.select("bills", "*", eq="id", eq_val=bid)
+                if res: bills.extend(res)
+        else:
+            bills = self.fetch_all_bills()
+            
         total = len(bills)
-        logger.info(f"🚀 Starting full intelligence upgrade on {total} bills...")
+        if total == 0:
+            logger.warning("No bills found to process.")
+            return
+
+        logger.info(f"🚀 Starting intelligence upgrade on {total} bills...")
         ok, err = 0, 0
         for i, bill in enumerate(bills):
             try:
@@ -306,10 +318,14 @@ class BatchIntelligenceUpgrader:
             if (i + 1) % 5 == 0 or (i + 1) == total:
                 logger.info(f"📊 Progress: {i+1}/{total} | OK={ok} ERR={err}")
 
-        logger.info("🏁 BATCH UPGRADE COMPLETE.")
+        logger.info("🏁 UPGRADE COMPLETE.")
         logger.info(f"    Total: {total} | Success: {ok} | Failed: {err}")
 
 
 if __name__ == "__main__":
+    import sys
+    # Extract IDs from args if provided (space-separated)
+    target_ids = sys.argv[1:] if len(sys.argv) > 1 else None
+    
     upgrader = BatchIntelligenceUpgrader()
-    upgrader.run()
+    upgrader.run(target_ids)

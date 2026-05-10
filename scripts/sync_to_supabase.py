@@ -72,7 +72,7 @@ def record_scrape_run(supabase: Client, stats: Dict[str, int], source: str):
     try:
         data = {
             "source": source,
-            "status": "Success" if stats['failed'] == 0 else "Partial",
+            # "status": "Success" if stats['failed'] == 0 else "Partial", # REMOVED: column missing in DB
             "bills_found": stats['bills'] + stats['updates'] + stats['order_papers'],
             "bills_inserted": stats['bills'],
             "bills_updated": stats['updates'],
@@ -150,6 +150,8 @@ def sync_data(output_dir="processed_data/legislative"):
                 "date": item.get("date"),
                 "url": item.get("url"),
                 "pdf_url": item.get("pdf_url"),
+                "text_content": item.get("text_content"),
+                "description": item.get("description"),
                 "summary": item.get("summary") or f"Legislative tracker: {item.get('title')}",
                 "updated_at": datetime.now().isoformat()
             }
@@ -159,8 +161,11 @@ def sync_data(output_dir="processed_data/legislative"):
                 new_data["session_year"] = item.get("session_year")
 
             if existing:
-                if existing['status'] != item['status'] or existing['pdf_url'] != item['pdf_url']:
-                    logging.info(f"🔄 Version Advancement: {item['title']} -> {item['status']}")
+                # Always ensure status is set
+                item_status = item.get('status') or existing.get('status') or "Published"
+                
+                if existing['status'] != item_status or existing['pdf_url'] != item.get('pdf_url'):
+                    logging.info(f"🔄 Version Advancement: {item['title']} -> {item_status}")
                     
                     if v2_supported:
                         history = existing.get("history") or []
@@ -172,6 +177,7 @@ def sync_data(output_dir="processed_data/legislative"):
                             "version_title": existing['title']
                         })
                         new_data["history"] = history
+                        new_data["status"] = item_status # Update status in payload
                     
                     supabase.table("bills").update(new_data).eq("id", existing['id']).execute()
                     stats["updates"] += 1
@@ -179,7 +185,12 @@ def sync_data(output_dir="processed_data/legislative"):
                     continue
             else:
                 logging.info(f"✨ New Bill Discovered: {item['title']}")
-                supabase.table("bills").insert(new_data).execute()
+                # Ensure status for new bills
+                if not new_data.get("status"):
+                    new_data["status"] = "Published" if item.get("category") != "Documentation" else "Ingested"
+                
+                # Use upsert to handle race conditions/duplicates gracefully
+                supabase.table("bills").upsert(new_data, on_conflict="title").execute()
                 stats["bills"] += 1
 
         except Exception as e:

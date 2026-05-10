@@ -618,6 +618,133 @@ class RemoteOCREngine:
 
 
 # ===================================================================
+#  BillStructuralExtractor  –  Structural Breadcrumb Engine
+# ===================================================================
+class BillStructuralExtractor:
+    """
+    Implements the 'Structural Breadcrumb Strategy' for Kenyan Bills.
+    Navigates PDF architecture to find Sponsors and constitutional metadata.
+    """
+
+    # --- Structural Anchors ---
+    ANCHOR_MEMORANDUM = "MEMORANDUM OF OBJECTS AND REASONS"
+    ANCHOR_ARTICLE_114 = "Article 114 of the Constitution"
+    ANCHOR_COUNTY_GOVTS = "concerns County Governments"
+    ANCHOR_ENACTED = "ENACTED by the Parliament of Kenya"
+    ANCHOR_REFERENCE = "which it is proposed to amend"
+
+    # --- Regex Patterns ---
+    DATE_PATTERNS = [
+        re.compile(r'[Dd]ated\s+the\s+(\d{1,2}(?:st|nd|rd|th)?)\s+([A-Z][a-z]+),?\s+(\d{4})'),
+        re.compile(r'DATED\s+THE\s+(\d+)\s+DAY\s+OF\s+([A-Z]+)\s+(\d{4})', re.I)
+    ]
+    MONEY_BILL_PATTERNS = [
+        re.compile(r'is\s+a\s+money\s+Bill', re.I),
+        re.compile(r'is\s+not\s+a\s+money\s+Bill', re.I)
+    ]
+    COUNTY_GOVT_PATTERNS = [
+        re.compile(r'does\s+concern\s+County\s+Governments', re.I),
+        re.compile(r'does\s+not\s+concern\s+County\s+Governments', re.I)
+    ]
+
+    @staticmethod
+    def extract_all(pdf_bytes: bytes, title: str) -> Dict[str, Any]:
+        """Entry point for structural extraction."""
+        result = {
+            "bill_type": "Principal",
+            "sponsor_name": None,
+            "sponsor_title": None,
+            "date_signed": None,
+            "is_money_bill": None,
+            "concerns_counties": None,
+            "has_toc": False,
+            "structural_method": "none"
+        }
+
+        if "(Amendment)" in title or "Amendment to" in title:
+            result["bill_type"] = "Amendment"
+
+        if not FITZ_OK:
+            return result
+
+        try:
+            doc = fitz.open(stream=pdf_bytes, filetype="pdf")
+            
+            # Layer 1: Native TOC
+            toc = doc.get_toc()
+            memo_page = -1
+            if toc:
+                result["has_toc"] = True
+                for entry in toc:
+                    if "MEMORANDUM" in entry[1].upper():
+                        memo_page = entry[2] - 1 # 0-indexed
+                        result["structural_method"] = "native_toc"
+                        break
+
+            # Layer 2: Skeleton Scan for anchors if TOC failed
+            if memo_page == -1:
+                for i in range(len(doc)):
+                    page_text = doc[i].get_text()
+                    if BillStructuralExtractor.ANCHOR_MEMORANDUM in page_text:
+                        memo_page = i
+                        result["structural_method"] = "skeleton_scan"
+                        break
+            
+            # Layer 3: Extraction from identified page
+            if memo_page != -1:
+                # Get text from memo page and the next one (memos can span multiple pages)
+                end_page = min(memo_page + 2, len(doc))
+                memo_text = ""
+                for i in range(memo_page, end_page):
+                    memo_text += doc[i].get_text()
+
+                # --- 1. Money Bill Status ---
+                if BillStructuralExtractor.ANCHOR_ARTICLE_114 in memo_text:
+                    m = BillStructuralExtractor.MONEY_BILL_PATTERNS[0].search(memo_text)
+                    nm = BillStructuralExtractor.MONEY_BILL_PATTERNS[1].search(memo_text)
+                    if nm: result["is_money_bill"] = False
+                    elif m: result["is_money_bill"] = True
+
+                # --- 2. County Govts Status ---
+                if BillStructuralExtractor.ANCHOR_COUNTY_GOVTS in memo_text:
+                    m = BillStructuralExtractor.COUNTY_GOVT_PATTERNS[0].search(memo_text)
+                    nm = BillStructuralExtractor.COUNTY_GOVT_PATTERNS[1].search(memo_text)
+                    if nm: result["concerns_counties"] = False
+                    elif m: result["concerns_counties"] = True
+
+                # --- 3. Sponsor & Date ---
+                # Find date anchor
+                date_match = None
+                for pat in BillStructuralExtractor.DATE_PATTERNS:
+                    date_match = pat.search(memo_text)
+                    if date_match:
+                        break
+                
+                if date_match:
+                    result["date_signed"] = date_match.group(0)
+                    # The name is usually the next line (ALL CAPS)
+                    # We take the 500 characters following the date
+                    after_date = memo_text[date_match.end():date_match.end()+500]
+                    lines = [line.strip() for line in after_date.split('\n') if line.strip()]
+                    
+                    for line in lines:
+                        # Sponsor name is usually ALL CAPS and at least 5 chars
+                        if line.isupper() and len(line) > 5:
+                            result["sponsor_name"] = line
+                            # Check next line for title
+                            idx = lines.index(line)
+                            if idx + 1 < len(lines):
+                                result["sponsor_title"] = lines[idx+1]
+                            break
+
+            doc.close()
+        except Exception as e:
+            logger.warning(f"      [Structural] Extraction failed: {e}")
+
+        return result
+
+
+# ===================================================================
 #  LegislativeScraper  –  Selective Deep Extraction Engine
 # ===================================================================
 class LegislativeScraper:
@@ -638,7 +765,8 @@ class LegislativeScraper:
     """
 
     def __init__(self, headless: bool = True):
-        self.targets_file = "scripts/scraping_targets.json"
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        self.targets_file = os.path.join(script_dir, "scraping_targets.json")
         self.headless = headless
         self.data: List[Dict[str, Any]] = []
         self.seen_titles: set = set()
@@ -852,12 +980,29 @@ class LegislativeScraper:
             if intel:
                 logger.info(f"      [INTEL] Distillation SUCCESS for: {title}")
 
+        # 7. Structural Extraction (The Breadcrumb Strategy)
+        structural_data = {}
+        if pdf_bytes:
+            logger.info(f"      [Structural] Running breadcrumb analysis for: {title}")
+            structural_data = BillStructuralExtractor.extract_all(pdf_bytes, title)
+            if structural_data.get("sponsor_name"):
+                logger.info(f"      [Structural] Found Sponsor: {structural_data['sponsor_name']}")
+
         # Legacy Parse (Maintain for safety/preservation)
         parsed_pdf = self._parse_bill_text(text) if text.strip() else {}
         
-        # Final fields - Prioritize Intelligence extraction
-        sponsor = intel.get('sponsor') or parsed_pdf.get('sponsor') or html_metadata.get('sponsor') or "Government"
+        # Final fields - Prioritize Structural > Intelligence > Parsed
+        sponsor = structural_data.get('sponsor_name') or intel.get('sponsor') or parsed_pdf.get('sponsor') or html_metadata.get('sponsor') or "Government"
+        sponsor_title = structural_data.get('sponsor_title')
         status = intel.get('status') or html_metadata.get('status') or self._infer_status_from_text(text, title)
+        
+        # FIX: Ensure status is never null for any record type
+        if not status:
+            if target.get('type') == 'bills':
+                status = "Published"
+            else:
+                status = "Ingested"
+
         summary = intel.get('summary') or parsed_pdf.get('summary') or html_metadata.get('summary')
         description = intel.get('short_title') or parsed_pdf.get('description') or title
         ai_concerns = intel.get('ai_concerns', [])
@@ -906,6 +1051,7 @@ class LegislativeScraper:
             "bill_no": self._extract_bill_no(text or title),
             "session_year": int(year),
             "sponsor": sponsor,
+            "sponsor_title": sponsor_title,
             "status": status,
             "house": "Senate" if "Senate" in target['name'] else "National Assembly",
             "date": real_date,
@@ -920,6 +1066,8 @@ class LegislativeScraper:
             "ai_concerns": ai_concerns,
             "tabloid_summary": tabloid_summary,
             "constitutional_section": constitutional_section,
+            "is_money_bill": structural_data.get("is_money_bill"),
+            "concerns_counties": structural_data.get("concerns_counties"),
             "metadata": {
                 "scraped_at": datetime.now(timezone.utc).isoformat(),
                 "extraction_method": extraction_method,
@@ -927,6 +1075,9 @@ class LegislativeScraper:
                 "is_scanned": is_scanned,
                 "b2_url": b2_url,
                 "distilled_via": "multi_llm" if intel else "regex",
+                "structural_method": structural_data.get("structural_method"),
+                "bill_type": structural_data.get("bill_type"),
+                "date_signed": structural_data.get("date_signed"),
                 **ocr_metadata,
             },
             "created_at": datetime.now(timezone.utc).isoformat()
@@ -1211,6 +1362,7 @@ Return EXACTLY a JSON object with these keys:
             "source": target['name'],
             "category": "Documentation",
             "date": datetime.now().strftime("%Y-%m-%d"),
+            "status": "Ingested", # FIX: Set status for non-bill docs
             "document_type": "doc"
         }
 
