@@ -5,6 +5,7 @@ import time
 from datetime import datetime, timezone
 from typing import List, Dict, Any, Optional
 from pathlib import Path
+import requests # Added for SerpAPI
 
 # ---------------------------------------------------------------------------
 # Load environment variables from .env if python-dotenv is available
@@ -29,6 +30,12 @@ try:
     DIRECT_OK = True
 except ImportError:
     DIRECT_OK = False
+
+try:
+    from stage_detector import normalize_stage_label
+    STAGES_OK = True
+except ImportError:
+    STAGES_OK = False
 
 try:
     from multi_llm_orchestrator import MultiLLMOrchestrator
@@ -87,8 +94,71 @@ class SovereignCorroborator:
         
         self.orchestrator = MultiLLMOrchestrator() if ORCHESTRATOR_OK else None
 
+    def _dice_similarity(self, s1: str, s2: str) -> float:
+        """Calculate Dice coefficient for string similarity gate (0.0 to 1.0)."""
+        s1, s2 = s1.lower(), s2.lower()
+        if s1 == s2: return 1.0
+        if len(s1) < 2 or len(s2) < 2: return 0.0
+        
+        bigrams1 = set([s1[i:i+2] for i in range(len(s1)-1)])
+        bigrams2 = set([s2[i:i+2] for i in range(len(s2)-1)])
+        
+        overlap = len(bigrams1 & bigrams2)
+        return (2.0 * overlap) / (len(bigrams1) + len(bigrams2))
+
+    def _active_search_waterfall(self, title: str) -> List[Dict]:
+        """Nasaka-Style Waterfall Search for Bill Status."""
+        api_key = os.getenv("SERPAPI_API_KEY")
+        if not api_key: 
+            logger.warning("SERPAPI_API_KEY missing - active search aborted.")
+            return []
+
+        search_variations = [
+            f'"{title}" Kenya Bill official status',
+            f'"{title}" Kenya Parliament "withdrawn" OR "rejected" OR "lapsed"',
+            f'"{title}" presidential assent Kenya Gazette 202'
+        ]
+        
+        all_results = []
+        for query in search_variations:
+            try:
+                params = {
+                    "q": query,
+                    "location": "Kenya",
+                    "hl": "en",
+                    "gl": "ke",
+                    "google_domain": "google.co.ke",
+                    "api_key": api_key,
+                    "num": 5
+                }
+                logger.info(f"    [SEARCH] Query: {query}")
+                resp = requests.get("https://serpapi.com/search", params=params, timeout=15)
+                data = resp.json()
+                
+                results = data.get("organic_results", [])
+                for r in results:
+                    snippet = r.get("snippet", "")
+                    headline = r.get("title", "")
+                    
+                    # Proofing Gate: Only keep if headline is meaningfully similar to bill title
+                    similarity = self._dice_similarity(title, headline)
+                    if similarity > 0.40 or title.lower() in snippet.lower():
+                        all_results.append({
+                            "source": r.get("source", "Google Search"),
+                            "headline": headline,
+                            "snippet": snippet,
+                            "link": r.get("link"),
+                            "similarity_score": similarity
+                        })
+                time.sleep(1) # Rate limit
+                if all_results: break # Stop waterfall if first variation yields hits
+            except Exception as e:
+                logger.error(f"      [SEARCH-ERR] {e}")
+        
+        return all_results
+
     def get_rich_context(self, bill_id: str) -> Optional[Dict[str, Any]]:
-        """Fetch all data points for a bill to build the context object."""
+        """Fetch all data points for a bill, including active web search results."""
         if not self.db:
             return None
 
@@ -103,13 +173,16 @@ class SovereignCorroborator:
                 logger.warning(f"Malformed bill record for {bill_id}: {bill}")
                 return None
 
-            # 2. Fetch News Mentions (graceful — table may not exist)
+            # 2. News Mentions (DB)
             try:
                 news = self.db.select("bill_news_mentions", "*", eq="bill_id", eq_val=bill_id) or []
             except Exception:
                 news = []
 
-            # 3. Assemble Context Object
+            # 3. Active Search Layer (Nasaka-Style)
+            active_hits = self._active_web_search(bill.get("title", ""))
+            
+            # 4. Assemble Context Object
             context = {
                 "bill_id": bill["id"],
                 "title": bill.get("title", "Unknown"),
@@ -127,6 +200,7 @@ class SovereignCorroborator:
                         "snippet": (m.get("snippet") or "")[:500]
                     } for m in news if isinstance(m, dict)
                 ],
+                "active_web_hits": active_hits,
                 "stages_json": bill.get("stages", {})
             }
             return context
@@ -221,8 +295,33 @@ class SovereignCorroborator:
 
             update_data["summary"] = full_narrative[:3000]
 
+            # 4. Status Decision Engine (Active Propagation)
+            sovereign_status = context.get("status")
+            status_reasons = []
+            
+            # Check for high-confidence termination events in web hits
+            for hit in context.get("active_web_hits", []):
+                snippet = hit["snippet"].lower()
+                headline = hit["headline"].lower()
+                # If similarity is high (>0.85) AND snippet mentions withdrawal/rejection
+                if hit["similarity_score"] > 0.85 or context["title"].lower() in headline:
+                    if any(w in (headline + " " + snippet) for w in ['withdrawn', 'rejected', 'negatived', 'lapsed', 'nullified']):
+                        sovereign_status = "DISCARDED"
+                        status_reasons.append(f"Confirmed {hit['source']} via {hit['headline']}")
+                    elif 'assent' in (headline + " " + snippet) or 'signed into law' in snippet:
+                        sovereign_status = "ASSENT"
+                        status_reasons.append(f"Confirmed Assent via {hit['source']}")
+
+            # Normalize and Apply
+            if STAGES_OK:
+                sovereign_status = normalize_stage_label(sovereign_status)
+            
+            if sovereign_status != context.get("status"):
+                logger.info(f"    📢 PROPAGating Status change: {context['status']} -> {sovereign_status} ({', '.join(status_reasons)})")
+                update_data["status"] = sovereign_status
+
             self.db.update("bills", update_data, eq="id", eq_val=bill_id)
-            logger.info(f"✅ Analysis complete for: {context['title']}")
+            logger.info(f"✅ Analysis & Status Propagation complete for: {context['title']}")
             return True
 
         except Exception as e:

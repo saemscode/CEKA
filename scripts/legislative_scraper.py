@@ -26,7 +26,7 @@ except ImportError:
 # Stage Detector Integration
 # ---------------------------------------------------------------------------
 try:
-    from stage_detector import detect_stage_from_text, extract_date_from_order_paper
+    from stage_detector import detect_stage_from_text, extract_date_from_order_paper, normalize_stage_label # Added normalize_stage_label
     STAGE_DETECTOR_OK = True
 except ImportError:
     STAGE_DETECTOR_OK = False
@@ -996,12 +996,27 @@ class LegislativeScraper:
         sponsor_title = structural_data.get('sponsor_title')
         status = intel.get('status') or html_metadata.get('status') or self._infer_status_from_text(text, title)
         
+        # --- TWO-LAYER PRE-PUBLICATION (Draft) Check ---
+        # Layer A: Metadata check (Missing Gazette/Bill No)
+        # Layer B: Visual keyword check (DRAFT/PROPOSED)
+        has_bill_no = structural_data.get("bill_no") or self._extract_bill_no(text or title)
+        is_draft_keywords = re.search(r'\b(DRAFT|PROPOSED\s+BILL|FOR\s+CONSULTATION)\b', (title + " " + (text or "")[:2000]).upper())
+        
+        if not has_bill_no or is_draft_keywords:
+            # If we have no bill number or explicit draft keywords, it's PRE-PUBLICATION
+            logging.info(f"    ⚠️ Draft detected (Metadata: {bool(has_bill_no)}, Keywords: {bool(is_draft_keywords)}). Flagging PRE-PUBLICATION.")
+            status = "PRE-PUBLICATION"
+
         # FIX: Ensure status is never null for any record type
         if not status:
             if target.get('type') == 'bills':
-                status = "Published"
+                status = "PUBLISHED"
             else:
                 status = "Ingested"
+        
+        # Final Canonical Normalization
+        if STAGE_DETECTOR_OK:
+            status = normalize_stage_label(status)
 
         summary = intel.get('summary') or parsed_pdf.get('summary') or html_metadata.get('summary')
         description = intel.get('short_title') or parsed_pdf.get('description') or title
@@ -1408,10 +1423,38 @@ Return EXACTLY a JSON object with these keys:
         return f"No. {m.group(1)}" if m else ""
 
     def _infer_status_from_text(self, text: str, title: str) -> str:
-        t = title.lower() + " " + text[:500].lower()
-        if 'assent' in t: return "Assented"
-        if 'reading' in t: return "Reading"
-        return "Publication"
+        """
+        High-fidelity status inference using fuzzy normalization and layered detection.
+        Maps all findings into canonical UI labels: 1ST READING, ASSENT, DISCARDED, etc.
+        """
+        # Layer 1: Title and Header Scan
+        t = (title.lower() + " " + text[:2000].lower())
+        
+        # Layer 2: Explicit Stage Discovery via Detector
+        detected_stage = None
+        if STAGE_DETECTOR_OK:
+            detected_stage = detect_stage_from_text(text, title)
+            
+        if detected_stage:
+            return normalize_stage_label(detected_stage)
+
+        # Layer 3: Termination Check (Discarded)
+        discard_keywords = ['withdrawn', 'rejected', 'negatived', 'lapsed', 'nullified']
+        if any(w in t for w in discard_keywords):
+            return "DISCARDED"
+
+        # Layer 4: Finality Check (Assent)
+        if 'assent' in t or 'signature' in t:
+            return "ASSENT"
+            
+        # Layer 5: Progress Check
+        if 'reading' in t:
+            if 'first' in t or '1st' in t: return "1ST READING"
+            if 'second' in t or '2nd' in t: return "2ND READING"
+            if 'third' in t or '3rd' in t: return "3RD READING"
+            return "1ST READING" # Default reading
+
+        return "PUBLISHED"
 
     def _infer_category(self, title: str) -> str:
         return "All Portfolios"

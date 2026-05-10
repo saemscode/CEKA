@@ -48,32 +48,42 @@ logger = logging.getLogger(__name__)
 #  KENYAN PARLIAMENTARY BILL STAGES
 # ===================================================================
 BILL_STAGES = [
-    {"key": "publication",    "label": "Publication",       "order": 1},
-    {"key": "first_reading",  "label": "First Reading",     "order": 2},
-    {"key": "second_reading", "label": "Second Reading",    "order": 3},
-    {"key": "committee",      "label": "Committee Stage",   "order": 4},
-    {"key": "report",         "label": "Report Stage",      "order": 5},
-    {"key": "third_reading",  "label": "Third Reading",     "order": 6},
-    {"key": "mediation",      "label": "Mediation",         "order": 7},
-    {"key": "assent",         "label": "Presidential Assent","order": 8},
+    {"key": "pre_publication", "label": "PRE-PUBLICATION",     "order": 0},
+    {"key": "publication",     "label": "PUBLISHED",           "order": 1},
+    {"key": "first_reading",   "label": "1ST READING",         "order": 2},
+    {"key": "second_reading",  "label": "2ND READING",         "order": 3},
+    {"key": "committee",       "label": "COMMITTEE",           "order": 4},
+    {"key": "report",          "label": "REPORT",              "order": 5},
+    {"key": "third_reading",   "label": "3RD READING",         "order": 6},
+    {"key": "mediation",       "label": "MEDIATION",           "order": 7},
+    {"key": "assent",          "label": "ASSENT",              "order": 8},
+    {"key": "discarded",       "label": "DISCARDED",           "order": 99}, # Special terminal stage
 ]
 
 # ===================================================================
 #  Stage Detection Patterns — regex patterns for each stage
 # ===================================================================
 STAGE_PATTERNS = {
+    "pre_publication": [
+        re.compile(r'draft\s+for\s+consultation', re.I),
+        re.compile(r'proposed\s+bill', re.I),
+        re.compile(r'draft\s+bill\s+202', re.I),
+        re.compile(r'draft\s+legislation', re.I),
+        re.compile(r'not\s+yet\s+gazetted', re.I),
+    ],
     "first_reading": [
-        re.compile(r'first\s+reading\s+of\s+bills?', re.I),
-        re.compile(r'bill\s+read\s+(?:a\s+)?first\s+time', re.I),
-        re.compile(r'first\s+reading', re.I),
-        re.compile(r'read\s+for\s+the\s+first\s+time', re.I),
+        re.compile(r'(?:1st|first)\s+reading\s+of\s+bills?', re.I),
+        re.compile(r'bill\s+read\s+(?:a\s+)?(?:1st|first)\s+time', re.I),
+        re.compile(r'(?:1st|first)\s+reading', re.I),
+        re.compile(r'read\s+for\s+the\s+(?:1st|first)\s+time', re.I),
+        re.compile(r'1st\s+reading', re.I),
     ],
     "second_reading": [
-        re.compile(r'second\s+reading\s+of\s+bills?', re.I),
-        re.compile(r'bill\s+read\s+(?:a\s+)?second\s+time', re.I),
-        re.compile(r'second\s+reading', re.I),
-        re.compile(r'read\s+for\s+the\s+second\s+time', re.I),
-        re.compile(r'committee\s+of\s+the\s+whole\s+house', re.I),
+        re.compile(r'(?:2nd|second)\s+reading\s+of\s+bills?', re.I),
+        re.compile(r'bill\s+read\s+(?:a\s+)?(?:2nd|second)\s+time', re.I),
+        re.compile(r'(?:2nd|second)\s+reading', re.I),
+        re.compile(r'read\s+for\s+the\s+(?:2nd|second)\s+time', re.I),
+        re.compile(r'2nd\s+reading', re.I),
     ],
     "committee": [
         re.compile(r'committee\s+stage', re.I),
@@ -88,11 +98,12 @@ STAGE_PATTERNS = {
         re.compile(r'report\s+adopted', re.I),
     ],
     "third_reading": [
-        re.compile(r'third\s+reading\s+of\s+bills?', re.I),
-        re.compile(r'bill\s+read\s+(?:a\s+)?third\s+time', re.I),
-        re.compile(r'third\s+reading', re.I),
-        re.compile(r'read\s+for\s+the\s+third\s+time', re.I),
+        re.compile(r'(?:3rd|third)\s+reading\s+of\s+bills?', re.I),
+        re.compile(r'bill\s+read\s+(?:a\s+)?(?:3rd|third)\s+time', re.I),
+        re.compile(r'(?:3rd|third)\s+reading', re.I),
+        re.compile(r'read\s+for\s+the\s+(?:3rd|third)\s+time', re.I),
         re.compile(r'bill\s+passed', re.I),
+        re.compile(r'3rd\s+reading', re.I),
     ],
     "mediation": [
         re.compile(r'mediation\s+committee', re.I),
@@ -107,6 +118,15 @@ STAGE_PATTERNS = {
         re.compile(r'commencement\s+(?:date|notice)', re.I),
         re.compile(r'enacted\s+by\s+the\s+parliament', re.I),
         re.compile(r'(?:kenya\s+)?gazette\s+(?:notice|supplement).*?(?:act\s+no|commencement)', re.I),
+    ],
+    "discarded": [
+        re.compile(r'withdrawn\s+by\s+(?:the\s+)?sponsor', re.I),
+        re.compile(r'bill\s+withdrawn', re.I),
+        re.compile(r'rejected\s+at\s+second\s+reading', re.I),
+        re.compile(r'bill\s+negatived', re.I),
+        re.compile(r'lapsed\s+under\s+standing\s+order', re.I),
+        re.compile(r'nullified\s+by\s+(?:the\s+)?court', re.I),
+        re.compile(r'not\s+passed', re.I),
     ],
 }
 
@@ -141,6 +161,56 @@ def generate_bill_keywords(title: str) -> List[str]:
         keywords.append(f"{significant[1]} {significant[0]}")
 
     return list(set(k for k in keywords if k))
+
+
+def normalize_stage_label(raw: str) -> str:
+    """Fuzzy normalizer to map raw stage strings to canonical UI labels."""
+    if not raw: return "PUBLISHED"
+    r = raw.lower().strip()
+    
+    # Fuzzy Dictionary Mapping
+    mapping = {
+        "pre-publication": "PRE-PUBLICATION",
+        "pre_publication": "PRE-PUBLICATION",
+        "draft":           "PRE-PUBLICATION",
+        "publication":     "PUBLISHED",
+        "published":       "PUBLISHED",
+        "ingested":        "PUBLISHED",
+        "first reading":   "1ST READING",
+        "1st reading":     "1ST READING",
+        "second reading":  "2ND READING",
+        "2nd reading":     "2ND READING",
+        "committee stage": "COMMITTEE",
+        "committee":       "COMMITTEE",
+        "report stage":    "REPORT",
+        "report":          "REPORT",
+        "third reading":   "3RD READING",
+        "3rd reading":     "3RD READING",
+        "passed":          "3RD READING",
+        "mediation":       "MEDIATION",
+        "presidential":    "ASSENT",
+        "assent":          "ASSENT",
+        "assented":        "ASSENT",
+        "discarded":       "DISCARDED",
+        "withdrawn":       "DISCARDED",
+        "rejected":        "DISCARDED",
+        "negatived":       "DISCARDED",
+        "lapsed":          "DISCARDED",
+    }
+    
+    # Exact match check
+    if r in mapping: return mapping[r]
+    
+    # Fuzzy regex check for "1st", "First", etc.
+    if re.search(r'1st|first', r): return "1ST READING"
+    if re.search(r'2nd|second', r): return "2ND READING"
+    if re.search(r'3rd|third', r): return "3RD READING"
+    
+    # Fallback to uppercase or default
+    for k, v in mapping.items():
+        if k in r: return v
+        
+    return raw.upper()
 
 
 def bill_mentioned_in_text(title: str, text: str) -> bool:
