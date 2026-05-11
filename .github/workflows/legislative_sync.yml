@@ -114,32 +114,32 @@ jobs:
           fi
 
       - name: Run Legislative Scraper
-        run: python CEKA/scripts/legislative_scraper.py
+        run: python scripts/legislative_scraper.py
         continue-on-error: true
         env:
           PYTHONIOENCODING: utf-8
 
       - name: Supabase Sync Bridge
-        run: python CEKA/scripts/sync_to_supabase.py
+        run: python scripts/sync_to_supabase.py
         continue-on-error: true
         env:
           PYTHONIOENCODING: utf-8
 
       - name: Run Stage Detector
-        run: python CEKA/scripts/stage_detector.py
+        run: python scripts/stage_detector.py
         continue-on-error: true
         env:
           PYTHONIOENCODING: utf-8
 
       - name: Run News Intelligence
         if: steps.news_check.outputs.run_news == 'true'
-        run: python CEKA/scripts/news_intelligence.py
+        run: python scripts/news_intelligence.py
         continue-on-error: true
         env:
           PYTHONIOENCODING: utf-8
 
       - name: Run Sovereign Corroborator (AI Synthesis)
-        run: python CEKA/scripts/sovereign_corroborator.py
+        run: python scripts/sovereign_corroborator.py
         continue-on-error: true
         env:
           PYTHONIOENCODING: utf-8
@@ -154,7 +154,7 @@ jobs:
           if [ "${{ github.event.inputs.phase_a_force }}" == "true" ]; then
             FORCE_FLAG="--force"
           fi
-          python CEKA/scripts/sovereign_refresh.py $FORCE_FLAG
+          python scripts/sovereign_refresh.py $FORCE_FLAG
         continue-on-error: true
         env:
           PYTHONIOENCODING: utf-8
@@ -173,13 +173,13 @@ jobs:
           if [ -n "${{ github.event.inputs.phase_b_bill_id }}" ]; then
             BILL_FLAG="--bill-id ${{ github.event.inputs.phase_b_bill_id }}"
           fi
-          python CEKA/scripts/matrix_solvency.py $COL_FLAG $BILL_FLAG
+          python scripts/matrix_solvency.py $COL_FLAG $BILL_FLAG
         continue-on-error: true
         env:
           PYTHONIOENCODING: utf-8
 
       - name: Run Vault Generator
-        run: python CEKA/scripts/vault_generator.py
+        run: python scripts/vault_generator.py
         continue-on-error: true
         env:
           PYTHONIOENCODING: utf-8
@@ -199,6 +199,6 @@ jobs:
         with:
           name: intelligence-logs-${{ github.run_number }}
           path: |
-            CEKA/scripts/*.log
-            CEKA/scripts/processed_data/
+            scripts/*.log
+            scripts/processed_data/
           retention-days: 14
