@@ -55,6 +55,34 @@
             "selector": ".view-content .views-row, .gazette-item",
             "type": "gazette",
             "freq": "weekly_friday_0500_eat"
+        },
+        {
+            "name": "Parliament Bill Tracker",
+            "url": "https://www.parliament.go.ke/the-national-assembly/house-business/bill-tracker",
+            "selector": "a[href$='.pdf']",
+            "type": "bill_tracker",
+            "freq": "daily_0400_eat"
+        },
+        {
+            "name": "National Assembly Votes & Proceedings",
+            "url": "https://www.parliament.go.ke/the-national-assembly/house-business/votes-proceeding",
+            "selector": "a[href$='.pdf']",
+            "type": "votes_proceedings",
+            "freq": "daily_0400_eat"
+        },
+        {
+            "name": "Parliament Factsheets and Rulings",
+            "url": "https://www.parliament.go.ke/fact-sheets-and-rulings",
+            "selector": "a[href$='.pdf']",
+            "type": "factsheets",
+            "freq": "weekly_friday_0500_eat"
+        },
+        {
+            "name": "National Assembly Sessional Reports",
+            "url": "https://www.parliament.go.ke/the-national-assembly/resources/publications",
+            "selector": "a[href$='.pdf']",
+            "type": "sessional_reports",
+            "freq": "weekly_friday_0500_eat"
         }
     ]
 }

@@ -63,6 +63,7 @@ NEWS_SOURCES = [
     # TIER 1: Official / Source A
     {"name": "Parliament of Kenya", "domain": "parliament.go.ke", "tier": 1},
     {"name": "Kenya Gazette", "domain": "kenyalaw.org", "tier": 1},
+    {"name": "Mzalendo Watch (X)", "domain": "x.com/MzalendoWatch", "tier": 1},
     
     # TIER 2: Established Media / Source B
     {"name": "Daily Nation", "domain": "nation.africa", "tier": 2},
@@ -70,11 +71,14 @@ NEWS_SOURCES = [
     {"name": "The Star", "domain": "the-star.co.ke", "tier": 2},
     {"name": "Business Daily", "domain": "businessdailyafrica.com", "tier": 2},
     {"name": "Capital News", "domain": "capitalfm.co.ke", "tier": 2},
+    {"name": "Amboko JH (X)", "domain": "x.com/AmbokoJH", "tier": 2},
     
     # TIER 3: Digital-First / Source C
     {"name": "Kenyans.co.ke", "domain": "kenyans.co.ke", "tier": 3},
     {"name": "Tuko News", "domain": "tuko.co.ke", "tier": 3},
     {"name": "Citizen Digital", "domain": "citizen.digital", "tier": 3},
+    {"name": "Reddit Kenya", "domain": "reddit.com/r/Kenya", "tier": 3},
+    {"name": "Reddit Nairobi", "domain": "reddit.com/r/Nairobi", "tier": 3},
 ]
 
 def generate_search_terms(bill_title: Any) -> List[str]:
@@ -133,6 +137,13 @@ def generate_search_terms(bill_title: Any) -> List[str]:
     if len(significant) >= 2:
         terms.append(f"Parliament Kenya {str(significant[0])} {str(significant[1])} {str(year)}".strip())
 
+    # Add Social-Media-Focused Hashtags and Queries
+    hashtag_title = "".join(w.capitalize() for w in words if w.lower() not in ('the', 'a', 'an', 'of', 'and', 'for', 'to', 'in', 'on', 'by'))
+    terms.append(f"#{hashtag_title}")
+    terms.append(f"#{hashtag_title}2026")
+    terms.append(f"{title_str} site:x.com")
+    terms.append(f"{title_str} site:reddit.com")
+
     seen: Set[str] = set()
     unique: List[str] = []
     for t in terms:
@@ -145,7 +156,7 @@ def generate_search_terms(bill_title: Any) -> List[str]:
     final_unique: List[str] = []
     # Use explicit loop instead of slice to satisfy Pyre2
     for i in range(len(unique)):
-        if i >= 4: break
+        if i >= 10: break # Increased for deeper social search
         final_unique.append(str(unique[i]))
     return final_unique
 
@@ -189,14 +200,15 @@ class SovereignScraper:
         return None
 
     def search_google(self, query: str, priority: bool = False) -> List[Dict[str, str]]:
-        """Perform Google Search using tiered credit conservation."""
+        """Perform Google Search using tiered credit conservation with deep harvesting."""
         results: List[Dict[str, str]] = []
         serp_key = self.serpapi_key
         if priority and serp_key and isinstance(serp_key, str) and len(serp_key) > 5:
             try:
                 from serpapi import GoogleSearch
+                # Increase depth for priority runs (Full Ham)
                 search = GoogleSearch({
-                    "q": query, "location": "Kenya", "gl": "ke", "api_key": serp_key, "num": 8
+                    "q": query, "location": "Kenya", "gl": "ke", "api_key": serp_key, "num": 25 # Increased from 8
                 })
                 res = search.get_dict()
                 organic = res.get("organic_results", [])
@@ -211,7 +223,7 @@ class SovereignScraper:
             try:
                 resp = requests.get(
                     self.scrapingdog_google_endpoint,
-                    params={"api_key": dog_key, "query": query, "results": 5},
+                    params={"api_key": dog_key, "query": query, "results": 10}, # Increased from 5
                     timeout=30
                 )
                 if resp.status_code == 200:
@@ -230,7 +242,7 @@ class NewsIntelligenceEngine:
         self.supabase_url = os.getenv("SUPABASE_URL")
         self.supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
         self.scraper = SovereignScraper()
-        self.max_articles_per_source = 3
+        self.max_articles_per_source = 10 # Increased for deeper social discourse harvesting
         
         self.supabase: Optional[Client] = None
         if self.supabase_url and self.supabase_key and Client:

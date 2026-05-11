@@ -171,6 +171,9 @@ class AttunedSynchronizer:
         with open(self.output_sql, 'w', encoding='utf-8') as f:
             f.write(body)
 
+# Alias for backward compatibility with legislative_scraper.py
+MultiLLMOrchestrator = AttunedSynchronizer
+
 if __name__ == "__main__":
     API_KEY = os.getenv("GEMINI_API_KEY", "API_KEY_REQUIRED")
     ENGINE = AttunedSynchronizer(api_key=API_KEY)

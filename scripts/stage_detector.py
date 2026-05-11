@@ -70,6 +70,7 @@ STAGE_PATTERNS = {
         re.compile(r'draft\s+bill\s+202', re.I),
         re.compile(r'draft\s+legislation', re.I),
         re.compile(r'not\s+yet\s+gazetted', re.I),
+        re.compile(r'publication\s+of\s+the\s+bill', re.I),
     ],
     "first_reading": [
         re.compile(r'(?:1st|first)\s+reading\s+of\s+bills?', re.I),
@@ -84,6 +85,7 @@ STAGE_PATTERNS = {
         re.compile(r'(?:2nd|second)\s+reading', re.I),
         re.compile(r'read\s+for\s+the\s+(?:2nd|second)\s+time', re.I),
         re.compile(r'2nd\s+reading', re.I),
+        re.compile(r'debate\s+on\s+the\s+second\s+reading', re.I),
     ],
     "committee": [
         re.compile(r'committee\s+stage', re.I),
@@ -91,11 +93,15 @@ STAGE_PATTERNS = {
         re.compile(r'referred\s+to\s+(?:the\s+)?committee', re.I),
         re.compile(r'departmental\s+committee\s+(?:on\s+)?.*?report', re.I),
         re.compile(r'committee\s+report\s+on', re.I),
+        re.compile(r'consideration\s+of\s+the\s+bill\s+in\s+committee', re.I),
+        re.compile(r'clause\s+by\s+clause\s+consideration', re.I),
     ],
     "report": [
         re.compile(r'report\s+stage', re.I),
         re.compile(r'report\s+of\s+(?:the\s+)?committee\s+of\s+the\s+whole', re.I),
         re.compile(r'report\s+adopted', re.I),
+        re.compile(r'tabling\s+of\s+the\s+report', re.I),
+        re.compile(r'consideration\s+of\s+report', re.I),
     ],
     "third_reading": [
         re.compile(r'(?:3rd|third)\s+reading\s+of\s+bills?', re.I),
@@ -104,6 +110,7 @@ STAGE_PATTERNS = {
         re.compile(r'read\s+for\s+the\s+(?:3rd|third)\s+time', re.I),
         re.compile(r'bill\s+passed', re.I),
         re.compile(r'3rd\s+reading', re.I),
+        re.compile(r'passed\s+by\s+the\s+house', re.I),
     ],
     "mediation": [
         re.compile(r'mediation\s+committee', re.I),
@@ -111,6 +118,7 @@ STAGE_PATTERNS = {
         re.compile(r'concurrence\s+of\s+(?:the\s+)?senate', re.I),
         re.compile(r'senate\s+amendments?', re.I),
         re.compile(r'joint\s+(?:select\s+)?committee', re.I),
+        re.compile(r'disagreed\s+with\s+the\s+amendments', re.I),
     ],
     "assent": [
         re.compile(r'presidential\s+assent', re.I),
@@ -118,6 +126,7 @@ STAGE_PATTERNS = {
         re.compile(r'commencement\s+(?:date|notice)', re.I),
         re.compile(r'enacted\s+by\s+the\s+parliament', re.I),
         re.compile(r'(?:kenya\s+)?gazette\s+(?:notice|supplement).*?(?:act\s+no|commencement)', re.I),
+        re.compile(r'signed\s+into\s+law', re.I),
     ],
     "discarded": [
         re.compile(r'withdrawn\s+by\s+(?:the\s+)?sponsor', re.I),
@@ -127,6 +136,8 @@ STAGE_PATTERNS = {
         re.compile(r'lapsed\s+under\s+standing\s+order', re.I),
         re.compile(r'nullified\s+by\s+(?:the\s+)?court', re.I),
         re.compile(r'not\s+passed', re.I),
+        re.compile(r'bill\s+rejected', re.I),
+        re.compile(r'vetoed\s+by\s+president', re.I),
     ],
 }
 
@@ -308,35 +319,49 @@ class StageDetector:
     STAGE_SOURCES = [
         {
             "name": "National Assembly Order Papers",
-            "url": "http://www.parliament.go.ke/the-national-assembly/house-business/order-paper",
+            "url": "https://www.parliament.go.ke/the-national-assembly/house-business/order-paper",
             "selector": "a[href$='.pdf']",
             "type": "order_paper",
             "house": "National Assembly",
         },
         {
             "name": "Senate Order Papers",
-            "url": "http://www.parliament.go.ke/the-senate/house-business/order-paper",
+            "url": "https://www.parliament.go.ke/the-senate/house-business/order-paper",
             "selector": "a[href$='.pdf']",
             "type": "order_paper",
             "house": "Senate",
         },
         {
             "name": "National Assembly Hansard",
-            "url": "http://www.parliament.go.ke/the-national-assembly/house-business/hansard",
+            "url": "https://www.parliament.go.ke/the-national-assembly/house-business/hansard",
             "selector": "a[href$='.pdf']",
             "type": "hansard",
             "house": "National Assembly",
         },
         {
             "name": "Senate Hansard",
-            "url": "http://www.parliament.go.ke/the-senate/house-business/hansard",
+            "url": "https://www.parliament.go.ke/the-senate/house-business/hansard",
             "selector": "a[href$='.pdf']",
             "type": "hansard",
             "house": "Senate",
         },
         {
+            "name": "National Assembly Votes & Proceedings",
+            "url": "https://www.parliament.go.ke/the-national-assembly/house-business/votes-proceeding",
+            "selector": "a[href$='.pdf']",
+            "type": "votes_proceedings",
+            "house": "National Assembly",
+        },
+        {
+            "name": "Parliament Bill Tracker",
+            "url": "https://www.parliament.go.ke/the-national-assembly/house-business/bill-tracker",
+            "selector": "a[href$='.pdf']",
+            "type": "bill_tracker",
+            "house": "National Assembly",
+        },
+        {
             "name": "Committee Reports",
-            "url": "http://www.parliament.go.ke/the-national-assembly/house-business/committee-reports",
+            "url": "https://www.parliament.go.ke/the-national-assembly/house-business/committee-reports",
             "selector": "a[href$='.pdf']",
             "type": "committee_report",
             "house": "National Assembly",

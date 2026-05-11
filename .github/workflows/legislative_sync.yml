@@ -71,7 +71,7 @@ jobs:
           pip install \
             playwright supabase requests pymupdf pdfplumber python-dotenv \
             beautifulsoup4 pillow pdf2image pytesseract \
-            google-genai \
+            google-genai google-search-results \
             groq openai anthropic cohere \
             boto3 aiohttp lxml
           # Install cerebras SDK (may fail gracefully if not available)

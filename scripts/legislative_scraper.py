@@ -1317,19 +1317,38 @@ Return EXACTLY a JSON object with these keys:
                     result['description'] = extracted[:2000]
                     break
 
-        # --- Sponsor extraction ---
-        sponsor_patterns = [
-            re.compile(r'(?:Moved|Tabled|Introduced|Presented)\s+by[:\s]+(?:The\s+)?(?:Hon\.?\s+)?(.*?)(?:\s*,\s*M\.?P\.?|\s*,\s*MP|\n|$)', re.I),
-            re.compile(r'(?:Cabinet\s+Secretary\s+for\s+)(\w[\w\s,]+?)(?:\.|\n|$)', re.I),
-            re.compile(r'(?:Authored\s+by|Sponsored\s+by)[:\s]+(.*?)(?:\.|\n|$)', re.I),
+        # --- Sponsor extraction (Structural Priority) ---
+        sponsor = None
+        
+        # Phase 1: Header/Cover Search (High Signal)
+        header_text = text[:3000]
+        header_patterns = [
+            re.compile(r'Sponsored\s+by\s+(?:the\s+)?(?:Hon\.?\s+)?([\w\s,]+?)(?:\s*,\s*MP|\s*,\s*M\.?P\.?|\n|$)', re.I),
+            re.compile(r'Presented\s+by\s+(?:the\s+)?(?:Hon\.?\s+)?([\w\s,]+?)(?:\s*,\s*MP|\s*,\s*M\.?P\.?|\n|$)', re.I),
+            re.compile(r'Sponsor:\s+([\w\s,]+?)(?:\n|$)', re.I),
         ]
-        for pat in sponsor_patterns:
-            m = pat.search(text[:2000])
+        for pat in header_patterns:
+            m = pat.search(header_text)
             if m:
-                sponsor = m.group(1).strip()
-                if len(sponsor) > 2 and len(sponsor) < 200:
-                    result['sponsor'] = sponsor
+                extracted = m.group(1).strip()
+                if 3 < len(extracted) < 150 and "means" not in extracted.lower():
+                    sponsor = extracted
                     break
+        
+        # Phase 2: Memorandum Search (Truth Layer)
+        if not sponsor:
+            memo_idx = text.lower().find("memorandum of objects and reasons")
+            if memo_idx != -1:
+                # Isolate the memo block (next 3k chars)
+                memo_block = text[memo_idx : memo_idx + 4000]
+                # Look for names associated with titles at the end
+                signature_pat = re.compile(r'(?:Hon\.?\s+)?([\w\s,]{3,100})\s*,\s*(?:Member\s+of\s+Parliament|Senator|Leader\s+of\s+the\s+Majority|Chairperson)', re.I)
+                m = signature_pat.search(memo_block)
+                if m:
+                    sponsor = m.group(1).strip()
+
+        if sponsor:
+            result['sponsor'] = sponsor
 
         # --- Date extraction from text ---
         date_patterns = [
@@ -1383,10 +1402,10 @@ Return EXACTLY a JSON object with these keys:
 
     # --- Hardened Bill Classification ---
     _BILL_BLOCKLIST = (
-        'hansard', 'order paper', 'bill digest', 'questions',
+        'hansard', 'order paper', 'questions',
         'notice of motion', 'petitions', 'committee report',
         'sessional paper', 'supplement', 'gazette notice',
-        'votes and proceedings', 'speaker', 'adjournment',
+        'speaker', 'adjournment',
         'business paper', 'progress report', 'standing orders',
         'procedural motion', 'government statement',
         'swearing in', 'obituary', 'tributes',
@@ -1419,40 +1438,69 @@ Return EXACTLY a JSON object with these keys:
         return m.group(0) if m else None
 
     def _extract_bill_no(self, text: str) -> str:
-        m = re.search(r'Bill No\.? (\d+)', text, re.I)
+        # Matches: Bill No. 8, Bills No. 10, Senate Bills No. 8, National Assembly Bill No. 1
+        m = re.search(r'(?:Senate|National Assembly|NA|SENATE)\s*(?:Bills?)\s+No\.?\s*(\d+)', text, re.I)
+        if not m:
+            # Fallback to standard Bill No pattern
+            m = re.search(r'Bill No\.? (\d+)', text, re.I)
+        
         return f"No. {m.group(1)}" if m else ""
 
     def _infer_status_from_text(self, text: str, title: str) -> str:
         """
-        High-fidelity status inference using fuzzy normalization and layered detection.
-        Maps all findings into canonical UI labels: 1ST READING, ASSENT, DISCARDED, etc.
+        High-fidelity status inference using a Stage Stamp Dictionary.
+        Scans for physical stamps and Hansard markers first.
         """
-        # Layer 1: Title and Header Scan
-        t = (title.lower() + " " + text[:2000].lower())
+        t = (title.lower() + " " + text.lower())
         
-        # Layer 2: Explicit Stage Discovery via Detector
-        detected_stage = None
+        # 1. EXHAUSTIVE STAMP DICTIONARY (ALL STAGES)
+        STAMP_DICT = {
+            "ASSENT": [
+                re.compile(r'PRESIDENTIAL\s+ASSENT\s+ON\s+(\d{1,2}\s+[A-Z]{3}\s+202[4-9])', re.I),
+                re.compile(r'signed\s+into\s+law', re.I)
+            ],
+            "3RD READING": [
+                re.compile(r'(\d{1,2}\s+[A-Z]{3}\s+202[4-9])\s+THIRD\s+READING', re.I),
+                re.compile(r'MOTION\s+FOR\s+THIRD\s+READING', re.I)
+            ],
+            "REPORT STAGE": [
+                re.compile(r'REPORT\s+ON\s+THE\s+BILL\s+CONSIDERED\s+IN\s+COMMITTEE', re.I)
+            ],
+            "COMMITTEE STAGE": [
+                re.compile(r'REPORTED\s+FROM\s+THE\s+COMMITTEE\s+OF\s+THE\s+WHOLE\s+HOUSE', re.I),
+                re.compile(r'IN\s+THE\s+COMMITTEE', re.I)
+            ],
+            "SECOND READING": [
+                re.compile(r'(\d{1,2}\s+[A-Z]{3}\s+202[4-9])\s+SECOND\s+READING', re.I),
+                re.compile(r'MOTION\s+FOR\s+SECOND\s+READING', re.I)
+            ],
+            "1ST READING": [
+                re.compile(r'(\d{1,2}\s+[A-Z]{3}\s+202[4-9])\s+(?:THE\s+)?(?:SENATE|NATIONAL\s+ASSEMBLY)?\s+FIRST\s+READING', re.I),
+                re.compile(r'Read\s+a\s+First\s+Time\s+and\s+referred\s+to\s+the\s+Committee', re.I)
+            ],
+            "DISCARDED": [
+                re.compile(r'BILL\s+NEGATIVED', re.I),
+                re.compile(r'WITHDRAWN\s+BY\s+THE\s+MOVER', re.I),
+                re.compile(r'BILL\s+DIES', re.I)
+            ]
+        }
+
+        for stage, patterns in STAMP_DICT.items():
+            for pat in patterns:
+                if pat.search(text):
+                    return stage
+
+        # 2. Layered detection fallback
         if STAGE_DETECTOR_OK:
-            detected_stage = detect_stage_from_text(text, title)
-            
-        if detected_stage:
-            return normalize_stage_label(detected_stage)
+            detected = detect_stage_from_text(text, title)
+            if detected: return normalize_stage_label(detected)
 
-        # Layer 3: Termination Check (Discarded)
-        discard_keywords = ['withdrawn', 'rejected', 'negatived', 'lapsed', 'nullified']
-        if any(w in t for w in discard_keywords):
-            return "DISCARDED"
-
-        # Layer 4: Finality Check (Assent)
-        if 'assent' in t or 'signature' in t:
-            return "ASSENT"
-            
-        # Layer 5: Progress Check
+        # 3. Simple Keyword Fallback
+        if 'assent' in t: return "ASSENT"
         if 'reading' in t:
-            if 'first' in t or '1st' in t: return "1ST READING"
-            if 'second' in t or '2nd' in t: return "2ND READING"
-            if 'third' in t or '3rd' in t: return "3RD READING"
-            return "1ST READING" # Default reading
+            if 'third' in t: return "3RD READING"
+            if 'second' in t: return "2ND READING"
+            return "1ST READING"
 
         return "PUBLISHED"
 
