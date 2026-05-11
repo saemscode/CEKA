@@ -145,7 +145,7 @@ def sync_data(output_dir="processed_data/legislative"):
             new_data = {
                 "title": item.get("title"),
                 "sponsor": item.get("sponsor"),
-                "sponsor_title": item.get("sponsor_title"), # NEW
+                "sponsor_title": item.get("sponsor_title"),
                 "status": item.get("status"),
                 "category": item.get("category"),
                 "date": item.get("date"),
@@ -154,10 +154,16 @@ def sync_data(output_dir="processed_data/legislative"):
                 "text_content": item.get("text_content"),
                 "description": item.get("description"),
                 "summary": item.get("summary") or f"Legislative tracker: {item.get('title')}",
-                "constitutional_section": item.get("constitutional_section"), # NEW
-                "is_money_bill": item.get("is_money_bill"), # NEW
-                "concerns_counties": item.get("concerns_counties"), # NEW
-                "stages": item.get("stages") or item.get("metadata", {}).get("bill_type"), # NEW (fallback to bill_type)
+                "constitutional_section": item.get("constitutional_section") or item.get("metadata", {}).get("constitutional_section"),
+                "neural_summary": item.get("neural_summary") or item.get("metadata", {}).get("neural_summary"),
+                "tabloid_summary": item.get("tabloid_summary") or item.get("metadata", {}).get("tabloid_summary"),
+                "ai_concerns": item.get("ai_concerns") or item.get("metadata", {}).get("ai_concerns") or [],
+                "corroboration_score": item.get("corroboration_score") or item.get("metadata", {}).get("corroboration_score") or 0,
+                "verified_sources": item.get("verified_sources") or item.get("metadata", {}).get("verified_sources") or [],
+                "analysis_status": item.get("analysis_status") or item.get("metadata", {}).get("status") or "completed",
+                "is_money_bill": item.get("is_money_bill"),
+                "concerns_counties": item.get("concerns_counties"),
+                "stages": item.get("stages") or item.get("metadata", {}).get("bill_type"),
                 "updated_at": datetime.now().isoformat()
             }
             

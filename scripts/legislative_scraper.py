@@ -1335,17 +1335,35 @@ Return EXACTLY a JSON object with these keys:
                     sponsor = extracted
                     break
         
-        # Phase 2: Memorandum Search (Truth Layer)
+        # Phase 2: Memorandum Search (Truth Layer) - ENTIRE TEXT SCAN
         if not sponsor:
-            memo_idx = text.lower().find("memorandum of objects and reasons")
-            if memo_idx != -1:
-                # Isolate the memo block (next 3k chars)
-                memo_block = text[memo_idx : memo_idx + 4000]
-                # Look for names associated with titles at the end
-                signature_pat = re.compile(r'(?:Hon\.?\s+)?([\w\s,]{3,100})\s*,\s*(?:Member\s+of\s+Parliament|Senator|Leader\s+of\s+the\s+Majority|Chairperson)', re.I)
-                m = signature_pat.search(memo_block)
-                if m:
-                    sponsor = m.group(1).strip()
+            # The Memorandum can appear anywhere (middle/end)
+            memo_match = re.search(r'MEMORANDUM\s+OF\s+OBJECTS\s+AND\s+REASONS', text, re.I)
+            if memo_match:
+                memo_idx = memo_match.start()
+                # Targeted Windowing: 3,000 characters from the marker
+                memo_block = text[memo_idx : memo_idx + 3500]
+                
+                # Logic: Ignore everything until 'Dated'
+                dated_match = re.search(r'Dated\s+the', memo_block, re.I)
+                if dated_match:
+                    signature_block = memo_block[dated_match.start():]
+                    # Capture name immediately following the date and preceding the title
+                    # Pattern: Dated ... 2026. [Name], [Title]
+                    # We use a broad name capture then filter
+                    sig_pat = re.compile(r'Dated.*?202\d\.?\s*\n?\s*([\w\s,.]+?)\s*,\s*(?:Member\s+of\s+Parliament|Senator|Leader\s+of\s+the\s+Majority|Chairperson|Cabinet\s+Secretary)', re.S | re.I)
+                    sm = sig_pat.search(signature_block)
+                    if sm:
+                        name = sm.group(1).strip()
+                        # Clean up "Hon." and leading/trailing whitespace
+                        name = re.sub(r'^(?:the\s+)?(?:Hon\.?\s+)', '', name, flags=re.I).strip()
+                        # Disqualify Interpretation Clauses (Definition zones)
+                        # If the name is followed by 'means' within 5 words, it's a definition.
+                        context_after = signature_block[sm.end() : sm.end() + 100].lower()
+                        is_interpretation = "means" in context_after and len(context_after.split("means")[0].split()) < 5
+                        
+                        if 3 < len(name) < 100 and not is_interpretation:
+                            sponsor = name
 
         if sponsor:
             result['sponsor'] = sponsor
@@ -1409,6 +1427,7 @@ Return EXACTLY a JSON object with these keys:
         'business paper', 'progress report', 'standing orders',
         'procedural motion', 'government statement',
         'swearing in', 'obituary', 'tributes',
+        # Removed 'bill digest' and 'bill tracker' as they are now truth sources
     )
     _BILL_REQUIRED_PATTERN = re.compile(
         r'\b(bill|bills|amendment\s+bill|finance\s+bill|appropriation\s+bill|supply\s+bill)\b',
@@ -1438,11 +1457,11 @@ Return EXACTLY a JSON object with these keys:
         return m.group(0) if m else None
 
     def _extract_bill_no(self, text: str) -> str:
-        # Matches: Bill No. 8, Bills No. 10, Senate Bills No. 8, National Assembly Bill No. 1
-        m = re.search(r'(?:Senate|National Assembly|NA|SENATE)\s*(?:Bills?)\s+No\.?\s*(\d+)', text, re.I)
+        # Multi-House Bill Number Logic: Captures Senate, National Assembly, NA prefixes
+        m = re.search(r'(?:Senate|National\s+Assembly|NA|SENATE)\s*(?:Bills?)\s+No\.?\s*(\d+)', text, re.I)
         if not m:
-            # Fallback to standard Bill No pattern
-            m = re.search(r'Bill No\.? (\d+)', text, re.I)
+            # Fallback to standard Bill No pattern with plural support
+            m = re.search(r'\bBills?\s+No\.?\s*(\d+)', text, re.I)
         
         return f"No. {m.group(1)}" if m else ""
 
@@ -1453,18 +1472,27 @@ Return EXACTLY a JSON object with these keys:
         """
         t = (title.lower() + " " + text.lower())
         
-        # 1. EXHAUSTIVE STAMP DICTIONARY (ALL STAGES)
+        # 1. EXHAUSTIVE STAMP DICTIONARY (12+ STAGES) - 2026 FORMATS
         STAMP_DICT = {
             "ASSENT": [
                 re.compile(r'PRESIDENTIAL\s+ASSENT\s+ON\s+(\d{1,2}\s+[A-Z]{3}\s+202[4-9])', re.I),
-                re.compile(r'signed\s+into\s+law', re.I)
+                re.compile(r'SIGNED\s+BY\s+THE\s+PRESIDENT', re.I),
+                re.compile(r'ACT\s+NO\.\s+\d+\s+OF\s+202[4-9]', re.I)
+            ],
+            "PASSED": [
+                re.compile(r'PASSED\s+WITH(?:OUT)?\s+AMENDMENTS\s+BY\s+THE\s+(?:NATIONAL ASSEMBLY\|SENATE)', re.I),
+                re.compile(r'READ\s+A\s+THIRD\s+TIME\s+AND\s+PASSED', re.I)
+            ],
+            "FORWARDED": [
+                re.compile(r'FORWARDED\s+TO\s+THE\s+(?:SENATE\|NATIONAL\s+ASSEMBLY)\s+FOR\s+CONCURRENCE', re.I)
             ],
             "3RD READING": [
                 re.compile(r'(\d{1,2}\s+[A-Z]{3}\s+202[4-9])\s+THIRD\s+READING', re.I),
                 re.compile(r'MOTION\s+FOR\s+THIRD\s+READING', re.I)
             ],
             "REPORT STAGE": [
-                re.compile(r'REPORT\s+ON\s+THE\s+BILL\s+CONSIDERED\s+IN\s+COMMITTEE', re.I)
+                re.compile(r'REPORT\s+ON\s+THE\s+BILL\s+CONSIDERED\s+IN\s+COMMITTEE', re.I),
+                re.compile(r'REPORT\s+OF\s+THE\s+COMMITTEE\s+OF\s+THE\s+WHOLE\s+HOUSE', re.I)
             ],
             "COMMITTEE STAGE": [
                 re.compile(r'REPORTED\s+FROM\s+THE\s+COMMITTEE\s+OF\s+THE\s+WHOLE\s+HOUSE', re.I),
@@ -1474,13 +1502,22 @@ Return EXACTLY a JSON object with these keys:
                 re.compile(r'(\d{1,2}\s+[A-Z]{3}\s+202[4-9])\s+SECOND\s+READING', re.I),
                 re.compile(r'MOTION\s+FOR\s+SECOND\s+READING', re.I)
             ],
-            "1ST READING": [
-                re.compile(r'(\d{1,2}\s+[A-Z]{3}\s+202[4-9])\s+(?:THE\s+)?(?:SENATE|NATIONAL\s+ASSEMBLY)?\s+FIRST\s+READING', re.I),
-                re.compile(r'Read\s+a\s+First\s+Time\s+and\s+referred\s+to\s+the\s+Committee', re.I)
+            "COMMITTEE": [
+                re.compile(r'Read\s+a\s+First\s+Time\s+and\s+referred\s+to\s+the\s+(?:Departmental\|Standing)?\s+Committee', re.I)
             ],
-            "DISCARDED": [
-                re.compile(r'BILL\s+NEGATIVED', re.I),
-                re.compile(r'WITHDRAWN\s+BY\s+THE\s+MOVER', re.I),
+            "1ST READING": [
+                re.compile(r'(\d{1,2}\s+[A-Z]{3}\s+202[4-9])\s+(?:THE\s+)?(?:SENATE|NATIONAL\s+ASSEMBLY)?\s+FIRST\s+READING', re.I)
+            ],
+            "PUBLISHED": [
+                re.compile(r'Kenya\s+Gazette\s+Supplement\s+No\.', re.I),
+                re.compile(r'Special\s+Issue', re.I)
+            ],
+            "NEGATIVED": [
+                re.compile(r'THE\s+QUESTION\s+BE\s+NOW\s+PUT\s+WAS\s+NEGATIVED', re.I),
+                re.compile(r'BILL\s+NEGATIVED', re.I)
+            ],
+            "WITHDRAWN": [
+                re.compile(r'BILL\s+WITHDRAWN\s+BY\s+THE\s+MOVER', re.I),
                 re.compile(r'BILL\s+DIES', re.I)
             ]
         }
@@ -1577,6 +1614,21 @@ Return EXACTLY a JSON object with these keys:
                     return pdf_bytes
             except Exception as e:
                 logger.warning(f"      [DL] Playwright API request failed: {e}")
+
+        # Method 5: Agentic Hunter (Manus API Fallback)
+        if not pdf_bytes and self.orchestrator:
+            logger.info(f"      [DL] TRIGERING MANUS AGENT FALLBACK for: {url}")
+            goal = f"Download the primary legislative PDF for the Bill at this URL: {url}. Ensure it is a valid PDF binary."
+            manus_result = self.orchestrator.call_manus_agent(goal)
+            if manus_result:
+                # Manus might return a URL or base64. Assuming URL for now.
+                try:
+                    if manus_result.startswith("http"):
+                        r = requests.get(manus_result, timeout=30)
+                        if r.content[:5] == b"%PDF-":
+                            return r.content
+                except:
+                    pass
 
         logger.warning(f"      [DL] All download methods failed for: {url}")
         return None
