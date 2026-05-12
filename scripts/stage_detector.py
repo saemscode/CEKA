@@ -403,10 +403,25 @@ class StageDetector:
         """
         Scan a document's text for stage mentions of any active bill.
         Returns list of {bill_id, bill_title, detected_stage, source_text_snippet}.
+        
+        TEMPORAL GUARD: Only accepts signals if the document year matches the bill's session_year.
         """
+        # 1. Extract the primary date/year of this document
+        detected_date = extract_date_from_order_paper(text)
+        detected_year = int(detected_date.split('-')[0]) if detected_date else None
+        
         results = []
         for bill in bills:
             title = bill.get("title", "")
+            bill_year = bill.get("session_year")
+            
+            # --- AGENTIC TEMPORAL GUARD ---
+            # If we know the document year and it mismatch the bill's intended session_year, 
+            # we ignore this document to prevent contamination (e.g., 2024 news affecting 2026 record).
+            if detected_year and bill_year and int(detected_year) != int(bill_year):
+                logger.debug(f"      [Temporal Guard] Skipping '{title}' (Bill Year: {bill_year} vs Doc Year: {detected_year})")
+                continue
+
             stage = detect_stage_from_text(text, title)
             if stage:
                 # Find the matching snippet for audit
@@ -426,6 +441,7 @@ class StageDetector:
                     "bill_title": title,
                     "detected_stage": stage,
                     "source_snippet": snippet[:500],
+                    "detected_date": detected_date
                 })
         return results
 

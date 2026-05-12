@@ -52,9 +52,9 @@ export function getStageIndex(status: string | undefined | null): number {
   if (!status) return 0;
   const s = status.toLowerCase().trim();
 
-  // Discarded at any stage
-  if (s.includes('discarded') || s.includes('withdrawn') || s.includes('lapsed') ||
-      s.includes('negatived') || s.includes('rejected') || s.includes('failed')) {
+  // Discarded at any stage (Strict Match)
+  if (s === 'discarded' || s === 'withdrawn' || s === 'negatived' || s === 'rejected' ||
+     (s.includes('rejected') && s.includes('reading')) || s === 'failed') {
     return -1;
   }
 

@@ -128,6 +128,37 @@ ALL_MONITORED_COLUMNS = AI_FILLABLE_COLUMNS + STRUCTURAL_COLUMNS + [
 ]
 
 # ---------------------------------------------------------------------------
+# Portfolio Keyword Pools (No Mediocrity Classification)
+# ---------------------------------------------------------------------------
+PORTFOLIO_KEYWORD_POOL = {
+    "Finance": [
+        "tax", "vat", "revenue", "treasury", "budget", "finance", "appropriation",
+        "audit", "money", "bank", "financial", "account", "expenditure", "excise",
+        "customs", "levy", "duty", "fiscal", "pension", "debt"
+    ],
+    "Education": [
+        "school", "university", "teacher", "student", "education", "learning",
+        "curriculum", "science", "technology", "tvet", "training", "academic",
+        "scholarship", "college", "exam", "primary", "secondary"
+    ],
+    "Healthcare": [
+        "health", "medical", "hospital", "nhif", "sha", "doctor", "nurse",
+        "vaccine", "disease", "clinical", "pharmacy", "patient", "medicine",
+        "surgical", "public health", "drug", "clinic"
+    ],
+    "Environment": [
+        "environment", "climate", "forest", "water", "land", "wildlife", "nature",
+        "pollution", "carbon", "mining", "natural resources", "conservation",
+        "agriculture", "farming", "crop", "livestock", "renewable"
+    ],
+    "Governance": [
+        "election", "iebc", "parliament", "county", "devolution", "ethics",
+        "corruption", "judiciary", "justice", "law", "constitution", "rights",
+        "public service", "administration", "leadership", "executive"
+    ]
+}
+
+# ---------------------------------------------------------------------------
 # Sentinel Master Prompt Loader
 # ---------------------------------------------------------------------------
 def load_sentinel_prompt() -> str:
@@ -303,15 +334,17 @@ Only generate new values for keys where the existing value is null, empty, or mi
   "is_money_bill": true or false,
   "concerns_counties": true or false,
   "status": "One of: Publication, First Reading, Second Reading, Committee Stage, Third Reading, Presidential Assent, Made into Law, Negatived, Withdrawn",
-  "corroboration_score": 0-100 integer based on how well-evidenced the bill's data is,
+  "corroboration_score": 0-100,
   "bill_no": "e.g. 'No. 14 of 2024' — extract from text if present, else null",
   "session_year": "e.g. 2024 — integer year from bill number or text",
   "gazette_no": "Gazette notice number if present, else null",
-  "house": "National Assembly or Senate — infer from title or text context"
+  "house": "National Assembly or Senate — infer from title or text context",
+  "category": "Must be exactly one of: ['Finance', 'Education', 'Healthcare', 'Environment', 'Governance']"
 }}
 
 RULES:
 - Return ONLY the JSON object. No preamble. No markdown fences.
+- category MUST be strictly one of the 5 authorized portfolios based on core intent.
 - constitutional_section MUST reference specific articles (e.g. 'Article 201, Article 209, Chapter 12').
 - ai_concerns MUST be a JSON array of at least 3 plain-English strings.
 - tabloid_summary MUST be ONE sentence, not more than 30 words.
@@ -461,6 +494,26 @@ class SovereignRefresh:
         # analysis_status → mark complete if we've filled key fields
         if "neural_summary" in update_data or "summary" in update_data:
             update_data["analysis_status"] = "completed"
+
+        # --- SOVEREIGN AI CHECKER LAYER (Categorization) ---
+        ai_cat = update_data.get("category") or bill.get("category")
+        if not ai_cat or ai_cat not in PORTFOLIO_KEYWORD_POOL:
+            # Re-run keyword density check if AI fails or category is missing
+            logger.info(f"    [AI Checker] Validating portfolio classification for '{bill.get('title')[:30]}...'")
+            scores = {cat: 0 for cat in PORTFOLIO_KEYWORD_POOL.keys()}
+            search_text = (text + " " + (bill.get("title") or "") + " " + (intel.get("summary") or "")).lower()
+            
+            for cat, keywords in PORTFOLIO_KEYWORD_POOL.items():
+                for kw in keywords:
+                    if kw in search_text:
+                        scores[cat] += search_text.count(kw)
+            
+            best_cat = max(scores, key=scores.get)
+            if scores[best_cat] > 0:
+                logger.info(f"    → AI Checker assigned: {best_cat} (Score: {scores[best_cat]})")
+                update_data["category"] = best_cat
+            else:
+                update_data["category"] = "Governance" # Default to Governance if no hits
 
         update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
 
