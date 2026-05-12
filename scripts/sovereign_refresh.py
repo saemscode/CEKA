@@ -392,12 +392,13 @@ class SovereignRefresh:
 
     def _fetch_all_bills(self, limit: Optional[int] = None, target_id: Optional[str] = None) -> List[Dict[str, Any]]:
         """Fetches bills from the database for Phase A sweep."""
+        # Columns pruned to match live schema (pruned: is_money_bill, concerns_counties, gazette_no, sponsor_title)
         columns = (
-            "id,title,url,pdf_url,text_content,status,sponsor,sponsor_title,"
+            "id,title,url,pdf_url,text_content,status,sponsor,"
             "summary,description,neural_summary,tabloid_summary,ai_concerns,"
-            "constitutional_section,corroboration_score,is_money_bill,"
-            "concerns_counties,bill_no,gazette_no,session_year,house,date,"
-            "category,stages,analysis_status,verified_sources,history"
+            "constitutional_section,corroboration_score,bill_no,"
+            "session_year,house,date,category,stages,analysis_status,"
+            "verified_sources,history"
         )
         
         if target_id:
@@ -446,20 +447,17 @@ class SovereignRefresh:
         # Map intel output → database columns, only if target is currently empty
         field_map = {
             "sponsor": "sponsor",
-            "sponsor_title": "sponsor_title",
             "short_title": "description",
             "summary": "summary",
             "neural_summary": "neural_summary",
             "tabloid_summary": "tabloid_summary",
             "constitutional_section": "constitutional_section",
             "corroboration_score": "corroboration_score",
-            "is_money_bill": "is_money_bill",
-            "concerns_counties": "concerns_counties",
             "status": "status",
             "bill_no": "bill_no",
             "session_year": "session_year",
-            "gazette_no": "gazette_no",
             "house": "house",
+            "category": "category",
         }
 
         for intel_key, db_col in field_map.items():
@@ -480,8 +478,8 @@ class SovereignRefresh:
             update_data["text_content"] = text[:50000]
 
         # Stage detection from text (12+ dictionary)
-        if text and not bill.get("status"):
-            detected = detect_stage_from_text(text)
+        if text and (not bill.get("status") or self.force):
+            detected = detect_stage_from_text(text, bill.get("title", ""))
             if detected:
                 update_data["status"] = detected
                 if STAGES_OK:

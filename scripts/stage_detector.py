@@ -247,12 +247,26 @@ def detect_stage_from_text(text: str, bill_title: str) -> Optional[str]:
         return None
 
     # Find all stages mentioned
+    # Extract year from bill title for context guard (e.g. 2026)
+    title_year_match = re.search(r'\b(20\d{2})\b', bill_title)
+    bill_year = int(title_year_match.group(1)) if title_year_match else None
+
+    # Find all stages mentioned using line-level context guard
     detected_stages = []
+    lines = text.split('\n')
     for stage_key, patterns in STAGE_PATTERNS.items():
         for pat in patterns:
-            if pat.search(text):
-                detected_stages.append(stage_key)
-                break
+            for line in lines:
+                if pat.search(line):
+                    # 🚨 DUAL CONTEXT GUARD: If line mentions a DIFFERENT year, ignore it
+                    line_years = re.findall(r'\b(20\d{2})\b', line)
+                    if line_years and bill_year:
+                        if all(int(y) != bill_year for y in line_years):
+                            # This line refers to a different year's bill (e.g., 2024 withdrawal in 2026 doc)
+                            continue
+                    
+                    detected_stages.append(stage_key)
+                    break 
 
     if not detected_stages:
         return None
