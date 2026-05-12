@@ -1,6 +1,6 @@
 import React from 'react';
 import { cn } from "@/lib/utils";
-import { TrendingUp, Users } from "lucide-react";
+import { UsersIcon, ChartIcon } from "../ui/CustomIcons";
 
 interface SignatureCounterProps {
   current: number;
@@ -22,7 +22,7 @@ export const SignatureCounter: React.FC<SignatureCounterProps> = ({
       <div className={cn("flex flex-col gap-1.5", className)}>
         <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-slate-400">
           <span className="flex items-center gap-1.5 text-kenya-green">
-            <Users size={10} />
+            <UsersIcon size={10} />
             {current.toLocaleString()}
           </span>
           <span>{percentage.toFixed(0)}%</span>
@@ -52,10 +52,10 @@ export const SignatureCounter: React.FC<SignatureCounterProps> = ({
         <div className="flex items-end justify-between">
           <div className="space-y-1">
             <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 flex items-center gap-2">
-              <TrendingUp size={12} className="text-kenya-green" />
+              <ChartIcon size={12} className="text-kenya-green" />
               Campaign Goal
             </p>
-            <h4 className="text-4xl font-[1000] tracking-tighter italic text-slate-900 dark:text-white leading-none">
+            <h4 className="text-4xl font-[1000] tracking-tighter text-slate-900 dark:text-white leading-none">
               {current.toLocaleString()}
             </h4>
           </div>

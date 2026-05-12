@@ -5,10 +5,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { 
-  Send, Mail, FileText, CheckCircle, User, AlertTriangle, Scale, Users, 
-  ArrowUpRight, Info, Save, Edit2, ShieldCheck, MailPlus, X, Share2, 
-  MapPin, Hash, Sparkles, DownloadCloud, Fingerprint, ChevronRight
-} from "lucide-react";
+  BankIcon, ShareIcon, CommentsIcon, GlobeIcon, SearchIcon, 
+  UsersIcon, ChartIcon, ThumbIcon, KenyaIcon, KeyIcon, 
+  LocationIcon, CommandIcon, WidgetIcon, ScanIcon, PathIcon, 
+  BuildingsIcon, StarIcon, CloseIcon, ArrowLeftIcon 
+} from "../ui/CustomIcons";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -97,10 +98,10 @@ Citizen of Kenya`;
   const getProcessedBody = () => {
     let processed = messageBody;
     const tokens: Record<string, string> = {
-      '{{full_name}}': identity.name || '[FULL NAME]',
+      '{{full_name}}': identity.name || '[FIRST NAME]',
       '{{constituency}}': identity.constituency || '[CONSTITUENCY]',
       '{{county}}': identity.county || '[COUNTY]',
-      '{{date}}': new Date().toLocaleDateString(),
+      '{{date}}': new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }),
       '{{bill_title}}': billTitle
     };
 
@@ -202,7 +203,7 @@ Citizen of Kenya`;
         </div>
         <div style="margin-top: 80px; padding-top: 30px; border-top: 1px solid #ccc; text-align: center;">
           <p style="margin: 0; font-weight: bold;">Digital Signature</p>
-          <p style="margin: 5px 0; font-size: 18px; font-family: cursive;">${identity.name}</p>
+          <p style="margin: 5px 0; font-size: 18px; font-weight: 900; text-transform: uppercase; letter-spacing: 2px;">${identity.name}</p>
           <p style="font-size: 10px; color: #888; text-transform: uppercase;">Reference ID: ${submissionId || 'CEKA-ID-' + billId.slice(0,8)}</p>
         </div>
       </div>
@@ -239,10 +240,10 @@ Citizen of Kenya`;
                <div className="h-4 w-[1px] bg-black/5 dark:bg-white/5" />
                <div className="flex items-center gap-2">
                  <button onClick={() => setIsGalleryOpen(true)} className="p-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/10 transition-colors text-slate-400 hover:text-kenya-green">
-                   <Users size={16} />
+                   <UsersIcon size={16} />
                  </button>
-                 <button onClick={() => setIsCreatorOpen(true)} className="p-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/10 transition-colors text-slate-400 hover:text-gold">
-                   <MailPlus size={16} />
+                 <button onClick={() => setIsCreatorOpen(true)} className="p-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/10 transition-colors text-slate-400 hover:text-kenya-green">
+                   <CommandIcon size={16} />
                  </button>
                </div>
             </div>
@@ -255,15 +256,15 @@ Citizen of Kenya`;
             {/* Details Section */}
             <div className="space-y-6">
               <div className="flex items-center gap-3">
-                 <Fingerprint size={16} className="text-kenya-green" />
+                 <ScanIcon size={16} className="text-kenya-green" />
                  <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-900 dark:text-white">Your Details</h3>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {[
-                  { label: "Full Name", icon: <User size={14} />, value: identity.name, key: 'name', placeholder: "Full Legal Name" },
-                  { label: "Email Address", icon: <Mail size={14} />, value: identity.email, key: 'email', placeholder: "your@email.com" },
-                  { label: "County", icon: <MapPin size={14} />, value: identity.county, key: 'county', placeholder: "e.g. Nairobi" },
-                  { label: "Constituency", icon: <Hash size={14} />, value: identity.constituency, key: 'constituency', placeholder: "e.g. Lang'ata" }
+                  { label: "First Name", icon: <UsersIcon size={14} />, value: identity.name, key: 'name', placeholder: "Enter Name" },
+                  { label: "Email Address", icon: <CommentsIcon size={14} />, value: identity.email, key: 'email', placeholder: "your@email.com" },
+                  { label: "County", icon: <LocationIcon size={14} />, value: identity.county, key: 'county', placeholder: "e.g. Nairobi" },
+                  { label: "Constituency", icon: <CommandIcon size={14} />, value: identity.constituency, key: 'constituency', placeholder: "e.g. Lang'ata" }
                 ].map((field) => (
                   <div key={field.key} className="group/input relative">
                     <Input
@@ -284,11 +285,11 @@ Citizen of Kenya`;
             <div className="space-y-6">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                   <ShieldCheck size={16} className="text-gold" />
+                   <KeyIcon size={16} className="text-kenya-green" />
                    <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-900 dark:text-white">Recipients</h3>
                 </div>
                 <button onClick={() => setIsAddingEmail(true)} className="text-[10px] font-black text-kenya-green uppercase tracking-widest flex items-center gap-1 hover:underline">
-                   <MailPlus size={10} /> Add Recipient
+                   <CommandIcon size={10} /> Add Recipient
                 </button>
               </div>
 
@@ -312,10 +313,10 @@ Citizen of Kenya`;
                          "h-10 w-10 rounded-xl flex items-center justify-center transition-all",
                          selectedRecipients[target.id as keyof typeof selectedRecipients] ? "bg-kenya-green text-white shadow-lg" : "bg-slate-200 dark:bg-white/10 text-slate-400"
                        )}>
-                         <Mail size={18} />
+                         <CommentsIcon size={18} />
                        </div>
                        <div>
-                         <p className="text-xs font-black italic tracking-tight">{target.label}</p>
+                         <p className="text-xs font-black tracking-tight">{target.label}</p>
                          <p className="text-[10px] font-medium text-slate-400">{target.email}</p>
                        </div>
                     </div>
@@ -333,12 +334,12 @@ Citizen of Kenya`;
                    <div key={e.id} className="flex items-center justify-between p-4 rounded-2xl bg-blue-500/5 border border-blue-500/10">
                       <div className="flex items-center gap-4">
                          <div className="h-10 w-10 rounded-xl bg-blue-500 text-white flex items-center justify-center">
-                            <Mail size={18} />
+                            <CommentsIcon size={18} />
                          </div>
-                         <p className="text-xs font-black italic">{e.address}</p>
+                         <p className="text-xs font-black">{e.address}</p>
                       </div>
                       <button onClick={() => setCustomEmails(customEmails.filter(x => x.id !== e.id))}>
-                         <X size={14} className="text-slate-400" />
+                         <CloseIcon size={14} className="text-slate-400" />
                       </button>
                    </div>
                 ))}
@@ -363,11 +364,11 @@ Citizen of Kenya`;
             <div className="space-y-6">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                   <FileText size={16} className="text-kenya-green" />
+                   <CommentsIcon size={16} className="text-kenya-green" />
                    <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-900 dark:text-white">Memorandum Content</h3>
                 </div>
                 <div className="flex items-center gap-1 px-3 py-1 rounded-full bg-kenya-green/10 text-kenya-green text-[9px] font-black uppercase tracking-widest">
-                  <Sparkles size={10} /> Auto-Fill Active
+                  <StarIcon size={10} /> Auto-Fill Active
                 </div>
               </div>
 
@@ -378,26 +379,26 @@ Citizen of Kenya`;
                     onChange={(e) => setSubject(e.target.value)}
                     className="h-12 border-none bg-slate-50 dark:bg-white/5 rounded-xl font-bold text-xs pl-4 group-focus-within:bg-white dark:group-focus-within:bg-white/10 shadow-inner"
                    />
-                   <Edit2 size={12} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                   <SearchIcon size={12} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400" />
                  </div>
 
                  <div className="relative">
                     <Textarea
                       readOnly
                       value={getProcessedBody()}
-                      className="min-h-[260px] rounded-[32px] border-none bg-slate-50 dark:bg-white/5 text-xs leading-relaxed p-8 green-scrollbar font-serif italic text-slate-600 dark:text-slate-300 shadow-inner"
+                      className="min-h-[260px] rounded-[32px] border-none bg-slate-50 dark:bg-white/5 text-base leading-relaxed p-8 green-scrollbar font-serif text-slate-600 dark:text-slate-300 shadow-inner"
                     />
                     <div className="absolute top-4 right-4 opacity-10 pointer-events-none">
-                       <Scale size={80} />
+                       <BankIcon size={80} />
                     </div>
                  </div>
 
                  <div className="p-4 rounded-2xl bg-slate-50 dark:bg-white/5 border-black/5 dark:border-white/5">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Edit Template</p>
+                    <p className="text-sm font-black uppercase tracking-widest text-slate-400 mb-4">Edit Template</p>
                     <Textarea
                       value={messageBody}
                       onChange={(e) => setMessageBody(e.target.value)}
-                      className="min-h-[100px] bg-transparent border-none text-[10px] leading-relaxed p-0 green-scrollbar opacity-40 focus:opacity-100 transition-opacity"
+                      className="min-h-[120px] bg-transparent border-none text-xl leading-relaxed p-0 green-scrollbar opacity-60 focus:opacity-100 transition-opacity"
                     />
                  </div>
               </div>
@@ -416,16 +417,14 @@ Citizen of Kenya`;
                       I authorize CEKA to submit this response on my behalf. I confirm that the details provided are accurate.
                     </p>
                   </div>
-               </div>
-
-               <div className="flex flex-col sm:flex-row gap-4">
+               </div>                <div className="flex flex-col sm:flex-row gap-4">
                   <Button 
                     onClick={handleInitialSubmit}
                     disabled={isSubmitting}
                     className="flex-[2] h-16 rounded-2xl bg-gradient-to-br from-kenya-green to-[#004d00] text-white font-black text-sm uppercase tracking-widest hover:scale-[1.01] active:scale-[0.99] transition-all shadow-xl shadow-kenya-green/40 gap-4 group"
                   >
                     <div className="bg-white/20 p-3 rounded-xl backdrop-blur-md">
-                      <Send size={20} className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
+                      <CommandIcon size={20} className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
                     </div>
                     Sign & Submit
                   </Button>
@@ -434,20 +433,20 @@ Citizen of Kenya`;
                     onClick={handleAmplify}
                     className="flex-1 h-16 rounded-2xl bg-[#25D366] hover:bg-[#128C7E] text-white font-black text-sm uppercase tracking-widest gap-2 shadow-xl shadow-[#25D366]/20 transition-transform active:scale-[0.98]"
                   >
-                    <Share2 size={20} />
+                    <ShareIcon size={20} />
                     Amplify
                   </Button>
                </div>
 
                <div className="grid grid-cols-2 gap-4">
                   <button onClick={handleSavePDF} className="flex items-center justify-center h-12 rounded-2xl bg-slate-50 dark:bg-white/5 border border-black/5 dark:border-white/10 text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-kenya-green transition-colors gap-2">
-                     <DownloadCloud size={14} /> Save as PDF
+                     <PathIcon size={14} /> Save as PDF
                   </button>
                   <button onClick={() => {
                      const text = `I just formally objected to ${billTitle} on CEKA. Support the cause: `;
                      window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(window.location.href)}`, '_blank');
                   }} className="flex items-center justify-center h-12 rounded-2xl bg-slate-50 dark:bg-white/5 border border-black/5 dark:border-white/10 text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-blue-500 transition-colors gap-2">
-                     <Users size={14} /> Share on X
+                     <UsersIcon size={14} /> Share on X
                   </button>
                </div>
             </div>
@@ -455,9 +454,9 @@ Citizen of Kenya`;
             <div className="pt-6 border-t border-black/5 dark:border-white/5 flex items-center justify-between opacity-30 grayscale hover:grayscale-0 transition-all duration-700">
                <p className="text-[9px] font-black uppercase tracking-widest">CEKA v0.10</p>
                <div className="flex gap-4">
-                  <ShieldCheck size={12} />
-                  <Fingerprint size={12} />
-                  <Scale size={12} />
+                  <KeyIcon size={12} />
+                  <ScanIcon size={12} />
+                  <BankIcon size={12} />
                </div>
             </div>
           </div>

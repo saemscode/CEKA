@@ -39,7 +39,7 @@ export const CountdownTimer: React.FC<CountdownTimerProps> = ({ deadline, classN
 
   if (!deadline || !timeLeft) return (
     <div className={cn("p-4 rounded-3xl bg-slate-50 dark:bg-white/5 border border-black/5 dark:border-white/10 flex items-center justify-center", className)}>
-       <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Open for signatures</p>
+      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Template Open for Signatures</p>
     </div>
   );
 
@@ -48,8 +48,8 @@ export const CountdownTimer: React.FC<CountdownTimerProps> = ({ deadline, classN
   return (
     <div className={cn(
       "p-4 rounded-[28px] border transition-all duration-500 flex items-center justify-between group",
-      isUrgent 
-        ? "bg-red-500/5 border-red-500/20 text-red-600 dark:text-red-400" 
+      isUrgent
+        ? "bg-red-500/5 border-red-500/20 text-red-600 dark:text-red-400"
         : "bg-slate-50 dark:bg-white/5 border-black/5 dark:border-white/10 text-slate-600 dark:text-slate-300",
       className
     )}>
@@ -69,16 +69,16 @@ export const CountdownTimer: React.FC<CountdownTimerProps> = ({ deadline, classN
       </div>
 
       <div className="flex gap-2">
-         {[
-           { val: timeLeft.days, label: 'D' },
-           { val: timeLeft.hours, label: 'H' },
-           { val: timeLeft.minutes, label: 'M' }
-         ].map((unit, i) => (
-           <div key={i} className="flex flex-col items-center min-w-[32px]">
-              <span className="text-base font-[1000] tracking-tighter leading-none">{unit.val}</span>
-              <span className="text-[8px] font-black opacity-40 uppercase">{unit.label}</span>
-           </div>
-         ))}
+        {[
+          { val: timeLeft.days, label: 'D' },
+          { val: timeLeft.hours, label: 'H' },
+          { val: timeLeft.minutes, label: 'M' }
+        ].map((unit, i) => (
+          <div key={i} className="flex flex-col items-center min-w-[32px]">
+            <span className="text-base font-[1000] tracking-tighter leading-none">{unit.val}</span>
+            <span className="text-[8px] font-black opacity-40 uppercase">{unit.label}</span>
+          </div>
+        ))}
       </div>
     </div>
   );

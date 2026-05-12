@@ -5,11 +5,14 @@ import Layout from '@/components/layout/Layout';
 import { LegislativeMemorandum } from '@/components/bills/LegislativeMemorandum';
 import { motion } from 'framer-motion';
 import {
-  Zap, ArrowLeft, ShieldCheck, Share2,
-  MessageSquare, ExternalLink, Info, Timer, Users, Target,
-  TrendingUp, CheckCircle2, Globe, Clock, Fingerprint,
-  Scale, DownloadCloud
-} from 'lucide-react';
+  BankIcon, ShareIcon, CommentsIcon, GlobeIcon, SearchIcon, 
+  UsersIcon, ChartIcon, ThumbIcon, KenyaIcon, KeyIcon, 
+  LocationIcon, CommandIcon, WidgetIcon, ScanIcon, PathIcon, 
+  BuildingsIcon, StarIcon, CloseIcon, ArrowLeftIcon, StarIcon as ZapIcon,
+  CommentsIcon as MessageSquareIcon, GlobeIcon as GlobeIcon2, ScanIcon as FingerprintIcon,
+  BankIcon as ScaleIcon, PathIcon as DownloadCloudIcon, 
+  CommandIcon as ZapIcon2, StarIcon as StarIcon2
+} from "@/components/ui/CustomIcons";
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { toast } from '@/hooks/use-toast';
@@ -84,7 +87,7 @@ const TemplateViewerPage = () => {
       <Layout>
         <div className="min-h-screen flex items-center justify-center bg-white dark:bg-black">
           <div className="flex flex-col items-center gap-4 animate-pulse">
-            <Fingerprint className="h-12 w-12 text-kenya-green" />
+            <ScanIcon className="h-12 w-12 text-kenya-green" />
             <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Loading Template...</p>
           </div>
         </div>
@@ -105,14 +108,14 @@ const TemplateViewerPage = () => {
                 className="rounded-2xl h-12 px-6 flex items-center gap-3 text-slate-400 hover:text-kenya-green transition-all hover:bg-kenya-green/5"
               >
                 <div className="bg-white dark:bg-white/5 p-2 rounded-xl shadow-ios-soft group-hover:-translate-x-1 transition-transform">
-                  <ArrowLeft size={16} />
+                  <ArrowLeftIcon size={16} />
                 </div>
                 <span className="text-[10px] font-black uppercase tracking-[0.2em]">Back to Tracker</span>
               </Button>
 
               <div className="flex items-center gap-4">
                 <div className="h-10 px-5 rounded-2xl bg-kenya-green/5 border border-kenya-green/10 flex items-center gap-3">
-                  <ShieldCheck size={14} className="text-kenya-green" />
+                  <KeyIcon size={14} className="text-kenya-green" />
                   <span className="text-[9px] font-black uppercase tracking-widest text-kenya-green">Verified Template</span>
                 </div>
                 <Button
@@ -122,7 +125,7 @@ const TemplateViewerPage = () => {
                   }}
                   className="rounded-2xl h-12 px-6 bg-white dark:bg-white/5 border border-black/5 dark:border-white/10 text-slate-900 dark:text-white font-black text-[10px] uppercase tracking-widest hover:scale-[1.02] active:scale-[0.98] transition-all"
                 >
-                  <Share2 size={14} className="mr-2" />
+                  <ShareIcon size={14} className="mr-2" />
                   Share Template
                 </Button>
               </div>
@@ -134,7 +137,7 @@ const TemplateViewerPage = () => {
             <div className="lg:col-span-5 space-y-10">
               <div className="space-y-6">
                 <p className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-400">Public Campaign</p>
-                <h1 className="text-4xl md:text-6xl font-[1000] tracking-tighter italic leading-[0.8] text-slate-900 dark:text-white uppercase">
+                <h1 className="text-4xl md:text-6xl font-[1000] tracking-tighter leading-[0.8] text-slate-900 dark:text-white uppercase">
                   {template.title}
                 </h1>
                 <div className="flex flex-wrap gap-2 pt-2">
@@ -157,11 +160,11 @@ const TemplateViewerPage = () => {
                 <div className="bg-white/80 dark:bg-slate-900/40 backdrop-blur-3xl p-8 space-y-8">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <Target className="h-5 w-5 text-kenya-green" />
+                      <StarIcon size={20} className="h-5 w-5 text-kenya-green" />
                       <p className="text-xs font-black uppercase tracking-[0.2em]">Campaign Progress</p>
                     </div>
                     <div className="text-right">
-                       <p className="text-4xl font-[1000] tracking-tighter italic leading-none">{signatureCount.toLocaleString()}</p>
+                       <p className="text-4xl font-[1000] tracking-tighter leading-none">{signatureCount.toLocaleString()}</p>
                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-1">Total Signatures</p>
                     </div>
                   </div>
@@ -171,11 +174,11 @@ const TemplateViewerPage = () => {
                   <div className="grid grid-cols-2 gap-4">
                      <div className="p-4 rounded-3xl bg-slate-50 dark:bg-white/5 border border-black/5 dark:border-white/5 space-y-1">
                         <p className="text-[8px] font-black uppercase tracking-widest text-slate-400">Deadline</p>
-                        <p className="text-xs font-black italic">{getDeadlineText()}</p>
+                        <p className="text-xs font-black">{getDeadlineText()}</p>
                      </div>
                      <div className="p-4 rounded-3xl bg-slate-50 dark:bg-white/5 border border-black/5 dark:border-white/5 space-y-1 text-right">
                         <p className="text-[8px] font-black uppercase tracking-widest text-slate-400 text-right">Status</p>
-                        <p className="text-xs font-black italic text-kenya-green">Active</p>
+                        <p className="text-xs font-black text-kenya-green">Active</p>
                      </div>
                   </div>
                 </div>
@@ -183,9 +186,9 @@ const TemplateViewerPage = () => {
 
               {/* Live Signal Feed */}
               {signatures.length > 0 && (
-                <div className="space-y-6">
+                 <div className="space-y-6">
                   <div className="flex items-center gap-3">
-                     <Clock size={16} className="text-slate-400" />
+                     <WidgetIcon size={16} className="text-slate-400" />
                      <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">Recent Signatures</h3>
                   </div>
                   <div className="space-y-4">
@@ -199,10 +202,10 @@ const TemplateViewerPage = () => {
                       >
                         <div className="flex items-center gap-4">
                           <div className="h-8 w-8 rounded-full bg-kenya-green/10 flex items-center justify-center text-kenya-green group-hover:scale-110 transition-transform">
-                            <CheckCircle2 size={14} />
+                            <StarIcon size={14} />
                           </div>
                           <div>
-                            <p className="text-xs font-black italic tracking-tight">{sig.full_name}</p>
+                            <p className="text-xs font-black tracking-tight">{sig.full_name}</p>
                             <p className="text-[9px] font-medium text-slate-400 uppercase tracking-widest">{sig.county || 'Kenya'}</p>
                           </div>
                         </div>
@@ -216,19 +219,19 @@ const TemplateViewerPage = () => {
               {/* Info Card */}
               <div className="p-10 rounded-[40px] bg-slate-900 text-white shadow-2xl relative overflow-hidden group">
                  <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-110 transition-transform duration-1000">
-                    <Scale size={160} />
+                    <BankIcon size={160} />
                  </div>
                  <div className="relative z-10 space-y-6">
                     <div className="flex items-center gap-3">
-                       <Zap size={16} className="text-gold" />
+                       <KeyIcon size={16} className="text-kenya-green" />
                        <h3 className="text-xs font-black uppercase tracking-[0.2em]">How it works</h3>
                     </div>
-                    <p className="text-sm font-medium leading-relaxed italic opacity-80">
+                    <p className="text-sm font-medium leading-relaxed opacity-80">
                       "This template uses standardized legal language to ensure your response is officially recognized by Parliament."
                     </p>
                     <div className="flex items-center gap-4 pt-4">
                        <div className="h-10 w-10 rounded-2xl bg-white/10 flex items-center justify-center">
-                          <DownloadCloud size={20} className="text-white" />
+                          <PathIcon size={20} className="text-white" />
                        </div>
                        <div>
                           <p className="text-[10px] font-black uppercase tracking-widest">Formal Format</p>
