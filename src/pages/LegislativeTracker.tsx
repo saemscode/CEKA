@@ -158,7 +158,7 @@ const LegislativeTracker = () => {
           const newBill = payload.new;
           setRealtimeFlash(newBill.id);
           setTimeout(() => setRealtimeFlash(null), 3000);
-          
+
           // Sovereign Notification Sync: Generate a system notification if a new tabloid summary appears
           if (newBill.tabloid_summary && user) {
             notificationService.create(
@@ -166,9 +166,9 @@ const LegislativeTracker = () => {
               'bill_update',
               'Get Daily News Updates', // Strictly as requested
               `${newBill.title}: ${newBill.tabloid_summary}`,
-              { 
-                sourceId: newBill.id, 
-                link: `/bill/${newBill.id}` 
+              {
+                sourceId: newBill.id,
+                link: `/bill/${newBill.id}`
               }
             );
           }
@@ -186,13 +186,13 @@ const LegislativeTracker = () => {
         }
       })
       .subscribe();
-    
+
     return () => {
       supabase.removeChannel(channel);
     };
   }, []);
 
-  const tabloidUpdates = useMemo(() => 
+  const tabloidUpdates = useMemo(() =>
     billsData.filter(b => b.tabloid_summary && b.tabloid_summary.trim().length > 0),
     [billsData]
   );
@@ -200,13 +200,13 @@ const LegislativeTracker = () => {
   const tickerData = useMemo(() => {
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    
+
     // Monday-Friday of current week
     const day = now.getDay();
     const diff = now.getDate() - day + (day === 0 ? -6 : 1);
     const monday = new Date(now.setDate(diff));
     monday.setHours(0, 0, 0, 0);
-    
+
     const friday = new Date(monday);
     friday.setDate(monday.getDate() + 4);
     friday.setHours(23, 59, 59, 999);
@@ -330,14 +330,18 @@ const LegislativeTracker = () => {
             </motion.div>
 
             {/* DUAL-LAYER SOVEREIGN HERO: Intelligence Carousel + Bloomberg Ticker */}
-            <div className="mt-12 relative">
-              {/* Layer 1: The Tabloid Carousel (Upper Control) */}
+            {/* UNIFIED SOVEREIGN HERO CONTAINER: News Carousel + Bloomberg Ticker */}
+            <div className="mt-12 relative max-w-xl group">
+              {/* Deep iOS-Inspired Glow & Shadow Layer */}
+              <div className="absolute inset-x-0 -inset-y-4 bg-gradient-to-br from-kenya-green/20 via-primary/10 to-kenya-green/20 blur-3xl opacity-30 group-hover:opacity-50 transition-opacity -z-10" />
+              
               <motion.div
                 initial={{ opacity: 0, scale: 0.98 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="relative z-20 p-[1px] rounded-[32px] bg-gradient-to-br from-kenya-green/40 via-primary/20 to-kenya-green/40 max-w-xl shadow-2xl overflow-hidden"
+                className="relative z-20 rounded-[32px] bg-gradient-to-br from-kenya-green/40 via-primary/20 to-kenya-green/40 p-[1px] shadow-ios-high dark:shadow-ios-high-dark overflow-hidden ring-1 ring-white/20 dark:ring-white/10"
               >
-                <div className="bg-white/80 dark:bg-black/80 backdrop-blur-3xl p-8 rounded-[31px] min-h-[180px] flex flex-col justify-center border border-white/20">
+                {/* Upper Layer: The Tabloid Carousel (Full Context Preserved) */}
+                <div className="bg-white/80 dark:bg-black/90 backdrop-blur-3xl p-8 min-h-[180px] flex flex-col justify-center border-b border-white/10 dark:border-white/5">
                   <AnimatePresence mode="wait">
                     {tabloidUpdates.length > 0 ? (
                       <motion.div
@@ -356,10 +360,10 @@ const LegislativeTracker = () => {
                             )}
                           </div>
                           <Badge className="bg-primary/10 text-primary border-none font-black text-[9px] px-2 py-0.5 rounded-full">
-                            Sovereign Verified
+                            Latest this week
                           </Badge>
                         </div>
-                        
+
                         <p className="font-extrabold text-lg md:text-xl leading-tight dark:text-gray-100 tracking-tight">
                           {tabloidUpdates[currentAlertIndex].tabloid_summary}
                         </p>
@@ -374,7 +378,7 @@ const LegislativeTracker = () => {
                             className="p-0 h-auto text-primary font-black text-xs uppercase tracking-widest gap-2"
                           >
                             <Link to={`/bill/${tabloidUpdates[currentAlertIndex].id}`}>
-                              Trace Progress <ArrowRight className="h-3 w-3" />
+                              See Bill Here <ArrowRight className="h-3 w-3" />
                             </Link>
                           </Button>
                         </div>
@@ -392,12 +396,12 @@ const LegislativeTracker = () => {
                     )}
                   </AnimatePresence>
                 </div>
-              </motion.div>
 
-              {/* Layer 2: The Legislative Ticker (Bloomberg Sub-Layer) */}
-              <div className="absolute -bottom-6 left-4 right-4 z-10">
-                <div className="bg-black/10 dark:bg-white/5 backdrop-blur-md rounded-2xl h-10 border border-white/5 overflow-hidden flex items-center shadow-lg">
-                  <div className="bg-primary text-white text-[9px] font-black uppercase px-4 h-full flex items-center shrink-0 z-20 shadow-xl">
+                {/* Lower Layer: The Legislative Ticker (Bloomberg Dock) */}
+                <div className="bg-black/10 dark:bg-white/10 backdrop-blur-2xl h-10 flex items-center overflow-hidden border-t border-white/5 shadow-inner">
+                  <div className="bg-primary text-white text-[9px] font-black uppercase px-4 h-full flex items-center shrink-0 z-20 shadow-2xl relative">
+                    {/* Bevel effect for ticker label */}
+                    <div className="absolute inset-0 bg-white/10 opacity-10 pointer-events-none" />
                     Live Status
                   </div>
                   <div className="flex-1 overflow-hidden relative">
@@ -409,15 +413,15 @@ const LegislativeTracker = () => {
                       {/* NEW BILLS (TODAY) Segment */}
                       <span className="text-[10px] font-black text-kenya-green uppercase tracking-tighter">New Bills (Today)</span>
                       {tickerData.today.length > 0 ? tickerData.today.map(bill => (
-                        <Link 
-                          key={`today-${bill.id}`} 
+                        <Link
+                          key={`today-${bill.id}`}
                           to={`/bill/${bill.id}`}
                           className={cn(
-                            "flex items-center gap-3 group transition-colors",
+                            "flex items-center gap-3 group/ticker transition-colors",
                             realtimeFlash === bill.id && "animate-pulse text-kenya-green"
                           )}
                         >
-                          <span className="text-xs font-bold dark:text-white group-hover:text-primary">
+                          <span className="text-xs font-bold dark:text-white group-hover/ticker:text-primary">
                             {bill.title} | <span className="opacity-60 font-medium">{bill.summary?.substring(0, 40)}...</span>
                           </span>
                           <span className={cn(
@@ -430,12 +434,12 @@ const LegislativeTracker = () => {
                       {/* THIS WEEK Segment */}
                       <span className="text-[10px] font-black text-primary uppercase tracking-tighter ml-8">This Week</span>
                       {tickerData.week.length > 0 ? tickerData.week.map(bill => (
-                        <Link 
-                          key={`week-${bill.id}`} 
+                        <Link
+                          key={`week-${bill.id}`}
                           to={`/bill/${bill.id}`}
-                          className="flex items-center gap-3 group"
+                          className="flex items-center gap-3 group/ticker"
                         >
-                          <span className="text-xs font-bold dark:text-white group-hover:text-primary">
+                          <span className="text-xs font-bold dark:text-white group-hover/ticker:text-primary">
                             {bill.title} | <span className="opacity-60 font-medium">{bill.summary?.substring(0, 40)}...</span>
                           </span>
                           <span className={cn(
@@ -450,7 +454,7 @@ const LegislativeTracker = () => {
                     </motion.div>
                   </div>
                 </div>
-              </div>
+              </motion.div>
             </div>
           </div>
         </section>
