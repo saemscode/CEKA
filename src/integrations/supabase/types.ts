@@ -341,7 +341,9 @@ export type Database = {
           follow_count: number | null
           id: string
           neural_summary: string | null
+          participation_deadline: string | null
           pdf_url: string | null
+          signature_goal: number | null
           sources: string | null
           sponsor: string | null
           stages: Json | null
@@ -375,6 +377,8 @@ export type Database = {
           pdf_url?: string | null
           views_count?: number | null
           follow_count?: number | null
+          participation_deadline?: string | null
+          signature_goal?: number | null
         }
         Update: {
           category?: string
@@ -398,6 +402,8 @@ export type Database = {
           pdf_url?: string | null
           views_count?: number | null
           follow_count?: number | null
+          participation_deadline?: string | null
+          signature_goal?: number | null
         }
         Relationships: []
       }
@@ -2428,11 +2434,232 @@ export type Database = {
         }
         Relationships: []
       }
+      templates: {
+        Row: {
+          id: string
+          title: string
+          body: string
+          slug: string | null
+          metadata: Json | null
+          is_public: boolean
+          is_verified: boolean
+          uses_count: number
+          views_count: number
+          created_by: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          title: string
+          body: string
+          slug?: string | null
+          metadata?: Json | null
+          is_public?: boolean
+          is_verified?: boolean
+          uses_count?: number
+          views_count?: number
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          title?: string
+          body?: string
+          slug?: string | null
+          metadata?: Json | null
+          is_public?: boolean
+          is_verified?: boolean
+          uses_count?: number
+          views_count?: number
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "templates_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      signatures: {
+        Row: {
+          id: string
+          bill_id: string
+          template_id: string | null
+          user_id: string | null
+          full_name: string
+          email: string
+          constituency: string | null
+          county: string | null
+          comments: string | null
+          is_verified: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          bill_id: string
+          template_id?: string | null
+          user_id?: string | null
+          full_name: string
+          email: string
+          constituency?: string | null
+          county?: string | null
+          comments?: string | null
+          is_verified?: boolean
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          bill_id?: string
+          template_id?: string | null
+          user_id?: string | null
+          full_name?: string
+          email?: string
+          constituency?: string | null
+          county?: string | null
+          comments?: string | null
+          is_verified?: boolean
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "signatures_bill_id_fkey"
+            columns: ["bill_id"]
+            isOneToOne: false
+            referencedRelation: "bills"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "signatures_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "signatures_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      mp_directory: {
+        Row: {
+          id: string
+          name: string
+          email: string
+          constituency: string
+          county: string
+          political_party: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          email: string
+          constituency: string
+          county: string
+          political_party?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          email?: string
+          constituency?: string
+          county?: string
+          political_party?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
+      action_counts: {
+        Row: {
+          id: string
+          signatures_total: number
+          whatsapp_shares: number
+        }
+        Insert: {
+          id: string
+          signatures_total?: number
+          whatsapp_shares?: number
+        }
+        Update: {
+          id?: string
+          signatures_total?: number
+          whatsapp_shares?: number
+        }
+        Relationships: []
+      }
+      user_actions: {
+        Row: {
+          id: number
+          action_type: string
+          created_at: string
+        }
+        Insert: {
+          id?: number
+          action_type: string
+          created_at?: string
+        }
+        Update: {
+          id?: number
+          action_type?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      submit_signature: {
+        Args: {
+          bill_id_param: string
+          template_id_param: string
+          name_param: string
+          email_param: string
+          constituency_param: string
+          county_param: string
+          comments_param?: string
+        }
+        Returns: {
+          success: boolean
+          id: string
+          error?: string
+        }
+      }
+      increment_template_usage: {
+        Args: { template_id: string }
+        Returns: undefined
+      }
+      increment_template_views: {
+        Args: { template_id: string }
+        Returns: undefined
+      }
+      verify_signature_otp: {
+        Args: {
+          signature_id_param: string
+          otp_code_param: string
+        }
+        Returns: {
+          success: boolean
+          error?: string
+        }
+      }
+      increment_whatsapp_share: {
+        Args: never
+        Returns: undefined
+      }
       apply_for_volunteer_opportunity: {
         Args: { motivation: string; opportunity_id: string; user_id: string }
         Returns: undefined

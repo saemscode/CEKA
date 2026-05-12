@@ -45,7 +45,7 @@ export const useTemplateSubmission = (billId: string, templateId: string | null)
         constituency_param: identity.constituency,
         county_param: identity.county,
         comments_param: comments
-      }) as { data: any, error: any };
+      });
 
       if (error) {
         if (error.code === '23505') {
@@ -59,14 +59,16 @@ export const useTemplateSubmission = (billId: string, templateId: string | null)
         throw error;
       }
 
-      setSubmissionId(data.id);
+      if (data) {
+        setSubmissionId(data.id);
+      }
       setIsSubmitting(false);
       
       // In a real production app, we'd trigger an OTP here.
       // For now, we'll mark as needing verification if we want to simulate the flow.
       setNeedsVerification(true);
       
-      return data.id;
+      return data?.id || null;
     } catch (error) {
       console.error('Submission error:', error);
       toast({
@@ -86,7 +88,7 @@ export const useTemplateSubmission = (billId: string, templateId: string | null)
       const { data, error } = await supabase.rpc('verify_signature_otp', {
         signature_id_param: submissionId,
         otp_code_param: otpCode
-      }) as { data: any, error: any };
+      });
 
       if (error || !data.success) {
         toast({
@@ -115,7 +117,6 @@ export const useTemplateSubmission = (billId: string, templateId: string | null)
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
     
     // Track share
-    // @ts-ignore
     supabase.rpc('increment_whatsapp_share');
   };
 

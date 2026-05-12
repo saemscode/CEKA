@@ -47,16 +47,15 @@ export const TemplatesGallery: React.FC<TemplatesGalleryProps> = ({
   const fetchTemplates = async () => {
     try {
       setLoading(true);
-      // @ts-ignore - Table added via custom SQL
       const { data, error } = await supabase
         .from('templates')
         .select('*')
         .eq('is_public', true)
         .order('created_at', { ascending: false })
         .limit(20);
-
+ 
       if (error) throw error;
-      setTemplates((data as any[]) || []);
+      setTemplates(data || []);
     } catch (error) {
       console.error('Error fetching templates:', error);
     } finally {

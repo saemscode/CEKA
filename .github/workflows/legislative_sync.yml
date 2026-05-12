@@ -190,7 +190,7 @@ jobs:
           echo "### 🏛️ CEKA Sovereign Sync Complete" >> $GITHUB_STEP_SUMMARY
           echo "- **Run:** #${{ github.run_number }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Time (UTC):** $(date -u)" >> $GITHUB_STEP_SUMMARY
-          echo "- **News Sync:** ${{ env.RUN_NEWS }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **News Sync:** $RUN_NEWS" >> $GITHUB_STEP_SUMMARY
           echo "- **Triggered by:** ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
 
       - name: Upload Intelligence Logs

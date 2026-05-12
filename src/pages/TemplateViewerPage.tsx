@@ -33,11 +33,9 @@ const TemplateViewerPage = () => {
   const fetchTemplate = async () => {
     try {
       setLoading(true);
-      // @ts-ignore
       let { data, error } = await supabase.from('templates').select('*').eq('slug', id).maybeSingle();
 
       if (!data && !error) {
-        // @ts-ignore
         const { data: idData, error: idError } = await supabase.from('templates').select('*').eq('id', id).maybeSingle();
         data = idData;
         error = idError;
@@ -51,7 +49,7 @@ const TemplateViewerPage = () => {
       }
 
       setTemplate(data);
-      const billId = data.metadata?.billId || data.id;
+      const billId = (data.metadata as any)?.billId || data.id;
       const { data: bill } = await supabase.from('bills').select('*, participation_deadline, signature_goal').eq('id', billId).single();
       if (bill) setBillData(bill);
 
@@ -61,8 +59,7 @@ const TemplateViewerPage = () => {
       const { data: recentSigners } = await supabase.from('signatures').select('full_name, created_at, county').eq('bill_id', billId).order('created_at', { ascending: false }).limit(5);
       if (recentSigners) setSignatures(recentSigners);
 
-      // @ts-ignore
-      await supabase.rpc('increment_template_views', { template_id: (data as any).id });
+      await supabase.rpc('increment_template_views', { template_id: data.id });
 
     } catch (error) {
       console.error('Error fetching template:', error);
