@@ -390,8 +390,8 @@ class SovereignRefresh:
             "pdf_extracted": 0, "ai_filled": 0, "failed": 0,
         }
 
-    def _fetch_all_bills(self, limit: Optional[int] = None) -> List[Dict[str, Any]]:
-        """Fetches all bills from the database for Phase A sweep."""
+    def _fetch_all_bills(self, limit: Optional[int] = None, target_id: Optional[str] = None) -> List[Dict[str, Any]]:
+        """Fetches bills from the database for Phase A sweep."""
         columns = (
             "id,title,url,pdf_url,text_content,status,sponsor,sponsor_title,"
             "summary,description,neural_summary,tabloid_summary,ai_concerns,"
@@ -399,7 +399,13 @@ class SovereignRefresh:
             "concerns_counties,bill_no,gazette_no,session_year,house,date,"
             "category,stages,analysis_status,verified_sources,history"
         )
-        bills = self.db.select("bills", columns, limit=limit)
+        
+        if target_id:
+            logger.info(f"🎯 Targeting specific bill ID: {target_id}")
+            bills = self.db.select("bills", columns, eq="id", eq_val=target_id)
+        else:
+            bills = self.db.select("bills", columns, limit=limit)
+
         if not bills:
             bills = []
         logger.info(f"📋 Fetched {len(bills)} bills for Phase A sweep.")
@@ -576,15 +582,17 @@ class SovereignRefresh:
             logger.error(f"    ❌ Patch failed: {e}")
             self.stats["failed"] += 1
 
-    def run(self, limit: Optional[int] = None):
+    def run(self, limit: Optional[int] = None, target_id: Optional[str] = None):
         """Main Phase A sweep entry point."""
         logger.info("=" * 70)
         logger.info("🚀 SOVEREIGN REFRESH — PHASE A INITIATED")
         logger.info(f"   Time (EAT): {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
         logger.info(f"   Mode: {'FORCE (all bills)' if self.force else 'NULL-FILL ONLY'}")
+        if target_id:
+            logger.info(f"   Target: {target_id}")
         logger.info("=" * 70)
 
-        bills = self._fetch_all_bills(limit=limit)
+        bills = self._fetch_all_bills(limit=limit, target_id=target_id)
         self.stats["total"] = len(bills)
 
         if not bills:
@@ -630,7 +638,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Phase A: Sovereign Refresh — Non-destructive bill intelligence upgrade.")
     parser.add_argument("--limit", type=int, default=None, help="Process only N bills (for testing).")
     parser.add_argument("--force", action="store_true", help="Force re-process ALL bills, even those with complete data.")
+    parser.add_argument("--target_id", type=str, default=None, help="Target a specific bill UUID for patching.")
     args = parser.parse_args()
 
     refresher = SovereignRefresh(force=args.force)
-    refresher.run(limit=args.limit)
+    refresher.run(limit=args.limit, target_id=args.target_id)
