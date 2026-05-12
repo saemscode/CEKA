@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { billService } from '@/services/billService';
 import { useAuth } from '@/providers/AuthProvider';
 import { useNavigate } from 'react-router-dom';
+import { cn } from '@/lib/utils';
+import { MessageSquare, Save, Share2, CheckCircle2 } from 'lucide-react';
 
 interface BillResponseFormProps {
   billId: string;
@@ -70,162 +72,89 @@ export const BillResponseForm: React.FC<BillResponseFormProps> = ({
   };
 
   return (
-    <div
-      style={{
-        background: 'rgba(255,255,255,0.04)',
-        border: '1px solid rgba(255,255,255,0.10)',
-        borderRadius: 16,
-        padding: '20px 22px',
-        backdropFilter: 'blur(12px)',
-      }}
-    >
-      <p
-        style={{
-          margin: '0 0 8px',
-          fontSize: 13,
-          color: 'rgba(255,255,255,0.45)',
-          letterSpacing: 0.3,
-          textTransform: 'uppercase',
-        }}
-      >
-        🏛️ Your Response
-      </p>
-      <p
-        style={{
-          margin: '0 0 14px',
-          fontSize: 14,
-          color: 'rgba(255,255,255,0.70)',
-          lineHeight: 1.5,
-        }}
-      >
-        Share your position on <strong style={{ color: '#fff' }}>{billTitle}</strong>. This will be
-        saved privately and you can optionally broadcast it to the Community Chat.
-      </p>
+    <div className="rounded-[32px] border-none bg-white/80 dark:bg-slate-900/40 backdrop-blur-3xl shadow-ios-high dark:shadow-none dark:border dark:border-white/10 overflow-hidden">
+      <div className="px-6 py-4 border-b border-black/5 dark:border-white/5 bg-slate-50/50 dark:bg-white/5">
+        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-kenya-green flex items-center gap-2">
+          <MessageSquare className="h-4 w-4" />
+          General Response
+        </p>
+      </div>
 
-      {submitted ? (
-        <div
-          style={{
-            padding: '14px 16px',
-            borderRadius: 12,
-            background: 'rgba(0,200,100,0.12)',
-            border: '1px solid rgba(0,200,100,0.25)',
-            marginBottom: 12,
-          }}
-        >
-          <p style={{ margin: 0, color: '#00e676', fontWeight: 600, fontSize: 14 }}>
-            ✅ Response saved!
-          </p>
-          <p style={{ margin: '4px 0 0', color: 'rgba(255,255,255,0.60)', fontSize: 13 }}>
-            {previousResponse}
-          </p>
-        </div>
-      ) : null}
+      <div className="p-6 space-y-4">
+        <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed font-medium">
+          Share your position on <strong className="text-slate-900 dark:text-white">{billTitle}</strong>. 
+          This will be saved privately and you can optionally broadcast it to the Community Chat.
+        </p>
 
-      <form onSubmit={handleSubmit}>
-        <textarea
-          value={response}
-          onChange={(e) => {
-            if (e.target.value.length <= MAX_CHARS) setResponse(e.target.value);
-          }}
-          placeholder="Write your civic response here… (e.g. 'This bill should clarify section 3 before it proceeds to Third Reading.')"
-          disabled={submitting}
-          rows={5}
-          style={{
-            width: '100%',
-            background: 'rgba(255,255,255,0.06)',
-            border: `1px solid ${error ? 'rgba(255,100,100,0.4)' : 'rgba(255,255,255,0.12)'}`,
-            borderRadius: 10,
-            padding: '12px 14px',
-            color: '#fff',
-            fontSize: 14,
-            lineHeight: 1.6,
-            resize: 'vertical',
-            outline: 'none',
-            fontFamily: 'inherit',
-            boxSizing: 'border-box',
-            transition: 'border-color 0.2s',
-          }}
-          onFocus={(e) => {
-            e.target.style.borderColor = 'rgba(130,180,255,0.5)';
-          }}
-          onBlur={(e) => {
-            e.target.style.borderColor = error ? 'rgba(255,100,100,0.4)' : 'rgba(255,255,255,0.12)';
-          }}
-        />
+        {submitted && (
+          <div className="p-4 rounded-2xl bg-kenya-green/10 border border-kenya-green/20 animate-in fade-in slide-in-from-top-2 duration-300">
+            <div className="flex items-center gap-2 text-kenya-green font-bold text-sm mb-1">
+              <CheckCircle2 size={16} />
+              Response Saved Locally
+            </div>
+            <p className="text-xs text-slate-500 dark:text-slate-400 italic line-clamp-2">
+              "{previousResponse}"
+            </p>
+          </div>
+        )}
 
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            marginTop: 6,
-          }}
-        >
-          <span
-            style={{
-              fontSize: 12,
-              color: remaining < 100 ? '#ff7043' : 'rgba(255,255,255,0.35)',
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <textarea
+            value={response}
+            onChange={(e) => {
+              if (e.target.value.length <= MAX_CHARS) setResponse(e.target.value);
             }}
-          >
-            {remaining} chars remaining
-          </span>
-          {error && (
-            <span style={{ fontSize: 12, color: '#ff5252' }}>{error}</span>
-          )}
-        </div>
+            placeholder="Write your civic response here… (e.g. 'This bill should clarify section 3 before it proceeds to Third Reading.')"
+            disabled={submitting}
+            rows={5}
+            className={cn(
+              "w-full rounded-[24px] border-2 p-5 text-sm leading-relaxed transition-all outline-none bg-slate-100 dark:bg-white/5",
+              error 
+                ? "border-kenya-red/40 focus:border-kenya-red" 
+                : "border-transparent focus:border-kenya-green/30"
+            )}
+          />
 
-        <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
-          <button
-            type="submit"
-            disabled={submitting || !response.trim()}
-            style={{
-              flex: 1,
-              padding: '11px 20px',
-              background:
-                submitting || !response.trim()
-                  ? 'rgba(255,255,255,0.08)'
-                  : 'linear-gradient(135deg, #1565C0 0%, #0288D1 100%)',
-              color: '#fff',
-              border: 'none',
-              borderRadius: 10,
-              fontWeight: 600,
-              fontSize: 14,
-              cursor: submitting || !response.trim() ? 'not-allowed' : 'pointer',
-              transition: 'opacity 0.2s, transform 0.15s',
-            }}
-            onMouseDown={(e) => {
-              if (!submitting && response.trim()) {
-                (e.currentTarget as HTMLButtonElement).style.transform = 'scale(0.97)';
-              }
-            }}
-            onMouseUp={(e) => {
-              (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1)';
-            }}
-          >
-            {submitting ? '⏳ Saving…' : submitted ? '✏️ Update Response' : '💾 Save Response'}
-          </button>
+          <div className="flex justify-between items-center px-1">
+            <span className={cn(
+              "text-[10px] font-bold uppercase tracking-widest",
+              remaining < 100 ? "text-kenya-red" : "text-slate-400"
+            )}>
+              {remaining} characters remaining
+            </span>
+            {error && (
+              <span className="text-[10px] font-bold text-kenya-red uppercase tracking-widest">{error}</span>
+            )}
+          </div>
 
-          {response.trim() && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
             <button
-              type="button"
-              onClick={handleShareToChat}
-              style={{
-                padding: '11px 16px',
-                background: 'rgba(255,255,255,0.07)',
-                color: 'rgba(255,255,255,0.85)',
-                border: '1px solid rgba(255,255,255,0.12)',
-                borderRadius: 10,
-                fontWeight: 600,
-                fontSize: 13,
-                cursor: 'pointer',
-                whiteSpace: 'nowrap',
-              }}
+              type="submit"
+              disabled={submitting || !response.trim()}
+              className={cn(
+                "h-12 rounded-2xl font-black text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-2",
+                submitting || !response.trim()
+                  ? "bg-slate-200 dark:bg-white/10 text-slate-400 cursor-not-allowed"
+                  : "bg-midnight text-white hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-midnight/20"
+              )}
             >
-              💬 Share to Community
+              <Save size={16} />
+              {submitting ? 'Saving…' : submitted ? 'Update Response' : 'Save Response'}
             </button>
-          )}
-        </div>
-      </form>
+
+            {response.trim() && (
+              <button
+                type="button"
+                onClick={handleShareToChat}
+                className="h-12 rounded-2xl bg-white/50 dark:bg-white/5 border border-black/5 dark:border-white/10 font-bold text-xs uppercase tracking-widest hover:bg-white/80 dark:hover:bg-white/10 transition-all flex items-center justify-center gap-2"
+              >
+                <Share2 size={16} />
+                Share to Community
+              </button>
+            )}
+          </div>
+        </form>
+      </div>
     </div>
   );
 };

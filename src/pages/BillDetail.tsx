@@ -12,6 +12,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { cn, translate } from '@/lib/utils';
 import { useLanguage, Language } from '@/contexts/LanguageContext';
 import { BillResponseForm } from '@/components/bills/BillResponseForm';
+import { LegislativeMemorandum } from '@/components/bills/LegislativeMemorandum';
 import { SocialShareDrawer } from '@/components/bills/SocialShareDrawer';
 import { BillFollowButton } from '@/components/legislative/BillFollowButton';
 
@@ -424,32 +425,52 @@ const BillDetail = () => {
                 </motion.div>
               )}
 
-              {/* INTERACTION ZONE: response form + share */}
+              {/* INTERACTION ZONE: response form + memorandum generator */}
               {bill && (
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   whileInView={{ opacity: 1, y: 0 }}
-                  className="space-y-6 pb-12"
+                  className="space-y-10 pb-12"
                 >
-                  <div className="flex items-center justify-between">
-                    <h2 className="text-2xl font-black tracking-tight leading-tight">
-                      ✍️ Raise <span className="text-kenya-green mx-1">Your</span> Voice
-                    </h2>
+                  <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+                    <div className="space-y-2">
+                       <h2 className="text-3xl md:text-4xl font-black tracking-tight leading-tight uppercase">
+                        ✍️ Raise <span className="text-kenya-green">Your</span> Voice
+                      </h2>
+                      <p className="text-sm font-medium text-slate-500 max-w-lg italic">
+                        Choose your method of submission: Save a quick civic response locally, or submit a formal memorandum directly to Parliament.
+                      </p>
+                    </div>
+                    
                     <Button
                       variant="outline"
                       onClick={() => setShareDrawerOpen(true)}
-                      className="h-10 px-5 rounded-2xl border-kenya-green/20 text-kenya-green font-bold text-xs uppercase tracking-widest hover:bg-kenya-green/5"
+                      className="h-12 px-6 rounded-2xl border-kenya-green/20 text-kenya-green font-black text-xs uppercase tracking-widest hover:bg-kenya-green/5 shadow-ios-soft"
                     >
-                      <Share2 className="mr-2 h-3.5 w-3.5" />
-                      Share
+                      <Share2 className="mr-2 h-4 w-4" />
+                      Amplify Action
                     </Button>
                   </div>
 
-                  <BillResponseForm
-                    billId={bill.id}
-                    billTitle={bill.title}
-                    onSubmitSuccess={(text) => setUserResponse(text)}
-                  />
+                  <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 items-start">
+                     {/* FORMAL MEMORANDUM GENERATOR */}
+                     <div className="order-2 xl:order-1">
+                        <LegislativeMemorandum 
+                          billId={bill.id}
+                          billTitle={bill.title}
+                          billSummary={bill.summary}
+                        />
+                     </div>
+
+                     {/* QUICK CIVIC RESPONSE */}
+                     <div className="order-1 xl:order-2">
+                        <BillResponseForm
+                          billId={bill.id}
+                          billTitle={bill.title}
+                          onSubmitSuccess={(text) => setUserResponse(text)}
+                        />
+                     </div>
+                  </div>
 
                   <SocialShareDrawer
                     billId={bill.id}

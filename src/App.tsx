@@ -58,6 +58,7 @@ import TermsConditions from '@/pages/TermsConditions';
 import Pieces from '@/pages/Pieces';
 import Tools from '@/pages/Tools';
 import About from '@/pages/About';
+import TemplateViewerPage from '@/pages/TemplateViewerPage';
 import NotFound from '@/pages/NotFound';
 
 const queryClient = new QueryClient();
@@ -149,6 +150,7 @@ const AppContent = () => {
         <Route path="/legislative-tracker/:id" element={<LegislativeTrackerDetail />} />
         <Route path="/legislation/:id" element={<LegislationDetail />} />
         <Route path="/bill/:id" element={<BillDetail />} />
+        <Route path="/template/:id" element={<TemplateViewerPage />} />
         <Route path="/reject-finance-bill" element={<RejectFinanceBill />} />
         <Route path="/shambles" element={<SHAmbles />} />
         <Route path="/peoples-audit" element={<PeoplesAuditPage />} />
