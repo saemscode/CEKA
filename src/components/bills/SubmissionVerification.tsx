@@ -87,9 +87,9 @@ export const SubmissionVerification: React.FC<SubmissionVerificationProps> = ({
           </div>
 
           <div className="space-y-2">
-            <h3 className="text-2xl font-[1000] tracking-tighter text-white">Identity Verification</h3>
+            <h3 className="text-2xl font-[1000] tracking-tighter text-white">Verification</h3>
             <p className="text-sm text-white/60 leading-relaxed">
-              We've dispatched a 6-digit verification code to <span className="text-white font-bold">{email}</span>. Please verify your identity to secure this signature.
+              We sent a 6-digit code to <span className="text-white font-bold">{email}</span>. Enter the code to confirm your signature.
             </p>
           </div>
 
@@ -120,7 +120,7 @@ export const SubmissionVerification: React.FC<SubmissionVerificationProps> = ({
               {isVerifying ? (
                 <Loader2 className="animate-spin" />
               ) : (
-                <>Complete Verification <ArrowRight className="ml-2" size={16} /></>
+                <>Verify <ArrowRight className="ml-2" size={16} /></>
               )}
             </Button>
 
@@ -132,7 +132,7 @@ export const SubmissionVerification: React.FC<SubmissionVerificationProps> = ({
                 Resend Code
               </button>
               <p className="text-[10px] flex items-center gap-2 text-white/30 uppercase tracking-widest font-black">
-                <Mail size={10} /> Powered by CEKA Sovereign Identity
+                <Mail size={10} /> Powered by CEKA
               </p>
             </div>
           </div>

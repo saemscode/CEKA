@@ -25,10 +25,10 @@ export const CreatorDashboard: React.FC<CreatorDashboardProps> = ({
 
   return (
     <div className={cn("space-y-10", className)}>
-      {/* Sovereign Dashboard Header */}
+      {/* Campaign Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         
-        {/* Reach Node */}
+        {/* Reach */}
         <div className="relative p-6 rounded-[32px] bg-white/80 dark:bg-slate-900/40 backdrop-blur-3xl border border-black/5 dark:border-white/10 shadow-ios-soft group overflow-hidden">
           <div className="absolute top-0 right-0 p-4 opacity-[0.03] transition-transform group-hover:scale-110">
              <Eye size={48} />
@@ -36,12 +36,12 @@ export const CreatorDashboard: React.FC<CreatorDashboardProps> = ({
           <div className="relative z-10 space-y-4">
              <div className="flex items-center gap-2">
                 <div className="h-2 w-2 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]" />
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Reach & Visibility</p>
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Campaign Reach</p>
              </div>
              <div className="flex items-end justify-between">
                 <div>
                   <h4 className="text-4xl font-[1000] tracking-tighter italic leading-none">{stats.totalViews.toLocaleString()}</h4>
-                  <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-2">{conversionRate.toFixed(1)}% Conv. Rate</p>
+                  <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-2">{conversionRate.toFixed(1)}% Conversion</p>
                 </div>
                 <div className="h-10 w-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-500">
                   <Activity size={20} />
@@ -50,7 +50,7 @@ export const CreatorDashboard: React.FC<CreatorDashboardProps> = ({
           </div>
         </div>
 
-        {/* Integrity Node */}
+        {/* Signatures */}
         <div className="relative p-6 rounded-[32px] bg-white/80 dark:bg-slate-900/40 backdrop-blur-3xl border border-black/5 dark:border-white/10 shadow-ios-soft group overflow-hidden">
           <div className="absolute top-0 right-0 p-4 opacity-[0.03] transition-transform group-hover:scale-110">
              <Users size={48} />
@@ -58,12 +58,12 @@ export const CreatorDashboard: React.FC<CreatorDashboardProps> = ({
           <div className="relative z-10 space-y-4">
              <div className="flex items-center gap-2">
                 <div className="h-2 w-2 rounded-full bg-kenya-green shadow-[0_0_8px_rgba(0,186,0,0.5)]" />
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Data Integrity</p>
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Verified Signatures</p>
              </div>
              <div className="flex items-end justify-between">
                 <div>
                   <h4 className="text-4xl font-[1000] tracking-tighter italic leading-none">{stats.verifiedSigns.toLocaleString()}</h4>
-                  <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-2">Verified Trace</p>
+                  <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-2">Verified</p>
                 </div>
                 <div className="h-10 w-10 rounded-xl bg-kenya-green/10 flex items-center justify-center text-kenya-green">
                   <Fingerprint size={20} />
@@ -72,7 +72,7 @@ export const CreatorDashboard: React.FC<CreatorDashboardProps> = ({
           </div>
         </div>
 
-        {/* Velocity Node */}
+        {/* Growth */}
         <div className="relative p-6 rounded-[32px] bg-white/80 dark:bg-slate-900/40 backdrop-blur-3xl border border-black/5 dark:border-white/10 shadow-ios-soft group overflow-hidden">
           <div className="absolute top-0 right-0 p-4 opacity-[0.03] transition-transform group-hover:scale-110">
              <TrendingUp size={48} />
@@ -80,12 +80,12 @@ export const CreatorDashboard: React.FC<CreatorDashboardProps> = ({
           <div className="relative z-10 space-y-4">
              <div className="flex items-center gap-2">
                 <div className="h-2 w-2 rounded-full bg-gold shadow-[0_0_8px_rgba(255,191,0,0.5)]" />
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Viral Velocity</p>
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">New Signatures</p>
              </div>
              <div className="flex items-end justify-between">
                 <div>
                   <h4 className="text-4xl font-[1000] tracking-tighter italic leading-none">+{stats.last24h}</h4>
-                  <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-2">Spike Detected</p>
+                  <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-2">Recent Growth</p>
                 </div>
                 <div className="h-10 w-10 rounded-xl bg-gold/10 flex items-center justify-center text-gold">
                   <Zap size={20} />
@@ -99,16 +99,16 @@ export const CreatorDashboard: React.FC<CreatorDashboardProps> = ({
          <div className="space-y-6">
             <div className="flex items-center gap-3">
                <Percent size={16} className="text-kenya-green" />
-               <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-900 dark:text-white">Active Momentum</h3>
+               <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-900 dark:text-white">Campaign Goal</h3>
             </div>
-            <SignatureCounter current={stats.totalSigns} goal={stats.goal} variant="sovereign" />
+            <SignatureCounter current={stats.totalSigns} goal={stats.goal} variant="default" />
          </div>
          
          <div className="space-y-6">
             <div className="flex items-center justify-between">
                <div className="flex items-center gap-3">
                   <Calendar size={16} className="text-slate-400" />
-                  <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-900 dark:text-white">Campaign Updates</h3>
+                  <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-900 dark:text-white">Campaign Timeline</h3>
                </div>
                <button className="text-[10px] font-black text-kenya-green uppercase tracking-widest hover:underline">Manage Timeline</button>
             </div>
@@ -126,7 +126,7 @@ export const CreatorDashboard: React.FC<CreatorDashboardProps> = ({
                )) : (
                  <div className="p-12 rounded-[32px] border-2 border-dashed border-black/5 dark:border-white/5 flex flex-col items-center justify-center text-center opacity-40">
                     <Calendar size={32} className="text-slate-300 mb-4" />
-                    <p className="text-[10px] font-black uppercase tracking-widest">No active updates logged in the sovereign trace.</p>
+                    <p className="text-[10px] font-black uppercase tracking-widest">No updates for this campaign yet.</p>
                  </div>
                )}
             </div>

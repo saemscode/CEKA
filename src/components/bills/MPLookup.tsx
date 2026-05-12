@@ -19,9 +19,9 @@ export const MPLookup: React.FC<MPLookupProps> = ({
 }) => {
   const mp = getMPByConstituency(constituency);
 
-  if (!mp) return (
+    if (!mp) return (
     <div className={cn("p-4 rounded-3xl bg-slate-50 dark:bg-white/5 border border-dashed border-black/10 dark:border-white/10 opacity-60", className)}>
-       <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 text-center">MP Data Pending for {constituency || 'Location'}</p>
+       <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 text-center">Data pending for {constituency || 'Location'}</p>
     </div>
   );
 

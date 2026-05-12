@@ -7,7 +7,8 @@ import { motion } from 'framer-motion';
 import {
   Zap, ArrowLeft, ShieldCheck, Share2,
   MessageSquare, ExternalLink, Info, Timer, Users, Target,
-  TrendingUp, CheckCircle2, Globe, Clock, Fingerprint
+  TrendingUp, CheckCircle2, Globe, Clock, Fingerprint,
+  Scale, DownloadCloud
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -64,21 +65,21 @@ const TemplateViewerPage = () => {
       await supabase.rpc('increment_template_views', { template_id: (data as any).id });
 
     } catch (error) {
-      console.error('Error fetching template suite:', error);
+      console.error('Error fetching template:', error);
     } finally {
       setLoading(false);
     }
   };
 
   const getDeadlineText = () => {
-    if (!billData?.participation_deadline) return "Submission Window Open";
+    if (!billData?.participation_deadline) return "Open for Submission";
     const deadline = new Date(billData.participation_deadline);
     const now = new Date();
     const diff = deadline.getTime() - now.getTime();
     const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
-    if (days < 0) return "Submission Closed";
+    if (days < 0) return "Closed";
     if (days === 0) return "Closes Today";
-    return `${days} Days Remaining`;
+    return `${days} Days Left`;
   };
 
   if (loading) {
@@ -87,7 +88,7 @@ const TemplateViewerPage = () => {
         <div className="min-h-screen flex items-center justify-center bg-white dark:bg-black">
           <div className="flex flex-col items-center gap-4 animate-pulse">
             <Fingerprint className="h-12 w-12 text-kenya-green" />
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Decrypting Sovereign Vector...</p>
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Loading Template...</p>
           </div>
         </div>
       </Layout>
@@ -99,7 +100,7 @@ const TemplateViewerPage = () => {
       <div className="min-h-screen bg-slate-50/50 dark:bg-black pt-24 pb-20 px-4 md:px-6">
         <div className="max-w-7xl mx-auto space-y-12">
           
-          {/* Sovereign Top Navigation */}
+          {/* Top Navigation */}
           <div className="flex items-center justify-between group">
              <Button
                 variant="ghost"
@@ -109,42 +110,42 @@ const TemplateViewerPage = () => {
                 <div className="bg-white dark:bg-white/5 p-2 rounded-xl shadow-ios-soft group-hover:-translate-x-1 transition-transform">
                   <ArrowLeft size={16} />
                 </div>
-                <span className="text-[10px] font-black uppercase tracking-[0.2em]">Legislative Tracker</span>
+                <span className="text-[10px] font-black uppercase tracking-[0.2em]">Back to Tracker</span>
               </Button>
 
               <div className="flex items-center gap-4">
                 <div className="h-10 px-5 rounded-2xl bg-kenya-green/5 border border-kenya-green/10 flex items-center gap-3">
                   <ShieldCheck size={14} className="text-kenya-green" />
-                  <span className="text-[9px] font-black uppercase tracking-widest text-kenya-green">Verified Vector</span>
+                  <span className="text-[9px] font-black uppercase tracking-widest text-kenya-green">Verified Template</span>
                 </div>
                 <Button
                   onClick={() => {
                     navigator.clipboard.writeText(window.location.href);
-                    toast({ title: "Vector Copied", description: "Identity link ready for amplification." });
+                    toast({ title: "Link Copied", description: "Link ready to share." });
                   }}
                   className="rounded-2xl h-12 px-6 bg-white dark:bg-white/5 border border-black/5 dark:border-white/10 text-slate-900 dark:text-white font-black text-[10px] uppercase tracking-widest hover:scale-[1.02] active:scale-[0.98] transition-all"
                 >
                   <Share2 size={14} className="mr-2" />
-                  Amplify Vector
+                  Share Template
                 </Button>
               </div>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
             
-            {/* Left Column: Contextual Data Trace */}
+            {/* Left Column: Campaign Details */}
             <div className="lg:col-span-5 space-y-10">
               <div className="space-y-6">
-                <p className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-400">Citizen Intelligence Core</p>
+                <p className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-400">Public Campaign</p>
                 <h1 className="text-4xl md:text-6xl font-[1000] tracking-tighter italic leading-[0.8] text-slate-900 dark:text-white uppercase">
                   {template.title}
                 </h1>
                 <div className="flex flex-wrap gap-2 pt-2">
                    <div className="px-3 py-1 rounded-full bg-slate-900 dark:bg-white/10 text-white text-[8px] font-black uppercase tracking-widest">
-                      Trace: {template.slug || template.id.slice(0, 8)}
+                      ID: {template.slug || template.id.slice(0, 8)}
                    </div>
                    <div className="px-3 py-1 rounded-full bg-kenya-green text-white text-[8px] font-black uppercase tracking-widest">
-                      {template.uses_count} Uses
+                      {template.uses_count} Shares
                    </div>
                    {billData?.status && (
                      <div className="px-3 py-1 rounded-full border border-black/10 dark:border-white/10 text-[8px] font-black uppercase tracking-widest">
@@ -160,11 +161,11 @@ const TemplateViewerPage = () => {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <Target className="h-5 w-5 text-kenya-green" />
-                      <p className="text-xs font-black uppercase tracking-[0.2em]">Action Momentum</p>
+                      <p className="text-xs font-black uppercase tracking-[0.2em]">Campaign Progress</p>
                     </div>
                     <div className="text-right">
                        <p className="text-4xl font-[1000] tracking-tighter italic leading-none">{signatureCount.toLocaleString()}</p>
-                       <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-1">Verified Trace</p>
+                       <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-1">Total Signatures</p>
                     </div>
                   </div>
 
@@ -176,8 +177,8 @@ const TemplateViewerPage = () => {
                         <p className="text-xs font-black italic">{getDeadlineText()}</p>
                      </div>
                      <div className="p-4 rounded-3xl bg-slate-50 dark:bg-white/5 border border-black/5 dark:border-white/5 space-y-1 text-right">
-                        <p className="text-[8px] font-black uppercase tracking-widest text-slate-400 text-right">Trust Score</p>
-                        <p className="text-xs font-black italic text-kenya-green">High Density</p>
+                        <p className="text-[8px] font-black uppercase tracking-widest text-slate-400 text-right">Status</p>
+                        <p className="text-xs font-black italic text-kenya-green">Active</p>
                      </div>
                   </div>
                 </div>
@@ -188,7 +189,7 @@ const TemplateViewerPage = () => {
                 <div className="space-y-6">
                   <div className="flex items-center gap-3">
                      <Clock size={16} className="text-slate-400" />
-                     <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">Real-time Citizen Signals</h3>
+                     <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">Recent Signatures</h3>
                   </div>
                   <div className="space-y-4">
                     {signatures.map((sig, i) => (
@@ -205,7 +206,7 @@ const TemplateViewerPage = () => {
                           </div>
                           <div>
                             <p className="text-xs font-black italic tracking-tight">{sig.full_name}</p>
-                            <p className="text-[9px] font-medium text-slate-400 uppercase tracking-widest">{sig.county || 'Sovereign Node'}</p>
+                            <p className="text-[9px] font-medium text-slate-400 uppercase tracking-widest">{sig.county || 'Kenya'}</p>
                           </div>
                         </div>
                         <p className="text-[8px] font-black text-slate-300 uppercase">{new Date(sig.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
@@ -215,7 +216,7 @@ const TemplateViewerPage = () => {
                 </div>
               )}
 
-              {/* Vector Intel */}
+              {/* Info Card */}
               <div className="p-10 rounded-[40px] bg-slate-900 text-white shadow-2xl relative overflow-hidden group">
                  <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-110 transition-transform duration-1000">
                     <Scale size={160} />
@@ -223,25 +224,25 @@ const TemplateViewerPage = () => {
                  <div className="relative z-10 space-y-6">
                     <div className="flex items-center gap-3">
                        <Zap size={16} className="text-gold" />
-                       <h3 className="text-xs font-black uppercase tracking-[0.2em]">Legislative Matrix</h3>
+                       <h3 className="text-xs font-black uppercase tracking-[0.2em]">How it works</h3>
                     </div>
                     <p className="text-sm font-medium leading-relaxed italic opacity-80">
-                      "Standardized legal language ensures your objection is recognized formally by the National Assembly. This template has been neural-optimized for maximum policy impact."
+                      "This template uses standardized legal language to ensure your response is officially recognized by Parliament."
                     </p>
                     <div className="flex items-center gap-4 pt-4">
                        <div className="h-10 w-10 rounded-2xl bg-white/10 flex items-center justify-center">
                           <DownloadCloud size={20} className="text-white" />
                        </div>
                        <div>
-                          <p className="text-[10px] font-black uppercase tracking-widest">Formatted for Clerk</p>
-                          <p className="text-[8px] opacity-40">Ready for digital submission</p>
+                          <p className="text-[10px] font-black uppercase tracking-widest">Formal Format</p>
+                          <p className="text-[8px] opacity-40">Ready for submission</p>
                        </div>
                     </div>
                  </div>
               </div>
             </div>
 
-            {/* Right Column: Execution Engine */}
+            {/* Right Column: Submission Form */}
             <div className="lg:col-span-7">
                <LegislativeMemorandum
                 billId={template.metadata?.billId || template.id}

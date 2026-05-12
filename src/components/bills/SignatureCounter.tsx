@@ -53,7 +53,7 @@ export const SignatureCounter: React.FC<SignatureCounterProps> = ({
           <div className="space-y-1">
             <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 flex items-center gap-2">
               <TrendingUp size={12} className="text-kenya-green" />
-              Momentum Gauge
+              Campaign Goal
             </p>
             <h4 className="text-4xl font-[1000] tracking-tighter italic text-slate-900 dark:text-white leading-none">
               {current.toLocaleString()}
@@ -76,10 +76,10 @@ export const SignatureCounter: React.FC<SignatureCounterProps> = ({
             <span className={cn(
                percentage > 70 ? "text-kenya-green" : "text-slate-400"
             )}>
-              {percentage.toFixed(1)}% Secured
+              {percentage.toFixed(1)}% Signed
             </span>
             <span className="text-slate-400">
-               {Math.max(0, goal - current).toLocaleString()} To Milestone
+               {Math.max(0, goal - current).toLocaleString()} More Signatures Needed
             </span>
           </div>
         </div>

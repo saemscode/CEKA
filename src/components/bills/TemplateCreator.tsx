@@ -105,7 +105,7 @@ export const TemplateCreator: React.FC<TemplateCreatorProps> = ({
 
         toast({
           title: "Template Published!",
-          description: "Your memorandum template is now part of the Sovereign Gallery.",
+          description: "Your memorandum template is now part of the Community Gallery.",
         });
       }
 

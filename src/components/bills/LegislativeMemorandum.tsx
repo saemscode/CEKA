@@ -139,8 +139,8 @@ Citizen of Kenya`;
     setMessageBody(template.body);
     setIsGalleryOpen(false);
     toast({
-      title: "Intelligence Synchronized",
-      description: "Using community-verified memorandum template.",
+      title: "Template Ready",
+      description: "Using shared memorandum template.",
     });
   };
 
@@ -154,11 +154,11 @@ Citizen of Kenya`;
       return;
     }
 
-    const res = await submitSignature(`Submitted via official mailto routing.`);
+    const res = await submitSignature(`Submitted via official email.`);
     if (res) {
        toast({
-         title: "Verification Triggered",
-         description: "Securing citizen identity via OTP...",
+         title: "Almost Done",
+         description: "Sending verification code...",
        });
     }
   };
@@ -190,7 +190,7 @@ Citizen of Kenya`;
       <div style="padding: 60px; font-family: 'Times New Roman', serif; line-height: 1.8; color: black; max-width: 800px; margin: auto;">
         <div style="text-align: center; border-bottom: 3px double #006400; padding-bottom: 20px; margin-bottom: 40px;">
           <h1 style="margin: 0; color: #006400; text-transform: uppercase; font-size: 28px; letter-spacing: 2px;">Memorandum of Objection</h1>
-          <p style="margin: 10px 0; font-size: 12px; color: #555; font-weight: bold; font-family: sans-serif; letter-spacing: 1px;">CITIZEN SOVEREIGNTY NETWORK • KENYA</p>
+          <p style="margin: 10px 0; font-size: 12px; color: #555; font-weight: bold; font-family: sans-serif; letter-spacing: 1px;">CIVIC ACTION NETWORK • KENYA</p>
         </div>
         <div style="margin-bottom: 40px; font-size: 14px;">
           <p><strong>RECIPIENTS:</strong> ${getRecipientEmails().join(', ')}</p>
@@ -201,9 +201,9 @@ Citizen of Kenya`;
           ${getProcessedBody()}
         </div>
         <div style="margin-top: 80px; padding-top: 30px; border-top: 1px solid #ccc; text-align: center;">
-          <p style="margin: 0; font-weight: bold;">Digitally Signed & Verified</p>
+          <p style="margin: 0; font-weight: bold;">Digital Signature</p>
           <p style="margin: 5px 0; font-size: 18px; font-family: cursive;">${identity.name}</p>
-          <p style="font-size: 10px; color: #888; text-transform: uppercase;">Reference ID: ${submissionId || 'CEKA-TRACE-' + billId.slice(0,8)}</p>
+          <p style="font-size: 10px; color: #888; text-transform: uppercase;">Reference ID: ${submissionId || 'CEKA-ID-' + billId.slice(0,8)}</p>
         </div>
       </div>
     `;
@@ -215,7 +215,7 @@ Citizen of Kenya`;
     window.location.reload(); 
   };
 
-  const addNode = () => {
+  const addRecipient = () => {
     if (!newEmail.includes('@')) return;
     setCustomEmails([...customEmails, { id: Date.now(), address: newEmail }]);
     setNewEmail('');
@@ -224,15 +224,15 @@ Citizen of Kenya`;
 
   return (
     <div className="relative group/memorandum">
-      {/* Sovereign Outer Shell */}
+      {/* Outer Shell */}
       <div className="relative p-[1px] rounded-[40px] bg-gradient-to-br from-white/20 to-white/5 dark:from-white/10 dark:to-transparent shadow-ios-high overflow-hidden">
         <div className="bg-white/90 dark:bg-slate-900/40 backdrop-blur-3xl rounded-[39px] overflow-hidden">
           
-          {/* High-Fidelity Status Header */}
+          {/* Status Header */}
           <div className="px-8 py-5 flex items-center justify-between bg-slate-50/50 dark:bg-white/5 border-b border-black/5 dark:border-white/5">
             <div className="flex items-center gap-3">
                <div className="h-4 w-4 rounded-full bg-kenya-green shadow-[0_0_10px_rgba(0,186,0,0.5)] animate-pulse" />
-               <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Legislative Session Active</p>
+               <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Process Active</p>
             </div>
             <div className="flex items-center gap-4">
                <SignatureCounter current={signatureCount} goal={signatureGoal} variant="compact" className="w-[100px]" />
@@ -249,19 +249,19 @@ Citizen of Kenya`;
           </div>
 
           <div className="p-8 space-y-10">
-            {/* Urgency Module */}
+            {/* Deadline Timer */}
             <CountdownTimer deadline={deadline} />
 
-            {/* Sovereign Identity Cluster */}
+            {/* Details Section */}
             <div className="space-y-6">
               <div className="flex items-center gap-3">
                  <Fingerprint size={16} className="text-kenya-green" />
-                 <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-900 dark:text-white">Citizen Attribution</h3>
+                 <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-900 dark:text-white">Your Details</h3>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {[
-                  { label: "Legal Name", icon: <User size={14} />, value: identity.name, key: 'name', placeholder: "Full Legal Name" },
-                  { label: "Sovereign Email", icon: <Mail size={14} />, value: identity.email, key: 'email', placeholder: "email@sovereign.ke" },
+                  { label: "Full Name", icon: <User size={14} />, value: identity.name, key: 'name', placeholder: "Full Legal Name" },
+                  { label: "Email Address", icon: <Mail size={14} />, value: identity.email, key: 'email', placeholder: "your@email.com" },
                   { label: "County", icon: <MapPin size={14} />, value: identity.county, key: 'county', placeholder: "e.g. Nairobi" },
                   { label: "Constituency", icon: <Hash size={14} />, value: identity.constituency, key: 'constituency', placeholder: "e.g. Lang'ata" }
                 ].map((field) => (
@@ -280,22 +280,22 @@ Citizen of Kenya`;
               </div>
             </div>
 
-            {/* Targeting Architecture */}
+            {/* Recipients Section */}
             <div className="space-y-6">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                    <ShieldCheck size={16} className="text-gold" />
-                   <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-900 dark:text-white">Target Architecture</h3>
+                   <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-900 dark:text-white">Recipients</h3>
                 </div>
                 <button onClick={() => setIsAddingEmail(true)} className="text-[10px] font-black text-kenya-green uppercase tracking-widest flex items-center gap-1 hover:underline">
-                   <MailPlus size={10} /> Add Node
+                   <MailPlus size={10} /> Add Recipient
                 </button>
               </div>
 
               <div className="grid grid-cols-1 gap-3">
                  {[
                   { id: 'clerk', label: 'National Assembly Clerk', email: recipients.clerk.email },
-                  { id: 'financeCommittee', label: 'Finance Committee Secretariat', email: recipients.financeCommittee.email }
+                  { id: 'financeCommittee', label: 'Finance Committee', email: recipients.financeCommittee.email }
                 ].map((target) => (
                   <div 
                     key={target.id}
@@ -347,13 +347,13 @@ Citizen of Kenya`;
                   <div className="flex gap-2 p-2 bg-slate-50 dark:bg-white/5 rounded-2xl">
                     <Input 
                       autoFocus
-                      placeholder="custom-node@parliament.ke" 
+                      placeholder="email@parliament.ke" 
                       value={newEmail}
                       onChange={(e) => setNewEmail(e.target.value)}
-                      onKeyDown={(e) => e.key === 'Enter' && addNode()}
+                      onKeyDown={(e) => e.key === 'Enter' && addRecipient()}
                       className="border-none bg-transparent font-bold"
                     />
-                    <Button onClick={addNode} className="bg-kenya-green rounded-xl h-10 px-4 font-black text-[10px] uppercase">Route</Button>
+                    <Button onClick={addRecipient} className="bg-kenya-green rounded-xl h-10 px-4 font-black text-[10px] uppercase">Add</Button>
                   </div>
                 )}
               </div>
@@ -364,10 +364,10 @@ Citizen of Kenya`;
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                    <FileText size={16} className="text-kenya-green" />
-                   <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-900 dark:text-white">Memorandum Vector</h3>
+                   <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-900 dark:text-white">Memorandum Content</h3>
                 </div>
-                <div className="flex items-center gap-1 px-3 py-1 rounded-full bg-kenya-green/10 text-kenya-green text-[9px] font-black uppercase tracking-widest animate-pulse">
-                  <Sparkles size={10} /> Neural Sync Engine
+                <div className="flex items-center gap-1 px-3 py-1 rounded-full bg-kenya-green/10 text-kenya-green text-[9px] font-black uppercase tracking-widest">
+                  <Sparkles size={10} /> Auto-Fill Active
                 </div>
               </div>
 
@@ -393,7 +393,7 @@ Citizen of Kenya`;
                  </div>
 
                  <div className="p-4 rounded-2xl bg-slate-50 dark:bg-white/5 border-black/5 dark:border-white/5">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Edit Vector Source</p>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Edit Template</p>
                     <Textarea
                       value={messageBody}
                       onChange={(e) => setMessageBody(e.target.value)}
@@ -403,7 +403,7 @@ Citizen of Kenya`;
               </div>
             </div>
 
-            {/* Authentication & Submission */}
+            {/* Consent & Submission */}
             <div className="space-y-8">
                <div className="p-6 rounded-[32px] bg-slate-50 dark:bg-white/5 border border-black/5 dark:border-white/10 flex items-center gap-6 group/consent cursor-pointer" onClick={() => setHasConsent(!hasConsent)}>
                   <Checkbox 
@@ -413,7 +413,7 @@ Citizen of Kenya`;
                   />
                   <div className="flex-1">
                     <p className="text-xs font-bold text-slate-600 dark:text-slate-300 leading-snug">
-                      I authorize the secure generation and submission of this official legislative objection. I verify that I am a legal resident of the declared constituency and act in good faith.
+                      I authorize CEKA to submit this response on my behalf. I confirm that the details provided are accurate.
                     </p>
                   </div>
                </div>
@@ -427,7 +427,7 @@ Citizen of Kenya`;
                     <div className="bg-white/20 p-3 rounded-xl backdrop-blur-md">
                       <Send size={20} className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
                     </div>
-                    Sign & Verify Memorandum
+                    Sign & Submit
                   </Button>
 
                   <Button 
@@ -441,19 +441,19 @@ Citizen of Kenya`;
 
                <div className="grid grid-cols-2 gap-4">
                   <button onClick={handleSavePDF} className="flex items-center justify-center h-12 rounded-2xl bg-slate-50 dark:bg-white/5 border border-black/5 dark:border-white/10 text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-kenya-green transition-colors gap-2">
-                     <DownloadCloud size={14} /> PDF Output
+                     <DownloadCloud size={14} /> Save as PDF
                   </button>
                   <button onClick={() => {
                      const text = `I just formally objected to ${billTitle} on CEKA. Support the cause: `;
                      window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(window.location.href)}`, '_blank');
                   }} className="flex items-center justify-center h-12 rounded-2xl bg-slate-50 dark:bg-white/5 border border-black/5 dark:border-white/10 text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-blue-500 transition-colors gap-2">
-                     <Users size={14} /> X / Social
+                     <Users size={14} /> Share on X
                   </button>
                </div>
             </div>
 
             <div className="pt-6 border-t border-black/5 dark:border-white/5 flex items-center justify-between opacity-30 grayscale hover:grayscale-0 transition-all duration-700">
-               <p className="text-[9px] font-black uppercase tracking-widest">Sovereign Mesh Engine v0.10</p>
+               <p className="text-[9px] font-black uppercase tracking-widest">CEKA v0.10</p>
                <div className="flex gap-4">
                   <ShieldCheck size={12} />
                   <Fingerprint size={12} />
