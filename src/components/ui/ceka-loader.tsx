@@ -129,8 +129,6 @@ export const CEKALoader: React.FC<CEKALoaderProps> = ({
 
                     <motion.div
                         className="relative z-10 p-2 rounded-full bg-white/10 backdrop-blur-sm"
-                        animate={{ opacity: [0.7, 1, 0.7], scale: [0.95, 1.05, 0.95] }}
-                        transition={{ duration: 2, repeat: Infinity }}
                     >
                         <img
                             src={logoSrc}
@@ -208,17 +206,13 @@ export const CEKALoader: React.FC<CEKALoaderProps> = ({
         if (variant === 'pulse') {
             return (
                 <div className={`${s.wrapper} relative flex items-center justify-center`}>
-                    <motion.div
+                    <div
                         className="absolute inset-0 rounded-full bg-kenya-green/10"
-                        animate={{ scale: [1, 1.8, 1], opacity: [0.3, 0, 0.3] }}
-                        transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                        style={{ willChange: 'transform, opacity' }}
+                        style={{ opacity: 0.3 }}
                     />
-                    <motion.div
+                    <div
                         className="absolute inset-0 rounded-full border border-kenya-red/20"
-                        animate={{ scale: [1, 1.4, 1], opacity: [0.5, 0, 0.5] }}
-                        transition={{ duration: 2, repeat: Infinity, delay: 0.5, ease: "easeInOut" }}
-                        style={{ willChange: 'transform, opacity' }}
+                        style={{ opacity: 0.5 }}
                     />
                     <div className="relative z-10 flex items-center justify-center">
                         <img
@@ -300,8 +294,6 @@ export const CEKALoader: React.FC<CEKALoaderProps> = ({
                 />
                 <motion.div
                     className="absolute inset-0 flex items-center justify-center"
-                    animate={{ opacity: [0.6, 1, 0.6], scale: [0.98, 1.02, 0.98] }}
-                    transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
                 >
                     <img
                         src={logoSrc}
@@ -329,7 +321,7 @@ export const CEKALoader: React.FC<CEKALoaderProps> = ({
 };
 
 export const CEKACardSkeleton: React.FC<{ className?: string }> = ({ className = '' }) => (
-    <div className={`animate-pulse bg-card rounded-2xl p-6 shadow-sm border border-border/40 ${className}`}>
+    <div className={`bg-card rounded-2xl p-6 shadow-sm border border-border/40 ${className}`}>
         <div className="flex items-center gap-4 mb-6">
             <div className="w-12 h-12 bg-muted rounded-full" />
             <div className="space-y-2 flex-1">

@@ -86,7 +86,7 @@ const TemplateViewerPage = () => {
     return (
       <Layout>
         <div className="min-h-screen flex items-center justify-center bg-white dark:bg-black">
-          <div className="flex flex-col items-center gap-4 animate-pulse">
+          <div className="flex flex-col items-center gap-4">
             <ScanIcon className="h-12 w-12 text-kenya-green" />
             <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Loading Template...</p>
           </div>

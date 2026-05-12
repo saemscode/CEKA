@@ -232,7 +232,7 @@ Citizen of Kenya`;
           {/* Status Header */}
           <div className="px-8 py-5 flex items-center justify-between bg-slate-50/50 dark:bg-white/5 border-b border-black/5 dark:border-white/5">
             <div className="flex items-center gap-3">
-               <div className="h-4 w-4 rounded-full bg-kenya-green shadow-[0_0_10px_rgba(0,186,0,0.5)] animate-pulse" />
+               <div className="h-4 w-4 rounded-full bg-kenya-green shadow-[0_0_10px_rgba(0,186,0,0.3)]" />
                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Process Active</p>
             </div>
             <div className="flex items-center gap-4">

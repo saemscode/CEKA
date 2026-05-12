@@ -6,9 +6,9 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
-  Save, Eye, Share2, FileText, Plus, X, ShieldCheck,
-  Globe, Lock, Copy, CheckCircle2, Layout, Zap
-} from "lucide-react";
+  BankIcon as Save, EyeIcon as Eye, ShareIcon as Share2, CommentsIcon as FileText, StarIcon as Plus, CloseIcon as X, KeyIcon as ShieldCheck,
+  GlobeIcon as Globe, KeyIcon as Lock, PathIcon as Copy, StarIcon as CheckCircle2, WidgetIcon as Layout, PathIcon as Zap
+} from "@/components/ui/CustomIcons";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
@@ -151,7 +151,7 @@ export const TemplateCreator: React.FC<TemplateCreatorProps> = ({
                 </DialogTitle>
               </DialogHeader>
               <div className="flex items-center gap-2">
-                <div className="h-2 w-2 rounded-full bg-kenya-green animate-pulse" />
+                <div className="h-2 w-2 rounded-full bg-kenya-green shadow-[0_0_8px_rgba(0,128,0,0.3)]" />
                 <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Draft</span>
               </div>
             </div>
@@ -161,7 +161,7 @@ export const TemplateCreator: React.FC<TemplateCreatorProps> = ({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-3">
                   <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
-                    <Zap className="h-3 w-3 text-gold" /> Template Title
+                    <Zap className="h-3 w-3 text-kenya-green" /> Template Title
                   </Label>
                   <Input
                     value={title}
@@ -244,7 +244,7 @@ export const TemplateCreator: React.FC<TemplateCreatorProps> = ({
             {/* Footer */}
             <div className="px-8 py-6 border-t border-black/5 dark:border-white/5 bg-slate-50/50 dark:bg-white/5 flex items-center justify-between">
               <p className="text-[9px] text-slate-400 uppercase font-bold flex items-center gap-2">
-                <ShieldCheck className="h-3 w-3 text-gold" />
+                <ShieldCheck className="h-3 w-3 text-kenya-green" />
                 Your Template will be open to checks by the Community - so give it your best shot!
               </p>
               <div className="flex gap-3">

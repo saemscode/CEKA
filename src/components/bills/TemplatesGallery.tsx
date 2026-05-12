@@ -5,9 +5,9 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
-  FileText, Eye, Send, Search, Calendar, ExternalLink,
-  ChevronRight, Filter, Zap, Layout
-} from "lucide-react";
+  CommentsIcon as FileText, EyeIcon as Eye, ShareIcon as Send, SearchIcon as Search, ChartIcon as Calendar, GlobeIcon as ExternalLink,
+  ArrowLeftIcon as ChevronRight, SearchIcon as Filter, StarIcon as Zap, WidgetIcon as Layout, CloseIcon as X
+} from "@/components/ui/CustomIcons";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 
@@ -125,8 +125,8 @@ export const TemplatesGallery: React.FC<TemplatesGalleryProps> = ({
           {/* Grid Content */}
           <div className="flex-1 overflow-y-auto p-8 green-scrollbar">
             {loading ? (
-              <div className="flex flex-col items-center justify-center py-20 animate-pulse">
-                <Zap className="h-12 w-12 text-gold mb-4 animate-bounce" />
+              <div className="flex flex-col items-center justify-center py-20">
+                <Zap className="h-12 w-12 text-kenya-green mb-4" />
                 <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Loading templates...</p>
               </div>
             ) : filteredTemplates.length === 0 ? (
@@ -144,7 +144,7 @@ export const TemplatesGallery: React.FC<TemplatesGalleryProps> = ({
                           <FileText size={16} />
                         </div>
                         {template.is_verified && (
-                          <Badge className="bg-gold text-midnight text-[8px] font-bold rounded-lg border-none">VERIFIED</Badge>
+                          <Badge className="bg-kenya-green text-white text-[8px] font-bold rounded-lg border-none uppercase">VERIFIED</Badge>
                         )}
                       </div>
                       <CardTitle className="text-sm font-black leading-tight line-clamp-2 uppercase tracking-wide">
@@ -182,9 +182,9 @@ export const TemplatesGallery: React.FC<TemplatesGalleryProps> = ({
 
                       <Button
                         onClick={() => handleUseTemplate(template)}
-                        className="w-full h-11 rounded-2xl bg-midnight text-white font-black text-[10px] uppercase tracking-widest group-hover:scale-[1.02] active:scale-[0.98] transition-all"
+                        className="w-full h-11 rounded-2xl bg-midnight text-white font-black text-[10px] uppercase tracking-widest transition-all"
                       >
-                        <Zap className="h-3.5 w-3.5 mr-2 text-gold" />
+                        <Zap className="h-3.5 w-3.5 mr-2" />
                         Use Template
                         <ChevronRight className="h-3.5 w-3.5 ml-1 opacity-0 group-hover:opacity-100 transition-opacity" />
                       </Button>
@@ -206,8 +206,3 @@ export const TemplatesGallery: React.FC<TemplatesGalleryProps> = ({
     </Dialog>
   );
 };
-
-// Internal X icon fix
-const X = ({ className }: { className?: string }) => (
-  <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>
-);

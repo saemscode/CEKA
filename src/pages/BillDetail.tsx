@@ -75,7 +75,7 @@ const LegislativeTimeline = ({ stages, language }: { stages: ReturnType<typeof b
                 stage.discarded
                   ? "bg-red-500/5 text-red-500 border-red-200/50"
                   : stage.active
-                    ? "bg-kenya-green/10 text-kenya-green border-kenya-green/20 animate-pulse"
+                    ? "bg-kenya-green/10 text-kenya-green border-kenya-green/20"
                     : stage.completed
                       ? "bg-kenya-green/5 text-kenya-green border-kenya-green/20"
                       : "bg-slate-50 dark:bg-white/5 text-slate-400 border-none"
@@ -197,10 +197,10 @@ const BillDetail = () => {
       <Layout>
         <div className="min-h-screen bg-white dark:bg-black pt-20">
           <div className="container px-4">
-            <div className="h-8 w-32 bg-slate-100 dark:bg-white/5 rounded-full animate-pulse mb-8" />
+            <div className="h-8 w-32 bg-slate-100 dark:bg-white/5 rounded-full mb-8" />
             <div className="space-y-6">
-              <div className="h-16 w-3/4 bg-slate-100 dark:bg-white/5 rounded-3xl animate-pulse" />
-              <div className="h-32 w-full bg-slate-100 dark:bg-white/5 rounded-[40px] animate-pulse" />
+              <div className="h-16 w-3/4 bg-slate-100 dark:bg-white/5 rounded-3xl" />
+              <div className="h-32 w-full bg-slate-100 dark:bg-white/5 rounded-[40px]" />
             </div>
           </div>
         </div>
@@ -402,7 +402,7 @@ const BillDetail = () => {
                             <h4 className="font-bold text-slate-800 dark:text-white leading-tight mb-2 line-clamp-2 group-hover:text-blue-500 transition-colors">
                               {item.headline}
                             </h4>
-                            <p className="text-[10px] text-slate-500 line-clamp-2 italic">
+                            <p className="text-[10px] text-slate-500 line-clamp-2">
                               "{item.snippet}"
                             </p>
                           </div>
@@ -451,7 +451,7 @@ const BillDetail = () => {
                        <h2 className="text-3xl md:text-4xl font-black tracking-tight leading-tight uppercase">
                         ✍️ Raise <span className="text-kenya-green">Your</span> Voice
                       </h2>
-                      <p className="text-sm font-medium text-slate-500 max-w-lg italic">
+                      <p className="text-sm font-medium text-slate-500 max-w-lg">
                         Choose your method of submission: Save a quick civic response locally, or submit a formal memorandum directly to Parliament.
                       </p>
                     </div>
@@ -514,7 +514,7 @@ const BillDetail = () => {
                   </CardHeader>
                   <CardContent className="space-y-6 relative z-10">
                     <div className="flex items-end gap-2">
-                      <span className="text-6xl font-[1000] tracking-tighter leading-none italic">{bill.corroboration_score || 85}</span>
+                      <span className="text-6xl font-[1000] tracking-tighter leading-none">{bill.corroboration_score || 85}</span>
                       <span className="text-xl font-bold text-kenya-green mb-1">%</span>
                     </div>
                     <div className="space-y-2">
@@ -590,7 +590,7 @@ const BillDetail = () => {
 
                    <div className="p-4 rounded-3xl bg-slate-50 dark:bg-white/10 border border-black/5 dark:border-white/5">
                       <div className="flex items-center gap-3 mb-2">
-                         <Sparkles size={14} className="text-gold animate-pulse" />
+                         <Sparkles size={14} className="text-kenya-green" />
                          <p className="text-[10px] font-black uppercase tracking-widest">Viral Spike</p>
                       </div>
                       <p className="text-[10px] text-slate-500 font-medium leading-relaxed">

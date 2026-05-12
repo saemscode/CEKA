@@ -58,7 +58,7 @@ export const CountdownTimer: React.FC<CountdownTimerProps> = ({ deadline, classN
           "h-10 w-10 rounded-2xl flex items-center justify-center transition-colors",
           isUrgent ? "bg-red-500 text-white" : "bg-white dark:bg-white/10 shadow-ios-soft"
         )}>
-          <Clock size={18} className={cn(isUrgent && "animate-pulse")} />
+          <Clock size={18} />
         </div>
         <div>
           <p className="text-[10px] font-black uppercase tracking-widest opacity-60">Submission Deadline</p>

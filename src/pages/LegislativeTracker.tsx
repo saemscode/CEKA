@@ -319,7 +319,7 @@ const LegislativeTracker = () => {
               className="max-w-4xl"
             >
               <Badge className="mb-6 rounded-full px-4 py-1.5 bg-kenya-green/10 text-kenya-green border-kenya-green/20 font-black tracking-widest text-[10px] uppercase">
-                <Globe className="h-3 w-3 mr-2 animate-pulse" />
+                <Globe className="h-3 w-3 mr-2" />
                 Civic Education Kenya (CEKA) presents
               </Badge>
               <h1 className="text-5xl md:text-8xl font-[1000] tracking-tight leading-[0.9] mb-8 dark:text-white">
@@ -360,7 +360,7 @@ const LegislativeTracker = () => {
                           <div className="flex items-center gap-2">
                             <h4 className="font-black text-[10px] uppercase tracking-[0.3em] text-kenya-green">Get Daily News Updates</h4>
                             {tabloidUpdates[currentAlertIndex]?.status === 'ASSENT' && (
-                              <span className="flex h-2 w-2 rounded-full bg-kenya-green animate-pulse shadow-[0_0_8px_rgba(0,255,0,0.8)]" />
+                              <span className="flex h-2 w-2 rounded-full bg-kenya-green shadow-[0_0_8px_rgba(0,255,0,0.5)]" />
                             )}
                           </div>
                           <Badge className="bg-primary/10 text-primary border-none font-black text-[9px] px-2 py-0.5 rounded-full">
@@ -422,7 +422,7 @@ const LegislativeTracker = () => {
                           to={`/bill/${bill.id}`}
                           className={cn(
                             "flex items-center gap-3 group/ticker transition-colors",
-                            realtimeFlash === bill.id && "animate-pulse text-kenya-green"
+                            realtimeFlash === bill.id && "text-kenya-green font-black"
                           )}
                         >
                           <span className="text-xs font-bold dark:text-white group-hover/ticker:text-primary">
@@ -430,7 +430,7 @@ const LegislativeTracker = () => {
                           </span>
                           <span className={cn(
                             "h-2 w-2 rounded-full",
-                            bill.status === 'ASSENT' ? 'bg-kenya-green shadow-[0_0_8px_green]' : 'bg-primary'
+                            bill.status === 'ASSENT' ? 'bg-kenya-green' : 'bg-primary'
                           )} />
                         </Link>
                       )) : <span className="text-xs opacity-40">No new bills today</span>}
@@ -672,7 +672,7 @@ const LegislativeTracker = () => {
                                     {bill.category}
                                   </Badge>
                                   {bill.stage_index === 2 && (
-                                    <Badge className="bg-orange-500/10 text-orange-500 border-none font-bold rounded-lg px-3 animate-pulse">
+                                    <Badge className="bg-orange-500/10 text-orange-500 border-none font-bold rounded-lg px-3">
                                       Public Feedback Needed
                                     </Badge>
                                   )}
@@ -693,7 +693,7 @@ const LegislativeTracker = () => {
                                       <Globe className="h-4 w-4" />
                                       <span className="text-[10px] font-black uppercase tracking-widest">Quick Summary</span>
                                     </div>
-                                    <p className="text-sm font-medium leading-relaxed italic opacity-80">
+                                    <p className="text-sm font-medium leading-relaxed opacity-80">
                                       {bill.neural_summary}
                                     </p>
                                   </div>
