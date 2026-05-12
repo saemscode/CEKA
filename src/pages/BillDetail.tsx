@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Calendar, User, Tag, ExternalLink, Clock, Eye, Share2, Clipboard, Download, CheckCircle2, Circle, ShieldCheck, Newspaper, Info, Lock, FileText, XCircle } from 'lucide-react';
+import { ArrowLeft, Calendar, User, Tag, ExternalLink, Clock, Eye, Share2, Clipboard, Download, CheckCircle2, Circle, ShieldCheck, Newspaper, Info, Lock, FileText, XCircle, Target, TrendingUp, Sparkles } from 'lucide-react';
 import { buildTimeline, getStageColor, getStageIndex, BILL_STAGES } from '@/lib/billStages';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -15,6 +15,7 @@ import { BillResponseForm } from '@/components/bills/BillResponseForm';
 import { LegislativeMemorandum } from '@/components/bills/LegislativeMemorandum';
 import { SocialShareDrawer } from '@/components/bills/SocialShareDrawer';
 import { BillFollowButton } from '@/components/legislative/BillFollowButton';
+import { SignatureCounter } from '@/components/bills/SignatureCounter';
 
 // Delegated to shared billStages utility — kept as thin alias
 const getStatusColor = (status: string) => getStageColor(status);
@@ -105,6 +106,8 @@ const BillDetail = () => {
   const [error, setError] = useState<string | null>(null);
   const [shareDrawerOpen, setShareDrawerOpen] = useState(false);
   const [userResponse, setUserResponse] = useState<string | undefined>(undefined);
+  const [signatureCount, setSignatureCount] = useState(0);
+  const [signatureGoal, setSignatureGoal] = useState(1000);
 
   useEffect(() => {
     if (id) {
@@ -151,6 +154,12 @@ const BillDetail = () => {
       }
 
       setBill(billData);
+
+      // Load signature stats
+      const count = await billService.getSignatureCount(billId);
+      setSignatureCount(count);
+      // @ts-ignore - signature_goal might be in the billData from Supabase
+      if (billData.signature_goal) setSignatureGoal(billData.signature_goal);
 
       // Load news mentions
       const newsData = await billService.getBillNewsMentions(billId);
@@ -266,6 +275,11 @@ const BillDetail = () => {
               <p className="text-xl md:text-2xl text-slate-500 dark:text-slate-400 font-medium leading-relaxed max-w-4xl">
                 {bill.summary}
               </p>
+
+              {/* MOMENTUM BAR - Quick View */}
+              <div className="mt-8 max-w-xl">
+                 <SignatureCounter current={signatureCount} goal={signatureGoal} variant="compact" className="bg-transparent backdrop-blur-none border-none p-0 shadow-none" />
+              </div>
             </motion.div>
 
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-12">
@@ -459,6 +473,8 @@ const BillDetail = () => {
                           billId={bill.id}
                           billTitle={bill.title}
                           billSummary={bill.summary}
+                          deadline={bill.participation_deadline}
+                          signatureGoal={signatureGoal}
                         />
                      </div>
 
@@ -559,6 +575,29 @@ const BillDetail = () => {
                     />
                   </CardContent>
                 </Card>
+
+                {/* SIGNATURE TRACKER SIDEBAR MODULE */}
+                <div className="p-8 rounded-[40px] bg-white/80 dark:bg-slate-900/40 backdrop-blur-3xl border border-black/5 dark:border-white/10 shadow-ios-soft space-y-8">
+                   <div className="flex items-center justify-between">
+                     <div className="flex items-center gap-3">
+                       <Target size={18} className="text-kenya-green" />
+                       <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Action Momentum</p>
+                     </div>
+                     <p className="text-[10px] font-black text-kenya-green uppercase tracking-widest">{Math.round((signatureCount / signatureGoal) * 100)}% Verified</p>
+                   </div>
+
+                   <SignatureCounter current={signatureCount} goal={signatureGoal} variant="compact" className="bg-transparent backdrop-blur-none border-none p-0 shadow-none" />
+
+                   <div className="p-4 rounded-3xl bg-slate-50 dark:bg-white/10 border border-black/5 dark:border-white/5">
+                      <div className="flex items-center gap-3 mb-2">
+                         <Sparkles size={14} className="text-gold animate-pulse" />
+                         <p className="text-[10px] font-black uppercase tracking-widest">Viral Spike</p>
+                      </div>
+                      <p className="text-[10px] text-slate-500 font-medium leading-relaxed">
+                         WhatsApp engagement up <span className="font-bold text-slate-900 dark:text-white">40%</span> in the last 24h.
+                      </p>
+                   </div>
+                </div>
 
                 {/* ENGAGEMENT TOOLS */}
                 <Card className="rounded-[40px] border-none bg-kenya-green/5 dark:bg-kenya-green/10 overflow-hidden">

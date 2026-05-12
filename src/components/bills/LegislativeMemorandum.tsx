@@ -4,41 +4,71 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { 
   Send, Mail, FileText, CheckCircle, User, AlertTriangle, Scale, Users, 
-  ArrowUpRight, Info, Save, Edit2, ShieldCheck, MailPlus, X
+  ArrowUpRight, Info, Save, Edit2, ShieldCheck, MailPlus, X, Share2, 
+  MapPin, Hash, Sparkles, DownloadCloud, Fingerprint, ChevronRight
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { TemplateCreator } from "./TemplateCreator";
 import { TemplatesGallery } from "./TemplatesGallery";
+import { MP_CONTACTS, getMPByConstituency } from "@/lib/parliamentaryContacts";
+import { useTemplateSubmission } from "@/hooks/useTemplateSubmission";
+import { SignatureCounter } from "./SignatureCounter";
+import { CountdownTimer } from "./CountdownTimer";
+import { MPLookup } from "./MPLookup";
+import { SubmissionVerification } from "./SubmissionVerification";
 
 interface LegislativeMemorandumProps {
   billId: string;
   billTitle: string;
   billSummary: string;
+  deadline?: string | null;
+  signatureGoal?: number;
 }
 
 export const LegislativeMemorandum: React.FC<LegislativeMemorandumProps> = ({
   billId,
   billTitle,
   billSummary,
+  deadline,
+  signatureGoal = 1000
 }) => {
-  const [userName, setUserName] = useState('');
+  const {
+    identity,
+    updateIdentity,
+    submitSignature,
+    verifyOTP,
+    amplifyWhatsApp,
+    isSubmitting,
+    needsVerification,
+    submissionId
+  } = useTemplateSubmission(billId, null);
+
   const [subject, setSubject] = useState('');
   const [messageBody, setMessageBody] = useState('');
   const [selectedRecipients, setSelectedRecipients] = useState({
     clerk: true,
-    financeCommittee: true
+    financeCommittee: true,
+    localMP: true
   });
   const [customEmails, setCustomEmails] = useState<{id: number, address: string}[]>([]);
   const [newEmail, setNewEmail] = useState('');
   const [isAddingEmail, setIsAddingEmail] = useState(false);
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
   const [isCreatorOpen, setIsCreatorOpen] = useState(false);
-  const [currentTemplateId, setCurrentTemplateId] = useState<string | null>(null);
+  const [hasConsent, setHasConsent] = useState(false);
+  const [signatureCount, setSignatureCount] = useState(0);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      const { count } = await supabase.from('signatures' as any).select('*', { count: 'exact', head: true }).eq('bill_id', billId);
+      setSignatureCount(count || 0);
+    };
+    fetchStats();
+  }, [billId]);
 
   useEffect(() => {
     setSubject(`RE: MEMORANDUM OF OBJECTION TO ${billTitle.toUpperCase()}`);
@@ -47,7 +77,7 @@ export const LegislativeMemorandum: React.FC<LegislativeMemorandumProps> = ({
 
 The above subject refers;
 
-Pursuant to Articles 10(2), 118(1) of the Constitution 2010 that mandates Public Participation in any Legislative Process I wish to submit my Memoranda as follows:
+Pursuant to Articles 10(2), 118(1) of the Constitution 2010 that mandates Public Participation in any Legislative Process I, {{full_name}}, a resident of {{constituency}} Constituency, {{county}} County, wish to submit my Memoranda as follows:
 
 Regarding: ${billTitle}
 Context: ${billSummary}
@@ -56,19 +86,37 @@ In conclusion, I call for the withdrawal of this Bill as it is made in Bad Faith
 
 Yours Faithfully,
 
-[USER_NAME_PLACEHOLDER]
+{{full_name}}
+Date: {{date}}
 
 Citizen of Kenya`;
     
     setMessageBody(template);
   }, [billTitle, billSummary]);
 
+  const getProcessedBody = () => {
+    let processed = messageBody;
+    const tokens: Record<string, string> = {
+      '{{full_name}}': identity.name || '[FULL NAME]',
+      '{{constituency}}': identity.constituency || '[CONSTITUENCY]',
+      '{{county}}': identity.county || '[COUNTY]',
+      '{{date}}': new Date().toLocaleDateString(),
+      '{{bill_title}}': billTitle
+    };
+
+    Object.entries(tokens).forEach(([token, value]) => {
+      processed = processed.split(token).join(value);
+    });
+
+    return processed;
+  };
+
   const recipients = {
     clerk: { name: "Clerk of the National Assembly", email: "cna@parliament.go.ke" },
     financeCommittee: { name: "Finance Committee", email: "financecommitteena@parliament.go.ke" }
   };
 
-  const handleRecipientChange = (recipient: 'clerk' | 'financeCommittee', checked: boolean) => {
+  const handleRecipientChange = (recipient: 'clerk' | 'financeCommittee' | 'localMP', checked: boolean) => {
     setSelectedRecipients(prev => ({ ...prev, [recipient]: checked }));
   };
 
@@ -76,6 +124,10 @@ Citizen of Kenya`;
     const emails: string[] = [];
     if (selectedRecipients.clerk) emails.push(recipients.clerk.email);
     if (selectedRecipients.financeCommittee) emails.push(recipients.financeCommittee.email);
+    if (selectedRecipients.localMP && identity.constituency) {
+      const mp = getMPByConstituency(identity.constituency);
+      if (mp) emails.push(mp.email);
+    }
     customEmails.forEach(e => emails.push(e.address));
     return emails;
   };
@@ -83,10 +135,8 @@ Citizen of Kenya`;
   const isDesktop = () => !/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
   const handleSelectTemplate = (template: any) => {
-    // We don't have a setTitle state, we use billTitle for the UI but update subject/body for the mail
     setSubject(template.metadata?.subject || `RE: MEMORANDUM OF OBJECTION TO ${template.title.toUpperCase()}`);
     setMessageBody(template.body);
-    setCurrentTemplateId(template.id);
     setIsGalleryOpen(false);
     toast({
       title: "Intelligence Synchronized",
@@ -94,67 +144,78 @@ Citizen of Kenya`;
     });
   };
 
-  const handleSendEmail = async () => {
-    if (!userName.trim()) {
+  const handleInitialSubmit = async () => {
+    if (!hasConsent) {
       toast({
-        title: "Name Required",
-        description: "Please enter your full name to complete the objection letter",
+        title: "Consent Required",
+        description: "Please confirm that you authorize CEKA to submit this on your behalf.",
         variant: "destructive"
       });
       return;
     }
 
+    const res = await submitSignature(`Submitted via official mailto routing.`);
+    if (res) {
+       toast({
+         title: "Verification Triggered",
+         description: "Securing citizen identity via OTP...",
+       });
+    }
+  };
+
+  const handleFinalDispatch = async () => {
     const selectedEmails = getRecipientEmails();
-    if (selectedEmails.length === 0) {
-      toast({
-        title: "Select Recipients",
-        description: "Please select at least one recipient",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    // Track Action
-    try {
-      // @ts-ignore - RPC functions added via custom SQL
-      await supabase.rpc('increment_user_action', { action_type_param: 'email_sent' });
-      if (currentTemplateId) {
-        // @ts-ignore - RPC functions added via custom SQL
-        await supabase.rpc('increment_template_usage', { template_id: currentTemplateId });
-      }
-    } catch (e) {
-      console.error('Tracking failed:', e);
-    }
+    if (selectedEmails.length === 0) return;
 
     const to = selectedEmails.join(',');
     const encodedSubject = encodeURIComponent(subject);
-    const personalizedMessage = messageBody.replace('[USER_NAME_PLACEHOLDER]', userName.trim());
+    const personalizedMessage = getProcessedBody();
     const encodedBody = encodeURIComponent(personalizedMessage);
     
     if (isDesktop()) {
       const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(to)}&su=${encodedSubject}&body=${encodedBody}`;
-      const outlookUrl = `https://outlook.live.com/mail/0/deeplink/compose?to=${encodeURIComponent(to)}&subject=${encodedSubject}&body=${encodedBody}`;
-      
-      const userAgent = navigator.userAgent.toLowerCase();
-      
-      if (userAgent.includes('chrome') || userAgent.includes('edge')) {
-        window.open(gmailUrl, '_blank');
-      } else if (userAgent.includes('outlook') || userAgent.includes('office')) {
-        window.open(outlookUrl, '_blank');
-      } else {
-        window.location.href = `mailto:${to}?subject=${encodedSubject}&body=${encodedBody}`;
-      }
+      window.open(gmailUrl, '_blank');
     } else {
       window.location.href = `mailto:${to}?subject=${encodedSubject}&body=${encodedBody}`;
     }
-    
-    toast({
-      title: "Opening Email App",
-      description: "Your official memorandum is ready to send!",
-    });
   };
 
-  const addCustomEmail = () => {
+  const handleAmplify = () => {
+    amplifyWhatsApp(billTitle);
+  };
+
+  const handleSavePDF = () => {
+    const printContent = document.createElement('div');
+    printContent.innerHTML = `
+      <div style="padding: 60px; font-family: 'Times New Roman', serif; line-height: 1.8; color: black; max-width: 800px; margin: auto;">
+        <div style="text-align: center; border-bottom: 3px double #006400; padding-bottom: 20px; margin-bottom: 40px;">
+          <h1 style="margin: 0; color: #006400; text-transform: uppercase; font-size: 28px; letter-spacing: 2px;">Memorandum of Objection</h1>
+          <p style="margin: 10px 0; font-size: 12px; color: #555; font-weight: bold; font-family: sans-serif; letter-spacing: 1px;">CITIZEN SOVEREIGNTY NETWORK • KENYA</p>
+        </div>
+        <div style="margin-bottom: 40px; font-size: 14px;">
+          <p><strong>RECIPIENTS:</strong> ${getRecipientEmails().join(', ')}</p>
+          <p><strong>DATE:</strong> ${new Date().toLocaleDateString()}</p>
+          <p><strong>SUBJECT:</strong> ${subject}</p>
+        </div>
+        <div style="white-space: pre-wrap; font-size: 16px; text-align: justify;">
+          ${getProcessedBody()}
+        </div>
+        <div style="margin-top: 80px; padding-top: 30px; border-top: 1px solid #ccc; text-align: center;">
+          <p style="margin: 0; font-weight: bold;">Digitally Signed & Verified</p>
+          <p style="margin: 5px 0; font-size: 18px; font-family: cursive;">${identity.name}</p>
+          <p style="font-size: 10px; color: #888; text-transform: uppercase;">Reference ID: ${submissionId || 'CEKA-TRACE-' + billId.slice(0,8)}</p>
+        </div>
+      </div>
+    `;
+    
+    const originalBody = document.body.innerHTML;
+    document.body.innerHTML = printContent.innerHTML;
+    window.print();
+    document.body.innerHTML = originalBody;
+    window.location.reload(); 
+  };
+
+  const addNode = () => {
     if (!newEmail.includes('@')) return;
     setCustomEmails([...customEmails, { id: Date.now(), address: newEmail }]);
     setNewEmail('');
@@ -162,195 +223,266 @@ Citizen of Kenya`;
   };
 
   return (
-    <Card className="rounded-[32px] border-none bg-white/80 dark:bg-slate-900/40 backdrop-blur-3xl shadow-ios-high dark:shadow-none dark:border dark:border-white/10 overflow-hidden">
-      <CardHeader className="pb-4 border-b border-black/5 dark:border-white/5 bg-slate-50/50 dark:bg-white/5">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-sm font-black uppercase tracking-[0.2em] text-kenya-green flex items-center gap-2">
-            <ShieldCheck className="h-4 w-4" />
-            Official Memorandum
-          </CardTitle>
-          <div className="flex items-center gap-2">
-             <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={() => setIsGalleryOpen(true)}
-                className="h-8 rounded-lg text-slate-400 hover:text-kenya-green text-[9px] font-black uppercase tracking-widest gap-2"
-             >
-                <Users size={14} />
-                Gallery
-             </Button>
-             <div className="h-4 w-[1px] bg-black/5 dark:bg-white/5" />
-             <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={() => setIsCreatorOpen(true)}
-                className="h-8 rounded-lg text-slate-400 hover:text-gold text-[9px] font-black uppercase tracking-widest gap-2"
-             >
-                <MailPlus size={14} />
-                Share Template
-             </Button>
-          </div>
-        </div>
-      </CardHeader>
-      
-      <CardContent className="pt-6 space-y-6">
-        {/* User Identity */}
-        <div className="space-y-3">
-          <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-            Citizen Identifier
-          </Label>
-          <div className="relative group">
-            <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-kenya-green transition-colors">
-              <User size={16} />
-            </div>
-            <Input
-              value={userName}
-              onChange={(e) => setUserName(e.target.value)}
-              placeholder="Full Name (Legal/Initials)"
-              className="pl-11 h-12 rounded-2xl border-none bg-slate-100 dark:bg-white/5 focus:ring-2 focus:ring-kenya-green/30 transition-all font-bold"
-            />
-          </div>
-        </div>
-
-        {/* Recipients */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-              Submit To
-            </Label>
-            <button 
-              onClick={() => setIsAddingEmail(true)}
-              className="text-[10px] font-bold text-kenya-green hover:underline flex items-center gap-1"
-            >
-              <MailPlus size={10} /> Add Target
-            </button>
-          </div>
+    <div className="relative group/memorandum">
+      {/* Sovereign Outer Shell */}
+      <div className="relative p-[1px] rounded-[40px] bg-gradient-to-br from-white/20 to-white/5 dark:from-white/10 dark:to-transparent shadow-ios-high overflow-hidden">
+        <div className="bg-white/90 dark:bg-slate-900/40 backdrop-blur-3xl rounded-[39px] overflow-hidden">
           
-          <div className="grid grid-cols-1 gap-2">
-            {[
-              { id: 'clerk', label: 'Clerk of NA', email: recipients.clerk.email },
-              { id: 'financeCommittee', label: 'Finance Committee', email: recipients.financeCommittee.email }
-            ].map((target) => (
-              <div 
-                key={target.id}
-                className={cn(
-                  "flex items-center justify-between p-3 rounded-2xl border transition-all cursor-pointer",
-                  selectedRecipients[target.id as keyof typeof selectedRecipients]
-                    ? "bg-kenya-green/5 border-kenya-green/20"
-                    : "bg-slate-50 dark:bg-white/5 border-transparent"
-                )}
-                onClick={() => handleRecipientChange(target.id as any, !selectedRecipients[target.id as keyof typeof selectedRecipients])}
-              >
-                <div className="flex items-center gap-3">
-                  <div className={cn(
-                    "h-8 w-8 rounded-xl flex items-center justify-center transition-colors",
-                    selectedRecipients[target.id as keyof typeof selectedRecipients]
-                      ? "bg-kenya-green text-white"
-                      : "bg-slate-200 dark:bg-white/10 text-slate-400"
-                  )}>
-                    <Mail size={14} />
-                  </div>
-                  <div>
-                    <p className="text-[11px] font-black leading-none mb-1">{target.label}</p>
-                    <p className="text-[9px] text-slate-400 uppercase tracking-tighter">{target.email}</p>
-                  </div>
-                </div>
-                <Checkbox 
-                  checked={selectedRecipients[target.id as keyof typeof selectedRecipients]}
-                  className="rounded-full border-slate-300 dark:border-white/20 data-[state=checked]:bg-kenya-green data-[state=checked]:border-kenya-green"
-                />
-              </div>
-            ))}
+          {/* High-Fidelity Status Header */}
+          <div className="px-8 py-5 flex items-center justify-between bg-slate-50/50 dark:bg-white/5 border-b border-black/5 dark:border-white/5">
+            <div className="flex items-center gap-3">
+               <div className="h-4 w-4 rounded-full bg-kenya-green shadow-[0_0_10px_rgba(0,186,0,0.5)] animate-pulse" />
+               <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Legislative Session Active</p>
+            </div>
+            <div className="flex items-center gap-4">
+               <SignatureCounter current={signatureCount} goal={signatureGoal} variant="compact" className="w-[100px]" />
+               <div className="h-4 w-[1px] bg-black/5 dark:bg-white/5" />
+               <div className="flex items-center gap-2">
+                 <button onClick={() => setIsGalleryOpen(true)} className="p-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/10 transition-colors text-slate-400 hover:text-kenya-green">
+                   <Users size={16} />
+                 </button>
+                 <button onClick={() => setIsCreatorOpen(true)} className="p-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/10 transition-colors text-slate-400 hover:text-gold">
+                   <MailPlus size={16} />
+                 </button>
+               </div>
+            </div>
+          </div>
 
-            {/* Custom Emails */}
-            {customEmails.map((e) => (
-              <div key={e.id} className="flex items-center justify-between p-3 rounded-2xl bg-blue-500/5 border border-blue-500/10">
-                <div className="flex items-center gap-3 text-blue-500">
-                  <Mail size={14} />
-                  <p className="text-[11px] font-bold">{e.address}</p>
+          <div className="p-8 space-y-10">
+            {/* Urgency Module */}
+            <CountdownTimer deadline={deadline} />
+
+            {/* Sovereign Identity Cluster */}
+            <div className="space-y-6">
+              <div className="flex items-center gap-3">
+                 <Fingerprint size={16} className="text-kenya-green" />
+                 <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-900 dark:text-white">Citizen Attribution</h3>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {[
+                  { label: "Legal Name", icon: <User size={14} />, value: identity.name, key: 'name', placeholder: "Full Legal Name" },
+                  { label: "Sovereign Email", icon: <Mail size={14} />, value: identity.email, key: 'email', placeholder: "email@sovereign.ke" },
+                  { label: "County", icon: <MapPin size={14} />, value: identity.county, key: 'county', placeholder: "e.g. Nairobi" },
+                  { label: "Constituency", icon: <Hash size={14} />, value: identity.constituency, key: 'constituency', placeholder: "e.g. Lang'ata" }
+                ].map((field) => (
+                  <div key={field.key} className="group/input relative">
+                    <Input
+                      value={field.value}
+                      onChange={(e) => updateIdentity({ [field.key]: e.target.value })}
+                      placeholder={field.placeholder}
+                      className="h-14 pl-12 rounded-2xl border-none bg-slate-50 dark:bg-white/5 focus:bg-white dark:focus:bg-white/10 transition-all font-bold text-sm shadow-inner"
+                    />
+                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within/input:text-kenya-green transition-colors">
+                      {field.icon}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Targeting Architecture */}
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                   <ShieldCheck size={16} className="text-gold" />
+                   <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-900 dark:text-white">Target Architecture</h3>
                 </div>
-                <button onClick={() => setCustomEmails(customEmails.filter(x => x.id !== e.id))}>
-                  <X size={12} className="text-slate-400" />
+                <button onClick={() => setIsAddingEmail(true)} className="text-[10px] font-black text-kenya-green uppercase tracking-widest flex items-center gap-1 hover:underline">
+                   <MailPlus size={10} /> Add Node
                 </button>
               </div>
-            ))}
 
-            {isAddingEmail && (
-              <div className="flex gap-2 p-2">
-                <Input 
-                  autoFocus
-                  placeholder="custom@email.com" 
-                  value={newEmail}
-                  onChange={(e) => setNewEmail(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && addCustomEmail()}
-                  className="h-9 rounded-xl text-xs"
+              <div className="grid grid-cols-1 gap-3">
+                 {[
+                  { id: 'clerk', label: 'National Assembly Clerk', email: recipients.clerk.email },
+                  { id: 'financeCommittee', label: 'Finance Committee Secretariat', email: recipients.financeCommittee.email }
+                ].map((target) => (
+                  <div 
+                    key={target.id}
+                    onClick={() => handleRecipientChange(target.id as any, !selectedRecipients[target.id as keyof typeof selectedRecipients])}
+                    className={cn(
+                      "flex items-center justify-between p-4 rounded-2xl transition-all duration-500 cursor-pointer border",
+                      selectedRecipients[target.id as keyof typeof selectedRecipients]
+                        ? "bg-kenya-green/10 border-kenya-green/20"
+                        : "bg-slate-50 dark:bg-white/5 border-transparent opacity-60 hover:opacity-100"
+                    )}
+                  >
+                    <div className="flex items-center gap-4">
+                       <div className={cn(
+                         "h-10 w-10 rounded-xl flex items-center justify-center transition-all",
+                         selectedRecipients[target.id as keyof typeof selectedRecipients] ? "bg-kenya-green text-white shadow-lg" : "bg-slate-200 dark:bg-white/10 text-slate-400"
+                       )}>
+                         <Mail size={18} />
+                       </div>
+                       <div>
+                         <p className="text-xs font-black italic tracking-tight">{target.label}</p>
+                         <p className="text-[10px] font-medium text-slate-400">{target.email}</p>
+                       </div>
+                    </div>
+                    <Checkbox checked={selectedRecipients[target.id as keyof typeof selectedRecipients]} className="rounded-full border-slate-300 dark:border-white/20" />
+                  </div>
+                ))}
+
+                <MPLookup 
+                  constituency={identity.constituency}
+                  isSelected={selectedRecipients.localMP}
+                  onSelect={(checked) => handleRecipientChange('localMP', checked)}
                 />
-                <Button size="sm" onClick={addCustomEmail} className="h-9 rounded-xl bg-kenya-green text-white px-3 font-bold">Add</Button>
-              </div>
-            )}
-          </div>
-        </div>
 
-        {/* Form Content */}
-        <div className="space-y-4">
-          <div className="space-y-2">
-             <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-              Subject Line
-            </Label>
-            <div className="relative">
-              <Input
-                value={subject}
-                onChange={(e) => setSubject(e.target.value)}
-                className="h-10 rounded-xl border-none bg-slate-100 dark:bg-white/5 text-[11px] font-bold pr-10"
-              />
-              <Edit2 size={12} className="absolute right-3 top-3 text-slate-400" />
+                {customEmails.map(e => (
+                   <div key={e.id} className="flex items-center justify-between p-4 rounded-2xl bg-blue-500/5 border border-blue-500/10">
+                      <div className="flex items-center gap-4">
+                         <div className="h-10 w-10 rounded-xl bg-blue-500 text-white flex items-center justify-center">
+                            <Mail size={18} />
+                         </div>
+                         <p className="text-xs font-black italic">{e.address}</p>
+                      </div>
+                      <button onClick={() => setCustomEmails(customEmails.filter(x => x.id !== e.id))}>
+                         <X size={14} className="text-slate-400" />
+                      </button>
+                   </div>
+                ))}
+
+                {isAddingEmail && (
+                  <div className="flex gap-2 p-2 bg-slate-50 dark:bg-white/5 rounded-2xl">
+                    <Input 
+                      autoFocus
+                      placeholder="custom-node@parliament.ke" 
+                      value={newEmail}
+                      onChange={(e) => setNewEmail(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && addNode()}
+                      className="border-none bg-transparent font-bold"
+                    />
+                    <Button onClick={addNode} className="bg-kenya-green rounded-xl h-10 px-4 font-black text-[10px] uppercase">Route</Button>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Memorandum Composition Section */}
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                   <FileText size={16} className="text-kenya-green" />
+                   <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-900 dark:text-white">Memorandum Vector</h3>
+                </div>
+                <div className="flex items-center gap-1 px-3 py-1 rounded-full bg-kenya-green/10 text-kenya-green text-[9px] font-black uppercase tracking-widest animate-pulse">
+                  <Sparkles size={10} /> Neural Sync Engine
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                 <div className="relative group">
+                   <Input
+                    value={subject}
+                    onChange={(e) => setSubject(e.target.value)}
+                    className="h-12 border-none bg-slate-50 dark:bg-white/5 rounded-xl font-bold text-xs pl-4 group-focus-within:bg-white dark:group-focus-within:bg-white/10 shadow-inner"
+                   />
+                   <Edit2 size={12} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                 </div>
+
+                 <div className="relative">
+                    <Textarea
+                      readOnly
+                      value={getProcessedBody()}
+                      className="min-h-[260px] rounded-[32px] border-none bg-slate-50 dark:bg-white/5 text-xs leading-relaxed p-8 green-scrollbar font-serif italic text-slate-600 dark:text-slate-300 shadow-inner"
+                    />
+                    <div className="absolute top-4 right-4 opacity-10 pointer-events-none">
+                       <Scale size={80} />
+                    </div>
+                 </div>
+
+                 <div className="p-4 rounded-2xl bg-slate-50 dark:bg-white/5 border-black/5 dark:border-white/5">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Edit Vector Source</p>
+                    <Textarea
+                      value={messageBody}
+                      onChange={(e) => setMessageBody(e.target.value)}
+                      className="min-h-[100px] bg-transparent border-none text-[10px] leading-relaxed p-0 green-scrollbar opacity-40 focus:opacity-100 transition-opacity"
+                    />
+                 </div>
+              </div>
+            </div>
+
+            {/* Authentication & Submission */}
+            <div className="space-y-8">
+               <div className="p-6 rounded-[32px] bg-slate-50 dark:bg-white/5 border border-black/5 dark:border-white/10 flex items-center gap-6 group/consent cursor-pointer" onClick={() => setHasConsent(!hasConsent)}>
+                  <Checkbox 
+                     checked={hasConsent}
+                     onCheckedChange={(checked) => setHasConsent(checked as boolean)}
+                     className="h-8 w-8 rounded-xl border-slate-300 dark:border-white/20 data-[state=checked]:bg-kenya-green data-[state=checked]:border-kenya-green transition-all"
+                  />
+                  <div className="flex-1">
+                    <p className="text-xs font-bold text-slate-600 dark:text-slate-300 leading-snug">
+                      I authorize the secure generation and submission of this official legislative objection. I verify that I am a legal resident of the declared constituency and act in good faith.
+                    </p>
+                  </div>
+               </div>
+
+               <div className="flex flex-col sm:flex-row gap-4">
+                  <Button 
+                    onClick={handleInitialSubmit}
+                    disabled={isSubmitting}
+                    className="flex-[2] h-16 rounded-2xl bg-gradient-to-br from-kenya-green to-[#004d00] text-white font-black text-sm uppercase tracking-widest hover:scale-[1.01] active:scale-[0.99] transition-all shadow-xl shadow-kenya-green/40 gap-4 group"
+                  >
+                    <div className="bg-white/20 p-3 rounded-xl backdrop-blur-md">
+                      <Send size={20} className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
+                    </div>
+                    Sign & Verify Memorandum
+                  </Button>
+
+                  <Button 
+                    onClick={handleAmplify}
+                    className="flex-1 h-16 rounded-2xl bg-[#25D366] hover:bg-[#128C7E] text-white font-black text-sm uppercase tracking-widest gap-2 shadow-xl shadow-[#25D366]/20 transition-transform active:scale-[0.98]"
+                  >
+                    <Share2 size={20} />
+                    Amplify
+                  </Button>
+               </div>
+
+               <div className="grid grid-cols-2 gap-4">
+                  <button onClick={handleSavePDF} className="flex items-center justify-center h-12 rounded-2xl bg-slate-50 dark:bg-white/5 border border-black/5 dark:border-white/10 text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-kenya-green transition-colors gap-2">
+                     <DownloadCloud size={14} /> PDF Output
+                  </button>
+                  <button onClick={() => {
+                     const text = `I just formally objected to ${billTitle} on CEKA. Support the cause: `;
+                     window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(window.location.href)}`, '_blank');
+                  }} className="flex items-center justify-center h-12 rounded-2xl bg-slate-50 dark:bg-white/5 border border-black/5 dark:border-white/10 text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-blue-500 transition-colors gap-2">
+                     <Users size={14} /> X / Social
+                  </button>
+               </div>
+            </div>
+
+            <div className="pt-6 border-t border-black/5 dark:border-white/5 flex items-center justify-between opacity-30 grayscale hover:grayscale-0 transition-all duration-700">
+               <p className="text-[9px] font-black uppercase tracking-widest">Sovereign Mesh Engine v0.10</p>
+               <div className="flex gap-4">
+                  <ShieldCheck size={12} />
+                  <Fingerprint size={12} />
+                  <Scale size={12} />
+               </div>
             </div>
           </div>
-
-          <div className="space-y-2">
-             <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-              Objection Body
-            </Label>
-            <Textarea
-              value={messageBody}
-              onChange={(e) => setMessageBody(e.target.value)}
-              className="min-h-[200px] rounded-[24px] border-none bg-slate-100 dark:bg-white/5 text-xs leading-relaxed p-5 green-scrollbar"
-            />
-          </div>
         </div>
+      </div>
 
-        {/* Action Button */}
-        <Button 
-          onClick={handleSendEmail}
-          className="w-full h-14 rounded-2xl bg-gradient-to-r from-kenya-green to-[#004d00] text-white font-black text-sm uppercase tracking-widest hover:scale-[1.01] active:scale-[0.99] transition-all shadow-xl shadow-kenya-green/30 gap-3 group"
-        >
-          <div className="bg-white/20 p-2 rounded-lg backdrop-blur-md">
-            <Send size={18} className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
-          </div>
-          Submit Official Memorandum
-        </Button>
-
-        <p className="text-[10px] text-center text-slate-400 uppercase tracking-widest font-medium">
-          Generated via Sovereign Intelligence • No Data Retained
-        </p>
-
-        <TemplatesGallery 
-          isOpen={isGalleryOpen} 
-          onClose={() => setIsGalleryOpen(false)} 
-          onSelectTemplate={handleSelectTemplate}
-        />
-
-        <TemplateCreator 
-          isOpen={isCreatorOpen} 
-          onClose={() => setIsCreatorOpen(false)} 
-          initialData={{
-            title: billTitle,
-            body: messageBody,
-            subject: subject,
-            billId: billId
+      {/* Submission Verification Modal */}
+      {needsVerification && (
+        <SubmissionVerification 
+          email={identity.email}
+          onVerify={async (code) => {
+            const res = await verifyOTP(code);
+            if (res) {
+              handleFinalDispatch();
+              return true;
+            }
+            return false;
           }}
+          onResend={() => {}}
+          onCancel={() => {}} 
         />
-      </CardContent>
-    </Card>
+      )}
+
+      <TemplatesGallery isOpen={isGalleryOpen} onClose={() => setIsGalleryOpen(false)} onSelectTemplate={handleSelectTemplate} />
+      <TemplateCreator isOpen={isCreatorOpen} onClose={() => setIsCreatorOpen(false)} initialData={{ title: billTitle, body: messageBody, subject: subject, billId: billId }} />
+    </div>
   );
 };

@@ -5,8 +5,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { 
-  Save, Eye, Share2, FileText, Plus, X, ShieldCheck, 
+import {
+  Save, Eye, Share2, FileText, Plus, X, ShieldCheck,
   Globe, Lock, Copy, CheckCircle2, Layout, Zap
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
@@ -60,7 +60,7 @@ export const TemplateCreator: React.FC<TemplateCreatorProps> = ({
 
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      
+
       const slug = customSlug || generateSlug(title);
       const metadata = {
         subject: subject || '',
@@ -147,12 +147,12 @@ export const TemplateCreator: React.FC<TemplateCreatorProps> = ({
               <DialogHeader>
                 <DialogTitle className="text-sm font-black uppercase tracking-[0.2em] text-kenya-green flex items-center gap-2">
                   <Layout className="h-4 w-4" />
-                  Sovereign Template Creator
+                  CEKA Community Template Creator
                 </DialogTitle>
               </DialogHeader>
               <div className="flex items-center gap-2">
                 <div className="h-2 w-2 rounded-full bg-kenya-green animate-pulse" />
-                <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Live Draft</span>
+                <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Draft</span>
               </div>
             </div>
 
@@ -177,7 +177,7 @@ export const TemplateCreator: React.FC<TemplateCreatorProps> = ({
                   <Input
                     value={subject}
                     onChange={(e) => setSubject(e.target.value)}
-                    placeholder="Subject of the memorandum"
+                    placeholder="Subject of the Memorandum"
                     className="h-12 rounded-2xl border-none bg-slate-100 dark:bg-white/5 focus:ring-2 focus:ring-kenya-green/30 transition-all font-bold"
                   />
                 </div>
@@ -186,7 +186,7 @@ export const TemplateCreator: React.FC<TemplateCreatorProps> = ({
               {/* URL Customization */}
               <div className="space-y-3">
                 <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-                  Custom Access Identifier (Slug)
+                  Name Your Template URL (/slug)
                 </Label>
                 <div className="flex items-center gap-3 p-1 rounded-2xl bg-slate-100 dark:bg-white/5">
                   <div className="px-4 py-2 text-[10px] font-black uppercase tracking-widest text-slate-400 bg-white/50 dark:bg-white/5 rounded-xl">
@@ -245,13 +245,13 @@ export const TemplateCreator: React.FC<TemplateCreatorProps> = ({
             <div className="px-8 py-6 border-t border-black/5 dark:border-white/5 bg-slate-50/50 dark:bg-white/5 flex items-center justify-between">
               <p className="text-[9px] text-slate-400 uppercase font-bold flex items-center gap-2">
                 <ShieldCheck className="h-3 w-3 text-gold" />
-                Templates require community verification
+                Your Template will be open to checks by the Community - so give it your best shot!
               </p>
               <div className="flex gap-3">
                 <Button variant="ghost" onClick={onClose} className="rounded-xl text-[10px] font-black uppercase tracking-widest">
                   Cancel
                 </Button>
-                <Button 
+                <Button
                   onClick={handleSaveTemplate}
                   disabled={isSaving || !title.trim() || !body.trim()}
                   className="h-12 px-8 rounded-2xl bg-midnight text-white font-black text-xs uppercase tracking-widest hover:scale-[1.02] active:scale-[0.98] transition-all"
@@ -271,17 +271,17 @@ export const TemplateCreator: React.FC<TemplateCreatorProps> = ({
             <CheckCircle2 size={32} />
           </div>
           <div className="space-y-2">
-            <h3 className="text-xl font-black uppercase tracking-tight">Sovereign Link Ready</h3>
+            <h3 className="text-xl font-black uppercase tracking-tight">Template Link Ready</h3>
             <p className="text-xs text-slate-500 font-medium leading-relaxed">
-              Your template has been encrypted and stored in the Sovereign Database. Anyone with this link can now submit this memorandum.
+              We've received your template & are now putting it before other CEKA Community members to interact with securely. Anyone with this link can now use this template to submit their memorandum. Share your creation!
             </p>
           </div>
-          
+
           <div className="p-4 bg-slate-100 dark:bg-white/5 rounded-2xl break-all font-mono text-[10px] text-slate-600 dark:text-slate-400 relative group overflow-hidden">
-             {shareableUrl}
-             <div className="absolute inset-0 bg-kenya-green items-center justify-center hidden group-hover:flex transition-opacity">
-                <span className="text-white font-black text-[10px] uppercase tracking-widest">Copy Identifier</span>
-             </div>
+            {shareableUrl}
+            <div className="absolute inset-0 bg-kenya-green items-center justify-center hidden group-hover:flex transition-opacity">
+              <span className="text-white font-black text-[10px] uppercase tracking-widest">Copy URL slug</span>
+            </div>
           </div>
 
           <div className="flex gap-3">

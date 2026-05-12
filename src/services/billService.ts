@@ -27,6 +27,8 @@ export interface Bill {
   // Bill Pipeline Enhancement fields
   ai_concerns?: string[] | null;
   tabloid_summary?: string | null;
+  participation_deadline?: string | null;
+  signature_goal?: number | null;
 }
 
 class BillService {
@@ -124,7 +126,7 @@ class BillService {
   async getBillNewsMentions(billId: string): Promise<any[]> {
     try {
       const { data, error } = await supabase
-        .from('bill_news_mentions')
+        .from('bill_news_mentions' as any)
         .select('*')
         .eq('bill_id', billId)
         .order('scraped_at', { ascending: false });
@@ -168,6 +170,21 @@ class BillService {
       return (data as any)?.response ?? null;
     } catch {
       return null;
+    }
+  }
+
+  async getSignatureCount(billId: string): Promise<number> {
+    try {
+      const { count, error } = await supabase
+        .from('signatures' as any)
+        .select('*', { count: 'exact', head: true })
+        .eq('bill_id', billId);
+      
+      if (error) throw error;
+      return count || 0;
+    } catch (error) {
+      console.error('Error fetching signature count:', error);
+      return 0;
     }
   }
 }
