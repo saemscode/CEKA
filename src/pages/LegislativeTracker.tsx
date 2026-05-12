@@ -42,6 +42,7 @@ interface Bill {
   category: string;
   date: string;
   created_at: string;
+  updated_at: string;
   url?: string | null;
   sponsor?: string;
   description?: string;
@@ -204,16 +205,19 @@ const LegislativeTracker = () => {
     // Monday-Friday of current week
     const day = now.getDay();
     const diff = now.getDate() - day + (day === 0 ? -6 : 1);
-    const monday = new Date(now.setDate(diff));
+    const monday = new Date(now.getFullYear(), now.getMonth(), diff);
     monday.setHours(0, 0, 0, 0);
 
     const friday = new Date(monday);
     friday.setDate(monday.getDate() + 4);
     friday.setHours(23, 59, 59, 999);
 
-    const todayItems = billsData.filter(b => new Date(b.created_at) >= today);
+    // Filter by MOST RECENT activity (updated_at OR created_at)
+    const getActivityDate = (b: Bill) => new Date(b.updated_at || b.created_at);
+
+    const todayItems = billsData.filter(b => getActivityDate(b) >= today);
     const weekItems = billsData.filter(b => {
-      const dt = new Date(b.created_at);
+      const dt = getActivityDate(b);
       return dt >= monday && dt <= friday && dt < today;
     });
 
