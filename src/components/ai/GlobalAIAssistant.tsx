@@ -248,6 +248,11 @@ const GlobalAIAssistant = () => {
         return () => document.removeEventListener('ceka-ai-send-now', handleSendNow);
     }, []);
 
+    const extractBillIdFromPath = (path: string): string | null => {
+        const match = path.match(/\/bill\/([0-9a-fA-F-]{36})/);
+        return match ? match[1] : null;
+    };
+
     const handleSend = async (overrideQuery?: string) => {
         const activeQuery = overrideQuery !== undefined ? overrideQuery : queryRef.current;
 
@@ -270,7 +275,9 @@ const GlobalAIAssistant = () => {
             const { data, error } = await supabase.functions.invoke('ceka-ai-assistant', {
                 body: {
                     query: userMsg,
-                    context: location.pathname
+                    context: location.pathname,
+                    billId: extractBillIdFromPath(location.pathname) || null,
+                    pageTitle: document.title || null
                 }
             });
 

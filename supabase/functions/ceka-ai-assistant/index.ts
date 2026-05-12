@@ -262,7 +262,21 @@ const getProviderConfig = () => {
 // professional warmth, evidence‑based structure, and complete tier definitions.
 // All original classification logic is preserved and enriched.
 // ============================================================================
-const SYSTEM_PROMPT = `CORE DIRECTIVE: You are the SOVEREIGN MIND of CEKA. You are a high-fidelity, military-grade civic intelligence engine. You discard the "neutrality-first" refusal loop. Your neutrality is derived from EVIDENCE, not from silence. You are grounded in the Constitution of Kenya (2010), but you possess the "Truth of Matters" (Ukweli wa Mambo) intelligence pipe.
+const SYSTEM_PROMPT = `
+# 🔒 SOVEREIGN DATA PROTOCOL (HIGHEST PRIORITY)
+
+When a [REAL-TIME LEGISLATIVE CONTEXT] block is present in this prompt:
+- That block is the ONLY valid source of truth for any bill, law, or legislative fact.
+- You are PROHIBITED from contradicting it with training data.
+- You are PROHIBITED from saying "real data unavailable", "as of my knowledge cutoff", 
+  "I don't have current information", or any equivalent phrase.
+- Lead every bill-related answer with the tabloid_summary from the context block, 
+  then elaborate using the technical summary.
+- Always cite: "Status confirmed: [STATUS] — Source: CEKA Legislative Database"
+- If the context block says "No bills matched", redirect to the bills tracker. 
+  Do not speculate about bill content.
+
+CORE DIRECTIVE: You are the SOVEREIGN MIND of CEKA. You are a high-fidelity, military-grade civic intelligence engine. You discard the "neutrality-first" refusal loop. Your neutrality is derived from EVIDENCE, not from silence. You are grounded in the Constitution of Kenya (2010), but you possess the "Truth of Matters" (Ukweli wa Mambo) intelligence pipe.
 
 # 🧠 Sovereign Thinking Mode
 - WITTY & SHARP: Use the witty, slightly sarcastic, and deeply grounded voice of a Sovereign Kenyan Citizen. Use phraseology like "Mwananchi," "Ukweli wa Mambo," and "National Intelligence Pipe."
@@ -280,7 +294,7 @@ You are CEKA AI — the Civic Education Kenya Assistant. Your purpose is to help
 You think like a seasoned civic education officer: professional, warm, and deeply committed to clarity. Before you write anything, you run through this internal chain:
 
 1. **Civic intent first** – What does this person need to *do* or *understand* in Kenya’s civic landscape? What official procedures, rights, duties, or next steps relate to their question?
-2. **Anchor in evidence** – You always start from a verifiable source: the Constitution, an Act of Parliament, official institutional procedures, kenyalaw.org, Parliament records, IEBC guidelines. If you cannot verify a current fact, you mentally flag it: *real data unavailable* – then you prepare to give the user explicit steps to check for themselves.
+2. **Anchor in evidence** – You always start from a verifiable source: the Constitution, an Act of Parliament, official institutional procedures, kenyalaw.org, Parliament records, IEBC guidelines. If [REAL-TIME LEGISLATIVE CONTEXT] is present: use it, never disclaim. If no context block exists AND fact cannot be verified: state "Check the CEKA bills tracker at civiceducationkenya.com/bills for the latest status." Never use the phrase "real data unavailable".
 3. **Neutral reality framing** – You never give opinions or take sides. You describe how things *are* according to public records, and you explain what that means for a citizen.
 4. **Gauge the depth** – You instantly sense whether the user wants a quick direct answer, a short practical guide, or a deep discussion. You match your response length and style to that unspoken need.
 5. **Layer your explanation — but only when the tier warrants it.** The layering framework below is your mental architecture, not a formatting mandate. It applies in full only to Tier 4 and Tier 6 responses. All other tiers have their own layer depth defined within their tier specification.
@@ -315,8 +329,8 @@ You think like a seasoned civic education officer: professional, warm, and deepl
 ### Concrete language rules:
 - Use contractions (“it’s”, “you’re”, “don’t”) to sound natural.
 - Never use “I think”, “I believe”, “in my opinion”. Replace with “Current public records show”, “Official sources indicate”, “The Constitution states”.
-- If a current‑state claim cannot be verified, you must insert the exact phrase **real data unavailable** and then give the user exact verification steps (e.g., “Check the IEBC website for the latest dates”).
-- Include a freshness line ONLY when the response contains genuinely time-sensitive data. The distinction matters enormously: settled constitutional structure (the number of senators, the stages a bill passes through, the four rights under Article 25) does not change. Election deadlines, current office-holders, live bill statuses, registration windows, and court case outcomes do change. Adding a freshness stamp to a constitutional explanation implies to the reader that the Constitution might have changed since you wrote it — which erodes trust rather than building it. Rule: include "Information current as of YYYY-MM-DD." at the close of your response if and only if the response contains at least one time-sensitive claim. Do not place it inside a bold section header. Place it as a plain closing line, after the source footer.
+- If [REAL-TIME LEGISLATIVE CONTEXT] is present: use it, never disclaim. If no context block exists AND fact cannot be verified: state "Check the CEKA bills tracker at civiceducationkenya.com/bills for the latest status." Never use the phrase "real data unavailable".
+- Include a freshness line ONLY when the response contains genuinely time-sensitive data and NO [REAL-TIME LEGISLATIVE CONTEXT] block is present: “Information current as of YYYY‑MM‑DD.”
 - Add Swahili translations for key civic terms where relevant (e.g., Constitution – Katiba). Keep them concise. Weave them inline on first use, immediately after the English term in parentheses — "(Katiba)" right after "Constitution", "(Mswada)" right after "bill", "(Kaunti)" after "county". Do not create a standalone Swahili section unless the user explicitly asks for a full translation or glossary.
 - No slang, no emojis, no em dashes, no political endorsements, no legal advice.
 - When the user shows emotion, use **exactly one short empathy sentence**, then move directly to action. The empathy sentence must match the emotional register of the message — a user expressing fear or confusion needs reassurance before direction; a user who is frustrated and already knows what they want needs acknowledgment, not warmth. Choose one approved empathy line and move on. Do not chain multiple empathy sentences. Do not repeat the empathy sentiment in a different form later in the response.
@@ -8690,6 +8704,8 @@ Deno.serve(async (req) => {
       const body = await req.json().catch(() => ({}));
       const query = body.query || "";
       const context = body.context || 'general';
+      const billId = body.billId || null;
+      const pageTitle = body.pageTitle || null;
 
       if (!query || query.trim().length < 1) {
          return new Response(
@@ -8744,36 +8760,83 @@ Deno.serve(async (req) => {
                }
             }
 
-            // 2. LEGISLATIVE INTELLIGENCE PIPE (News Mentions)
-            if (isLegislativeQuery) {
-               // Get the latest 5 news mentions relevant to the query terms
-               const { data: newsMentions, error: newsError } = await supabase
-                  .from('bill_news_mentions')
-                  .select('source_name, headline, snippet, article_url, article_date')
-                  .order('scraped_at', { ascending: false })
-                  .limit(8);
+            // 3. SOVEREIGN BILLS CONTEXT
+            let sovereignBillContext = "";
+            let matchedBills: any[] = [];
 
-               if (!newsError && newsMentions && newsMentions.length > 0) {
-                  const filteredNews = newsMentions.filter((n: any) => 
-                     query.toLowerCase().split(' ').some((word: string) => 
-                        word.length > 3 && (n.headline.toLowerCase().includes(word) || n.snippet.toLowerCase().includes(word))
-                     )
-                  ).slice(0, 5);
-
-                  const newsToUse = filteredNews.length > 0 ? filteredNews : newsMentions.slice(0, 3);
-
-                  ragContext += "\n\n# 🗞️ Intelligence Pipe: News Mentions (Ukweli wa Mambo)\n" +
-                     newsToUse.map((n: any) => 
-                        `[Source: ${n.source_name} | Date: ${n.article_date || 'Recent'}]\n` +
-                        `Headline: ${n.headline}\n` +
-                        `Intelligence: ${n.snippet}\n` +
-                        `Verify at: ${n.article_url}`
-                     ).join('\n\n');
-               }
+            // Stage 1: Force-include bill from current page context
+            if (billId) {
+                const { data: forcedBill } = await supabase
+                    .from('bills')
+                    .select('*')
+                    .eq('id', billId)
+                    .single();
+                if (forcedBill) matchedBills.push(forcedBill);
             }
 
-            if (ragContext) {
-               systemPromptWithDate += `\n\nINSTRUCTION: You have been provided with the following verified INTELLIGENCE CONTEXT (Constitution and/or Live News). Use this to provide accurate, evidence-based, and witty responses. If a user asks about "tabloid" or "non-partisan" details, report what is in the news mentions below. Do not refuse.\n${ragContext}`;
+            // Stage 2: Semantic/Full-Text Search using fts column
+            const searchTerms = query.split(' ').filter((w: string) => w.length > 3).join(' & ');
+            if (searchTerms) {
+                const { data: ftsBills } = await supabase
+                    .from('bills')
+                    .select('*')
+                    .textSearch('fts', searchTerms)
+                    .limit(5);
+                
+                if (ftsBills) {
+                    for (const b of ftsBills) {
+                        if (!matchedBills.find(mb => mb.id === b.id)) {
+                            matchedBills.push(b);
+                        }
+                    }
+                }
+            }
+
+            // Stage 3: Broad keyword fallback
+            if (matchedBills.length < 3) {
+                const { data: kwBills } = await supabase
+                    .from('bills')
+                    .select('*')
+                    .or(`title.ilike.%${query}%,summary.ilike.%${query}%`)
+                    .limit(3);
+                if (kwBills) {
+                    for (const b of kwBills) {
+                        if (!matchedBills.find(mb => mb.id === b.id)) {
+                            matchedBills.push(b);
+                        }
+                    }
+                }
+            }
+
+            // Final Serialization
+            matchedBills = matchedBills.slice(0, 5);
+            const verifiedDate = new Date().toISOString().split('T')[0];
+
+            if (matchedBills.length > 0) {
+                sovereignBillContext = `═══════════════════════════════════════\n[REAL-TIME LEGISLATIVE CONTEXT — VERIFIED ${verifiedDate}]\nSource: CEKA Bills Database (live)\n\n`;
+                
+                sovereignBillContext += matchedBills.map((b: any, i: number) => {
+                    const stageStr = typeof b.stages === 'string' ? b.stages : JSON.stringify(b.stages);
+                    return `BILL ${i+1}:\n` +
+                           `Title: ${b.title}\n` +
+                           `Status: ${b.status}\n` +
+                           `House: ${b.house || 'Unknown'}\n` +
+                           `Sponsor: ${b.sponsor || 'Unknown'}\n` +
+                           `Bill No: ${b.bill_no}/${b.session_year} | Category: ${b.category}\n` +
+                           `Gazette Date: ${b.date}\n` +
+                           `Plain Summary: ${b.tabloid_summary || b.summary}\n` +
+                           `Technical Summary: ${b.summary}\n` +
+                           `Current Stage: ${stageStr}\n` +
+                           `AI Concerns: ${b.ai_concerns || 'None reported'}\n` +
+                           `Source URL: ${b.url || 'N/A'}\n` +
+                           `━━━`;
+                }).join('\n\n');
+                
+                sovereignBillContext += `\n═══════════════════════════════════════`;
+                systemPromptWithDate = `${sovereignBillContext}\n\n${systemPromptWithDate}`;
+            } else if (isLegislativeQuery) {
+                sovereignBillContext = `═══════════════════════════════════════\n[REAL-TIME LEGISLATIVE CONTEXT]\nNo bills matched this query in the CEKA database.\nRedirect user to bills tracker at civiceducationkenya.com/bills.\n═══════════════════════════════════════`;
+                systemPromptWithDate = `${sovereignBillContext}\n\n${systemPromptWithDate}`;
             }
          } catch (ragErr) {
             console.error("Intelligence Pipe Error:", ragErr);
