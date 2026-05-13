@@ -69,10 +69,10 @@
   --ios-blue-dark: rgba(10, 132, 255, 1);
   --ios-blue-light: rgba(100, 210, 255, 1);
 
-  /* Core palette - African Sunset Theme (Inspo from context) */
-  --gold: 42 92% 56%;
-  --gold-light: 45 95% 70%;
-  --gold-dark: 38 88% 42%;
+  /* Core palette - Kenya Green Theme */
+  --gold: 120 100% 20%;
+  --gold-light: 120 100% 30%;
+  --gold-dark: 120 100% 15%;
 
   --midnight: 220 60% 12%;
   --midnight-light: 220 50% 20%;
@@ -88,9 +88,9 @@
   --cream-muted: 35 30% 85%;
 
   /* Gradients */
-  --gradient-sunset: linear-gradient(135deg, hsl(42 92% 56%) 0%, hsl(25 90% 50%) 50%, hsl(15 70% 45%) 100%);
+  --gradient-sunset: linear-gradient(135deg, hsl(120 100% 25%) 0%, hsl(120 100% 20%) 50%, hsl(120 100% 15%) 100%);
   --gradient-night: linear-gradient(180deg, hsl(220 70% 6%) 0%, hsl(220 60% 12%) 50%, hsl(230 50% 18%) 100%);
-  --gradient-gold: linear-gradient(135deg, hsl(45 95% 70%) 0%, hsl(42 92% 56%) 50%, hsl(38 88% 42%) 100%);
+  --gradient-gold: linear-gradient(135deg, hsl(120 100% 30%) 0%, hsl(120 100% 20%) 50%, hsl(120 100% 15%) 100%);
 }
 
 /* Enhanced backdrop blur utilities */
