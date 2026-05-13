@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { translate, cn } from '@/lib/utils';
-import { billService, Bill } from '@/services/billService';
+import { billService, Bill, getBillIdentifier } from '@/services/billService';
 import { CEKACardSkeleton } from '@/components/ui/ceka-loader';
 
 // Status color mapping
@@ -216,7 +216,7 @@ const FeaturedLegislation = () => {
                 </CardContent>
                 <CardFooter className="pt-2 pb-6 flex gap-3 mt-auto">
                   <Button asChild className="flex-1 rounded-2xl h-11 bg-kenya-green hover:bg-kenya-green/90 text-white font-bold shadow-lg shadow-kenya-green/20 group/btn">
-                    <Link to={`/bill/${bill.id}`} className="flex items-center justify-center">
+                    <Link to={`/bill/${getBillIdentifier(bill)}#memoranda`} className="flex items-center justify-center">
                       <EyeIcon className="h-4 w-4 mr-2 group-hover/btn:scale-110 transition-transform" />
                       {translate('View Details', language)}
                     </Link>

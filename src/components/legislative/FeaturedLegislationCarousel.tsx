@@ -10,6 +10,7 @@ import { motion } from 'framer-motion';
 
 interface Bill {
     id: string;
+    slug?: string | null;
     title: string;
     summary: string;
     status: string;
@@ -136,7 +137,7 @@ const FeaturedLegislationCarousel: React.FC<FeaturedLegislationCarouselProps> = 
                                         asChild
                                         className="w-full rounded-2xl h-12 bg-kenya-green hover:bg-kenya-green/90 text-white font-bold group/btn shadow-md hover:shadow-lg transition-all"
                                     >
-                                        <Link to={`/bill/${bill.id}`}>
+                                        <Link to={`/bill/${bill.slug || bill.id}#memoranda`}>
                                             Track This Bill
                                             <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover/btn:translate-x-1" />
                                         </Link>

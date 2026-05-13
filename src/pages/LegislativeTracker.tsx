@@ -28,6 +28,7 @@ import { CEKALoader } from '@/components/ui/ceka-loader';
 import FeaturedLegislationCarousel from '@/components/legislative/FeaturedLegislationCarousel';
 import AIContextButton from '@/components/ai/AIContextButton';
 import { motion, AnimatePresence } from 'framer-motion';
+import { billService, getBillIdentifier } from '@/services/billService';
 import { cn } from '@/lib/utils';
 import { BILL_STAGES, STAGE_COUNT, getStageIndex, getStageColor } from '@/lib/billStages';
 
@@ -36,6 +37,7 @@ import { BILL_STAGES, STAGE_COUNT, getStageIndex, getStageColor } from '@/lib/bi
 
 interface Bill {
   id: string;
+  slug?: string | null;
   title: string;
   summary: string;
   status: string;
@@ -169,7 +171,7 @@ const LegislativeTracker = () => {
               `${newBill.title}: ${newBill.tabloid_summary}`,
               {
                 sourceId: newBill.id,
-                link: `/bill/${newBill.id}`
+                link: `/bill/${getBillIdentifier(newBill)}#memoranda`
               }
             );
           }
@@ -381,7 +383,7 @@ const LegislativeTracker = () => {
                             asChild
                             className="p-0 h-auto text-primary font-black text-xs uppercase tracking-widest gap-2"
                           >
-                            <Link to={`/bill/${tabloidUpdates[currentAlertIndex].id}`}>
+                            <Link to={`/bill/${getBillIdentifier(tabloidUpdates[currentAlertIndex])}#memoranda`}>
                               See Bill Here <ArrowRight className="h-3 w-3" />
                             </Link>
                           </Button>
@@ -419,7 +421,7 @@ const LegislativeTracker = () => {
                       {tickerData.today.length > 0 ? tickerData.today.map(bill => (
                         <Link
                           key={`today-${bill.id}`}
-                          to={`/bill/${bill.id}`}
+                          to={`/bill/${getBillIdentifier(bill)}#memoranda`}
                           className={cn(
                             "flex items-center gap-3 group/ticker transition-colors",
                             realtimeFlash === bill.id && "text-kenya-green font-black"
@@ -440,7 +442,7 @@ const LegislativeTracker = () => {
                       {tickerData.week.length > 0 ? tickerData.week.map(bill => (
                         <Link
                           key={`week-${bill.id}`}
-                          to={`/bill/${bill.id}`}
+                          to={`/bill/${getBillIdentifier(bill)}#memoranda`}
                           className="flex items-center gap-3 group/ticker"
                         >
                           <span className="text-xs font-bold dark:text-white group-hover/ticker:text-primary">
@@ -684,7 +686,7 @@ const LegislativeTracker = () => {
 
                               <div className="space-y-4">
                                 <h3 className="text-3xl font-[1000] tracking-tight leading-none dark:text-white group-hover:text-primary transition-colors">
-                                  <Link to={`/bill/${bill.id}`}>{bill.title}</Link>
+                                  <Link to={`/bill/${getBillIdentifier(bill)}#memoranda`}>{bill.title}</Link>
                                 </h3>
 
                                 {bill.neural_summary ? (
@@ -733,7 +735,7 @@ const LegislativeTracker = () => {
                                   <AIContextButton label="Summarize" context={bill.title + ": " + bill.summary} className="h-12 px-6" />
                                   <BillFollowButton billId={bill.id} variant="ghost" className="h-12 px-6 rounded-2xl" />
                                   <Button asChild className="h-12 px-10 rounded-2xl bg-kenya-green text-white font-black hover:bg-kenya-green/90 shadow-xl">
-                                    <Link to={`/bill/${bill.id}`}>
+                                    <Link to={`/bill/${getBillIdentifier(bill)}#memoranda`}>
                                       Follow Progress
                                       <ArrowRight className="ml-2 h-4 w-4" />
                                     </Link>

@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 export interface Bill {
   id: string;
+  slug?: string | null;
   title: string;
   summary: string;
   status: string;
@@ -29,6 +30,11 @@ export interface Bill {
   tabloid_summary?: string | null;
   participation_deadline?: string | null;
   signature_goal?: number | null;
+}
+
+/** Returns the canonical URL-safe identifier for sharing — slug if populated, UUID otherwise. */
+export function getBillIdentifier(bill: { id: string; slug?: string | null }): string {
+  return bill.slug || bill.id;
 }
 
 class BillService {
@@ -60,6 +66,34 @@ class BillService {
       return data as unknown as Bill;
     } catch (error) {
       console.error('Error fetching bill by id:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Resolves a bill by its slug OR UUID.
+   * Uses the get_bill_by_slug_or_id RPC that checks slug first, falls back to id.
+   * This means old UUID-based URLs remain valid permanently.
+   */
+  async getBillBySlugOrId(identifier: string): Promise<Bill | null> {
+    try {
+      const { data, error } = await (supabase as any)
+        .rpc('get_bill_by_slug_or_id', { identifier })
+        .single();
+
+      if (error || !data) {
+        // RPC not yet deployed — fall back to direct UUID lookup
+        const { data: fallback, error: fbErr } = await supabase
+          .from('bills')
+          .select('*')
+          .eq('id', identifier)
+          .single();
+        if (fbErr) throw fbErr;
+        return fallback as unknown as Bill;
+      }
+      return data as unknown as Bill;
+    } catch (error) {
+      console.error('Error fetching bill by slug/id:', error);
       return null;
     }
   }

@@ -149,7 +149,7 @@ const AppContent = () => {
         <Route path="/legislative-tracker" element={<LegislativeTracker />} />
         <Route path="/legislative-tracker/:id" element={<LegislativeTrackerDetail />} />
         <Route path="/legislation/:id" element={<LegislationDetail />} />
-        <Route path="/bill/:id" element={<BillDetail />} />
+        <Route path="/bill/:slug" element={<BillDetail />} />
         <Route path="/template/:id" element={<TemplateViewerPage />} />
         <Route path="/reject-finance-bill" element={<RejectFinanceBill />} />
         <Route path="/shambles" element={<SHAmbles />} />

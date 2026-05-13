@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import React, { useState, useEffect, useRef } from 'react';
+import { useParams, Link, useLocation } from 'react-router-dom';
 import { ArrowLeft, Calendar, User, Tag, ExternalLink, Clock, Eye, Share2, Clipboard, Download, CheckCircle2, Circle, ShieldCheck, Newspaper, Info, Lock, FileText, XCircle, Target, TrendingUp, Sparkles } from 'lucide-react';
 import { buildTimeline, getStageColor, getStageIndex, BILL_STAGES } from '@/lib/billStages';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import Layout from '@/components/layout/Layout';
-import { billService, Bill } from '@/services/billService';
+import { billService, Bill, getBillIdentifier } from '@/services/billService';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn, translate } from '@/lib/utils';
 import { useLanguage, Language } from '@/contexts/LanguageContext';
@@ -98,7 +98,8 @@ const LegislativeTimeline = ({ stages, language }: { stages: ReturnType<typeof b
 };
 
 const BillDetail = () => {
-  const { id } = useParams();
+  const { slug } = useParams();
+  const location = useLocation();
   const { language } = useLanguage();
   const [bill, setBill] = useState<Bill | null>(null);
   const [news, setNews] = useState<any[]>([]);
@@ -108,17 +109,27 @@ const BillDetail = () => {
   const [userResponse, setUserResponse] = useState<string | undefined>(undefined);
   const [signatureCount, setSignatureCount] = useState(0);
   const [signatureGoal, setSignatureGoal] = useState(1000);
+  const memorandaRef = useRef<HTMLDivElement>(null);
+
+  // Hash-based deep-link scroll — fires once after bill is loaded
+  useEffect(() => {
+    if (!loading && bill && location.hash === '#memoranda' && memorandaRef.current) {
+      setTimeout(() => {
+        memorandaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 300);
+    }
+  }, [loading, bill, location.hash]);
 
   useEffect(() => {
-    if (id) {
-      loadBill(id);
+    if (slug) {
+      loadBill(slug);
     }
-  }, [id]);
+  }, [slug]);
 
-  const loadBill = async (billId: string) => {
+  const loadBill = async (identifier: string) => {
     try {
       setLoading(true);
-      let billData = await billService.getBillById(billId);
+      let billData = await billService.getBillBySlugOrId(identifier);
 
       if (!billData) {
         // Fallback for demo purposes if ID is from our sample set
@@ -145,7 +156,7 @@ const BillDetail = () => {
             pdf_url: "https://parliament.go.ke/sites/default/files/2024-03/Education_Bill_2024.pdf"
           }
         };
-        billData = sampleBills[billId] || null;
+        billData = sampleBills[identifier] || null;
       }
 
       if (!billData) {
@@ -156,13 +167,13 @@ const BillDetail = () => {
       setBill(billData);
 
       // Load signature stats
-      const count = await billService.getSignatureCount(billId);
+      const count = await billService.getSignatureCount(billData.id);
       setSignatureCount(count);
       // @ts-ignore - signature_goal might be in the billData from Supabase
       if (billData.signature_goal) setSignatureGoal(billData.signature_goal);
 
       // Load news mentions
-      const newsData = await billService.getBillNewsMentions(billId);
+      const newsData = await billService.getBillNewsMentions(billData.id);
       setNews(newsData);
     } catch (error) {
       console.error('Error loading bill:', error);
@@ -467,16 +478,16 @@ const BillDetail = () => {
                   </div>
 
                   <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 items-start">
-                     {/* FORMAL MEMORANDUM GENERATOR */}
-                     <div className="order-2 xl:order-1">
-                        <LegislativeMemorandum 
-                          billId={bill.id}
-                          billTitle={bill.title}
-                          billSummary={bill.summary}
-                          deadline={bill.participation_deadline}
-                          signatureGoal={signatureGoal}
-                        />
-                     </div>
+                      {/* FORMAL MEMORANDUM GENERATOR */}
+                      <div id="memoranda" ref={memorandaRef} className="order-2 xl:order-1 scroll-mt-24">
+                         <LegislativeMemorandum 
+                           billId={bill.id}
+                           billTitle={bill.title}
+                           billSummary={bill.summary}
+                           deadline={bill.participation_deadline}
+                           signatureGoal={signatureGoal}
+                         />
+                      </div>
 
                      {/* QUICK CIVIC RESPONSE */}
                      <div className="order-1 xl:order-2">
