@@ -129,12 +129,51 @@ Explain in plain English, using everyday examples where possible.`;
     }
 
     /**
+     * Get relevant Constitutional articles for a bill to use in Memoranda
+     */
+    async getConstitutionalBasis(billTitle: string, billSummary: string): Promise<string | null> {
+        if (!GEMINI_API_KEY) return "Articles 10(2), 118(1)"; // Fallback
+
+        try {
+            const prompt = `You are a Kenyan constitutional lawyer. Identify the MOST RELEVANT articles of the Constitution of Kenya 2010 that provide the legal basis for a citizen to object to or support the following bill.
+            
+BILL: ${billTitle}
+SUMMARY: ${billSummary}
+
+Return ONLY the article numbers and sub-clauses, formatted as a comma-separated list (e.g. "Articles 10(2), 118(1), 201"). Do not include any other text.`;
+
+            const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [{ parts: [{ text: prompt }] }],
+                    generationConfig: {
+                        temperature: 0.2,
+                        maxOutputTokens: 50
+                    }
+                })
+            });
+
+            if (!response.ok) return "Articles 10(2), 118(1)";
+
+            const data = await response.json();
+            const textContent = data.candidates?.[0]?.content?.parts?.[0]?.text || 'Articles 10(2), 118(1)';
+            return textContent.trim();
+
+        } catch (error) {
+            console.error('[Gemini] Constitutional basis error:', error);
+            return "Articles 10(2), 118(1)";
+        }
+    }
+
+    /**
      * Clear the summary cache
      */
     clearCache(): void {
         this.cache.clear();
     }
 }
+
 
 export const geminiService = new GeminiService();
 export default geminiService;

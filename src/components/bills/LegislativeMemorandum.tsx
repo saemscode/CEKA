@@ -6,7 +6,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   BankIcon, CommentsIcon, LocationIcon, KeyIcon,
-  SearchIcon, StarIcon, CloseIcon
+  SearchIcon, StarIcon, CloseIcon, SparklesIcon, IOSLoadingIcon, IOSTickIcon
 } from "../ui/CustomIcons";
 import {
   DetailsIcon, LibraryIcon, PenNewSquareIcon, AddRowIcon, RemoveRowIcon,
@@ -93,6 +93,7 @@ interface LegislativeMemorandumProps {
   billSummary: string;
   deadline?: string | null;
   signatureGoal?: number;
+  constitutionalSection?: string | null;
 }
 
 type SuccessState = 'idle' | 'submitted';
@@ -102,7 +103,8 @@ export const LegislativeMemorandum: React.FC<LegislativeMemorandumProps> = ({
   billTitle,
   billSummary,
   deadline,
-  signatureGoal = 1000
+  signatureGoal = 1000,
+  constitutionalSection
 }) => {
   const {
     identity,
@@ -127,6 +129,37 @@ export const LegislativeMemorandum: React.FC<LegislativeMemorandumProps> = ({
   const [isAddingEmail, setIsAddingEmail] = useState(false);
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
   const [isCreatorOpen, setIsCreatorOpen] = useState(false);
+  const [memoLoading, setMemoLoading] = useState(false);
+  const [memoEnriched, setMemoEnriched] = useState(false);
+  const [pursuantArticles, setPursuantArticles] = useState<string>(constitutionalSection || 'Articles 10(2), 118(1)');
+  
+  // Real-time Constitutional Enrichment for Memoranda
+  useEffect(() => {
+    const enrichLegalBasis = async () => {
+      if (constitutionalSection) {
+         setPursuantArticles(constitutionalSection);
+         setMemoEnriched(true);
+         return;
+      }
+      
+      try {
+        setMemoLoading(true);
+        setMemoEnriched(false);
+        const { geminiService } = await import('@/services/geminiService');
+        const basis = await geminiService.getConstitutionalBasis(billTitle, billSummary);
+        if (basis) {
+          setPursuantArticles(basis);
+          setMemoEnriched(true);
+        }
+      } catch (err) {
+        console.error("[Memorandum] Constitutional enrichment failed:", err);
+      } finally {
+        setMemoLoading(false);
+      }
+    };
+    
+    enrichLegalBasis();
+  }, [billId, constitutionalSection, billTitle, billSummary]);
   const [hasConsent, setHasConsent] = useState(false);
   const [signatureCount, setSignatureCount] = useState(0);
   const [successState, setSuccessState] = useState<SuccessState>('idle');
@@ -175,7 +208,7 @@ export const LegislativeMemorandum: React.FC<LegislativeMemorandumProps> = ({
 
 The above subject refers;
 
-Pursuant to Articles 10(2), 118(1) of the Constitution 2010 that mandates Public Participation in any Legislative Process I, {{full_name}}, a resident of {{constituency}} Constituency, {{county}} County, wish to submit my Memoranda as follows:
+Pursuant to ${pursuantArticles} of the Constitution 2010 that mandates Public Participation in any Legislative Process I, {{full_name}}, a resident of {{constituency}} Constituency, {{county}} County, wish to submit my Memoranda as follows:
 
 Regarding: ${billTitle}
 Context: ${billSummary}
@@ -189,7 +222,7 @@ Date: {{date}}
 
 Citizen of Kenya`;
     setMessageBody(template);
-  }, [billTitle, billSummary]);
+  }, [billTitle, billSummary, pursuantArticles]);
 
   const getProcessedBody = () => {
     let processed = messageBody;
@@ -708,8 +741,43 @@ Citizen of Kenya`;
                   <MailOpenAltIcon size={16} className="text-kenya-green flex-shrink-0" />
                   <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-900 dark:text-white">Memorandum Content</h3>
                 </div>
-                <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-kenya-green/10 text-kenya-green text-[9px] font-black uppercase tracking-widest flex-shrink-0">
-                  <StarIcon size={10} /> Auto-Fill Active
+                <div className="flex items-center gap-2">
+                  <AnimatePresence mode="wait">
+                    {memoLoading ? (
+                      <motion.div
+                        key="loading"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="text-slate-400"
+                      >
+                        <motion.div
+                          animate={{ rotate: 360 }}
+                          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                        >
+                          <IOSLoadingIcon size={16} />
+                        </motion.div>
+                      </motion.div>
+                    ) : memoEnriched ? (
+                      <motion.div
+                        key="success"
+                        initial={{ opacity: 0, scale: 0.5 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="text-kenya-green"
+                      >
+                        <motion.div
+                          initial={{ scale: 0 }}
+                          animate={{ scale: [0, 1.4, 1] }}
+                          transition={{ duration: 0.4, ease: "easeOut" }}
+                        >
+                          <IOSTickIcon size={16} />
+                        </motion.div>
+                      </motion.div>
+                    ) : null}
+                  </AnimatePresence>
+                  <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-kenya-green/10 text-kenya-green text-[9px] font-black uppercase tracking-widest flex-shrink-0">
+                    <StarIcon size={10} /> Auto-Fill Active
+                  </div>
                 </div>
               </div>
 

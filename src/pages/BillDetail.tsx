@@ -485,6 +485,7 @@ const BillDetail = () => {
                            billTitle={bill.title}
                            billSummary={bill.summary}
                            deadline={bill.participation_deadline}
+                           constitutionalSection={bill.constitutional_section}
                            signatureGoal={signatureGoal}
                          />
                       </div>
