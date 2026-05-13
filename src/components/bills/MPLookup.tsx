@@ -30,8 +30,8 @@ export const MPLookup: React.FC<MPLookupProps> = ({
       className={cn(
         "group relative p-4 rounded-[28px] border transition-all duration-500 cursor-pointer overflow-hidden",
         isSelected 
-          ? "bg-gold border-gold text-white shadow-xl shadow-gold/20" 
-          : "bg-white dark:bg-slate-900/40 border-black/5 dark:border-white/10 hover:border-gold/30 hover:bg-gold/[0.02]",
+          ? "bg-kenya-green border-kenya-green text-white shadow-xl shadow-kenya-green/20" 
+          : "bg-white dark:bg-slate-900/40 border-black/5 dark:border-white/10 hover:border-kenya-green/30 hover:bg-kenya-green/[0.02]",
         className
       )}
       onClick={() => onSelect(!isSelected)}
@@ -45,7 +45,7 @@ export const MPLookup: React.FC<MPLookupProps> = ({
         <div className="flex items-center gap-4">
           <div className={cn(
             "h-12 w-12 rounded-2xl flex items-center justify-center transition-all duration-500",
-            isSelected ? "bg-white text-gold shadow-lg" : "bg-slate-100 dark:bg-white/5 text-slate-400 group-hover:bg-gold group-hover:text-white"
+            isSelected ? "bg-white text-kenya-green shadow-lg" : "bg-slate-100 dark:bg-white/5 text-slate-400 group-hover:bg-kenya-green group-hover:text-white"
           )}>
             <User size={20} />
           </div>
@@ -76,7 +76,7 @@ export const MPLookup: React.FC<MPLookupProps> = ({
           onCheckedChange={(checked) => onSelect(checked as boolean)}
           className={cn(
             "rounded-full h-6 w-6 transition-all duration-500",
-            isSelected ? "bg-white border-white text-gold" : "border-slate-300 dark:border-white/20"
+            isSelected ? "bg-white border-white text-kenya-green" : "border-slate-300 dark:border-white/20"
           )}
         />
       </div>
