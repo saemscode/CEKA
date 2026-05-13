@@ -11,6 +11,7 @@ import { billService, Bill, getBillIdentifier } from '@/services/billService';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn, translate } from '@/lib/utils';
 import { useLanguage, Language } from '@/contexts/LanguageContext';
+import { supabase } from "@/integrations/supabase/client";
 import { BillResponseForm } from '@/components/bills/BillResponseForm';
 import { LegislativeMemorandum } from '@/components/bills/LegislativeMemorandum';
 import { SocialShareDrawer } from '@/components/bills/SocialShareDrawer';
@@ -125,6 +126,34 @@ const BillDetail = () => {
       loadBill(slug);
     }
   }, [slug]);
+
+  // Real-time Action Momentum Synchronization
+  useEffect(() => {
+    if (!bill?.id) return;
+
+    // Monitor for new verified signatures on this specific bill
+    const channel = supabase
+      .channel(`signatures-${bill.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'signatures',
+          filter: `bill_id=eq.${bill.id}`
+        },
+        (payload) => {
+          console.log("[SovereignRealtime] New signature detected:", payload.new.id);
+          // Only increment if verified or for momentum effect (we'll count raw inserts for now)
+          setSignatureCount(prev => prev + 1);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [bill?.id]);
 
   const loadBill = async (identifier: string) => {
     try {

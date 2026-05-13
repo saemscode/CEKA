@@ -1,6 +1,6 @@
 /**
  * CEKA Sovereign Mailing Mesh
- * Shared utility for high-fidelity multi-provider email delivery
+ * Shared utility for high-fidelity multi-provider email delivery with auto-failover.
  */
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
@@ -18,15 +18,39 @@ interface EmailOptions {
 }
 
 const DEFAULT_FROM = {
-  name: "CEKA Sovereighty",
-  email: "onboarding@resend.dev" // Default Resend test domain, update in prod
+  name: "Civic Education Kenya",
+  email: "verify@civiceducationkenya.com"
 };
+
+/**
+ * Exponential backoff helper to handle transient network issues
+ */
+async function withRetry<T>(fn: () => Promise<T>, retries = 2): Promise<T> {
+  let lastError: any;
+  for (let i = 0; i < retries; i++) {
+    try {
+      return await fn();
+    } catch (err) {
+      lastError = err;
+      if (i < retries - 1) {
+        const delay = Math.pow(2, i) * 1000;
+        console.log(`[MailingMesh] Attempt ${i + 1} failed. Retrying in ${delay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+  }
+  throw lastError;
+}
 
 /**
  * Sends an email using Resend
  */
 async function sendWithResend(options: EmailOptions) {
   if (!RESEND_API_KEY) throw new Error("RESEND_API_KEY missing");
+
+  // Basic email validation to avoid 400s
+  const recipients = Array.isArray(options.to) ? options.to : [options.to];
+  if (recipients.length === 0) throw new Error("No recipients specified");
 
   const response = await fetch('https://api.resend.com/emails', {
     method: 'POST',
@@ -36,16 +60,18 @@ async function sendWithResend(options: EmailOptions) {
     },
     body: JSON.stringify({
       from: `${options.from?.name || DEFAULT_FROM.name} <${options.from?.email || DEFAULT_FROM.email}>`,
-      to: Array.isArray(options.to) ? options.to : [options.to],
+      to: recipients,
       subject: options.subject,
       html: options.html,
-      text: options.text,
+      text: options.text || options.html.replace(/<[^>]*>?/gm, ''), // Basic text fallback
     }),
   });
 
   if (!response.ok) {
-    const error = await response.json();
-    throw new Error(`Resend Error: ${JSON.stringify(error)}`);
+    const errorBody = await response.text();
+    let errorData;
+    try { errorData = JSON.parse(errorBody); } catch { errorData = errorBody; }
+    throw new Error(`Resend API Error (${response.status}): ${JSON.stringify(errorData)}`);
   }
 
   return response.json();
@@ -57,6 +83,9 @@ async function sendWithResend(options: EmailOptions) {
 async function sendWithBrevo(options: EmailOptions) {
   if (!BREVO_API_KEY) throw new Error("BREVO_API_KEY missing");
 
+  const recipients = Array.isArray(options.to) ? options.to : [options.to];
+  if (recipients.length === 0) throw new Error("No recipients specified");
+
   const response = await fetch('https://api.brevo.com/v3/smtp/email', {
     method: 'POST',
     headers: {
@@ -67,43 +96,69 @@ async function sendWithBrevo(options: EmailOptions) {
     body: JSON.stringify({
       sender: {
         name: options.from?.name || DEFAULT_FROM.name,
-        email: options.from?.email || "info@parliament.go.ke" // Typical Brevo verified sender candidate
+        email: options.from?.email || DEFAULT_FROM.email
       },
-      to: (Array.isArray(options.to) ? options.to : [options.to]).map(email => ({ email })),
+      to: recipients.map(email => ({ email })),
       subject: options.subject,
       htmlContent: options.html,
-      textContent: options.text,
+      textContent: options.text || options.html.replace(/<[^>]*>?/gm, ''),
     }),
   });
 
   if (!response.ok) {
-    const error = await response.json();
-    throw new Error(`Brevo Error: ${JSON.stringify(error)}`);
+    const errorBody = await response.text();
+    let errorData;
+    try { errorData = JSON.parse(errorBody); } catch { errorData = errorBody; }
+    throw new Error(`Brevo API Error (${response.status}): ${JSON.stringify(errorData)}`);
   }
 
   return response.json();
 }
 
 /**
- * Main dispatch function with fallback logic
+ * Main dispatch function with fallback logic and edge-case handling
  */
 export async function sendEmail(options: EmailOptions) {
   const provider = options.provider || 'auto';
 
-  if (provider === 'resend') return sendWithResend(options);
-  if (provider === 'brevo') return sendWithBrevo(options);
+  // 1. Explicit Provider Requests
+  if (provider === 'resend') {
+    return withRetry(() => sendWithResend(options));
+  }
+  
+  if (provider === 'brevo') {
+    return withRetry(() => sendWithBrevo(options));
+  }
 
-  // Auto/Mesh Logic: Try Resend first, fallback to Brevo
-  try {
-    console.log("[MailingMesh] Attempting Resend...");
-    return await sendWithResend(options);
-  } catch (resendError) {
-    console.error("[MailingMesh] Resend failed, pivoting to Brevo:", resendError);
+  // 2. Auto/Mesh Logic (Intelligent Failover)
+  // We prioritize Resend for speed, but if keys are missing or provider fails, we pivot.
+  
+  const canUseResend = !!RESEND_API_KEY;
+  const canUseBrevo = !!BREVO_API_KEY;
+
+  if (!canUseResend && !canUseBrevo) {
+    throw new Error("Mailing Mesh Failure: No mail provider keys configured in Deno environment.");
+  }
+
+  // Chain: Resend -> Brevo
+  if (canUseResend) {
     try {
-      return await sendWithBrevo(options);
-    } catch (brevoError) {
-      console.error("[MailingMesh] Both providers failed.");
-      throw new Error(`Mailing Mesh Exhausted. Resend: ${resendError.message} | Brevo: ${brevoError.message}`);
+      console.log("[MailingMesh] Strategy: Primary (Resend)");
+      return await withRetry(() => sendWithResend(options));
+    } catch (resendError: any) {
+      console.error("[MailingMesh] Primary provider failed. Error:", resendError.message);
+      if (!canUseBrevo) throw resendError;
+      
+      console.log("[MailingMesh] Strategy: Fallback pivoting to Brevo...");
+      try {
+        return await withRetry(() => sendWithBrevo(options));
+      } catch (brevoError: any) {
+        throw new Error(`Mailing Mesh Exhausted. Resend: ${resendError.message} | Brevo: ${brevoError.message}`);
+      }
     }
   }
+
+  // If only Brevo is available
+  console.log("[MailingMesh] Strategy: Secondary Only (Brevo)");
+  return withRetry(() => sendWithBrevo(options));
 }

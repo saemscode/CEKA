@@ -52,19 +52,20 @@ serve(async (req) => {
     const emailHtml = `
       <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; background-color: #000; color: #fff; padding: 40px; border-radius: 24px;">
         <h1 style="color: #006633; font-size: 32px; font-weight: 900; margin-bottom: 8px;">Verification Required</h1>
-        <p style="color: #666; font-size: 16px; margin-bottom: 32px;">Enter the following code to confirm your signature on the legislative memorandum.</p>
+        <p style="color: #666; font-size: 16px; margin-bottom: 32px;">Enter the following code to confirm your signature on the Bill feedback.</p>
+        <p style="color: #666; font-size: 16px; margin-bottom: 32px;">Copy the code below</p>
         
         <div style="background-color: #111; padding: 24px; border-radius: 16px; text-align: center; border: 1px solid #222;">
           <span style="font-size: 48px; font-weight: 900; letter-spacing: 8px; color: #fff;">${otpCode}</span>
         </div>
         
-        <p style="color: #444; font-size: 12px; margin-top: 32px; text-transform: uppercase; letter-spacing: 2px;">Powered by CEKA Sovereign Mesh</p>
+        <p style="color: #444; font-size: 12px; margin-top: 32px; text-transform: uppercase; letter-spacing: 2px;">Powered by CEKA Community</p>
       </div>
     `;
 
     await sendEmail({
       to: email,
-      subject: `CEKA: Verification Code ${otpCode}`,
+      subject: `CEKA: Verification Code`,
       html: emailHtml,
       provider: 'auto' // Use Resend -> Brevo failover
     });
