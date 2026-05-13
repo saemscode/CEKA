@@ -36,19 +36,22 @@ export const useTemplateSubmission = (billId: string, templateId: string | null)
 
     setIsSubmitting(true);
     try {
-      // 1. Submit Signature (Server-side logging)
-      const { data, error } = await supabase.rpc('submit_signature', {
-        bill_id_param: billId,
-        template_id_param: templateId,
-        name_param: identity.name,
-        email_param: identity.email,
-        constituency_param: identity.constituency,
-        county_param: identity.county,
-        comments_param: comments
+      // Switch from RPC directly to our Sovereignty Mesh Edge Function
+      const { data, error } = await supabase.functions.invoke('submit-signature', {
+        body: {
+          bill_id: billId,
+          template_id: templateId,
+          name: identity.name,
+          email: identity.email,
+          county: identity.county,
+          constituency: identity.constituency,
+          comments: comments
+        }
       });
 
       if (error) {
-        if (error.code === '23505') {
+        // Handle custom 409 error from the Edge Function
+        if (error.status === 409 || error.message?.includes('23505')) {
           toast({
             title: "Already Signed",
             description: "You have already signed this memorandum.",
@@ -59,15 +62,12 @@ export const useTemplateSubmission = (billId: string, templateId: string | null)
         throw error;
       }
 
-      if (data) {
+      if (data && data.success) {
         setSubmissionId(data.id);
+        setNeedsVerification(true);
       }
+      
       setIsSubmitting(false);
-      
-      // In a real production app, we'd trigger an OTP here.
-      // For now, we'll mark as needing verification if we want to simulate the flow.
-      setNeedsVerification(true);
-      
       return data?.id || null;
     } catch (error) {
       console.error('Submission error:', error);

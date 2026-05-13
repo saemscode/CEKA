@@ -1,9 +1,9 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { sendEmail } from "../_shared/mailing.ts";
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -18,43 +18,6 @@ interface CommunityMemberRequest {
   interests?: string;
   areas_of_interest: string[];
   terms_accepted: boolean;
-}
-
-// Send email using Resend API directly via fetch
-async function sendEmailWithResend(
-  to: string[],
-  subject: string,
-  html: string
-): Promise<{ data?: any; error?: any }> {
-  if (!RESEND_API_KEY) {
-    return { error: { message: 'RESEND_API_KEY not configured' } };
-  }
-
-  try {
-    const response = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${RESEND_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        from: 'CEKA Community <onboarding@resend.dev>',
-        to,
-        subject,
-        html,
-      }),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      return { error: errorData };
-    }
-
-    const data = await response.json();
-    return { data };
-  } catch (error) {
-    return { error: { message: (error as Error).message } };
-  }
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -179,8 +142,8 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Prepare email content
     const areasOfInterestText = areas_of_interest && areas_of_interest.length > 0 
-      ? areas_of_interest.map(area => 
-          area.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())
+      ? areas_of_interest.map((area: string) => 
+          area.replace('-', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())
         ).join(', ')
       : 'None specified';
 
@@ -260,33 +223,23 @@ const handler = async (req: Request): Promise<Response> => {
     // Send email notification
     let emailStatus = 'pending';
     try {
-      const { data: emailData, error: emailError } = await sendEmailWithResend(
-        ['civiceducationkenya@gmail.com'],
-        `New CEKA Community Application: ${first_name} ${last_name}`,
-        emailHtml
-      );
+      await sendEmail({
+        to: ['civiceducationkenya@gmail.com'],
+        subject: `New CEKA Community Application: ${first_name} ${last_name}`,
+        html: emailHtml,
+        provider: 'auto'
+      });
 
-      if (emailError) {
-        console.error('Email sending error:', emailError);
-        emailStatus = 'email_failed';
-        
-        // Update database status
-        await supabase
-          .from('community_members')
-          .update({ status: 'email_failed' })
-          .eq('id', insertedMember.id);
-      } else {
-        console.log('Email sent successfully:', emailData);
-        emailStatus = 'processed';
-        
-        // Update database status
-        await supabase
-          .from('community_members')
-          .update({ status: 'processed' })
-          .eq('id', insertedMember.id);
-      }
+      console.log('Email Mesh: Delivery successful');
+      emailStatus = 'processed';
+      
+      // Update database status
+      await supabase
+        .from('community_members')
+        .update({ status: 'processed' })
+        .eq('id', insertedMember.id);
     } catch (emailError) {
-      console.error('Email service error:', emailError);
+      console.error('Email Mesh: Delivery failed:', emailError);
       emailStatus = 'email_failed';
       
       // Update database status
