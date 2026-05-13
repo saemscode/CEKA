@@ -132,16 +132,16 @@ export const LegislativeMemorandum: React.FC<LegislativeMemorandumProps> = ({
   const [memoLoading, setMemoLoading] = useState(false);
   const [memoEnriched, setMemoEnriched] = useState(false);
   const [pursuantArticles, setPursuantArticles] = useState<string>(constitutionalSection || 'Articles 10(2), 118(1)');
-  
+
   // Real-time Constitutional Enrichment for Memoranda
   useEffect(() => {
     const enrichLegalBasis = async () => {
       if (constitutionalSection) {
-         setPursuantArticles(constitutionalSection);
-         setMemoEnriched(true);
-         return;
+        setPursuantArticles(constitutionalSection);
+        setMemoEnriched(true);
+        return;
       }
-      
+
       try {
         setMemoLoading(true);
         setMemoEnriched(false);
@@ -157,7 +157,7 @@ export const LegislativeMemorandum: React.FC<LegislativeMemorandumProps> = ({
         setMemoLoading(false);
       }
     };
-    
+
     enrichLegalBasis();
   }, [billId, constitutionalSection, billTitle, billSummary]);
   const [hasConsent, setHasConsent] = useState(false);
@@ -846,10 +846,10 @@ Citizen of Kenya`;
 
                   <Button
                     onClick={handleAmplify}
-                    className="flex-1 h-14 sm:h-16 rounded-2xl bg-[#075E54] hover:bg-[#128C7E] text-white font-black text-xs sm:text-sm uppercase tracking-widest gap-2 shadow-xl shadow-[#075E54]/30 transition-all duration-300 hover:scale-[1.01] active:scale-[0.98]"
+                    className="flex-1 h-14 sm:h-16 rounded-2xl bg-[#076b11] hover:bg-[#0a9418] text-white font-black text-xs sm:text-sm uppercase tracking-widest gap-2 shadow-xl shadow-[#075E54]/30 transition-all duration-300 hover:scale-[1.01] active:scale-[0.98]"
                   >
                     <Share2Icon size={18} />
-                    Amplify
+                    Share
                   </Button>
                 </div>
 
