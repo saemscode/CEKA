@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { motion, AnimatePresence } from 'framer-motion';
+import Lottie from "lottie-react";
 import {
   BankIcon, CommentsIcon, LocationIcon, KeyIcon,
   SearchIcon, StarIcon, CloseIcon, SparklesIcon, IOSLoadingIcon, IOSTickIcon
@@ -24,6 +25,112 @@ import { SignatureCounter } from "./SignatureCounter";
 import { CountdownTimer } from "./CountdownTimer";
 import { MPLookup } from "./MPLookup";
 import { SubmissionVerification } from "./SubmissionVerification";
+
+// Helper component for remote Lottie loading to prevent broken assets
+const LottieViewer = ({ path, className, loop = true }: { path: string, className?: string, loop?: boolean }) => {
+  const [animationData, setAnimationData] = useState<any>(null);
+  
+  useEffect(() => {
+    fetch(path)
+      .then(res => res.json())
+      .then(data => setAnimationData(data))
+      .catch(err => console.error(`Lottie load error [${path}]:`, err));
+  }, [path]);
+
+  if (!animationData) return null;
+  return <Lottie animationData={animationData} loop={loop} className={cn("w-full h-full", className)} />;
+};
+
+const SuccessStep = ({ billTitle, onReset }: { billTitle: string; onReset: () => void }) => {
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      className="flex flex-col items-center text-center p-6 sm:p-12 space-y-10"
+    >
+      <div className="relative flex flex-col items-center">
+        {/* Animated Environment: Fire Dual-Orchids */}
+        <div className="flex items-center justify-center gap-1 sm:gap-6">
+          <div className="w-16 h-16 sm:w-20 sm:h-20 flex-shrink-0">
+            <LottieViewer path="/assets/lottie/Fire.json" />
+          </div>
+          
+          {/* CORE SUCCESS LOTTIE */}
+          <div className="w-32 h-32 sm:w-48 sm:h-48 relative">
+            <LottieViewer path="/assets/lottie/Success.json" loop={false} />
+          </div>
+
+          <div className="w-16 h-16 sm:w-20 sm:h-20 flex-shrink-0">
+            <LottieViewer path="/assets/lottie/Fire.json" />
+          </div>
+        </div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5 }}
+          className="space-y-4"
+        >
+          <h3 className="text-3xl sm:text-5xl font-[1000] tracking-tighter text-slate-900 dark:text-white uppercase leading-none">
+            Voice <span className="text-kenya-green">Submitted.</span>
+          </h3>
+          <p className="text-sm font-medium text-slate-500 dark:text-slate-400 max-w-sm mx-auto leading-relaxed">
+            Your memorandum has been dispatched to Parliament. Your civic action matters — keep the fire burning.
+          </p>
+        </motion.div>
+
+        {/* Messaging Bar */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.7 }}
+          className="w-full p-5 rounded-3xl bg-kenya-green/5 border border-kenya-green/10 flex items-center gap-4 mt-8"
+        >
+          <div className="w-10 h-10 flex-shrink-0">
+            <LottieViewer path="/assets/lottie/Fire.json" />
+          </div>
+          <p className="text-[10px] font-black text-kenya-green uppercase tracking-[0.1em] text-left leading-relaxed">
+            Don't let the flame die down — share this and keep building pressure on Parliament.
+          </p>
+        </motion.div>
+
+        {/* Action Grid */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.8 }}
+          className="w-full grid grid-cols-1 sm:grid-cols-3 gap-3 mt-8"
+        >
+          <button
+            onClick={() => window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(`I just formally objected to the ${billTitle} on @CEKAKenya. Your voice matters too — add yours: `)} ${encodeURIComponent(window.location.href)}`, '_blank')}
+            className="flex items-center justify-center gap-2 h-14 rounded-2xl bg-black text-white border border-white/10 text-[10px] font-black uppercase tracking-widest hover:bg-slate-900 transition-all duration-300"
+          >
+            <TwitterColorIcon size={18} /> Share on X
+          </button>
+          <button
+            onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent(`I formally objected to the ${billTitle} on CEKA. Add your voice: ${window.location.href}`)}`, '_blank')}
+            className="flex items-center justify-center gap-2 h-14 rounded-2xl bg-[#25D366] text-white border border-[#25D366]/20 text-[10px] font-black uppercase tracking-widest hover:bg-[#20bd5a] transition-all duration-300"
+          >
+            <Share2Icon size={18} className="text-white" /> Amplify WhatsApp
+          </button>
+          <button
+            onClick={() => window.open('https://civiceducationkenya.com', '_blank')}
+            className="flex items-center justify-center gap-2 h-14 rounded-2xl bg-kenya-green text-white border border-kenya-green/20 text-[10px] font-black uppercase tracking-widest hover:bg-[#004d00] transition-all duration-300"
+          >
+            <MailSendIcon size={18} className="text-white" /> Follow CEKA
+          </button>
+        </motion.div>
+        
+        <button 
+          onClick={onReset}
+          className="mt-10 text-[9px] font-black uppercase tracking-[0.3em] text-slate-400 hover:text-kenya-green transition-colors"
+        >
+          Submit Another Response
+        </button>
+      </div>
+    </motion.div>
+  );
+};
 
 // ── Kenya Administrative Units ────────────────────────────────────────────────
 const KENYA_COUNTIES = [
@@ -95,7 +202,7 @@ interface LegislativeMemorandumProps {
   constitutionalSection?: string | null;
 }
 
-type SuccessState = 'idle' | 'submitted';
+type SuccessState = 'editing' | 'submitted';
 
 export const LegislativeMemorandum: React.FC<LegislativeMemorandumProps> = ({
   billId,
@@ -131,6 +238,29 @@ export const LegislativeMemorandum: React.FC<LegislativeMemorandumProps> = ({
   const [memoLoading, setMemoLoading] = useState(false);
   const [memoEnriched, setMemoEnriched] = useState(false);
   const [pursuantArticles, setPursuantArticles] = useState<string>(constitutionalSection || 'Articles 10(2), 118(1)');
+  const [hasConsent, setHasConsent] = useState(false);
+  const [signatureCount, setSignatureCount] = useState(0);
+  const [successState, setSuccessState] = useState<SuccessState>('editing');
+
+  // Location autocomplete state
+  const [countySearch, setCountySearch] = useState('');
+  const [countyOpen, setCountyOpen] = useState(false);
+  const [constituencySearch, setConstituencySearch] = useState('');
+  const [constituencyOpen, setConstituencyOpen] = useState(false);
+  const countyRef = useRef<HTMLDivElement>(null);
+  const constituencyRef = useRef<HTMLDivElement>(null);
+
+  const filteredCounties = KENYA_COUNTIES.filter(c =>
+    c.toLowerCase().includes(countySearch.toLowerCase())
+  );
+
+  const availableConstituencies = identity.county
+    ? (COUNTY_CONSTITUENCIES[identity.county] || [])
+    : [];
+
+  const filteredConstituencies = availableConstituencies.filter(c =>
+    c.toLowerCase().includes(constituencySearch.toLowerCase())
+  );
 
   // Real-time Constitutional Enrichment for Memoranda
   useEffect(() => {
@@ -158,30 +288,7 @@ export const LegislativeMemorandum: React.FC<LegislativeMemorandumProps> = ({
     };
 
     enrichLegalBasis();
-  }, [billId, constitutionalSection, billTitle, billSummary]);
-  const [hasConsent, setHasConsent] = useState(false);
-  const [signatureCount, setSignatureCount] = useState(0);
-  const [successState, setSuccessState] = useState<SuccessState>('idle');
-
-  // Location autocomplete state
-  const [countySearch, setCountySearch] = useState('');
-  const [countyOpen, setCountyOpen] = useState(false);
-  const [constituencySearch, setConstituencySearch] = useState('');
-  const [constituencyOpen, setConstituencyOpen] = useState(false);
-  const countyRef = useRef<HTMLDivElement>(null);
-  const constituencyRef = useRef<HTMLDivElement>(null);
-
-  const filteredCounties = KENYA_COUNTIES.filter(c =>
-    c.toLowerCase().includes(countySearch.toLowerCase())
-  );
-
-  const availableConstituencies = identity.county
-    ? (COUNTY_CONSTITUENCIES[identity.county] || [])
-    : Object.values(COUNTY_CONSTITUENCIES).flat();
-
-  const filteredConstituencies = availableConstituencies.filter(c =>
-    c.toLowerCase().includes(constituencySearch.toLowerCase())
-  );
+  }, [billTitle, billSummary, constitutionalSection]);
 
   // Close dropdowns on outside click
   useEffect(() => {
@@ -335,128 +442,14 @@ Citizen of Kenya`;
   // ── Success State ─────────────────────────────────────────────────────────
   if (successState === 'submitted') {
     return (
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="relative p-[1px] rounded-[40px] bg-gradient-to-br from-kenya-green/30 to-kenya-green/5 shadow-ios-high overflow-hidden"
-      >
-        <div className="bg-white/95 dark:bg-slate-900/60 backdrop-blur-3xl rounded-[39px] overflow-hidden">
-          <div className="p-8 sm:p-12 flex flex-col items-center gap-6 text-center">
-            {/* Fire GIFs flanking the success icon */}
-            <div className="flex items-center justify-center gap-4 w-full">
-              <img
-                src="/context/icons 2/Fire.gif"
-                alt="fire"
-                className="w-12 h-12 sm:w-16 sm:h-16 object-contain"
-                style={{ filter: 'drop-shadow(0 0 8px rgba(239,68,68,0.5))' }}
-              />
-              {/* Success Lottie fallback as animated SVG ring */}
-              <div className="relative flex-shrink-0">
-                <motion.div
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ type: 'spring', stiffness: 200, damping: 15, delay: 0.1 }}
-                  className="h-24 w-24 sm:h-32 sm:w-32 rounded-full bg-gradient-to-br from-kenya-green to-[#004d00] flex items-center justify-center shadow-2xl shadow-kenya-green/40"
-                >
-                  <motion.svg
-                    initial={{ pathLength: 0 }}
-                    animate={{ pathLength: 1 }}
-                    transition={{ duration: 0.6, delay: 0.3 }}
-                    width="48" height="48" viewBox="0 0 24 24" fill="none"
-                  >
-                    <motion.path
-                      d="M5 13l4 4L19 7"
-                      stroke="white"
-                      strokeWidth="2.5"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      initial={{ pathLength: 0 }}
-                      animate={{ pathLength: 1 }}
-                      transition={{ duration: 0.6, delay: 0.3 }}
-                    />
-                  </motion.svg>
-                </motion.div>
-                {[...Array(6)].map((_, i) => (
-                  <motion.div
-                    key={i}
-                    initial={{ scale: 0, opacity: 1 }}
-                    animate={{ scale: 2.5, opacity: 0 }}
-                    transition={{ duration: 0.8, delay: 0.4 + i * 0.1 }}
-                    className="absolute inset-0 rounded-full border-2 border-kenya-green"
-                  />
-                ))}
-              </div>
-              <img
-                src="/context/icons 2/Fire (2).gif"
-                alt="fire"
-                className="w-12 h-12 sm:w-16 sm:h-16 object-contain"
-                style={{ filter: 'drop-shadow(0 0 8px rgba(239,68,68,0.5))' }}
-              />
-            </div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.5 }}
-              className="space-y-3"
-            >
-              <h3 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900 dark:text-white uppercase">
-                Voice Submitted.
-              </h3>
-              <p className="text-sm font-medium text-slate-500 dark:text-slate-400 max-w-sm mx-auto leading-relaxed">
-                Your memorandum has been dispatched to Parliament. Your civic action matters — keep the fire burning.
-              </p>
-            </motion.div>
-
-            {/* Don't let the flame die — fire messaging */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.7 }}
-              className="w-full p-4 rounded-2xl bg-kenya-green/5 border border-kenya-green/10 flex items-center gap-3"
-            >
-              <img src="/context/icons 2/Fire.gif" alt="" className="w-8 h-8 object-contain flex-shrink-0" />
-              <p className="text-xs font-bold text-kenya-green uppercase tracking-wider text-left">
-                Don't let the flame die down — share this and keep building pressure on Parliament.
-              </p>
-            </motion.div>
-
-            {/* Social share row */}
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.8 }}
-              className="w-full grid grid-cols-1 sm:grid-cols-3 gap-3"
-            >
-              <button
-                onClick={() => window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(`I just formally objected to the ${billTitle} on @CEKAKenya. Your voice matters too — add yours: `)} ${encodeURIComponent(window.location.href)}`, '_blank')}
-                className="flex items-center justify-center gap-2 h-12 rounded-2xl bg-slate-50 dark:bg-white/5 border border-black/5 dark:border-white/10 text-[10px] font-black uppercase tracking-widest text-slate-600 hover:text-kenya-green hover:border-kenya-green/30 transition-all duration-300"
-              >
-                <TwitterColorIcon size={16} /> Share on X
-              </button>
-              <button
-                onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent(`I formally objected to the ${billTitle} on CEKA. Add your voice: ${window.location.href}`)}`, '_blank')}
-                className="flex items-center justify-center gap-2 h-12 rounded-2xl bg-[#25D366]/10 border border-[#25D366]/20 text-[10px] font-black uppercase tracking-widest text-[#25D366] hover:bg-[#25D366]/20 transition-all duration-300"
-              >
-                <Share2Icon size={16} /> Amplify on WhatsApp
-              </button>
-              <button
-                onClick={() => window.open('https://civiceducationkenya.com', '_blank')}
-                className="flex items-center justify-center gap-2 h-12 rounded-2xl bg-kenya-green/5 border border-kenya-green/20 text-[10px] font-black uppercase tracking-widest text-kenya-green hover:bg-kenya-green/10 transition-all duration-300"
-              >
-                <MailSendIcon size={16} /> Follow CEKA
-              </button>
-            </motion.div>
-
-            <button
-              onClick={() => setSuccessState('idle')}
-              className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-kenya-green transition-colors"
-            >
-              Submit Another
-            </button>
-          </div>
+      <div className="relative p-[1px] rounded-[40px] bg-gradient-to-br from-kenya-green/30 to-kenya-green/5 shadow-ios-high overflow-hidden">
+        <div className="bg-white/95 dark:bg-slate-900/80 backdrop-blur-3xl rounded-[39px] overflow-hidden">
+          <SuccessStep 
+            billTitle={billTitle} 
+            onReset={() => setSuccessState('editing')} 
+          />
         </div>
-      </motion.div>
+      </div>
     );
   }
 
@@ -506,7 +499,7 @@ Citizen of Kenya`;
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                {/* First Name */}
+                {/* Full Name */}
                 <div className="group/input relative">
                   <Input
                     value={identity.name}
@@ -620,7 +613,6 @@ Citizen of Kenya`;
                               updateIdentity({ constituency: con });
                               setConstituencySearch('');
                               setConstituencyOpen(false);
-                              // Auto-fill county from constituency if not set
                               if (!identity.county) {
                                 const matchingCounty = Object.entries(COUNTY_CONSTITUENCIES).find(
                                   ([, cons]) => cons.includes(con)
@@ -830,9 +822,7 @@ Citizen of Kenya`;
                 </div>
               </div>
 
-              {/* Action buttons — responsive grid */}
               <div className="flex flex-col gap-3">
-                {/* Primary row: Sign+Submit & Amplify */}
                 <div className="flex flex-col sm:flex-row gap-3">
                   <Button
                     onClick={handleInitialSubmit}
@@ -852,7 +842,6 @@ Citizen of Kenya`;
                   </Button>
                 </div>
 
-                {/* Secondary row: Save PDF & Share on X */}
                 <div className="grid grid-cols-2 gap-3">
                   <button
                     onClick={handleSavePDF}
@@ -873,7 +862,6 @@ Citizen of Kenya`;
               </div>
             </div>
 
-            {/* Security footer */}
             <div className="pt-5 sm:pt-6 border-t border-black/5 dark:border-white/5 flex items-center justify-between opacity-30 grayscale hover:grayscale-0 hover:opacity-100 transition-all duration-700">
               <p className="text-[9px] font-black uppercase tracking-widest">Contact at tech@civiceducationkenya.com for queries</p>
               <div className="flex gap-3 sm:gap-4">
@@ -886,7 +874,6 @@ Citizen of Kenya`;
         </div>
       </div>
 
-      {/* Submission Verification Modal */}
       {needsVerification && (
         <SubmissionVerification
           email={identity.email}
