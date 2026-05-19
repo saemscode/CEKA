@@ -34,7 +34,7 @@ interface UploadFile {
     url?: string;
     error?: string;
 
-    // Staged metadata
+    // Simplified details
     stagedTitle: string;
     stagedDescription: string;
     stagedTags: string;
@@ -43,14 +43,14 @@ interface UploadFile {
 type RegistrationMode = 'storage_only' | 'resource' | 'carousel_item';
 
 const STORAGE_FOLDERS = [
-    { value: 'resources', label: 'Resources' },
+    { value: 'resources', label: 'Resource Library' },
     { value: 'carousels', label: 'Carousels' },
     { value: 'documents', label: 'Documents' },
     { value: 'media', label: 'Media' },
     { value: 'legislation', label: 'Legislation' }
 ];
 
-interface NewCarouselData {
+interface CarouselInfo {
     title: string;
     description: string;
     tags: string;
@@ -71,11 +71,12 @@ const BulkUploadManager = () => {
     const [uploading, setUploading] = useState(false);
     const [targetFolder, setTargetFolder] = useState('resources');
     const [customFolder, setCustomFolder] = useState('');
-    const [regMode, setRegMode] = useState<RegistrationMode>('resource');
+    const [regMode, setRegMode] = useState<RegistrationMode>('carousel_item');
     const [category, setCategory] = useState('general');
     const [selectedCarousel, setSelectedCarousel] = useState<string>('');
     const [isCreatingNewCarousel, setIsCreatingNewCarousel] = useState(false);
-    const [newCarousel, setNewCarousel] = useState<NewCarouselData>({
+    const [isInstantPublish, setIsInstantPublish] = useState(true);
+    const [carouselInfo, setCarouselInfo] = useState<CarouselInfo>({
         title: '',
         description: '',
         tags: '',
@@ -124,8 +125,33 @@ const BulkUploadManager = () => {
     const handleFilesSelected = useCallback((selectedFiles: FileList | null) => {
         if (!selectedFiles) return;
 
-        // Strict limit for carousels
-        if (regMode === 'carousel_item' && (files.length + selectedFiles.length) > 20) {
+        const fileArray = Array.from(selectedFiles);
+
+        // AUTO-INFERENCE: Guess Carousel Title and Slug from folder or first file
+        if (regMode === 'carousel_item' && files.length === 0) {
+            const firstFile = fileArray[0];
+            const pathParts = (firstFile as any).webkitRelativePath?.split('/');
+            const rawName = pathParts && pathParts.length > 1 
+                ? pathParts[0] 
+                : firstFile.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ');
+            
+            const cleanTitle = rawName
+                .split(' ')
+                .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+                .join(' ');
+            
+            const cleanSlug = cleanTitle.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '');
+
+            setCarouselInfo(prev => ({
+                ...prev,
+                title: cleanTitle,
+                slug: cleanSlug
+            }));
+            setIsCreatingNewCarousel(true);
+        }
+
+        // Limit for carousels
+        if (regMode === 'carousel_item' && (files.length + fileArray.length) > 20) {
             toast({
                 title: 'Limit Reached',
                 description: 'Carousels are limited to 20 images for optimal performance.',
@@ -134,7 +160,7 @@ const BulkUploadManager = () => {
             return;
         }
 
-        const newFiles: UploadFile[] = Array.from(selectedFiles).map((file) => ({
+        const newFiles: UploadFile[] = fileArray.map((file) => ({
             id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
             file,
             name: file.name,
@@ -142,7 +168,7 @@ const BulkUploadManager = () => {
             type: file.type,
             status: 'staged',
             progress: 0,
-            stagedTitle: file.name.replace(/\.[^/.]+$/, ''),
+            stagedTitle: file.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' '),
             stagedDescription: '',
             stagedTags: ''
         }));
@@ -163,14 +189,14 @@ const BulkUploadManager = () => {
     };
 
     // Upload single file to selected storage and Sync to SQL
-    const processFile = async (uploadFile: UploadFile, carouselIdOverride?: string): Promise<void> => {
+    const processFile = async (uploadFile: UploadFile, galleryIdOverride?: string): Promise<void> => {
         setFiles((prev) =>
             prev.map((f) => (f.id === uploadFile.id ? { ...f, status: 'uploading', progress: 10 } : f))
         );
 
         try {
             const finalFolder = customFolder || targetFolder;
-            const finalCarouselId = carouselIdOverride || selectedCarousel;
+            const finalCarouselId = galleryIdOverride || selectedCarousel;
 
             // 1. Upload to Storage (B2 or Supabase)
             let result;
@@ -278,14 +304,14 @@ const BulkUploadManager = () => {
     const startBatchUpload = async () => {
         const stagged = files.filter((f) => f.status === 'staged' || f.status === 'pending');
         if (stagged.length === 0) {
-            toast({ title: 'No files to process', description: 'Add files and review metadata first', variant: 'destructive' });
+            toast({ title: 'Add images first', description: 'Review your files before uploading.', variant: 'destructive' });
             return;
         }
 
         if (storageProvider === 'b2' && !backblazeReady) {
             toast({
-                title: 'Backblaze Unavailable',
-                description: 'Check B2 credentials or fallback to Supabase Storage',
+                title: 'Storage Error',
+                description: 'Cannot connect to Backblaze. Using Supabase instead.',
                 variant: 'destructive'
             });
             return;
@@ -293,11 +319,11 @@ const BulkUploadManager = () => {
 
         if (regMode === 'carousel_item') {
             if (!selectedCarousel && !isCreatingNewCarousel) {
-                toast({ title: 'Required Field', description: 'Please select a Target Carousel', variant: 'destructive' });
+                toast({ title: 'Pick a Carousel', description: 'Where should these images go?', variant: 'destructive' });
                 return;
             }
-            if (isCreatingNewCarousel && !newCarousel.title) {
-                toast({ title: 'Required Field', description: 'Please provide a Title for the new carousel', variant: 'destructive' });
+            if (isCreatingNewCarousel && !carouselInfo.title) {
+                toast({ title: 'Title Needed', description: 'What is the name of this new carousel?', variant: 'destructive' });
                 return;
             }
         }
@@ -306,15 +332,15 @@ const BulkUploadManager = () => {
 
         let finalCarouselId = selectedCarousel;
 
-        // 1. Create New Carousel if needed
+        // 1. Create New Carousel if needed (One-Click Pipeline)
         if (regMode === 'carousel_item' && isCreatingNewCarousel) {
             try {
-                const tagsArray = newCarousel.tags.split(',').map(t => t.trim()).filter(Boolean);
+                const tagsArray = carouselInfo.tags.split(',').map(t => t.trim()).filter(Boolean);
                 const created = await mediaService.createContent({
                     type: 'carousel',
-                    title: newCarousel.title,
-                    description: newCarousel.description,
-                    slug: newCarousel.slug,
+                    title: carouselInfo.title,
+                    description: carouselInfo.description,
+                    slug: carouselInfo.slug,
                     tags: tagsArray,
                     status: 'published',
                     metadata: {
@@ -325,27 +351,26 @@ const BulkUploadManager = () => {
 
                 if (created) {
                     finalCarouselId = created.id;
-                    // Update list and selection
                     await fetchCarousels();
                     setSelectedCarousel(created.id);
                     setIsCreatingNewCarousel(false);
                 } else {
-                    throw new Error('Failed to create carousel container');
+                    throw new Error('Failed to start new carousel');
                 }
             } catch (err: any) {
-                toast({ title: 'Carousel Creation Failed', description: err.message, variant: 'destructive' });
+                toast({ title: 'Failed to create carousel', description: err.message, variant: 'destructive' });
                 setUploading(false);
                 return;
             }
         }
 
-        // 2. Sequential processing for atomic SQL stability
+        // 2. Process all files
         for (const file of stagged) {
             await processFile(file, finalCarouselId);
         }
 
         setUploading(false);
-        toast({ title: 'Cloud Sync Complete', description: `${stagged.length} assets deployed to ${storageProvider.toUpperCase()} and SQL.` });
+        toast({ title: 'Success', description: `${stagged.length} items live on the site.` });
     };
 
     // Helpers
@@ -386,11 +411,11 @@ const BulkUploadManager = () => {
             <div className="flex items-center justify-between">
                 <div>
                     <h2 className="text-2xl font-black tracking-tighter flex items-center gap-2">
-                        Advanced B2 Cloud Manager
+                        Advanced Cloud Manager
                         <Badge className="bg-primary/10 text-primary border-0 font-bold uppercase text-[10px]">Go Ham Mode</Badge>
                     </h2>
                     <p className="text-muted-foreground text-sm font-medium">
-                        Staged deployment to Backblaze B2 Vault with Automated SQL Metadata Sync.
+                        Securely save images to the cloud and register them to your carousels.
                     </p>
                 </div>
                 <div className="flex items-center gap-1 bg-black/10 backdrop-blur-xl p-1 rounded-2xl border border-white/10 shadow-ios-inner glass-card">
@@ -457,16 +482,16 @@ const BulkUploadManager = () => {
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="resource">Register as Resource Library Item</SelectItem>
-                                        <SelectItem value="carousel_item">Attach to Instagram Carousel</SelectItem>
-                                        <SelectItem value="storage_only">Cloud Storage Only (B2 Only)</SelectItem>
+                                        <SelectItem value="resource">Resource Library Item</SelectItem>
+                                        <SelectItem value="carousel_item">Attach to Carousel</SelectItem>
+                                        <SelectItem value="storage_only">Cloud Storage Only</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
 
                             {regMode === 'resource' && (
                                 <div className="space-y-2">
-                                    <Label className="text-[10px] font-black uppercase tracking-tighter text-muted-foreground">Default Category</Label>
+                                    <Label className="text-[10px] font-black uppercase tracking-tighter text-muted-foreground">Category</Label>
                                     <Select value={category} onValueChange={setCategory}>
                                         <SelectTrigger className="rounded-xl border-2 h-12">
                                             <SelectValue />
@@ -483,7 +508,7 @@ const BulkUploadManager = () => {
                             {regMode === 'carousel_item' && (
                                 <div className="space-y-4 animate-in slide-in-from-top duration-500">
                                     <div className="flex items-center justify-between">
-                                        <Label className="text-[10px] font-black uppercase tracking-tighter text-muted-foreground">Target Carousel (Media Content)</Label>
+                                        <Label className="text-[10px] font-black uppercase tracking-tighter text-muted-foreground">Target Carousel</Label>
                                         <div className="flex items-center gap-2">
                                             <Checkbox 
                                                 id="use-shared" 
@@ -510,7 +535,7 @@ const BulkUploadManager = () => {
                                             <SelectValue placeholder="Select a Carousel..." />
                                         </SelectTrigger>
                                         <SelectContent className="glass-card">
-                                            <SelectItem value="NEW" className="font-bold text-primary italic">+ Add New Carousel</SelectItem>
+                                            <SelectItem value="NEW" className="font-bold text-primary italic">+ New Carousel</SelectItem>
                                             {carousels.map((c) => (
                                                 <SelectItem key={c.id} value={c.id}>{c.title} ({c.slug})</SelectItem>
                                             ))}
@@ -523,43 +548,52 @@ const BulkUploadManager = () => {
                                                 <div className="space-y-2">
                                                     <Label className="text-[9px] font-black uppercase">Carousel Title</Label>
                                                     <Input 
-                                                        value={newCarousel.title}
+                                                        value={carouselInfo.title}
                                                         onChange={(e) => {
                                                             const title = e.target.value;
                                                             const slug = title.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '');
-                                                            setNewCarousel(prev => ({ ...prev, title, slug }));
+                                                            setCarouselInfo(prev => ({ ...prev, title, slug }));
                                                         }}
                                                         className="rounded-xl h-10 border-muted/30 focus:border-primary/50"
-                                                        placeholder="e.g. Constitutional Review 2026"
+                                                        placeholder="e.g. My Awesome Trip"
                                                     />
                                                 </div>
                                                 <div className="space-y-2">
-                                                    <Label className="text-[9px] font-black uppercase">Slug (Auto-generated)</Label>
+                                                    <Label className="text-[9px] font-black uppercase">Slug</Label>
                                                     <Input 
-                                                        value={newCarousel.slug}
-                                                        onChange={(e) => setNewCarousel(prev => ({ ...prev, slug: e.target.value }))}
-                                                        className="rounded-xl h-10 border-muted/30 font-mono text-xs bg-muted/20"
-                                                        readOnly
+                                                        value={carouselInfo.slug}
+                                                        onChange={(e) => setCarouselInfo(prev => ({ ...prev, slug: e.target.value }))}
+                                                        className="rounded-xl h-10 border-muted/30 font-mono text-xs bg-muted/10 opacity-70"
+                                                        placeholder="my-awesome-trip"
                                                     />
                                                 </div>
                                             </div>
                                             <div className="space-y-2">
-                                                <Label className="text-[9px] font-black uppercase">Collection Description (Shared)</Label>
+                                                <Label className="text-[9px] font-black uppercase">Carousel Description</Label>
                                                 <Textarea 
-                                                    value={newCarousel.description}
-                                                    onChange={(e) => setNewCarousel(prev => ({ ...prev, description: e.target.value }))}
+                                                    value={carouselInfo.description}
+                                                    onChange={(e) => setCarouselInfo(prev => ({ ...prev, description: e.target.value }))}
                                                     className="rounded-xl min-h-[80px] border-muted/30"
-                                                    placeholder="Provide context for the entire carousel collection..."
+                                                    placeholder="What's this carousel about?"
                                                 />
                                             </div>
                                             <div className="space-y-2">
-                                                <Label className="text-[9px] font-black uppercase">Collection Tags (Comma separated)</Label>
+                                                <Label className="text-[9px] font-black uppercase">Tags (Comma separated)</Label>
                                                 <Input 
-                                                    value={newCarousel.tags}
-                                                    onChange={(e) => setNewCarousel(prev => ({ ...prev, tags: e.target.value }))}
+                                                    value={carouselInfo.tags}
+                                                    onChange={(e) => setCarouselInfo(prev => ({ ...prev, tags: e.target.value }))}
                                                     className="rounded-xl h-10 border-muted/30"
-                                                    placeholder="e.g. environmental, special-edition, ceka"
+                                                    placeholder="travel, fun"
                                                 />
+                                            </div>
+                                            
+                                            <div className="flex items-center gap-2 pt-2">
+                                                <Checkbox 
+                                                    id="instant-publish" 
+                                                    checked={isInstantPublish} 
+                                                    onCheckedChange={(v: any) => setIsInstantPublish(v)} 
+                                                />
+                                                <Label htmlFor="instant-publish" className="text-[10px] font-bold cursor-pointer text-primary">Instant Publish (One-Click)</Label>
                                             </div>
                                         </div>
                                     )}
@@ -578,8 +612,8 @@ const BulkUploadManager = () => {
                     <div className="h-16 w-16 rounded-3xl bg-primary/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                         <Upload className="h-8 w-8 text-primary" />
                     </div>
-                    <h3 className="font-black text-lg">Deploy Assets</h3>
-                    <p className="text-xs text-muted-foreground mb-4">Click or drop files to stage for cloud upload</p>
+                    <h3 className="font-black text-lg">Add Images</h3>
+                    <p className="text-xs text-muted-foreground mb-4">Click here or drop your folder to start</p>
                     <input ref={fileInputRef} type="file" multiple className="hidden" onChange={(e) => handleFilesSelected(e.target.files)} />
                     <Button variant="outline" className="rounded-xl h-10 px-6 font-bold border-2">Select Files</Button>
                 </Card>
@@ -591,12 +625,12 @@ const BulkUploadManager = () => {
                     <div className="absolute top-0 left-0 w-1 h-full bg-primary/40" />
                     <CardHeader className="pb-3 border-b border-primary/10">
                         <CardTitle className="text-sm font-black uppercase tracking-widest text-primary flex items-center gap-2">
-                            <PlusCircle className="h-4 w-4" /> Shared Collection Metadata
+                            <PlusCircle className="h-4 w-4" /> Shared Metadata for All
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="pt-6 grid grid-cols-1 md:grid-cols-3 gap-6">
                         <div className="space-y-2">
-                            <Label className="text-[10px] font-black uppercase tracking-tighter text-muted-foreground">Shared Title (Required for Carousel)</Label>
+                            <Label className="text-[10px] font-black uppercase tracking-tighter text-muted-foreground">Title Override</Label>
                             <Input 
                                 value={sharedMetadata.title}
                                 onChange={(e) => setSharedMetadata(prev => ({ ...prev, title: e.target.value }))}
@@ -610,7 +644,7 @@ const BulkUploadManager = () => {
                                 value={sharedMetadata.tags}
                                 onChange={(e) => setSharedMetadata(prev => ({ ...prev, tags: e.target.value }))}
                                 className="rounded-xl border-2 h-12 bg-background/50 shadow-ios-inner"
-                                placeholder="news, alert, 2026"
+                                placeholder="news, alert"
                             />
                         </div>
                         <div className="space-y-2">
@@ -619,7 +653,7 @@ const BulkUploadManager = () => {
                                 value={sharedMetadata.description}
                                 onChange={(e) => setSharedMetadata(prev => ({ ...prev, description: e.target.value }))}
                                 className="rounded-xl border-2 min-h-[48px] h-12 py-3 bg-background/50 shadow-ios-inner"
-                                placeholder="Common Context..."
+                                placeholder="Common info for all files..."
                             />
                         </div>
                     </CardContent>
@@ -631,11 +665,11 @@ const BulkUploadManager = () => {
                 <Card className="border-0 shadow-ios-high bg-card/50 backdrop-blur-xl">
                     <CardHeader className="flex flex-row items-center justify-between pb-3 border-b border-muted/20">
                         <div>
-                            <CardTitle className="text-lg font-black tracking-tight">Deployment Queue</CardTitle>
-                            <CardDescription className="text-[10px] uppercase font-bold tracking-widest text-primary">Stage 2: Metadata Review</CardDescription>
+                            <CardTitle className="text-lg font-black tracking-tight">Upload Queue</CardTitle>
+                            <CardDescription className="text-[10px] uppercase font-bold tracking-widest text-primary">Ready for Review</CardDescription>
                         </div>
                         <div className="flex gap-3">
-                            <Button size="sm" variant="outline" onClick={clearCompleted} className="rounded-xl font-bold h-10 border-2">Clear History</Button>
+                            <Button size="sm" variant="outline" onClick={clearCompleted} className="rounded-xl font-bold h-10 border-2">Clear</Button>
                             <Button
                                 size="sm"
                                 onClick={startBatchUpload}
@@ -643,7 +677,7 @@ const BulkUploadManager = () => {
                                 className="rounded-xl h-10 px-6 font-black bg-primary shadow-lg shadow-primary/20"
                             >
                                 {uploading ? <CEKALoader variant="ios" size="sm" /> : <Zap className="h-4 w-4 mr-2" />}
-                                Sync to B2 & SQL
+                                {isInstantPublish ? "Instant Publish" : "Start Upload"}
                             </Button>
                         </div>
                     </CardHeader>
@@ -748,8 +782,8 @@ const BulkUploadManager = () => {
                         <Zap className="h-5 w-5 text-primary" />
                     </div>
                     <p className="text-sm font-medium text-primary/80 leading-tight italic">
-                        <strong>Go Ham Cloud Logic:</strong> When a file is processed, it is staged in the B2 Vault with its custom metadata.
-                        Upon success, the specified SQL registrations are triggered synchronously to ensure zero-lag between cloud availability and platform visibility.
+                        <strong>Go Ham Cloud Logic:</strong> When you upload, we save your images securely and link them to your carousel immediately. 
+                        No extra steps needed.
                     </p>
                 </CardContent>
             </Card>
