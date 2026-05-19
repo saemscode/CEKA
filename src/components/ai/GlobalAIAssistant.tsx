@@ -412,7 +412,10 @@ const GlobalAIAssistant = () => {
                                         ? 'bg-kenya-green text-white rounded-tr-none'
                                         : 'bg-white/10 dark:bg-gray-800/20 border border-white/20 dark:border-white/10 text-slate-800 dark:text-white rounded-tl-none'
                                         }`}>
-                                        <div className="prose prose-sm dark:prose-invert prose-headings:mt-3 prose-headings:mb-1 prose-p:my-1 prose-li:my-0.5 whitespace-pre-wrap break-words max-w-full overflow-hidden leading-snug">
+                                        <div className={cn(
+                                            "prose prose-sm dark:prose-invert prose-headings:mt-3 prose-headings:mb-1 prose-p:my-1 prose-li:my-0.5 whitespace-pre-wrap break-words max-w-full overflow-hidden leading-snug",
+                                            m.role === 'user' && "text-white prose-p:text-white prose-headings:text-white prose-strong:text-white prose-em:text-white prose-code:text-white"
+                                        )}>
                                             <ReactMarkdown>
                                                 {m.content}
                                             </ReactMarkdown>
