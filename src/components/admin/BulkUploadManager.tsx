@@ -15,7 +15,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import {
     Upload, Folder, File, X, CheckCircle, XCircle, Clock, RefreshCw,
-    Image, FileText, Music, Video, Archive, Trash2, Eye, Edit3, Save, Plus, ExternalLink, Settings, Zap
+    Image, FileText, Music, Video, Archive, Trash2, Eye, Edit3, Save, Plus, ExternalLink, Settings, Zap,
+    ChevronDown, PlusCircle
 } from 'lucide-react';
 import backblazeStorage from '@/services/backblazeStorage';
 import { supabase } from '@/integrations/supabase/client';
@@ -49,6 +50,13 @@ const STORAGE_FOLDERS = [
     { value: 'legislation', label: 'Legislation' }
 ];
 
+interface NewCarouselData {
+    title: string;
+    description: string;
+    tags: string;
+    slug: string;
+}
+
 const CATEGORIES = [
     { value: 'general', label: 'General' },
     { value: 'constitution', label: 'Constitution' },
@@ -66,7 +74,22 @@ const BulkUploadManager = () => {
     const [regMode, setRegMode] = useState<RegistrationMode>('resource');
     const [category, setCategory] = useState('general');
     const [selectedCarousel, setSelectedCarousel] = useState<string>('');
+    const [isCreatingNewCarousel, setIsCreatingNewCarousel] = useState(false);
+    const [newCarousel, setNewCarousel] = useState<NewCarouselData>({
+        title: '',
+        description: '',
+        tags: '',
+        slug: ''
+    });
+    const [sharedMetadata, setSharedMetadata] = useState({
+        title: '',
+        description: '',
+        tags: ''
+    });
+    const [useSharedMetadata, setUseSharedMetadata] = useState(true);
+    const [storageProvider, setStorageProvider] = useState<'b2' | 'supabase'>('b2');
     const [carousels, setCarousels] = useState<MediaContent[]>([]);
+    const [expandedFiles, setExpandedFiles] = useState<Record<string, boolean>>({});
 
     const [backblazeReady, setBackblazeReady] = useState<boolean | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -101,6 +124,16 @@ const BulkUploadManager = () => {
     const handleFilesSelected = useCallback((selectedFiles: FileList | null) => {
         if (!selectedFiles) return;
 
+        // Strict limit for carousels
+        if (regMode === 'carousel_item' && (files.length + selectedFiles.length) > 20) {
+            toast({
+                title: 'Limit Reached',
+                description: 'Carousels are limited to 20 images for optimal performance.',
+                variant: 'destructive'
+            });
+            return;
+        }
+
         const newFiles: UploadFile[] = Array.from(selectedFiles).map((file) => ({
             id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
             file,
@@ -115,7 +148,7 @@ const BulkUploadManager = () => {
         }));
 
         setFiles((prev) => [...prev, ...newFiles]);
-    }, []);
+    }, [files.length, regMode, toast]);
 
     // Handle drag and drop
     const handleDrop = useCallback((e: React.DragEvent) => {
@@ -129,38 +162,60 @@ const BulkUploadManager = () => {
         setFiles(prev => prev.map(f => f.id === id ? { ...f, ...updates } : f));
     };
 
-    // Upload single file to Backblaze and Sync to SQL
-    const processFile = async (uploadFile: UploadFile): Promise<void> => {
+    // Upload single file to selected storage and Sync to SQL
+    const processFile = async (uploadFile: UploadFile, carouselIdOverride?: string): Promise<void> => {
         setFiles((prev) =>
             prev.map((f) => (f.id === uploadFile.id ? { ...f, status: 'uploading', progress: 10 } : f))
         );
 
         try {
             const finalFolder = customFolder || targetFolder;
+            const finalCarouselId = carouselIdOverride || selectedCarousel;
 
-            // 1. Upload to Backblaze
-            const result = await backblazeStorage.uploadFile(
-                uploadFile.file,
-                finalFolder,
-                (progress) => {
-                    setFiles((prev) =>
-                        prev.map((f) => (f.id === uploadFile.id ? { ...f, progress: Math.min(progress, 90) } : f))
-                    );
-                }
-            );
+            // 1. Upload to Storage (B2 or Supabase)
+            let result;
+            if (storageProvider === 'b2') {
+                result = await backblazeStorage.uploadFile(
+                    uploadFile.file,
+                    finalFolder,
+                    (progress) => {
+                        setFiles((prev) =>
+                            prev.map((f) => (f.id === uploadFile.id ? { ...f, progress: Math.min(progress, 90) } : f))
+                        );
+                    }
+                );
+            } else {
+                // Force Supabase upload
+                const filePath = `${finalFolder}/${Date.now()}-${uploadFile.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+                const { data, error } = await supabase.storage
+                    .from('resources')
+                    .upload(filePath, uploadFile.file);
+                
+                if (error) throw error;
+                
+                const { data: urlData } = supabase.storage.from('resources').getPublicUrl(filePath);
+                result = { success: true, fileUrl: urlData.publicUrl, fileName: filePath };
+            }
 
             if (!result.success) {
-                throw new Error(result.error || 'B2 Upload failed');
+                throw new Error(result.error || 'Upload failed');
+            }
+
+            // 1.5 Detect Aspect Ratio for images
+            let aspectRatio = '1:1';
+            if (uploadFile.type.startsWith('image')) {
+                aspectRatio = await mediaService.detectAspectRatio(uploadFile.file);
             }
 
             // 2. Automated SQL Sync based on Registration Mode
             if (regMode === 'resource') {
-                const tagsArray = uploadFile.stagedTags.split(',').map(t => t.trim()).filter(Boolean);
+                const tagsRaw = useSharedMetadata ? sharedMetadata.tags : uploadFile.stagedTags;
+                const tagsArray = tagsRaw.split(',').map(t => t.trim()).filter(Boolean);
+                
                 const { error: sqlError } = await supabase.from('resources').insert({
-                    title: uploadFile.stagedTitle,
-                    description: uploadFile.stagedDescription || 'Uploaded via B2 Cloud Manager',
+                    title: useSharedMetadata && sharedMetadata.title ? sharedMetadata.title : uploadFile.stagedTitle,
+                    description: (useSharedMetadata ? sharedMetadata.description : uploadFile.stagedDescription) || 'Uploaded via Advanced B2 Cloud Manager',
                     url: result.fileUrl || '',
-                    thumbnail_url: null, // Let Intelligent Placeholder handle this
                     type: uploadFile.type.split('/')[0] || 'document',
                     category: category,
                     tags: tagsArray,
@@ -169,19 +224,19 @@ const BulkUploadManager = () => {
                 });
                 if (sqlError) throw sqlError;
             }
-            else if (regMode === 'carousel_item' && selectedCarousel) {
+            else if (regMode === 'carousel_item' && finalCarouselId) {
                 // Get the current max order_index for this carousel
                 const { data: currentItems } = await (supabase
                     .from('media_items' as any) as any)
                     .select('order_index')
-                    .eq('content_id', selectedCarousel)
+                    .eq('content_id', finalCarouselId)
                     .order('order_index', { ascending: false })
                     .limit(1);
 
                 const nextOrder = (currentItems && currentItems[0] ? currentItems[0].order_index + 1 : 0);
 
                 const { error: sqlError } = await (supabase.from('media_items' as any) as any).insert({
-                    content_id: selectedCarousel,
+                    content_id: finalCarouselId,
                     type: uploadFile.type.startsWith('image') ? 'image' :
                         uploadFile.type === 'application/pdf' ? 'pdf' : 'video',
                     file_path: result.fileName,
@@ -189,7 +244,12 @@ const BulkUploadManager = () => {
                     order_index: nextOrder,
                     metadata: {
                         original_name: uploadFile.name,
-                        title: uploadFile.stagedTitle
+                        title: uploadFile.stagedTitle,
+                        aspect_ratio: aspectRatio,
+                        ...(useSharedMetadata ? { 
+                            shared_title: sharedMetadata.title,
+                            shared_description: sharedMetadata.description
+                        } : {})
                     }
                 });
                 if (sqlError) throw sqlError;
@@ -222,29 +282,70 @@ const BulkUploadManager = () => {
             return;
         }
 
-        if (!backblazeReady) {
+        if (storageProvider === 'b2' && !backblazeReady) {
             toast({
                 title: 'Backblaze Unavailable',
-                description: 'Check B2 credentials in environment variables',
+                description: 'Check B2 credentials or fallback to Supabase Storage',
                 variant: 'destructive'
             });
             return;
         }
 
-        if (regMode === 'carousel_item' && !selectedCarousel) {
-            toast({ title: 'Required Field', description: 'Please select a Target Carousel', variant: 'destructive' });
-            return;
+        if (regMode === 'carousel_item') {
+            if (!selectedCarousel && !isCreatingNewCarousel) {
+                toast({ title: 'Required Field', description: 'Please select a Target Carousel', variant: 'destructive' });
+                return;
+            }
+            if (isCreatingNewCarousel && !newCarousel.title) {
+                toast({ title: 'Required Field', description: 'Please provide a Title for the new carousel', variant: 'destructive' });
+                return;
+            }
         }
 
         setUploading(true);
 
-        // Sequential processing for atomic SQL stability
+        let finalCarouselId = selectedCarousel;
+
+        // 1. Create New Carousel if needed
+        if (regMode === 'carousel_item' && isCreatingNewCarousel) {
+            try {
+                const tagsArray = newCarousel.tags.split(',').map(t => t.trim()).filter(Boolean);
+                const created = await mediaService.createContent({
+                    type: 'carousel',
+                    title: newCarousel.title,
+                    description: newCarousel.description,
+                    slug: newCarousel.slug,
+                    tags: tagsArray,
+                    status: 'published',
+                    metadata: {
+                        created_via: 'BulkUploadManager',
+                        storage_provider: storageProvider
+                    }
+                });
+
+                if (created) {
+                    finalCarouselId = created.id;
+                    // Update list and selection
+                    await fetchCarousels();
+                    setSelectedCarousel(created.id);
+                    setIsCreatingNewCarousel(false);
+                } else {
+                    throw new Error('Failed to create carousel container');
+                }
+            } catch (err: any) {
+                toast({ title: 'Carousel Creation Failed', description: err.message, variant: 'destructive' });
+                setUploading(false);
+                return;
+            }
+        }
+
+        // 2. Sequential processing for atomic SQL stability
         for (const file of stagged) {
-            await processFile(file);
+            await processFile(file, finalCarouselId);
         }
 
         setUploading(false);
-        toast({ title: 'Cloud Sync Complete', description: `${stagged.length} assets deployed to B2 and SQL.` });
+        toast({ title: 'Cloud Sync Complete', description: `${stagged.length} assets deployed to ${storageProvider.toUpperCase()} and SQL.` });
     };
 
     // Helpers
@@ -292,11 +393,26 @@ const BulkUploadManager = () => {
                         Staged deployment to Backblaze B2 Vault with Automated SQL Metadata Sync.
                     </p>
                 </div>
-                {backblazeReady !== null && (
-                    <Badge variant={backblazeReady ? "default" : "destructive"} className="rounded-2xl h-8 px-4 font-bold border-0 shadow-sm">
-                        {backblazeReady ? 'B2 Vault Link: ACTIVE' : 'B2 Connection: DOWN'}
-                    </Badge>
-                )}
+                <div className="flex items-center gap-1 bg-black/10 backdrop-blur-xl p-1 rounded-2xl border border-white/10 shadow-ios-inner glass-card">
+                    <button
+                        onClick={() => setStorageProvider('b2')}
+                        className={`px-4 h-9 rounded-xl text-[10px] font-black uppercase transition-all duration-500 shadow-skeuo flex items-center gap-2 ${storageProvider === 'b2' 
+                            ? 'bg-kenya-green text-white shadow-[0_4px_12px_rgba(0,136,71,0.4)]' 
+                            : 'bg-kenya-red/60 text-white/70 hover:bg-kenya-red/80'}`}
+                    >
+                        <div className={`h-1.5 w-1.5 rounded-full ${backblazeReady ? 'bg-white animate-pulse' : 'bg-white/40'}`} />
+                        B2 Vault
+                    </button>
+                    <button
+                        onClick={() => setStorageProvider('supabase')}
+                        className={`px-4 h-9 rounded-xl text-[10px] font-black uppercase transition-all duration-500 shadow-skeuo flex items-center gap-2 ${storageProvider === 'supabase' 
+                            ? 'bg-kenya-green text-white shadow-[0_4px_12px_rgba(0,136,71,0.4)]' 
+                            : 'bg-kenya-red/60 text-white/70 hover:bg-kenya-red/80'}`}
+                    >
+                        <div className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
+                        Supabase
+                    </button>
+                </div>
             </div>
 
             {/* Global Infrastructure Config */}
@@ -365,18 +481,88 @@ const BulkUploadManager = () => {
                             )}
 
                             {regMode === 'carousel_item' && (
-                                <div className="space-y-2">
-                                    <Label className="text-[10px] font-black uppercase tracking-tighter text-muted-foreground">Target Carousel (Media Content)</Label>
-                                    <Select value={selectedCarousel} onValueChange={setSelectedCarousel}>
-                                        <SelectTrigger className="rounded-xl border-2 h-12">
+                                <div className="space-y-4 animate-in slide-in-from-top duration-500">
+                                    <div className="flex items-center justify-between">
+                                        <Label className="text-[10px] font-black uppercase tracking-tighter text-muted-foreground">Target Carousel (Media Content)</Label>
+                                        <div className="flex items-center gap-2">
+                                            <Checkbox 
+                                                id="use-shared" 
+                                                checked={useSharedMetadata} 
+                                                onCheckedChange={(v: any) => setUseSharedMetadata(v)} 
+                                            />
+                                            <Label htmlFor="use-shared" className="text-[10px] font-bold cursor-pointer">Use Shared Metadata</Label>
+                                        </div>
+                                    </div>
+                                    
+                                    <Select 
+                                        value={isCreatingNewCarousel ? 'NEW' : selectedCarousel} 
+                                        onValueChange={(v) => {
+                                            if (v === 'NEW') {
+                                                setIsCreatingNewCarousel(true);
+                                                setSelectedCarousel('');
+                                            } else {
+                                                setIsCreatingNewCarousel(false);
+                                                setSelectedCarousel(v);
+                                            }
+                                        }}
+                                    >
+                                        <SelectTrigger className="rounded-xl border-2 h-12 shadow-ios-inner bg-background/50">
                                             <SelectValue placeholder="Select a Carousel..." />
                                         </SelectTrigger>
-                                        <SelectContent>
+                                        <SelectContent className="glass-card">
+                                            <SelectItem value="NEW" className="font-bold text-primary italic">+ Add New Carousel</SelectItem>
                                             {carousels.map((c) => (
                                                 <SelectItem key={c.id} value={c.id}>{c.title} ({c.slug})</SelectItem>
                                             ))}
                                         </SelectContent>
                                     </Select>
+
+                                    {isCreatingNewCarousel && (
+                                        <div className="p-5 rounded-2xl bg-primary/5 border-2 border-primary/20 space-y-4 glass-card shadow-ios-high animate-in zoom-in-95 duration-300">
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div className="space-y-2">
+                                                    <Label className="text-[9px] font-black uppercase">Carousel Title</Label>
+                                                    <Input 
+                                                        value={newCarousel.title}
+                                                        onChange={(e) => {
+                                                            const title = e.target.value;
+                                                            const slug = title.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '');
+                                                            setNewCarousel(prev => ({ ...prev, title, slug }));
+                                                        }}
+                                                        className="rounded-xl h-10 border-muted/30 focus:border-primary/50"
+                                                        placeholder="e.g. Constitutional Review 2026"
+                                                    />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <Label className="text-[9px] font-black uppercase">Slug (Auto-generated)</Label>
+                                                    <Input 
+                                                        value={newCarousel.slug}
+                                                        onChange={(e) => setNewCarousel(prev => ({ ...prev, slug: e.target.value }))}
+                                                        className="rounded-xl h-10 border-muted/30 font-mono text-xs bg-muted/20"
+                                                        readOnly
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label className="text-[9px] font-black uppercase">Collection Description (Shared)</Label>
+                                                <Textarea 
+                                                    value={newCarousel.description}
+                                                    onChange={(e) => setNewCarousel(prev => ({ ...prev, description: e.target.value }))}
+                                                    className="rounded-xl min-h-[80px] border-muted/30"
+                                                    placeholder="Provide context for the entire carousel collection..."
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label className="text-[9px] font-black uppercase">Collection Tags (Comma separated)</Label>
+                                                <Input 
+                                                    value={newCarousel.tags}
+                                                    onChange={(e) => setNewCarousel(prev => ({ ...prev, tags: e.target.value }))}
+                                                    className="rounded-xl h-10 border-muted/30"
+                                                    placeholder="e.g. environmental, special-edition, ceka"
+                                                />
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             )}
                         </div>
@@ -398,6 +584,47 @@ const BulkUploadManager = () => {
                     <Button variant="outline" className="rounded-xl h-10 px-6 font-bold border-2">Select Files</Button>
                 </Card>
             </div>
+
+            {/* Shared Metadata Section - Tactical Override */}
+            {useSharedMetadata && files.length > 0 && (
+                <Card className="border-0 shadow-ios-high bg-primary/5 backdrop-blur-xl animate-in fade-in slide-in-from-bottom-4 duration-500 overflow-hidden relative">
+                    <div className="absolute top-0 left-0 w-1 h-full bg-primary/40" />
+                    <CardHeader className="pb-3 border-b border-primary/10">
+                        <CardTitle className="text-sm font-black uppercase tracking-widest text-primary flex items-center gap-2">
+                            <PlusCircle className="h-4 w-4" /> Shared Collection Metadata
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="pt-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div className="space-y-2">
+                            <Label className="text-[10px] font-black uppercase tracking-tighter text-muted-foreground">Shared Title (Required for Carousel)</Label>
+                            <Input 
+                                value={sharedMetadata.title}
+                                onChange={(e) => setSharedMetadata(prev => ({ ...prev, title: e.target.value }))}
+                                className="rounded-xl border-2 h-12 bg-background/50 shadow-ios-inner"
+                                placeholder="Common Title..."
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label className="text-[10px] font-black uppercase tracking-tighter text-muted-foreground">Shared Tags</Label>
+                            <Input 
+                                value={sharedMetadata.tags}
+                                onChange={(e) => setSharedMetadata(prev => ({ ...prev, tags: e.target.value }))}
+                                className="rounded-xl border-2 h-12 bg-background/50 shadow-ios-inner"
+                                placeholder="news, alert, 2026"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label className="text-[10px] font-black uppercase tracking-tighter text-muted-foreground">Shared Description</Label>
+                            <Textarea 
+                                value={sharedMetadata.description}
+                                onChange={(e) => setSharedMetadata(prev => ({ ...prev, description: e.target.value }))}
+                                className="rounded-xl border-2 min-h-[48px] h-12 py-3 bg-background/50 shadow-ios-inner"
+                                placeholder="Common Context..."
+                            />
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
 
             {/* Staging & Review Queue */}
             {files.length > 0 && (
@@ -422,72 +649,90 @@ const BulkUploadManager = () => {
                     </CardHeader>
                     <CardContent className="pt-6 space-y-4 max-h-[60vh] overflow-y-auto hide-scrollbar">
                         {files.map((file) => (
-                            <div key={file.id} className={`p-4 rounded-2xl border-2 transition-all ${file.status === 'success' ? 'bg-green-50/50 border-green-500/20' : 'bg-muted/10 border-muted/20'}`}>
-                                <div className="flex items-start gap-4">
-                                    <div className="h-12 w-12 rounded-xl bg-background flex items-center justify-center text-muted-foreground shadow-sm">
+                            <div key={file.id} className={`group p-4 rounded-2xl border-2 transition-all duration-300 ${file.status === 'success' ? 'bg-green-50/30 border-green-500/20 shadow-ios-low' : 'bg-muted/10 border-muted/20 hover:border-primary/30'} ${expandedFiles[file.id] ? 'ring-2 ring-primary/20 shadow-ios-high bg-card/80' : ''}`}>
+                                <div className="flex items-center gap-4">
+                                    <div className="h-12 w-12 rounded-xl bg-background flex items-center justify-center text-muted-foreground shadow-ios-inner group-hover:scale-105 transition-transform">
                                         {getFileIcon(file.type)}
                                     </div>
+                                    
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center justify-between gap-2">
+                                            <h4 className="font-bold text-sm truncate uppercase tracking-tight">
+                                                {useSharedMetadata && sharedMetadata.title ? sharedMetadata.title : (file.stagedTitle || file.name)}
+                                            </h4>
+                                            <div className="flex items-center gap-2">
+                                                {getStatusBadge(file)}
+                                                <Button
+                                                    size="icon"
+                                                    variant="ghost"
+                                                    onClick={() => setExpandedFiles(prev => ({ ...prev, [file.id]: !prev[file.id] }))}
+                                                    className="rounded-lg h-8 w-8 hover:bg-primary/10 transition-all duration-300"
+                                                    style={{ transform: expandedFiles[file.id] ? 'rotate(180deg)' : 'rotate(0deg)' }}
+                                                >
+                                                    <ChevronDown className="h-4 w-4" />
+                                                </Button>
+                                            </div>
+                                        </div>
+                                        <p className="text-[10px] text-muted-foreground font-black uppercase tracking-widest opacity-60">
+                                            {formatSize(file.size)} • {file.type.split('/')[1] || 'FILE'}
+                                        </p>
+                                    </div>
 
-                                    <div className="flex-1 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
+                                    <div className="flex items-center gap-1">
+                                         {file.url && (
+                                            <Button size="icon" variant="ghost" className="rounded-xl h-9 w-9" asChild>
+                                                <a href={file.url} target="_blank" rel="noopener noreferrer"><ExternalLink className="h-4 w-4" /></a>
+                                            </Button>
+                                        )}
+                                        <Button
+                                            size="icon"
+                                            variant="ghost"
+                                            onClick={() => removeFile(file.id)}
+                                            disabled={file.status === 'uploading'}
+                                            className="rounded-xl h-9 w-9 hover:bg-kenya-red/10 hover:text-kenya-red"
+                                        >
+                                            <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                </div>
+                                
+                                {expandedFiles[file.id] && (
+                                    <div className="mt-4 pt-4 border-t border-muted/20 grid grid-cols-1 md:grid-cols-2 gap-4 animate-in slide-in-from-top-2 duration-300">
                                         <div className="space-y-1">
-                                            <Label className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Staged Title</Label>
+                                            <Label className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Individual Title override</Label>
                                             <Input
                                                 value={file.stagedTitle}
                                                 onChange={(e) => updateStagedFile(file.id, { stagedTitle: e.target.value })}
-                                                className="h-10 rounded-xl"
+                                                className="h-10 rounded-xl bg-background/50 shadow-ios-inner border-muted/30"
                                                 disabled={file.status !== 'staged'}
                                             />
                                         </div>
                                         <div className="space-y-1">
-                                            <Label className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Tags (comma separated)</Label>
+                                            <Label className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Individual Tags</Label>
                                             <Input
                                                 value={file.stagedTags}
-                                                placeholder="news, constitution, alert"
+                                                placeholder="Override shared tags..."
                                                 onChange={(e) => updateStagedFile(file.id, { stagedTags: e.target.value })}
-                                                className="h-10 rounded-xl"
+                                                className="h-10 rounded-xl bg-background/50 shadow-ios-inner border-muted/30"
                                                 disabled={file.status !== 'staged'}
                                             />
                                         </div>
-                                        <div className="space-y-1">
-                                            <Label className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">System Status</Label>
-                                            <div className="h-10 flex items-center gap-2">
-                                                {getStatusBadge(file)}
-                                                <span className="text-[10px] font-bold text-muted-foreground lowercase">{formatSize(file.size)}</span>
-                                            </div>
+                                        <div className="md:col-span-2 space-y-1">
+                                            <Label className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Individual Description</Label>
+                                            <Input
+                                                value={file.stagedDescription}
+                                                placeholder="Deep context override..."
+                                                onChange={(e) => updateStagedFile(file.id, { stagedDescription: e.target.value })}
+                                                className="h-10 rounded-xl bg-background/50 shadow-ios-inner border-muted/30"
+                                                disabled={file.status !== 'staged'}
+                                            />
                                         </div>
-                                        <div className="flex justify-end gap-2">
-                                            {file.url && (
-                                                <Button size="icon" variant="outline" className="rounded-xl h-10 w-10 border-2" asChild>
-                                                    <a href={file.url} target="_blank" rel="noopener noreferrer"><ExternalLink className="h-4 w-4" /></a>
-                                                </Button>
-                                            )}
-                                            <Button
-                                                size="icon"
-                                                variant="ghost"
-                                                onClick={() => removeFile(file.id)}
-                                                disabled={file.status === 'uploading'}
-                                                className="rounded-xl h-10 w-10 hover:bg-kenya-red/10 hover:text-kenya-red"
-                                            >
-                                                <Trash2 className="h-4 w-4" />
-                                            </Button>
-                                        </div>
-                                    </div>
-                                </div>
-                                {file.stagedDescription !== undefined && (
-                                    <div className="mt-3 space-y-1">
-                                        <Label className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Staged Description</Label>
-                                        <Input
-                                            value={file.stagedDescription}
-                                            placeholder="Deep context for this asset..."
-                                            onChange={(e) => updateStagedFile(file.id, { stagedDescription: e.target.value })}
-                                            className="h-10 rounded-xl"
-                                            disabled={file.status !== 'staged'}
-                                        />
                                     </div>
                                 )}
+
                                 {file.status === 'uploading' && (
-                                    <div className="mt-4 px-2">
-                                        <Progress value={file.progress} className="h-1.5" />
+                                    <div className="mt-4 px-1">
+                                        <Progress value={file.progress} className="h-1.5 shadow-ios-inner" />
                                     </div>
                                 )}
                             </div>
