@@ -11,6 +11,7 @@ import {
     Settings2, Activity, Calendar, Hash, Radio
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { cn } from '@/lib/utils';
 import { CEKALoader } from '@/components/ui/ceka-loader';
 
 interface PollOption {
@@ -63,7 +64,7 @@ const PollManager = () => {
 
             // In a real scenario, we'd also fetch vote counts per option
             // For now, we'll fetch the base poll structure
-            setPolls(data || []);
+            setPolls((data as any) || []);
         } catch (err: any) {
             console.error('Fetch polls error:', err);
             toast({
@@ -120,7 +121,7 @@ const PollManager = () => {
 
             // 2. Create Options
             const optionsToInsert = newPoll.options.map((text, idx) => ({
-                poll_id: poll.id,
+                poll_id: (poll as any).id,
                 option_text: text,
                 order_index: idx
             }));
