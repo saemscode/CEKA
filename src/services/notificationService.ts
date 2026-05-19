@@ -505,8 +505,410 @@ class NotificationService {
       return null;
     }
   }
+
+  // ─── NEW NOTIFICATION TRIGGER METHODS ─────────────────────────────
+
+  /**
+   * Create a notification when a blog post is published
+   */
+  async createBlogPublishedNotification(postId: string, postTitle: string, postSlug: string): Promise<void> {
+    try {
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, notification_preferences');
+
+      if (!profiles) return;
+
+      const notifications = profiles
+        .filter((p: any) => {
+          const prefs = p.notification_preferences as any;
+          return prefs?.resource_updates !== false && prefs?.all_enabled !== false;
+        })
+        .map((p: any) => ({
+          user_id: p.id,
+          source_type: 'blog_comment',
+          source_id: postId,
+          title: '📝 New Blog Post Published',
+          message: `"${postTitle}" is now live on the CEKA blog. Read it now.`,
+          link: `/blog/${postSlug || postId}`,
+          priority: 'normal',
+          metadata: { type: 'blog_published', post_id: postId }
+        }));
+
+      if (notifications.length > 0) {
+        for (let i = 0; i < notifications.length; i += 100) {
+          const batch = notifications.slice(i, i + 100);
+          await notificationsTable().insert(batch);
+        }
+      }
+    } catch (error) {
+      console.error('Blog notification error:', error);
+    }
+  }
+
+  /**
+   * Create notification when a volunteer application is submitted
+   * Notifies: applicant (confirmation) + admin (new application)
+   */
+  async createVolunteerApplicationNotification(
+    applicationId: string,
+    userId: string,
+    userEmail: string,
+    opportunityTitle: string
+  ): Promise<void> {
+    try {
+      // Notification for the applicant
+      await notificationsTable().insert({
+        user_id: userId,
+        source_type: 'volunteer_application',
+        source_id: applicationId,
+        title: '✅ Application Submitted',
+        message: `Your volunteer application for "${opportunityTitle}" has been received. We'll notify you once it's reviewed.`,
+        link: '/join-community?tab=volunteer',
+        priority: 'high',
+        metadata: { type: 'volunteer_application_submitted', application_id: applicationId }
+      });
+
+      // Get admin users to notify
+      const { data: admins } = await (supabase
+        .from('user_roles') as any)
+        .select('user_id')
+        .in('role', ['admin', 'core_team']);
+
+      if (admins && admins.length > 0) {
+        const adminNotifications = admins.map((a: any) => ({
+          user_id: a.user_id,
+          source_type: 'volunteer_application',
+          source_id: applicationId,
+          title: '🆕 New Volunteer Application',
+          message: `${userEmail} applied for "${opportunityTitle}". Review in the Volunteer Manager.`,
+          link: '/admin/dashboard',
+          priority: 'high',
+          metadata: { type: 'volunteer_application_admin', application_id: applicationId, applicant_email: userEmail }
+        }));
+        await notificationsTable().insert(adminNotifications);
+      }
+    } catch (error) {
+      console.error('Volunteer application notification error:', error);
+    }
+  }
+
+  /**
+   * Create notification when a volunteer application status changes
+   * Notifies: the applicant
+   */
+  async createVolunteerStatusNotification(
+    applicationId: string,
+    userId: string,
+    opportunityTitle: string,
+    newStatus: string,
+    adminMessage?: string
+  ): Promise<void> {
+    try {
+      const statusMap: Record<string, { emoji: string; label: string }> = {
+        'approved': { emoji: '🎉', label: 'Accepted' },
+        'rejected': { emoji: '🙏', label: 'Not Selected' },
+        'waitlisted': { emoji: '⏳', label: 'Waitlisted' }
+      };
+
+      const status = statusMap[newStatus] || { emoji: '📋', label: newStatus };
+
+      await notificationsTable().insert({
+        user_id: userId,
+        source_type: 'volunteer_application',
+        source_id: applicationId,
+        title: `${status.emoji} Application ${status.label}`,
+        message: adminMessage
+          ? `Your application for "${opportunityTitle}" has been ${status.label.toLowerCase()}. Note: ${adminMessage}`
+          : `Your application for "${opportunityTitle}" has been ${status.label.toLowerCase()}.`,
+        link: '/join-community?tab=volunteer',
+        priority: 'high',
+        metadata: { type: 'volunteer_status_update', application_id: applicationId, new_status: newStatus }
+      });
+    } catch (error) {
+      console.error('Volunteer status notification error:', error);
+    }
+  }
+
+  /**
+   * Create notification for campaign milestones
+   */
+  async createCampaignMilestoneNotification(
+    campaignId: string,
+    campaignTitle: string,
+    milestone: string,
+    targetUserIds?: string[]
+  ): Promise<void> {
+    try {
+      let userIds = targetUserIds;
+
+      if (!userIds) {
+        // Notify all users with campaign_updates preference
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('id, notification_preferences');
+
+        userIds = (profiles || [])
+          .filter((p: any) => {
+            const prefs = p.notification_preferences as any;
+            return prefs?.all_enabled !== false;
+          })
+          .map((p: any) => p.id);
+      }
+
+      if (!userIds || userIds.length === 0) return;
+
+      const notifications = userIds.map(uid => ({
+        user_id: uid,
+        source_type: 'campaign_update',
+        source_id: campaignId,
+        title: `🏆 Campaign Milestone: ${milestone}`,
+        message: `"${campaignTitle}" has reached ${milestone}. Check it out!`,
+        link: `/campaign/${campaignId}`,
+        priority: 'normal',
+        metadata: { type: 'campaign_milestone', campaign_id: campaignId, milestone }
+      }));
+
+      for (let i = 0; i < notifications.length; i += 100) {
+        await notificationsTable().insert(notifications.slice(i, i + 100));
+      }
+    } catch (error) {
+      console.error('Campaign milestone notification error:', error);
+    }
+  }
+
+  /**
+   * Create event reminder notification (24h before)
+   */
+  async createEventReminderNotification(
+    eventId: string,
+    eventTitle: string,
+    eventDate: string,
+    userId: string
+  ): Promise<void> {
+    try {
+      await notificationsTable().insert({
+        user_id: userId,
+        source_type: 'system',
+        source_id: eventId,
+        title: '📅 Event Reminder',
+        message: `"${eventTitle}" is happening tomorrow. Don't miss it!`,
+        link: '/calendar',
+        priority: 'high',
+        metadata: { type: 'event_reminder', event_id: eventId, event_date: eventDate }
+      });
+    } catch (error) {
+      console.error('Event reminder notification error:', error);
+    }
+  }
+
+  /**
+   * Create interest-based bill notification
+   * Notifies users whose interests match the bill's category
+   */
+  async createInterestBasedBillNotification(
+    billId: string,
+    billTitle: string,
+    billCategory: string
+  ): Promise<void> {
+    try {
+      // Map bill categories to user interest keys
+      const categoryToInterest: Record<string, string[]> = {
+        'Constitutional Affairs': ['constitution'],
+        'Constitutional Amendment': ['constitution'],
+        'Government': ['governance', 'constitution'],
+        'Devolution': ['governance', 'community-projects'],
+        'Legislative Process': ['legislation'],
+        'Bills': ['legislation'],
+        'Parliamentary Affairs': ['legislation'],
+        'Human Rights': ['human-rights'],
+        'Justice': ['human-rights'],
+        'Gender': ['human-rights'],
+        'Social Protection': ['human-rights'],
+        'Governance': ['governance'],
+        'Public Service': ['governance'],
+        'Anti-Corruption': ['governance'],
+        'Administration': ['governance'],
+        'Electoral': ['voter-education'],
+        'IEBC': ['voter-education'],
+        'Voter Registration': ['voter-education'],
+        'Elections': ['voter-education'],
+        'Community Development': ['community-projects'],
+        'County Government': ['community-projects'],
+        'Infrastructure': ['community-projects'],
+        'Health': ['community-projects'],
+        'Education': ['community-projects']
+      };
+
+      const matchingInterests = categoryToInterest[billCategory] || [];
+      if (matchingInterests.length === 0) return;
+
+      // Get community members whose interests match
+      const { data: matchingMembers } = await (supabase
+        .from('community_members') as any)
+        .select('email');
+
+      if (!matchingMembers || matchingMembers.length === 0) return;
+
+      // Get profiles linked to these emails
+      const emails = matchingMembers.map((m: any) => m.email?.toLowerCase()).filter(Boolean);
+
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, email, notification_preferences')
+        .in('email', emails);
+
+      if (!profiles || profiles.length === 0) return;
+
+      // Filter by interest match and notification preference
+      const notifications = profiles
+        .filter((p: any) => {
+          const prefs = p.notification_preferences as any;
+          return prefs?.legislative_updates !== false && prefs?.all_enabled !== false;
+        })
+        .map((p: any) => ({
+          user_id: p.id,
+          source_type: 'bill_update',
+          source_id: billId,
+          title: '🏛️ Bill Matches Your Interests',
+          message: `"${billTitle}" (${billCategory}) may interest you based on your civic focus areas.`,
+          user_id: p.id,
+          source_type: 'bill_update',
+          source_id: billId,
+          title: '🏛️ Bill Matches Your Interests',
+          message: `"${billTitle}" (${billCategory}) may interest you based on your civic focus areas.`,
+          link: `/bill/${billId}`,
+          priority: 'normal',
+          metadata: { type: 'interest_match', bill_id: billId, category: billCategory }
+        }));
+
+      if (notifications.length > 0) {
+        for (let i = 0; i < notifications.length; i += 100) {
+          await notificationsTable().insert(notifications.slice(i, i + 100));
+        }
+      }
+    } catch (error) {
+      console.error('Interest-based bill notification error:', error);
+    }
+  }
+
+  /**
+   * Create notification for user-submitted resources (Approved/Rejected)
+   */
+  async createResourceStatusNotification(
+    resourceId: string,
+    userId: string,
+    resourceTitle: string,
+    isApproved: boolean,
+    reason?: string
+  ): Promise<void> {
+    try {
+      await notificationsTable().insert({
+        user_id: userId,
+        source_type: 'moderation',
+        source_id: resourceId,
+        title: isApproved ? '📦 Resource Approved' : '⚠️ Resource Update',
+        message: isApproved 
+          ? `Your contribution "${resourceTitle}" has been approved and is now live in the library.`
+          : `Your contribution "${resourceTitle}" was not approved. ${reason || 'Please review our guidelines.'}`,
+        link: isApproved ? `/resources/${resourceId}` : '/resources/upload',
+        priority: isApproved ? 'normal' : 'high',
+        metadata: { type: 'resource_status', resource_id: resourceId, status: isApproved ? 'approved' : 'rejected' }
+      });
+    } catch (error) {
+      console.error('Resource status notification error:', error);
+    }
+  }
+
+  /**
+   * Create notification for gamification achievements
+   */
+  async createAchievementNotification(
+    userId: string,
+    badgeName: string,
+    points: number
+  ): Promise<void> {
+    try {
+      await notificationsTable().insert({
+        user_id: userId,
+        source_type: 'system',
+        source_id: 'achievement',
+        title: '🎖️ Achievement Unlocked!',
+        message: `You've earned the "${badgeName}" badge and ${points} civic points.`,
+        link: '/settings/account',
+        priority: 'high',
+        metadata: { type: 'achievement', badge: badgeName, points }
+      });
+    } catch (error) {
+      console.error('Achievement notification error:', error);
+    }
+  }
+
+  /**
+   * Create notification when a user mentions another in a discussion
+   */
+  async createDiscussionMentionNotification(
+    discussionId: string,
+    mentionerName: string,
+    targetUserId: string,
+    snippet: string
+  ): Promise<void> {
+    try {
+      await notificationsTable().insert({
+        user_id: targetUserId,
+        source_type: 'chat_mention',
+        source_id: discussionId,
+        title: '🗨️ You were mentioned',
+        message: `${mentionerName} mentioned you in a discussion: "${snippet}"`,
+        link: `/discussion/${discussionId}`,
+        priority: 'normal',
+        metadata: { type: 'discussion_mention', discussion_id: discussionId }
+      });
+    } catch (error) {
+      console.error('Discussion mention notification error:', error);
+    }
+  }
+
+  /**
+   * Create notification when a new volunteer opportunity matches user interests
+   */
+  async createVolunteerMatchNotification(
+    opportunityId: string,
+    opportunityTitle: string,
+    category: string
+  ): Promise<void> {
+    try {
+      // Get community members interested in this category
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, notification_preferences');
+
+      if (!profiles) return;
+
+      const notifications = profiles
+        .filter((p: any) => {
+          const prefs = p.notification_preferences as any;
+          return prefs?.all_enabled !== false;
+        })
+        .map((p: any) => ({
+          user_id: p.id,
+          source_type: 'volunteer_opportunity',
+          source_id: opportunityId,
+          title: '🤝 Volunteer Match Found',
+          message: `A new ${category} opportunity "${opportunityTitle}" matches your profile.`,
+          link: '/join-community?tab=volunteer',
+          priority: 'normal',
+          metadata: { type: 'volunteer_match', opportunity_id: opportunityId }
+        }));
+
+      for (let i = 0; i < notifications.length; i += 100) {
+        await notificationsTable().insert(notifications.slice(i, i + 100));
+      }
+    } catch (error) {
+      console.error('Volunteer match notification error:', error);
+    }
+  }
 }
 
 export const notificationService = new NotificationService();
 export default notificationService;
-

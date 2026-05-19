@@ -506,6 +506,235 @@ class AdminService {
     if (error) throw error;
     await this.logAdminAction('delete_civic_event', 'civic_event', id);
   }
+
+  // ─── ROLE MANAGEMENT ────────────────────────────────────────────────
+
+  /**
+   * Get the current user's role: admin | core_team | null
+   */
+  async getUserRole(): Promise<'admin' | 'core_team' | null> {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return null;
+
+      if (user.email === ROOT_ADMIN_EMAIL) return 'admin';
+
+      const { data: hasAdminRole, error: rpcError } = await supabase.rpc('check_user_is_admin');
+      if (!rpcError && hasAdminRole) return 'admin';
+
+      const { data: roleData } = await (supabase
+        .from('user_roles') as any)
+        .select('role')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (roleData?.role === 'admin') return 'admin';
+      if (roleData?.role === 'core_team') return 'core_team';
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('is_admin')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (profile?.is_admin) return 'admin';
+
+      return null;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Check if user is core_team
+   */
+  async isUserCoreTeam(): Promise<boolean> {
+    const role = await this.getUserRole();
+    return role === 'core_team';
+  }
+
+  // ─── VOLUNTEER STATUS MANAGEMENT ────────────────────────────────────
+
+  /**
+   * Update volunteer application status with notification + email
+   */
+  async updateVolunteerApplicationStatus(
+    applicationId: string,
+    newStatus: 'approved' | 'rejected' | 'waitlisted',
+    adminMessage?: string
+  ): Promise<void> {
+    // Update the application status
+    const { error } = await supabase
+      .from('volunteer_applications')
+      .update({
+        status: newStatus,
+        updated_at: new Date().toISOString()
+      } as any)
+      .eq('id', applicationId);
+
+    if (error) throw error;
+
+    // Fetch application details for notification
+    const { data: app } = await supabase
+      .from('volunteer_applications')
+      .select('user_id, opportunity_id, volunteer_opportunities(title, organization)')
+      .eq('id', applicationId)
+      .single();
+
+    if (!app) return;
+
+    const oppData = (app as any).volunteer_opportunities;
+    const opportunityTitle = oppData?.title || 'Volunteer Opportunity';
+    const organization = oppData?.organization || 'CEKA';
+
+    // Create in-app notification for applicant
+    const { notificationService } = await import('@/services/notificationService');
+    await notificationService.createVolunteerStatusNotification(
+      applicationId,
+      app.user_id,
+      opportunityTitle,
+      newStatus,
+      adminMessage
+    );
+
+    // Get applicant email for email notification
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('email, full_name')
+      .eq('id', app.user_id)
+      .maybeSingle();
+
+    if (profile?.email) {
+      try {
+        await supabase.functions.invoke('send-volunteer-confirmation', {
+          body: {
+            type: 'status_update',
+            applicant_email: profile.email,
+            applicant_name: profile.full_name || 'Citizen',
+            opportunity_title: opportunityTitle,
+            opportunity_organization: organization,
+            application_id: applicationId,
+            new_status: newStatus,
+            admin_message: adminMessage
+          }
+        });
+      } catch (emailErr) {
+        console.error('Volunteer status email error:', emailErr);
+      }
+    }
+
+    await this.logAdminAction('update_volunteer_application', 'volunteer_application', applicationId, {
+      new_status: newStatus,
+      admin_message: adminMessage
+    });
+  }
+
+  /**
+   * Retroactive: Follow up on all previous volunteer applications
+   * Sends update emails to all pending applicants
+   */
+  async processRetroactiveVolunteerFollowUp(): Promise<{ processed: number; failed: number }> {
+    let processed = 0;
+    let failed = 0;
+
+    try {
+      const { data: pendingApps } = await supabase
+        .from('volunteer_applications')
+        .select('id, user_id, opportunity_id, status, volunteer_opportunities(title, organization)')
+        .eq('status', 'pending')
+        .order('created_at', { ascending: true });
+
+      if (!pendingApps || pendingApps.length === 0) return { processed: 0, failed: 0 };
+
+      for (const app of pendingApps) {
+        try {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('email, full_name')
+            .eq('id', app.user_id)
+            .maybeSingle();
+
+          if (!profile?.email) continue;
+
+          const oppData = (app as any).volunteer_opportunities;
+
+          // Send retroactive update email
+          await supabase.functions.invoke('send-volunteer-confirmation', {
+            body: {
+              type: 'retroactive_update',
+              applicant_email: profile.email,
+              applicant_name: profile.full_name || 'Citizen',
+              opportunity_title: oppData?.title || 'Volunteer Opportunity',
+              opportunity_organization: oppData?.organization || 'CEKA',
+              application_id: app.id
+            }
+          });
+
+          // Create in-app notification
+          const { notificationService } = await import('@/services/notificationService');
+          await notificationService.createVolunteerApplicationNotification(
+            app.id,
+            app.user_id,
+            profile.email,
+            oppData?.title || 'Volunteer Opportunity'
+          );
+
+          processed++;
+
+          // Rate limit
+          await new Promise(resolve => setTimeout(resolve, 100));
+        } catch {
+          failed++;
+        }
+      }
+    } catch (error) {
+      console.error('Retroactive volunteer follow-up error:', error);
+    }
+
+    await this.logAdminAction('retroactive_volunteer_followup', 'system', undefined, { processed, failed });
+    return { processed, failed };
+  }
+
+  /**
+   * Process retroactive onboarding for existing community members
+   */
+  async processRetroactiveOnboarding(): Promise<{ processed: number; skipped: number }> {
+    const { onboardingService } = await import('@/services/onboardingService');
+    const result = await onboardingService.processRetroactiveOnboarding();
+    await this.logAdminAction('retroactive_onboarding', 'system', undefined, result);
+    return result;
+  }
+
+  // ─── EMAIL BROADCAST ────────────────────────────────────────────────
+
+  /**
+   * Send a community-wide email broadcast
+   */
+  async sendBroadcastEmail(subject: string, html: string, audience: 'all' | 'by_interested_bills' | 'by_county'): Promise<any> {
+    const { data, error } = await supabase.functions.invoke('send-broadcast-email', {
+      body: { subject, html, audience }
+    });
+
+    if (error) throw error;
+
+    await this.logAdminAction('send_broadcast_email', 'system', undefined, { subject, audience });
+    return data;
+  }
+
+  /**
+   * Fetch history of past email broadcasts
+   */
+  async getEmailBroadcastHistory(): Promise<any[]> {
+    // Audit logs of type 'send_broadcast_email' serve as history
+    const { data, error } = await supabase
+      .from('admin_audit_log' as any)
+      .select('*')
+      .eq('action', 'send_broadcast_email')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data || [];
+  }
 }
 
 export const adminService = new AdminService();

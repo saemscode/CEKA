@@ -66,6 +66,42 @@ export const VolunteerApplyModal = ({ opportunity, isOpen, onClose }: VolunteerA
                 action_type: 'apply'
             });
 
+            // Get the inserted application ID for notification tracking
+            const { data: appData } = await supabase.from('volunteer_applications')
+                .select('id')
+                .eq('user_id', user.id)
+                .eq('opportunity_id', opportunity.id)
+                .order('created_at', { ascending: false })
+                .limit(1)
+                .maybeSingle();
+
+            const applicationId = appData?.id || 'unknown';
+
+            // Create in-app notifications (applicant + admin)
+            const { notificationService } = await import('@/services/notificationService');
+            await notificationService.createVolunteerApplicationNotification(
+                applicationId,
+                user.id,
+                user.email || '',
+                opportunity.title
+            );
+
+            // Send confirmation email via edge function
+            try {
+                await supabase.functions.invoke('send-volunteer-confirmation', {
+                    body: {
+                        type: 'application_received',
+                        applicant_email: user.email || '',
+                        applicant_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Citizen',
+                        opportunity_title: opportunity.title,
+                        opportunity_organization: opportunity.organization,
+                        application_id: applicationId
+                    }
+                });
+            } catch (emailErr) {
+                console.error('Volunteer confirmation email error:', emailErr);
+            }
+
             setProgress(100);
             setSuccess(true);
             toast({ title: "Application Transmitted", description: "The CEKA admin team has received your request." });

@@ -53,6 +53,12 @@ def find_existing_bill(supabase: Client, item: Dict, v2_supported: bool) -> Opti
         candidates = supabase.table("bills").select("*").ilike("title", f"{first_word}%").execute()
         for cand in (candidates.data or []):
             if normalize_title(cand['title']) == normalized:
+                # 🚨 MANDATORY YEAR PARITY: Do not match if years differ (e.g. 2024 vs 2026)
+                cand_year_match = re.search(r'\b(20\d{2})\b', cand['title'])
+                item_year_match = re.search(r'\b(20\d{2})\b', title)
+                if cand_year_match and item_year_match:
+                    if cand_year_match.group(1) != item_year_match.group(1):
+                        continue
                 return cand
     
     return None

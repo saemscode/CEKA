@@ -9,7 +9,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { translate } from '@/lib/utils';
 import { useAuth } from '@/providers/AuthProvider';
 import { supabase } from '@/integrations/supabase/client';
-import { BellRing, Mail, Smartphone, Check, FileText, Users, BookOpen, Heart } from 'lucide-react';
+import { BellRing, Mail, Smartphone, Check, FileText, Users, BookOpen, Heart, CalendarDays, Megaphone, Newspaper } from 'lucide-react';
 import { CEKALoader } from '@/components/ui/ceka-loader';
 import { useToast } from '@/hooks/use-toast';
 
@@ -24,6 +24,9 @@ interface NotificationPreferences {
   community_replies: boolean;
   resource_updates: boolean;
   volunteer_opportunities: boolean;
+  event_reminders: boolean;
+  campaign_updates: boolean;
+  blog_posts: boolean;
 }
 
 const defaultPrefs: NotificationPreferences = {
@@ -33,7 +36,10 @@ const defaultPrefs: NotificationPreferences = {
   legislative_updates: true,
   community_replies: true,
   resource_updates: true,
-  volunteer_opportunities: true
+  volunteer_opportunities: true,
+  event_reminders: true,
+  campaign_updates: true,
+  blog_posts: true
 };
 
 const NotificationSettings: React.FC = () => {
@@ -305,6 +311,60 @@ const NotificationSettings: React.FC = () => {
               id="volunteer-opportunities"
               checked={prefs.volunteer_opportunities}
               onCheckedChange={(checked) => updateType('volunteer_opportunities', checked as boolean)}
+              className="h-5 w-5"
+            />
+          </div>
+
+          <div className="flex items-center gap-4 p-4 bg-slate-50 dark:bg-white/5 rounded-2xl hover:bg-slate-100 dark:hover:bg-white/10 transition-colors">
+            <div className="h-10 w-10 rounded-xl bg-orange-500/10 flex items-center justify-center shrink-0">
+              <CalendarDays className="h-5 w-5 text-orange-500" />
+            </div>
+            <div className="flex-1">
+              <Label htmlFor="event-reminders" className="font-bold cursor-pointer">
+                {translate("Event Reminders", language)}
+              </Label>
+              <p className="text-xs text-muted-foreground">{translate("Reminders for upcoming civic events you've RSVP'd to", language)}</p>
+            </div>
+            <Checkbox
+              id="event-reminders"
+              checked={prefs.event_reminders}
+              onCheckedChange={(checked) => updateType('event_reminders', checked as boolean)}
+              className="h-5 w-5"
+            />
+          </div>
+
+          <div className="flex items-center gap-4 p-4 bg-slate-50 dark:bg-white/5 rounded-2xl hover:bg-slate-100 dark:hover:bg-white/10 transition-colors">
+            <div className="h-10 w-10 rounded-xl bg-violet-500/10 flex items-center justify-center shrink-0">
+              <Megaphone className="h-5 w-5 text-violet-500" />
+            </div>
+            <div className="flex-1">
+              <Label htmlFor="campaign-updates" className="font-bold cursor-pointer">
+                {translate("Campaign Updates", language)}
+              </Label>
+              <p className="text-xs text-muted-foreground">{translate("Milestones and updates from civic campaigns", language)}</p>
+            </div>
+            <Checkbox
+              id="campaign-updates"
+              checked={prefs.campaign_updates}
+              onCheckedChange={(checked) => updateType('campaign_updates', checked as boolean)}
+              className="h-5 w-5"
+            />
+          </div>
+
+          <div className="flex items-center gap-4 p-4 bg-slate-50 dark:bg-white/5 rounded-2xl hover:bg-slate-100 dark:hover:bg-white/10 transition-colors">
+            <div className="h-10 w-10 rounded-xl bg-teal-500/10 flex items-center justify-center shrink-0">
+              <Newspaper className="h-5 w-5 text-teal-500" />
+            </div>
+            <div className="flex-1">
+              <Label htmlFor="blog-posts" className="font-bold cursor-pointer">
+                {translate("Blog Posts", language)}
+              </Label>
+              <p className="text-xs text-muted-foreground">{translate("New blog posts and civic analysis articles", language)}</p>
+            </div>
+            <Checkbox
+              id="blog-posts"
+              checked={prefs.blog_posts}
+              onCheckedChange={(checked) => updateType('blog_posts', checked as boolean)}
               className="h-5 w-5"
             />
           </div>

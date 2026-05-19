@@ -14,6 +14,7 @@ import {
     RefreshCw, Plus, Sparkles, Zap, PieChart as LucidePieChart
 } from 'lucide-react';
 import { adminService, AdminDashboardStats, UserActivityStats, ModerationQueueItem } from '@/services/adminService';
+import { roleService, PERMISSION_KEYS } from '@/services/roleService';
 import { AdminSessionManager } from './AdminSessionManager';
 import AppChangeLogger from './AppChangeLogger';
 import MediaAppraisal from './MediaAppraisal';
@@ -33,6 +34,7 @@ const EnhancedAdminDashboard = () => {
     const [moderationQueue, setModerationQueue] = useState<ModerationQueueItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('overview');
+    const [permissions, setPermissions] = useState<Record<string, boolean>>({});
     const { toast } = useToast();
 
     // Refs for cleanup
@@ -49,7 +51,9 @@ const EnhancedAdminDashboard = () => {
         try {
             setLoading(true);
 
-            const [dashboardStats, userActivity, queue] = await Promise.all([
+            // Check permissions first
+            const [rolePerms, dashboardStats, userActivity, queue] = await Promise.all([
+                roleService.getAccessiblePermissions(),
                 adminService.getDashboardStats().catch(err => {
                     console.warn('[Dashboard] Failed to fetch dashboard stats:', err);
                     return null;
@@ -65,6 +69,10 @@ const EnhancedAdminDashboard = () => {
             ]);
 
             if (mountedRef.current) {
+                const permsMap: Record<string, boolean> = {};
+                rolePerms.forEach(p => permsMap[p] = true);
+                setPermissions(permsMap);
+
                 if (dashboardStats) setStats(dashboardStats);
                 setActivityStats(userActivity);
                 setModerationQueue(queue);
@@ -270,56 +278,76 @@ const EnhancedAdminDashboard = () => {
 
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
                 <div className="overflow-x-auto pb-2 -mx-4 px-4 lg:mx-0 lg:px-0 hide-scrollbar">
-                    <TabsList className="flex h-auto p-1.5 bg-muted/30 backdrop-blur-sm rounded-2xl w-max lg:w-full lg:grid lg:grid-cols-10">
+                    <TabsList className="flex h-auto p-1.5 bg-muted/30 backdrop-blur-sm rounded-2xl w-max lg:w-full lg:grid lg:grid-cols-11">
                         <TabsTrigger value="overview" className="rounded-xl px-4 py-3 font-medium data-[state=active]:shadow-lg">
                             <LayoutGrid className="h-4 w-4 mr-2" />
                             Overview
                         </TabsTrigger>
-                        <TabsTrigger value="analytics" className="rounded-xl px-4 py-3 font-medium data-[state=active]:shadow-lg">
-                            <Sparkles className="h-4 w-4 mr-2" />
-                            Analytics
-                        </TabsTrigger>
-                        <TabsTrigger value="polls" className="rounded-xl px-4 py-3 font-medium data-[state=active]:shadow-lg">
-                            <LucidePieChart className="h-4 w-4 mr-2" />
-                            Polls
-                        </TabsTrigger>
-                        <TabsTrigger value="appraisal" className="rounded-xl px-4 py-3 gap-2 font-medium data-[state=active]:shadow-lg">
-                            <Eye className="h-4 w-4" />
-                            Appraisal
-                            {moderationQueue.length > 0 && (
-                                <Badge className="h-5 w-5 p-0 flex items-center justify-center bg-kenya-red text-[8px] animate-pulse">
-                                    {moderationQueue.length}
-                                </Badge>
-                            )}
-                        </TabsTrigger>
-                        <TabsTrigger value="volunteers" className="rounded-xl px-4 py-3 font-medium data-[state=active]:shadow-lg">
-                            <Heart className="h-4 w-4 mr-2" />
-                            Volunteers
-                        </TabsTrigger>
-                        <TabsTrigger value="events" className="rounded-xl px-4 py-3 font-medium data-[state=active]:shadow-lg">
-                            <Calendar className="h-4 w-4 mr-2" />
-                            Events
-                        </TabsTrigger>
-                        <TabsTrigger value="campaigns" className="rounded-xl px-4 py-3 font-medium data-[state=active]:shadow-lg">
-                            <Radio className="h-4 w-4 mr-2" />
-                            Campaigns
-                        </TabsTrigger>
-                        <TabsTrigger value="uploads" className="rounded-xl px-4 py-3 font-medium data-[state=active]:shadow-lg">
-                            <BookOpen className="h-4 w-4 mr-2" />
-                            Uploads
-                        </TabsTrigger>
-                        <TabsTrigger value="sessions" className="rounded-xl px-4 py-3 font-medium data-[state=active]:shadow-lg">
-                            <Users className="h-4 w-4 mr-2" />
-                            Sessions
-                        </TabsTrigger>
-                        <TabsTrigger value="intelligence" className="rounded-xl px-4 py-3 gap-1 font-medium data-[state=active]:shadow-lg">
-                            <Zap className="h-4 w-4" />
-                            Intel
-                        </TabsTrigger>
-                        <TabsTrigger value="changes" className="rounded-xl px-4 py-3 font-medium data-[state=active]:shadow-lg">
-                            <FileText className="h-4 w-4 mr-2" />
-                            Audit
-                        </TabsTrigger>
+                        {permissions[PERMISSION_KEYS.ANALYTICS_DASHBOARD] && (
+                          <TabsTrigger value="analytics" className="rounded-xl px-4 py-3 font-medium data-[state=active]:shadow-lg">
+                              <Sparkles className="h-4 w-4 mr-2" />
+                              Analytics
+                          </TabsTrigger>
+                        )}
+                        {permissions[PERMISSION_KEYS.POLL_MANAGEMENT] && (
+                          <TabsTrigger value="polls" className="rounded-xl px-4 py-3 font-medium data-[state=active]:shadow-lg">
+                              <LucidePieChart className="h-4 w-4 mr-2" />
+                              Polls
+                          </TabsTrigger>
+                        )}
+                        {permissions[PERMISSION_KEYS.MEDIA_APPRAISAL] && (
+                          <TabsTrigger value="appraisal" className="rounded-xl px-4 py-3 gap-2 font-medium data-[state=active]:shadow-lg">
+                              <Eye className="h-4 w-4" />
+                              Appraisal
+                              {moderationQueue.length > 0 && (
+                                  <Badge className="h-5 w-5 p-0 flex items-center justify-center bg-kenya-red text-[8px] animate-pulse">
+                                      {moderationQueue.length}
+                                  </Badge>
+                              )}
+                          </TabsTrigger>
+                        )}
+                        {permissions[PERMISSION_KEYS.VOLUNTEER_MANAGEMENT] && (
+                          <TabsTrigger value="volunteers" className="rounded-xl px-4 py-3 font-medium data-[state=active]:shadow-lg">
+                              <Heart className="h-4 w-4 mr-2" />
+                              Volunteers
+                          </TabsTrigger>
+                        )}
+                        {permissions[PERMISSION_KEYS.EVENT_MANAGEMENT] && (
+                          <TabsTrigger value="events" className="rounded-xl px-4 py-3 font-medium data-[state=active]:shadow-lg">
+                              <Calendar className="h-4 w-4 mr-2" />
+                              Events
+                          </TabsTrigger>
+                        )}
+                        {permissions[PERMISSION_KEYS.CAMPAIGN_MANAGEMENT] && (
+                          <TabsTrigger value="campaigns" className="rounded-xl px-4 py-3 font-medium data-[state=active]:shadow-lg">
+                              <Radio className="h-4 w-4 mr-2" />
+                              Campaigns
+                          </TabsTrigger>
+                        )}
+                        {permissions[PERMISSION_KEYS.BULK_UPLOAD] && (
+                          <TabsTrigger value="uploads" className="rounded-xl px-4 py-3 font-medium data-[state=active]:shadow-lg">
+                              <BookOpen className="h-4 w-4 mr-2" />
+                              Uploads
+                          </TabsTrigger>
+                        )}
+                        {permissions[PERMISSION_KEYS.SESSION_MANAGEMENT] && (
+                          <TabsTrigger value="sessions" className="rounded-xl px-4 py-3 font-medium data-[state=active]:shadow-lg">
+                              <Users className="h-4 w-4 mr-2" />
+                              Sessions
+                          </TabsTrigger>
+                        )}
+                        {permissions[PERMISSION_KEYS.INTELLIGENCE_PIPELINE] && (
+                          <TabsTrigger value="intelligence" className="rounded-xl px-4 py-3 gap-1 font-medium data-[state=active]:shadow-lg">
+                              <Zap className="h-4 w-4" />
+                              Intel
+                          </TabsTrigger>
+                        )}
+                        {permissions[PERMISSION_KEYS.AUDIT_LOGS] && (
+                          <TabsTrigger value="changes" className="rounded-xl px-4 py-3 font-medium data-[state=active]:shadow-lg">
+                              <FileText className="h-4 w-4 mr-2" />
+                              Audit
+                          </TabsTrigger>
+                        )}
                     </TabsList>
                 </div>
 

@@ -130,13 +130,30 @@ const JoinCommunity = () => {
 
       toast({
         title: translate("Application Submitted!", language),
-        description: translate("Welcome to the CEKA community! We'll review your application shortly.", language),
+        description: translate("Welcome to the CEKA community! Redirecting you to the Community Portal...", language),
       });
 
       setFormSubmitted(true);
 
+      // Trigger onboarding flow
+      try {
+        const { data: { user: authUser } } = await supabase.auth.getUser();
+        if (authUser) {
+          const { onboardingService } = await import('@/services/onboardingService');
+          await onboardingService.triggerOnboarding({
+            userId: authUser.id,
+            firstName: formData.firstName.trim(),
+            interests: areasOfInterest,
+            isRetroactive: false
+          });
+        }
+      } catch (onboardingErr) {
+        console.error('Onboarding trigger error (non-fatal):', onboardingErr);
+      }
+
+      // Redirect to Community Portal instead of homepage
       setTimeout(() => {
-        navigate('/');
+        navigate('/community');
       }, 3000);
 
     } catch (error) {

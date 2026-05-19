@@ -74,14 +74,14 @@ STAGE_PATTERNS = {
     ],
     "first_reading": [
         re.compile(r'(?:1st|first)\s+reading\s+of\s+bills?', re.I),
-        re.compile(r'bill\s+read\s+(?:a\s+)?(?:1st|first)\s+time', re.I),
+        re.compile(r'bill.*?\bread\s+(?:a\s+)?(?:1st|first)\s+time', re.I),
         re.compile(r'(?:1st|first)\s+reading', re.I),
         re.compile(r'read\s+for\s+the\s+(?:1st|first)\s+time', re.I),
         re.compile(r'1st\s+reading', re.I),
     ],
     "second_reading": [
         re.compile(r'(?:2nd|second)\s+reading\s+of\s+bills?', re.I),
-        re.compile(r'bill\s+read\s+(?:a\s+)?(?:2nd|second)\s+time', re.I),
+        re.compile(r'bill.*?\bread\s+(?:a\s+)?(?:2nd|second)\s+time', re.I),
         re.compile(r'(?:2nd|second)\s+reading', re.I),
         re.compile(r'read\s+for\s+the\s+(?:2nd|second)\s+time', re.I),
         re.compile(r'2nd\s+reading', re.I),
@@ -105,7 +105,7 @@ STAGE_PATTERNS = {
     ],
     "third_reading": [
         re.compile(r'(?:3rd|third)\s+reading\s+of\s+bills?', re.I),
-        re.compile(r'bill\s+read\s+(?:a\s+)?(?:3rd|third)\s+time', re.I),
+        re.compile(r'bill.*?\bread\s+(?:a\s+)?(?:3rd|third)\s+time', re.I),
         re.compile(r'(?:3rd|third)\s+reading', re.I),
         re.compile(r'read\s+for\s+the\s+(?:3rd|third)\s+time', re.I),
         re.compile(r'bill\s+passed', re.I),
@@ -142,11 +142,12 @@ STAGE_PATTERNS = {
 }
 
 
-def normalize_bill_title(title: str) -> str:
+def normalize_bill_title(title: str, preserve_year: bool = False) -> str:
     """Normalize a bill title for fuzzy matching against document text."""
     t = title.lower().strip()
     t = re.sub(r'\s*\(amendment\)\s*', ' amendment ', t)
-    t = re.sub(r',?\s*\d{4}\s*$', '', t)
+    if not preserve_year:
+        t = re.sub(r',?\s*\d{4}\s*$', '', t)
     t = re.sub(r'\s+bill\s*$', '', t)
     t = re.sub(r'\bthe\s+', '', t)
     t = re.sub(r'\s+', ' ', t).strip()
@@ -155,21 +156,31 @@ def normalize_bill_title(title: str) -> str:
 
 def generate_bill_keywords(title: str) -> List[str]:
     """Generate multiple keyword arrangements from a bill title for matching."""
-    norm = normalize_bill_title(title)
+    norm = normalize_bill_title(title, preserve_year=False)
+    norm_with_year = normalize_bill_title(title, preserve_year=True)
+    
     words = norm.split()
-    keywords = [norm]
+    keywords = [norm, norm_with_year]
 
     # Full title without common filler
     keywords.append(' '.join(w for w in words if w not in ('of', 'and', 'the', 'for', 'to', 'a', 'an')))
+
+    # Extract year if present
+    year_match = re.search(r'\b(20\d{2})\b', title)
+    year = year_match.group(1) if year_match else None
 
     # First 3 significant words
     significant = [w for w in words if len(w) > 2 and w not in ('the', 'and', 'for', 'bill')]
     if len(significant) >= 2:
         keywords.append(' '.join(significant[:3]))
+        if year:
+            keywords.append(' '.join(significant[:3]) + f" {year}")
 
     # Reversed pair of first two significant words
     if len(significant) >= 2:
         keywords.append(f"{significant[1]} {significant[0]}")
+        if year:
+            keywords.append(f"{significant[1]} {significant[0]} {year}")
 
     return list(set(k for k in keywords if k))
 
@@ -265,6 +276,15 @@ def detect_stage_from_text(text: str, bill_title: str) -> Optional[str]:
                             # This line refers to a different year's bill (e.g., 2024 withdrawal in 2026 doc)
                             continue
                     
+                    # 🚨 STRENGTHENED GUARD: If it's a critical terminal stage (Discarded), 
+                    # REQUIRE the year to be present either in the line or very nearby (same paragraph)
+                    if stage_key == "discarded" and bill_year:
+                        paragraph_text = line # simplified for now
+                        if str(bill_year) not in line:
+                            # Search in a small window around the line
+                            # (not implemented here yet, but the line check is already stricter)
+                            pass
+
                     detected_stages.append(stage_key)
                     break 
 

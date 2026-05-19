@@ -310,6 +310,33 @@ class BlogService {
     }
   }
 
+  /**
+   * Get all draft posts that have a scheduled_at date
+   */
+  async getScheduledPosts(): Promise<BlogPost[]> {
+    const { data, error } = await supabase
+      .from('blog_posts')
+      .select('*')
+      .eq('status', 'draft')
+      .not('scheduled_at', 'is', null)
+      .order('scheduled_at', { ascending: true });
+
+    if (error) {
+      console.error('Error fetching scheduled posts:', error);
+      return [];
+    }
+
+    return (data as BlogPost[]) || [];
+  }
+
+  /**
+   * Get AI-generated articles awaiting review from blogSchedulerService
+   */
+  async getGeneratedArticles(): Promise<any[]> {
+    const { blogSchedulerService } = await import('./blogSchedulerService');
+    return blogSchedulerService.getGeneratedArticles();
+  }
+
   async getTags(): Promise<BlogTag[]> {
     try {
       // Since blog_tags table doesn't exist in types yet, return empty array

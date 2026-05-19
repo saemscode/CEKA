@@ -106,17 +106,18 @@ class SovereignCorroborator:
         overlap = len(bigrams1 & bigrams2)
         return (2.0 * overlap) / (len(bigrams1) + len(bigrams2))
 
-    def _active_search_waterfall(self, title: str) -> List[Dict]:
-        """Nasaka-Style Waterfall Search for Bill Status."""
+    def _active_web_search(self, title: str, year: Optional[str] = None) -> List[Dict]:
+        """Nasaka-Style Waterfall Search for Bill Status (Year-Strict)."""
         api_key = os.getenv("SERPAPI_API_KEY")
         if not api_key: 
             logger.warning("SERPAPI_API_KEY missing - active search aborted.")
             return []
 
+        year_suffix = f" {year}" if year else ""
         search_variations = [
-            f'"{title}" Kenya Bill official status',
-            f'"{title}" Kenya Parliament "withdrawn" OR "rejected" OR "lapsed"',
-            f'"{title}" presidential assent Kenya Gazette 202'
+            f'"{title}"{year_suffix} Kenya Bill official status',
+            f'"{title}"{year_suffix} Kenya Parliament "withdrawn" OR "rejected" OR "lapsed"',
+            f'"{title}"{year_suffix} presidential assent Kenya Gazette'
         ]
         
         all_results = []
@@ -180,7 +181,8 @@ class SovereignCorroborator:
                 news = []
 
             # 3. Active Search Layer (Nasaka-Style)
-            active_hits = self._active_web_search(bill.get("title", ""))
+            year_str = str(bill.get("session_year", ""))
+            active_hits = self._active_web_search(bill.get("title", ""), year=year_str)
             
             # 4. Assemble Context Object
             context = {
@@ -303,6 +305,14 @@ class SovereignCorroborator:
             for hit in context.get("active_web_hits", []):
                 snippet = hit["snippet"].lower()
                 headline = hit["headline"].lower()
+                
+                # 🚨 YEAR PARITY GUARD: Only propagate if snippet matches the bill's year
+                bill_year = str(context.get("session_year") or "2026")
+                if bill_year not in (headline + " " + snippet):
+                    # If snippet mentions a DIFFERENT year (e.g. 2024), skip to prevent regression
+                    if any(y in (headline + " " + snippet) for y in ["2023", "2024", "2025"]):
+                        continue
+
                 # If similarity is high (>0.85) AND snippet mentions withdrawal/rejection
                 if hit["similarity_score"] > 0.85 or context["title"].lower() in headline:
                     if any(w in (headline + " " + snippet) for w in ['withdrawn', 'rejected', 'negatived', 'lapsed', 'nullified']):

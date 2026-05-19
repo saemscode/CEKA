@@ -135,6 +135,26 @@ const TOOLS: Tool[] = [
         ],
         image: '/images/vault.png',
     },
+    {
+        id: 'report-by-ceka',
+        title: 'Report by CEKA',
+        tagline: 'Citizen Reporting & Collective Action',
+        description: 'The ultimate reporting engine for civic issues. From pothole documentation to government malfeasance — report it, track it, and automate collective action.',
+        longDescription: 'Report by CEKA is your frontline interface for civic accountability. It doesn\'t just store reports; it automates the follow-up process. Turn any documented issue into a multi-official petition instantly, sending copies to every relevant leader with a single tap.',
+        icon: Radio,
+        badge: 'Alpha',
+        status: 'Available',
+        siteUrl: '/feedback',
+        features: [
+            'Instant geo-tagged reporting',
+            'Multi-email petition engine',
+            'Automated follow-up tracking',
+            'Evidence vault for media uploads',
+            'Community co-signing',
+            'Leader response tracking',
+        ],
+        image: '/images/api.png',
+    },
 ];
 
 const FEATURED_SITES: FeaturedSite[] = [

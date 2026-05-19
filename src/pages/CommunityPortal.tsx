@@ -2,11 +2,15 @@ import React, { useState, useEffect } from 'react';
 import Layout from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { ArrowRight, MessageSquare, Heart, HandHelping, Search, Users, Activity, Plus, MessageCircle, Zap } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { ArrowRight, MessageSquare, Heart, HandHelping, Search, Users, Activity, Plus, MessageCircle, Zap, SortAsc, Megaphone } from 'lucide-react';
 import { CEKALoader } from '@/components/ui/ceka-loader';
 import { Link, useNavigate } from 'react-router-dom';
 import CommunityChat from '@/components/chat/CommunityChat';
@@ -14,6 +18,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { translate, cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/providers/AuthProvider';
 import {
   Empty,
   EmptyHeader,
@@ -23,18 +29,44 @@ import {
   EmptyContent
 } from '@/components/ui/empty';
 
+const THREAD_CATEGORIES = ['General', 'Legislative', 'County Affairs', 'Human Rights', 'Governance', 'Elections', 'Youth', 'Environment'];
+
 const CommunityPortal = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [discussions, setDiscussions] = useState<any[]>([]);
   const [campaigns, setCampaigns] = useState<any[]>([]);
   const [analytics, setAnalytics] = useState<any>({ totalDiscussions: 0, activeUsers: 0, todayActivity: 0 });
   const [loading, setLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
   const { language } = useLanguage();
   const navigate = useNavigate();
+  const { toast } = useToast();
+  const { user } = useAuth();
+
+  // Thread creation state
+  const [threadDialogOpen, setThreadDialogOpen] = useState(false);
+  const [creatingThread, setCreatingThread] = useState(false);
+  const [newThread, setNewThread] = useState({ title: '', description: '', category: 'General' });
+
+  // Campaign creation state
+  const [campaignDialogOpen, setCampaignDialogOpen] = useState(false);
+  const [creatingCampaign, setCreatingCampaign] = useState(false);
+  const [newCampaign, setNewCampaign] = useState({ title: '', description: '', organizer: 'CEKA Coalition' });
+
+  // Discussion sort/filter state
+  const [sortBy, setSortBy] = useState<string>('newest');
+  const [filterCategory, setFilterCategory] = useState<string>('All');
 
   useEffect(() => {
     fetchCommunityData();
+    checkAdminStatus();
   }, []);
+
+  const checkAdminStatus = async () => {
+    const { adminService } = await import('@/services/adminService');
+    const isUserAdmin = await adminService.isUserAdmin();
+    setIsAdmin(isUserAdmin);
+  };
 
   const fetchCommunityData = async () => {
     setLoading(true);
@@ -102,6 +134,74 @@ const CommunityPortal = () => {
     if (searchQuery) navigate(`/search?q=${encodeURIComponent(searchQuery)}`);
   };
 
+  const handleCreateThread = async () => {
+    if (!user) {
+      toast({ title: 'Sign In Required', description: 'Please sign in to create a discussion.', variant: 'destructive' });
+      return;
+    }
+    if (!newThread.title.trim()) {
+      toast({ title: 'Title Required', description: 'Please enter a title for your discussion.', variant: 'destructive' });
+      return;
+    }
+    setCreatingThread(true);
+    try {
+      const { error } = await (supabase.from('discussions') as any).insert({
+        title: newThread.title.trim(),
+        description: newThread.description.trim() || null,
+        category: newThread.category,
+        created_by: user.id,
+        status: 'active'
+      });
+      if (error) throw error;
+      toast({ title: 'Thread Created!', description: 'Your discussion is now live.' });
+      setThreadDialogOpen(false);
+      setNewThread({ title: '', description: '', category: 'General' });
+      fetchCommunityData();
+    } catch (err) {
+      console.error('Thread creation error:', err);
+      toast({ title: 'Creation Failed', description: 'Could not create the discussion. Try again.', variant: 'destructive' });
+    } finally {
+      setCreatingThread(false);
+    }
+  };
+
+  const handleCreateCampaign = async () => {
+    if (!isAdmin) return;
+    if (!newCampaign.title.trim() || !newCampaign.description.trim()) {
+      toast({ title: 'Fields Required', description: 'Please enter a title and description.', variant: 'destructive' });
+      return;
+    }
+    setCreatingCampaign(true);
+    try {
+      const { error } = await (supabase.from('campaigns' as any)).insert({
+        title: newCampaign.title.trim(),
+        description: newCampaign.description.trim(),
+        organizer: newCampaign.organizer.trim(),
+        status: 'active',
+        created_at: new Date().toISOString()
+      });
+      if (error) throw error;
+      toast({ title: 'Campaign Launched!', description: 'The movement has been started.' });
+      setCampaignDialogOpen(false);
+      setNewCampaign({ title: '', description: '', organizer: 'CEKA Coalition' });
+      fetchCommunityData();
+    } catch (err) {
+      console.error('Campaign creation error:', err);
+      toast({ title: 'Launch Failed', description: 'Could not launch campaign. Try again.', variant: 'destructive' });
+    } finally {
+      setCreatingCampaign(false);
+    }
+  };
+
+  // Sorted & filtered discussions
+  const filteredDiscussions = discussions
+    .filter(d => filterCategory === 'All' || d.category === filterCategory)
+    .sort((a, b) => {
+      if (sortBy === 'popular') return (b.likes_count || 0) - (a.likes_count || 0);
+      if (sortBy === 'active') return new Date(b.last_activity_at || b.created_at).getTime() - new Date(a.last_activity_at || a.created_at).getTime();
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    });
+
   if (loading) return (
     <Layout>
       <div className="container py-24 flex flex-col items-center justify-center min-h-[60vh]">
@@ -168,7 +268,7 @@ const CommunityPortal = () => {
 
               {/* Search and Action */}
               <div className="flex flex-col md:flex-row items-center justify-between gap-6 bg-slate-100 dark:bg-white/5 p-4 rounded-[32px]">
-                <form onSubmit={handleSearch} className="relative w-full md:w-1/2">
+                <form onSubmit={handleSearch} className="relative w-full md:flex-1">
                   <Search className="absolute left-4 top-4 h-5 w-5 text-muted-foreground" />
                   <Input
                     id="portal-search"
@@ -179,16 +279,95 @@ const CommunityPortal = () => {
                     onChange={(e) => setSearchQuery(e.target.value)}
                   />
                 </form>
-                <Button asChild className="h-14 px-8 rounded-2xl bg-primary hover:bg-primary/90 font-bold shadow-xl shadow-primary/20 w-full md:w-auto">
-                  <Link to="/community?tab=chat">
-                    <Plus className="mr-2 h-5 w-5" /> Start Conversation
-                  </Link>
-                </Button>
+
+                <div className="flex items-center gap-3 w-full md:w-auto">
+                  <Select value={sortBy} onValueChange={setSortBy}>
+                    <SelectTrigger className="w-[120px] rounded-2xl h-10 text-xs font-bold border-border/50">
+                      <SortAsc className="h-3 w-3 mr-1" />
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-xl">
+                      <SelectItem value="newest" className="text-xs">Newest</SelectItem>
+                      <SelectItem value="popular" className="text-xs">Popular</SelectItem>
+                      <SelectItem value="active" className="text-xs">Active</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  <Select value={filterCategory} onValueChange={setFilterCategory}>
+                    <SelectTrigger className="w-[140px] rounded-2xl h-10 text-xs font-bold border-border/50">
+                      <SelectValue placeholder="Category" />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-xl">
+                      <SelectItem value="All" className="text-xs">All Topics</SelectItem>
+                      {THREAD_CATEGORIES.map(cat => (
+                        <SelectItem key={cat} value={cat} className="text-xs">{cat}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+
+                  <Dialog open={threadDialogOpen} onOpenChange={setThreadDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button className="h-10 px-5 rounded-2xl bg-primary hover:bg-primary/90 font-bold shadow-xl shadow-primary/20 gap-2 text-xs">
+                        <Plus className="h-4 w-4" /> New Discussion
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-lg rounded-3xl border-border/50 shadow-ios-high">
+                      <DialogHeader>
+                        <DialogTitle className="text-xl font-bold">Start a New Discussion</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4 py-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="thread-title" className="font-bold text-xs">Thread Title *</Label>
+                          <Input
+                            id="thread-title"
+                            value={newThread.title}
+                            onChange={(e) => setNewThread(prev => ({ ...prev, title: e.target.value }))}
+                            placeholder="What's on your mind about Kenya's civic landscape?"
+                            className="rounded-xl"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="thread-desc" className="font-bold text-xs">Description</Label>
+                          <Textarea
+                            id="thread-desc"
+                            value={newThread.description}
+                            onChange={(e) => setNewThread(prev => ({ ...prev, description: e.target.value }))}
+                            placeholder="Provide context for the discussion..."
+                            className="rounded-xl min-h-[80px]"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="thread-category" className="font-bold text-xs">Category</Label>
+                          <Select value={newThread.category} onValueChange={(v) => setNewThread(prev => ({ ...prev, category: v }))}>
+                            <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
+                            <SelectContent className="rounded-xl">
+                              {THREAD_CATEGORIES.map(cat => (
+                                <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      <DialogFooter>
+                        <DialogClose asChild>
+                         <Button variant="ghost" className="rounded-xl">Cancel</Button>
+                        </DialogClose>
+                        <Button
+                          onClick={handleCreateThread}
+                          disabled={creatingThread}
+                          className="rounded-xl bg-primary hover:bg-primary/90 font-bold"
+                        >
+                          {creatingThread ? 'Creating...' : 'Create Thread'}
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                </div>
               </div>
 
               {/* Feed */}
               <div className="max-w-3xl mx-auto space-y-6">
-                {discussions.length === 0 ? (
+                {filteredDiscussions.length === 0 ? (
                   <Empty className="border-none bg-slate-50/50 dark:bg-white/5 py-20 rounded-[40px]">
                     <EmptyHeader>
                       <EmptyMedia variant="icon" className="bg-primary/10">
@@ -198,26 +377,31 @@ const CommunityPortal = () => {
                       <EmptyDescription>{translate('Be the first to ignite the discourse for the 2027 engine.', language)}</EmptyDescription>
                     </EmptyHeader>
                     <EmptyContent>
-                      <Button asChild variant="outline" className="rounded-2xl border-primary/20">
-                        <Link to="/community?tab=chat">{translate('Start Conversation', language)}</Link>
+                      <Button onClick={() => setThreadDialogOpen(true)} variant="outline" className="rounded-2xl border-primary/20">
+                        <Plus className="mr-2 h-4 w-4" /> {translate('Start Discussion', language)}
                       </Button>
                     </EmptyContent>
                   </Empty>
                 ) : (
-                  discussions.map((discussion) => (
+                  filteredDiscussions.map((discussion) => (
                     <Card key={discussion.id} className="border-none shadow-ios-low rounded-[32px] hover:shadow-ios-high transition-all group active:scale-[0.99]">
                       <CardHeader className="pb-4">
                         <div className="flex items-center gap-3">
                           <Avatar className="h-10 w-10 rounded-xl">
-                            <AvatarImage src={discussion.profiles?.avatar_url} />
-                            <AvatarFallback className="bg-slate-100 font-bold">{discussion.profiles?.full_name?.charAt(0)}</AvatarFallback>
+                            <AvatarImage src={discussion.profile?.avatar_url} />
+                            <AvatarFallback className="bg-slate-100 font-bold">{discussion.profile?.full_name?.charAt(0)}</AvatarFallback>
                           </Avatar>
                           <div>
-                            <p className="font-bold text-sm">{discussion.profiles?.full_name || 'Anonymous Citizen'}</p>
+                            <p className="font-bold text-sm">{discussion.profile?.full_name || 'Anonymous Citizen'}</p>
                             <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">
                               Sync: {new Date(discussion.last_activity_at || discussion.created_at).toLocaleDateString()}
                             </p>
                           </div>
+                          {discussion.category && (
+                            <Badge variant="secondary" className="ml-auto text-[9px] uppercase font-bold tracking-widest">
+                              {discussion.category}
+                            </Badge>
+                          )}
                         </div>
                       </CardHeader>
                       <CardContent className="pb-6">
@@ -254,33 +438,111 @@ const CommunityPortal = () => {
             </TabsContent>
 
             <TabsContent value="campaigns" className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
-              {/* Same premium treatment for campaigns */}
-              <div className="max-w-3xl mx-auto space-y-6">
-                {campaigns.map((campaign) => (
-                  <Card key={campaign.id} className="border-none shadow-ios-low rounded-[40px] overflow-hidden group">
-                    <div className="h-3 bg-primary/10 w-full" />
-                    <CardHeader className="pb-4">
-                      <Badge variant="outline" className="w-fit mb-4 bg-primary/5 border-primary/20 text-primary uppercase font-black text-[9px] tracking-[0.2em]">{campaign.status || 'Active'}</Badge>
-                      <h3 className="text-2xl font-black tracking-tight">{campaign.title}</h3>
-                      <p className="text-xs font-bold text-muted-foreground tracking-widest uppercase mt-1">Movement by {campaign.organizer || 'CEKA Coalition'}</p>
-                    </CardHeader>
-                    <CardContent className="pb-8">
-                      <p className="text-slate-600 dark:text-slate-400 text-sm leading-relaxed mb-6">{campaign.description || campaign.content}</p>
-                      <div className="flex items-center gap-4 bg-slate-50 dark:bg-white/5 p-4 rounded-3xl">
-                        <div className="bg-white dark:bg-black/40 h-10 w-10 flex items-center justify-center rounded-xl shadow-sm"><HandHelping className="h-5 w-5 text-kenya-green" /></div>
-                        <div>
-                          <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Force Multiplier</p>
-                          <p className="font-black text-lg">{campaign.participants_count || 0} Citizens Activated</p>
+              {/* Campaign Action Row */}
+              {isAdmin && (
+                <div className="flex justify-end mb-6">
+                  <Dialog open={campaignDialogOpen} onOpenChange={setCampaignDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button className="rounded-2xl bg-kenya-green hover:bg-kenya-green/90 font-bold shadow-xl shadow-kenya-green/20 gap-2">
+                        <Plus className="h-5 w-5" /> Launch New Campaign
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-lg rounded-3xl border-border/50 shadow-ios-high">
+                      <DialogHeader>
+                        <DialogTitle className="text-xl font-bold">Launch Civic Campaign</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4 py-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="campaign-title" className="font-bold text-xs">Campaign Title *</Label>
+                          <Input
+                            id="campaign-title"
+                            value={newCampaign.title}
+                            onChange={(e) => setNewCampaign(prev => ({ ...prev, title: e.target.value }))}
+                            placeholder="e.g. Finance Bill 2027 Accountability"
+                            className="rounded-xl"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="campaign-org" className="font-bold text-xs">Organizer</Label>
+                          <Input
+                            id="campaign-org"
+                            value={newCampaign.organizer}
+                            onChange={(e) => setNewCampaign(prev => ({ ...prev, organizer: e.target.value }))}
+                            className="rounded-xl"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="campaign-desc" className="font-bold text-xs">Description *</Label>
+                          <Textarea
+                            id="campaign-desc"
+                            value={newCampaign.description}
+                            onChange={(e) => setNewCampaign(prev => ({ ...prev, description: e.target.value }))}
+                            placeholder="What are we fighting for? Provide clear objectives..."
+                            className="rounded-xl min-h-[120px]"
+                          />
                         </div>
                       </div>
-                    </CardContent>
-                    <CardFooter className="p-6 pt-0">
-                      <Button asChild className="w-full h-14 rounded-2xl bg-slate-900 dark:bg-white text-white dark:text-black font-black uppercase tracking-[0.15em] text-xs shadow-xl active:scale-95 transition-all">
-                        <Link to={`/campaigns/${campaign.id}`}>Join Movement</Link>
+                      <DialogFooter>
+                        <DialogClose asChild>
+                          <Button variant="ghost" className="rounded-xl">Cancel</Button>
+                        </DialogClose>
+                        <Button
+                          onClick={handleCreateCampaign}
+                          disabled={creatingCampaign}
+                          className="rounded-xl bg-kenya-green hover:bg-kenya-green/90 font-bold"
+                        >
+                          {creatingCampaign ? 'Launching...' : 'Launch Campaign'}
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                </div>
+              )}
+
+              {/* Same premium treatment for campaigns */}
+              <div className="max-w-3xl mx-auto space-y-6">
+                {campaigns.length === 0 ? (
+                  <Empty className="border-none bg-slate-50/50 dark:bg-white/5 py-20 rounded-[40px]">
+                    <EmptyHeader>
+                      <EmptyMedia variant="icon" className="bg-kenya-green/10">
+                        <Megaphone className="h-8 w-8 text-kenya-green" />
+                      </EmptyMedia>
+                      <EmptyTitle>{translate('No Active Campaigns', language)}</EmptyTitle>
+                      <EmptyDescription>{translate('Civic campaigns will appear here as they\'re launched. Stay tuned for movements that drive change.', language)}</EmptyDescription>
+                    </EmptyHeader>
+                    <EmptyContent>
+                      <Button asChild variant="outline" className="rounded-2xl border-kenya-green/20">
+                        <Link to="/join-community">{translate('Join Community', language)}</Link>
                       </Button>
-                    </CardFooter>
-                  </Card>
-                ))}
+                    </EmptyContent>
+                  </Empty>
+                ) : (
+                  campaigns.map((campaign) => (
+                    <Card key={campaign.id} className="border-none shadow-ios-low rounded-[40px] overflow-hidden group">
+                      <div className="h-3 bg-primary/10 w-full" />
+                      <CardHeader className="pb-4">
+                        <Badge variant="outline" className="w-fit mb-4 bg-primary/5 border-primary/20 text-primary uppercase font-black text-[9px] tracking-[0.2em]">{campaign.status || 'Active'}</Badge>
+                        <h3 className="text-2xl font-black tracking-tight">{campaign.title}</h3>
+                        <p className="text-xs font-bold text-muted-foreground tracking-widest uppercase mt-1">Movement by {campaign.organizer || 'CEKA Coalition'}</p>
+                      </CardHeader>
+                      <CardContent className="pb-8">
+                        <p className="text-slate-600 dark:text-slate-400 text-sm leading-relaxed mb-6">{campaign.description || campaign.content}</p>
+                        <div className="flex items-center gap-4 bg-slate-50 dark:bg-white/5 p-4 rounded-3xl">
+                          <div className="bg-white dark:bg-black/40 h-10 w-10 flex items-center justify-center rounded-xl shadow-sm"><HandHelping className="h-5 w-5 text-kenya-green" /></div>
+                          <div>
+                            <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Force Multiplier</p>
+                            <p className="font-black text-lg">{campaign.participants_count || 0} Citizens Activated</p>
+                          </div>
+                        </div>
+                      </CardContent>
+                      <CardFooter className="p-6 pt-0">
+                        <Button asChild className="w-full h-14 rounded-2xl bg-slate-900 dark:bg-white text-white dark:text-black font-black uppercase tracking-[0.15em] text-xs shadow-xl active:scale-95 transition-all">
+                          <Link to={`/campaigns/${campaign.id}`}>Join Movement</Link>
+                        </Button>
+                      </CardFooter>
+                    </Card>
+                  ))
+                )}
               </div>
             </TabsContent>
           </Tabs>
