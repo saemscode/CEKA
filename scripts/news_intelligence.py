@@ -137,13 +137,20 @@ def generate_search_terms(bill_title: Any) -> List[str]:
     if len(significant) >= 2:
         terms.append(f"Parliament Kenya {str(significant[0])} {str(significant[1])} {str(year)}".strip())
 
+    # NEW: Swahili Discourse Variants
+    sw_triggers = {
+        "land": "ardhi", "tax": "kodi", "health": "afya", 
+        "election": "uchaguzi", "housing": "nyumba", "school": "shule"
+    }
+    for en, sw in sw_triggers.items():
+        if en in title_str.lower():
+            terms.append(f"{sw} Kenya {str(year)}".strip())
+            terms.append(f"{sw} Bunge Kenya".strip())
+
     # Add Social-Media-Focused Hashtags and Queries
     hashtag_title = "".join(w.capitalize() for w in words if w.lower() not in ('the', 'a', 'an', 'of', 'and', 'for', 'to', 'in', 'on', 'by'))
     terms.append(f"#{hashtag_title}")
-    terms.append(f"#{hashtag_title}2026")
-    terms.append(f"{title_str} site:x.com")
-    terms.append(f"{title_str} site:reddit.com")
-
+    
     seen: Set[str] = set()
     unique: List[str] = []
     for t in terms:
@@ -154,9 +161,9 @@ def generate_search_terms(bill_title: Any) -> List[str]:
             unique.append(tc)
     
     final_unique: List[str] = []
-    # Use explicit loop instead of slice to satisfy Pyre2
+    # Cap total terms at 12 (Improved)
     for i in range(len(unique)):
-        if i >= 10: break # Increased for deeper social search
+        if i >= 12: break 
         final_unique.append(str(unique[i]))
     return final_unique
 
@@ -197,6 +204,16 @@ class SovereignScraper:
                     html = d.get("result") or d.get("body")
                     if html: return str(html)
             except Exception: pass
+        
+        # Improvement 1: ScrapingDog HTML Fallback
+        dog_key = self.scrapingdog_key
+        if requests and dog_key and isinstance(dog_key, str) and len(dog_key) > 5:
+            try:
+                resp = requests.get(self.scrapingdog_endpoint, params={"api_key": dog_key, "url": url}, timeout=30)
+                if resp.status_code == 200:
+                    return resp.text
+            except Exception: pass
+            
         return None
 
     def search_google(self, query: str, priority: bool = False) -> List[Dict[str, str]]:
@@ -254,11 +271,13 @@ class NewsIntelligenceEngine:
 
     def get_active_bills(self) -> List[Dict[str, Any]]:
         """Fetch all bills that are currently being tracked."""
+        MAX_BILLS_PER_RUN = 100 # Improved Limit
         client = self.supabase
         if client is None: return []
         try:
             tbl = client.table("bills")
-            res = tbl.select("id, title, status, house, session_year").neq("status", "Assented").order("created_at", desc=True).limit(50).execute()
+            # Filter excluding Withdrawn alongside Assented (Improvement 8)
+            res = tbl.select("id, title, status, house, session_year").not_.in_("status", ["Assented", "Withdrawn"]).order("created_at", desc=True).limit(MAX_BILLS_PER_RUN).execute()
             return res.data if res and res.data else []
         except Exception: return []
 
@@ -287,6 +306,10 @@ class NewsIntelligenceEngine:
     def scrape_search_results(self, page: Any, source: Dict[str, Any], query: str) -> List[Dict[str, str]]:
         """Navigate to a news source's search page and extract article links."""
         is_priority = str(os.getenv("INCLUDE_NEWS", "false")).lower() == "true"
+        
+        # Improvement 3: Tier Prioritization
+        # Sorting is handled at the engine.run_for_bill loop level for efficiency
+        
         search_results = self.scraper.search_google(str(query), priority=is_priority)
         if search_results and isinstance(search_results, list):
             domain = str(source.get("domain", ""))
@@ -319,15 +342,29 @@ class NewsIntelligenceEngine:
         if not self.orchestrator:
             return fallback
 
-        system_prompt = """You are a civic intelligence analyst for Kenya. Your audience is everyday Kenyan citizens. They speak English and Swahili.
-Extract structured intelligence from the news article provided. 
-Return EXACTLY a JSON object with these keys:
+        system_prompt = """You are a civic intelligence analyst working for CEKA (Civic Education Kenya). Your readers are ordinary Kenyan citizens — farmers, boda boda riders, teachers, small traders — not lawyers or politicians.
+
+Your job is to extract structured, actionable intelligence from a Kenyan news article about a bill or civic issue.
+
+RULES:
+- Write as if explaining to a Form 4 leaver in Nairobi or Kisumu.
+- Use English. Include a Swahili phrase only where it adds clarity (e.g. "kodi" for tax, "ardhi" for land).
+- Do not speculate. Only extract what is actually in the article.
+- Concerns must be specific and actionable — not vague ("citizens should be worried") but precise ("This bill would allow county governments to charge an annual fee for every plot of land, even those already titled").
+- Sentiment must reflect the article's tone, not your opinion.
+
+Return EXACTLY this JSON object. No markdown. No preamble. Raw JSON only:
 {
-  "what_bill_does": "<1-2 sentences plain English + Swahili note if relevant>",
-  "concerns_kenyans_can_raise": ["<Concern 1 en/sw>", "<Concern 2 en/sw>"],
-  "sentiment": "positive|negative|neutral",
-  "key_stakeholders": ["<stakeholder 1>", "<stakeholder 2>"],
-  "tabloid_snippet": "<3-sentence plain-language summary in English>"
+  "what_bill_does": "1-2 plain sentences describing what the bill or issue actually does or proposes",
+  "concerns_kenyans_can_raise": [
+    "Specific concern 1 — name the specific group affected and how",
+    "Specific concern 2 — name the specific mechanism that could harm citizens",
+    "Specific concern 3 — reference the constitutional right at stake if applicable"
+  ],
+  "sentiment": "positive|negative|neutral|mixed",
+  "key_stakeholders": ["Named institution or group 1", "Named institution or group 2"],
+  "tabloid_snippet": "3 sentences. Write like a KTN News anchor — clear, urgent, but factual. No jargon.",
+  "source_tier": "official|established_media|digital_media|social"
 }"""
 
         prompt = f"Headline: {headline}\n\nContent: {body[:6000]}\n\nReturn ONLY valid JSON."
@@ -372,13 +409,25 @@ Return EXACTLY a JSON object with these keys:
                     p_texts.append(pt)
             body_all = "\n".join(p_texts)
 
+            # Improve 6: Extract article date
+            date_val = ""
+            # Try <time> tag
+            time_tag = soup.find("time", {"datetime": True})
+            if time_tag:
+                date_val = str(time_tag["datetime"])
+            else:
+                # Try meta tag
+                meta_tag = soup.find("meta", {"property": "article:published_time"}) or soup.find("meta", {"name": "pub_date"})
+                if meta_tag:
+                    date_val = str(meta_tag.get("content", ""))
+
             # Structured intelligence extraction via Gemini
             intelligence: Dict[str, Any] = self.summarize_article(str(headline), str(body_all))
             snippet: str = intelligence.get("tabloid_snippet", body_all[:1000])
             return {
                 "headline": str(headline),
                 "body": str(snippet),
-                "date": "",
+                "date": date_val,
                 "intelligence": intelligence,
             }
         except Exception:
@@ -394,7 +443,16 @@ Return EXACTLY a JSON object with these keys:
         if client is None:
             return
         try:
+            # Improvement 5: Merge instead of overwrite
+            existing_data = client.table("bills").select("ai_concerns").eq("id", bill_id).maybe_single().execute()
+            existing_concerns = []
+            if existing_data and existing_data.data and existing_data.data.get("ai_concerns"):
+                try:
+                    existing_concerns = json.loads(existing_data.data["ai_concerns"])
+                except: existing_concerns = []
+
             # Deduplicate concerns while preserving order
+            all_concerns = existing_concerns + all_concerns
             seen_c: Set[str] = set()
             unique_concerns: List[str] = []
             for c in all_concerns:
@@ -405,20 +463,24 @@ Return EXACTLY a JSON object with these keys:
 
             # Use the most informative tabloid snippet as the summary
             best_snippet: str = ""
+            # Fetch existing tabloid summary
+            existing_summary = client.table("bills").select("tabloid_summary").eq("id", bill_id).maybe_single().execute()
+            if existing_summary and existing_summary.data:
+                best_snippet = str(existing_summary.data.get("tabloid_summary", ""))
+
             for sn in tabloid_snippets:
                 if len(str(sn)) > len(best_snippet):
                     best_snippet = str(sn)[:2000]
 
             update_payload: Dict[str, Any] = {}
             if unique_concerns:
-                import json as _json
-                update_payload["ai_concerns"] = _json.dumps(unique_concerns)
+                update_payload["ai_concerns"] = json.dumps(unique_concerns)
             if best_snippet:
                 update_payload["tabloid_summary"] = best_snippet
 
             if update_payload:
                 client.table("bills").update(update_payload).eq("id", bill_id).execute()
-                logger.info(f"    [INTEL] Upserted {len(unique_concerns)} concerns + tabloid_summary for bill {bill_id}")
+                logger.info(f"    [INTEL] Merged {len(unique_concerns)} concerns + tabloid_summary for bill {bill_id}")
         except Exception as exc:
             logger.warning(f"    [INTEL] Failed to upsert bill intelligence: {exc}")
 
@@ -431,13 +493,22 @@ Return EXACTLY a JSON object with these keys:
         existing_hashes: Set[str] = self.get_existing_mention_hashes(bill_id)
         search_terms = generate_search_terms(bill_title)
         new_mentions_count: int = 0
-
-        # Accumulators for bill-level intelligence
+        
+        # Accumulators for bill-level intelligence (Restored)
         all_concerns: List[str] = []
         all_tabloid_snippets: List[str] = []
 
+        # Improvement 4: Per-bill credit guard
+        max_scrapes_per_bill = 30
+        scrapes_consumed = 0
+
+        # Improvement 3: Tier Prioritization
+        sorted_sources = sorted(NEWS_SOURCES, key=lambda x: x["tier"])
+
         for query in search_terms:
-            for source in NEWS_SOURCES:
+            if scrapes_consumed >= max_scrapes_per_bill: break
+            for source in sorted_sources:
+                if scrapes_consumed >= max_scrapes_per_bill: break
                 links = self.scrape_search_results(page, source, str(query))
                 if not links or not isinstance(links, list):
                     continue
@@ -453,6 +524,7 @@ Return EXACTLY a JSON object with these keys:
                     if l_hash in existing_hashes:
                         continue
 
+                    scrapes_consumed += 1 # Improvement 4
                     article = self.scrape_article(page, url, source)
                     body_val: str = str(article.get("body", ""))
                     if not body_val.strip():
@@ -499,12 +571,200 @@ Return EXACTLY a JSON object with these keys:
 
         return int(new_mentions_count)
 
+CIVIC_KEYWORDS = [
+    # Legislature & Law
+    "Bill", "Act", "Parliament", "Senate", "National Assembly", "County Assembly",
+    "Constitutional", "Amendment", "Gazette", "Statutory", "Regulation", "Policy",
+    "Law", "Legislation", "Hansard", "Motion", "Petition", "Referendum",
+    "Reading", "Assented", "Enactment", "Repeal", "Clause", "Schedule",
+
+    # Judiciary & Justice
+    "Judiciary", "High Court", "Supreme Court", "Court of Appeal", "Magistrate",
+    "Ruling", "Judgment", "Injunction", "Contempt", "Acquittal", "Sentence",
+    "DCI", "DPP", "ODPP", "LSK", "Prosecution", "Arrest", "Detention",
+    "Bail", "Extradition", "Inquest",
+
+    # Public Finance
+    "Budget", "Finance Bill", "Treasury", "National Treasury", "Taxation",
+    "Levy", "KRA", "Excise", "VAT", "PAYE", "Withholding Tax", "Digital Tax",
+    "Audit", "Auditor General", "Supplementary Budget", "Appropriation",
+    "Expenditure", "Public Debt", "Eurobond", "IMF", "World Bank", "CRA",
+    "Equalisation Fund", "Conditional Grant", "Own Source Revenue",
+
+    # Accountability & Governance
+    "EACC", "Corruption", "Graft", "Bribery", "Embezzlement", "Misappropriation",
+    "Accountability", "Transparency", "Oversight", "Public Participation",
+    "Ombudsman", "CAJ", "IPOA", "KNCHR", "Ethics", "Conflict of Interest",
+    "Vetting", "Impeachment", "Censure",
+
+    # Devolution & County
+    "Devolution", "County", "Governor", "Senator", "MCA", "Ward",
+    "County Government", "Intergovernmental", "CRA", "County Budget",
+    "County Assembly", "Petition County", "Ward Development Fund",
+
+    # Elections & IEBC
+    "IEBC", "Elections", "By-election", "Voter Registration", "Electoral",
+    "Returning Officer", "Tallying", "Rigging", "Nomination", "Party Primary",
+    "Campaign Finance", "ORPP", "Political Party",
+
+    # Land & Property
+    "Land", "Title Deed", "NLC", "Land Commission", "Eviction", "Compulsory Acquisition",
+    "Land Rates", "Survey", "Squatter", "Community Land", "Encroachment",
+
+    # Health
+    "SHIF", "SHA", "NHIF", "Social Health", "Universal Health Coverage", "UHC",
+    "Health Levy", "Drug", "KEBS", "KEPHIS", "Pharmacy", "Hospital",
+    "Maternal", "Reproductive Health", "Mental Health Bill",
+
+    # Education
+    "Education", "CBC", "KNEC", "TSC", "University Fee", "HELB", "School",
+    "Teacher", "TVET", "Scholarship", "Capitation", "Free Education",
+
+    # Security & Human Rights
+    "Police", "GSU", "KDF", "Human Rights", "Enforced Disappearance",
+    "Abduction", "Extrajudicial", "Brutality", "Protest", "Demonstration",
+    "Strike", "Crackdown", "Teargas", "Detainee", "Whistleblower",
+
+    # Economy & Trade
+    "CBK", "Central Bank", "Interest Rate", "Inflation", "Shilling",
+    "Exchange Rate", "CMA", "NSE", "SGR", "PPP", "Privatisation",
+    "Parastatal", "Tender", "Procurement", "PPRA", "Single Source",
+    "Affordable Housing", "Hustler Fund", "MSME",
+
+    # Digital & Technology
+    "eCitizen", "Digital Service Tax", "Data Protection", "ODPC",
+    "Cybercrime", "NTSA", "Communications Authority", "CA", "Licence",
+
+    # Social & Welfare
+    "Unemployment", "Hunger", "Drought", "NEMA", "Water", "Sanitation",
+    "Energy", "KPLC", "Power", "Tariff", "Subsidy", "Social Protection",
+    "Disability", "Youth Fund", "Women Fund", "Bursary",
+
+    # Named Institutions (catch-all for headlines)
+    "MP", "CS", "PS", "CEO", "Auditor", "Inspector General", "IG",
+    "Governor", "Cabinet", "State House", "AG", "Solicitor General"
+]
+
+CEKA_IMPRINT_PROMPT = """You are the Lead Intelligence Strategist for CEKA (Civic Education Kenya).
+Your mission is to surface the 3 most urgent civic topics from Kenyan news headlines that directly affect ordinary Kenyans — not political commentary, not celebrity news, not vague policy discussion.
+
+HARD CRITERIA — a topic MUST meet ALL of these:
+1. LEGAL OR INSTITUTIONAL ANCHOR: It must involve a named Kenyan law, bill, institution (IEBC, EACC, NLC, CBK, TSC, DCI, DPP, LSK, KRA, CRA, SRC, KNEC, Parliament, Senate, County Assembly), or constitutional right.
+2. CITIZEN IMPACT: It must change something a Kenyan citizen directly experiences — taxes, health, land, school fees, elections, public safety, employment, or basic rights.
+3. VERIFIABLE: It must reference something that can be looked up — a bill number, gazette notice, court ruling, audit report, or official statement.
+4. NOT ALREADY ABSTRACT: Do not pick topics that are pure commentary, opinion, or party politics with no policy/legal substance.
+
+TONE RULES:
+- Topic names must be plain, direct English. No jargon. No dramatic language.
+- Bad example: "The Hubris of Parliament's Sovereignty Vault"
+- Good example: "New Tax on Digital Payments Explained"
+
+OUTPUT: Return EXACTLY a JSON array of 3 objects. No markdown. No preamble. Raw JSON only.
+[
+  {
+    "name": "Short plain-English title (max 10 words)",
+    "description": "2 sentences. Sentence 1: what happened. Sentence 2: why an ordinary Kenyan should care.",
+    "keywords": ["3 to 5 specific tags, not generic"],
+    "priority": "high|normal",
+    "civic_hook": "One sentence: the single most important question this topic raises for citizens"
+  }
+]"""
+
+class TrendingTopicDiscovery:
+    """Autonomous engine to discover and queue trending civic blog topics."""
+    def __init__(self, engine: Any):
+        self.engine = engine
+        self.supabase = engine.supabase
+        self.orchestrator = engine.orchestrator
+        self.scraper = engine.scraper
+
+    def fetch_trending_headlines(self) -> List[str]:
+        """Scrape major Kenyan news homepages for current headlines."""
+        headlines: Set[str] = set()
+        sources_to_scrape = [s for s in NEWS_SOURCES if s["tier"] <= 2]
+        
+        for source in sources_to_scrape:
+            # For discovery, we look at the main domain/news page
+            url = f"https://{source['domain']}"
+            html = self.scraper.fetch_html(url)
+            if not html or BeautifulSoup is None:
+                continue
+            
+            try:
+                soup = BeautifulSoup(html, "html.parser")
+                # Common headline tags in Kenyan media sites
+                for tag in ["h1", "h2", "h3"]:
+                    for item in soup.find_all(tag):
+                        text = item.get_text().strip()
+                        if len(text) > 30 and len(text) < 200:
+                            # CEKA Deduction Logic: Only include if it matches our civic footprint
+                            if any(k.lower() in text.lower() for k in CIVIC_KEYWORDS):
+                                headlines.add(text)
+            except Exception as e:
+                logger.warning(f"Failed to scrape headlines from {url}: {e}")
+        
+        return list(headlines)
+
+    def discover_and_queue(self):
+        """Identify trending topics and add them to the blog pipeline."""
+        if not self.orchestrator or not self.supabase:
+            logger.warning("Discovery skipped: Orchestrator or Supabase not available.")
+            return
+
+        logger.info("🚀 Starting Autonomous Trending Topic Discovery...")
+        raw_headlines = self.fetch_trending_headlines()
+        if not raw_headlines:
+            logger.warning("No headlines fetched for discovery.")
+            return
+
+        # Batch 20 most recent/relevant looking headlines to LLM
+        candidate_text = "\n".join(raw_headlines[:40])
+        prompt = f"Headlines from Kenyan Media Today:\n\n{candidate_text}\n\nSelect the best 3 CEKA topics."
+        
+        try:
+            topics = self.orchestrator.get_structured_intelligence(prompt, CEKA_IMPRINT_PROMPT)
+            if not isinstance(topics, list):
+                logger.warning("LLM did not return a list of topics.")
+                return
+
+            for t in topics:
+                name = t.get("name")
+                desc = t.get("description")
+                if not name or not desc: continue
+
+                # Deduplication check
+                exists = self.supabase.table("content_topics").select("id").eq("name", name).execute()
+                if exists.data:
+                    logger.info(f"Topic '{name}' already exists. Skipping.")
+                    continue
+
+                # Insert into content_topics
+                topic_res = self.supabase.table("content_topics").insert({
+                    "name": name,
+                    "description": desc,
+                    "keywords": t.get("keywords", []),
+                    "priority": t.get("priority", "normal")
+                }).execute()
+
+                if topic_res.data:
+                    topic_id = topic_res.data[0]["id"]
+                    # Add to content_queue
+                    self.supabase.table("content_queue").insert({
+                        "topic_id": topic_id,
+                        "status": "pending",
+                        "priority": t.get("priority", "normal")
+                    }).execute()
+                    logger.info(f"✅ Discovered & Queued Topic: {name}")
+
+        except Exception as e:
+            logger.error(f"Error during Topic Discovery: {e}")
+
     def run_full_scan(self):
-        """Main entry point: fetch all active bills, scrape news for each."""
+        """Main entry point: fetch all active bills, scrape news, and discover new topics."""
         if not PLAYWRIGHT_OK: return
         bills = self.get_active_bills()
-        if not bills: return
-
+        
+        # 1. Legislative Scan (Legacy Logic)
         total: int = 0
         with sync_playwright() as p:
             browser = p.chromium.launch(headless=True)
@@ -515,9 +775,37 @@ Return EXACTLY a JSON object with these keys:
                     res_count: int = int(self.run_for_bill(page, bill))
                     total = int(total + res_count)
                 except Exception: pass
+            
+            # 2. Autonomous Topic Discovery (New Layer)
+            discovery = TrendingTopicDiscovery(self)
+            discovery.discover_and_queue()
+            
             browser.close()
-        logger.info(f"Complete. New: {total}")
+
+        # Improvement 9: Release Lock
+        if self.supabase:
+            self.supabase.table("pipeline_locks").delete().eq("lock_type", "news_intelligence").execute()
+            
+        logger.info(f"Complete. New mentions: {total}")
 
 if __name__ == "__main__":
     engine = NewsIntelligenceEngine()
+    
+    # Improvement 9: Global Run Lock
+    if engine.supabase:
+        # Check for existing lock < 2 hours old
+        two_hours_ago = (datetime.now(timezone.utc).timestamp() - 7200)
+        lock = engine.supabase.table("pipeline_locks").select("*").eq("lock_type", "news_intelligence").execute()
+        if lock.data:
+            lock_time = datetime.fromisoformat(lock.data[0]["created_at"]).timestamp()
+            if lock_time > two_hours_ago:
+                logger.warning("Pipeline is already locked by another process. Exiting.")
+                exit(0)
+        
+        # Acquire Lock
+        engine.supabase.table("pipeline_locks").upsert({
+            "lock_type": "news_intelligence",
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }).execute()
+
     engine.run_full_scan()

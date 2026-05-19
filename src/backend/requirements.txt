@@ -1,7 +1,19 @@
-asyncio
-aiohttp
-asyncpg
-backoff
-google-generativeai
-python-dotenv
-pydantic
+# Core async & DB
+asyncpg>=0.29.0
+aiohttp>=3.9.0
+backoff>=2.2.1
+
+# AI / ML
+google-generativeai>=0.5.0
+openai>=1.0.0
+
+# Data validation & env
+python-dotenv>=1.0.0
+pydantic>=2.0.0
+
+# HTTP utilities
+requests>=2.31.0
+beautifulsoup4>=4.12.0
+
+# Utilities
+tenacity>=8.2.3

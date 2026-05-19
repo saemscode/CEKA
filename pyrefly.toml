@@ -1,0 +1,21 @@
+# Pyrefly configuration for CEKA project
+# Tells Pyrefly to use the correct Python interpreter and exclude virtual shards
+
+[python]
+python_interpreter = "C:/Users/Administrator/AppData/Local/Programs/Python/Python310/python.exe"
+
+[include]
+# Only analyze actual source files
+search_path = [
+    "src/backend",
+    "scripts",
+]
+
+[exclude]
+# Exclude Pyrefly's own virtual in-memory shard directory to prevent phantom errors
+paths = [
+    "d:/__pyrefly_virtual__",
+    "__pycache__",
+    "node_modules",
+    ".venv",
+]

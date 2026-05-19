@@ -137,8 +137,8 @@ class BlogSchedulerService {
       }
 
       // Insert into blog_posts as a draft
-      const { data: blogPost, error: insertError } = await (supabase
-        .from('blog_posts') as any)
+      const { data: blogPost, error: insertError } = await supabase
+        .from('blog_posts')
         .insert({
           title: article.title,
           slug: article.slug,
@@ -150,7 +150,7 @@ class BlogSchedulerService {
           tags: article.seo_keywords || [],
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
-        })
+        } as any)
         .select('id')
         .single();
 
@@ -166,11 +166,11 @@ class BlogSchedulerService {
           status: 'approved',
           admin_notes: adminNotes || null,
           approved_at: new Date().toISOString(),
-          blog_post_id: (blogPost as any)?.id
+          blog_post_id: blogPost?.id
         })
         .eq('id', articleId);
 
-      return (blogPost as any)?.id || null;
+      return blogPost?.id || null;
     } catch (error) {
       console.error('Approve generated article error:', error);
       return null;
@@ -196,86 +196,6 @@ class BlogSchedulerService {
   }
 
   /**
-   * Automatically detects bills updated in the last 7 days and queues a "Weekly Bill Highlight" topic.
-   * IMPROVEMENT: This ensures the manual-only blog pipeline is now autonomous.
-   */
-  async detectAndQueueWeeklyBillUpdates(): Promise<boolean> {
-    try {
-      const sevenDaysAgo = new Date();
-      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-      
-      const { data: recentBills, error: fetchError } = await supabase
-        .from('bills')
-        .select('id, title, status, updated_at')
-        .gt('updated_at', sevenDaysAgo.toISOString())
-        .order('updated_at', { ascending: false });
-
-      if (fetchError || !recentBills || recentBills.length === 0) return false;
-
-      const billTitles = recentBills.map(b => b.title).join(', ');
-      const topicName = `Weekly Law Update: Highlights of ${recentBills.length} Bill Movements`;
-      
-      // Check for existing topic today to avoid duplicates
-      const { data: existingTopic } = await (supabase.from('content_topics' as any))
-        .select('id')
-        .eq('name', topicName)
-        .gt('created_at', sevenDaysAgo.toISOString())
-        .maybeSingle();
-
-      if (existingTopic) return false;
-
-      const { data: newTopic, error: topicError } = await (supabase.from('content_topics' as any))
-        .insert({
-          name: topicName,
-          description: `A weekly summary of legislative activity focusing on ${billTitles}. Reference the Legislative Tracker and specific source materials.`,
-          keywords: ['parliamentary watch', 'bill updates', 'kenyan law', 'legislative progress'],
-          priority: 1,
-          target_word_count: 800,
-          min_kenyan_references: 5,
-          is_active: true
-        })
-        .select('id')
-        .single();
-
-      if (topicError) throw topicError;
-
-      await (supabase.from('content_queue' as any))
-        .insert({
-          topic_id: (newTopic as any).id,
-          status: 'pending',
-          priority: 1,
-          scheduled_for: new Date().toISOString()
-        });
-
-      return true;
-    } catch (error) {
-      console.error('Error in detectAndQueueWeeklyBillUpdates:', error);
-      return false;
-    }
-  }
-
-  /**
-   * Triggers the autonomous Trending Topic Discovery pipeline.
-   * This identifies high-value civic topics from Kenyan media and queues them for AI generation.
-   */
-  async triggerTrendingTopicDiscovery(): Promise<boolean> {
-    try {
-      // Invoke the dedicated edge function for topic discovery
-      const { data, error } = await supabase.functions.invoke('discover-topics');
-      
-      if (error) {
-        console.error('Error triggering trending topic discovery:', error);
-        return false;
-      }
-      
-      return data?.success || false;
-    } catch (error) {
-      console.error('Trending topic discovery trigger failed:', error);
-      return false;
-    }
-  }
-
-  /**
    * Notify all users who have opted into blog/resource notifications
    */
   private async notifyBlogSubscribers(postId: string, postTitle: string): Promise<void> {
@@ -296,15 +216,15 @@ class BlogSchedulerService {
           user_id: p.id,
           source_type: 'blog_comment',
           source_id: postId,
-          title: postTitle.includes('Law Update') ? '⚖️ Weekly Bill Alert' : '📝 New Blog Post Published',
-          message: `"${postTitle}" is now live on the CEKA blog. Stay informed.`,
+          title: '📝 New Blog Post Published',
+          message: `"${postTitle}" is now live on the CEKA blog. Read it now.`,
           link: `/blog/${postId}`,
-          priority: postTitle.includes('Legislative') ? 'high' : 'normal',
+          priority: 'normal',
           metadata: { type: 'blog_published', post_id: postId }
         }));
 
       if (notifications.length > 0) {
-        // Batch insert in chunks of 100 (Original constraint preserved)
+        // Batch insert in chunks of 100
         for (let i = 0; i < notifications.length; i += 100) {
           const batch = notifications.slice(i, i + 100);
           await (supabase.from('user_notifications') as any).insert(batch);
@@ -320,12 +240,6 @@ class BlogSchedulerService {
    */
   async triggerSchedulerCheck(): Promise<{ published: number }> {
     try {
-      // IMPROVEMENT: Always check for recent legislative updates
-      await this.detectAndQueueWeeklyBillUpdates();
-      
-      // NEW: Trigger the automated news-intel topic discovery
-      await this.triggerTrendingTopicDiscovery();
-      
       const { data, error } = await supabase.functions.invoke('publish-scheduled-posts');
       if (error) throw error;
       return data || { published: 0 };

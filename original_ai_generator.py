@@ -1,5 +1,4 @@
 import os
-import sys
 import asyncio
 import json
 import logging
@@ -9,44 +8,12 @@ import time
 from datetime import datetime, timedelta, timezone
 from typing import Dict, List, Optional, Tuple, Any
 
-# --- Third-party imports (guarded for linter safety) ---
-try:
-    import aiohttp
-except ImportError:
-    aiohttp = None  # type: ignore[assignment]
-
-try:
-    import asyncpg
-except ImportError:
-    asyncpg = None  # type: ignore[assignment]
-
-try:
-    import backoff
-except ImportError:
-    backoff = None  # type: ignore[assignment]
-
-try:
-    import google.generativeai as genai
-except ImportError:
-    genai = None
-
-# --- Local scripts import (deduplicating sys.path to avoid double-injection) ---
-_scripts_path = os.path.normpath(os.path.join(os.path.dirname(__file__), '..', '..', 'scripts'))
-if _scripts_path not in sys.path:
-    sys.path.insert(0, _scripts_path)
-
-try:
-    from multi_llm_orchestrator import MultiLLMOrchestrator  # type: ignore[import]
-    from blog_feature_cache import EDITORIAL_FEATURE_CACHE   # type: ignore[import]
-    from master_blog_prompt import MASTER_BLOG_PROMPT        # type: ignore[import]
-except ImportError:
-    MultiLLMOrchestrator = None  # type: ignore[assignment]
-    EDITORIAL_FEATURE_CACHE: dict = {}
-    MASTER_BLOG_PROMPT: str = ""
-
+import aiohttp
+import asyncpg
+import backoff
+import google.generativeai as genai
 from dotenv import load_dotenv
 from pydantic import BaseModel, Field, ValidationError
-from openai import AsyncOpenAI
 
 # Configure logging
 logging.basicConfig(
@@ -66,33 +33,11 @@ load_dotenv()
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-GROQ_API_KEY = os.getenv("GROQ_API_KEY")
-DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY_SECONDARY") or os.getenv("DEEPSEEK_API_KEY")
-CEREBRAS_API_KEY = os.getenv("CEREBRAS_API_KEY_SECONDARY") or os.getenv("CEREBRAS_API_KEY")
 DB_CONNECTION_STRING = os.getenv("DB_CONNECTION_STRING") # Optional, for direct asyncpg
 
 if not GEMINI_API_KEY:
     logger.error("GEMINI_API_KEY not found in environment variables.")
     raise ValueError("GEMINI_API_KEY is required.")
-
-# Restricted jargon list - Exhaustive Production Version
-RESTRICTED_JARGON = [
-    # Hype & Enthusiasm
-    r"\bgroundbreaking\b", r"\bgame-changer\b", r"\brevolutionary\b", r"\btransformative\b",
-    r"\bunprecedented\b", r"\bparadigm\b", r"\bcutting-edge\b", r"\bpioneering\b",
-    # Vague Adjectives
-    r"\brobust\b", r"\bcomprehensive\b", r"\bholistic\b", r"\bimpactful\b",
-    r"\binnovative\b", r"\bunique\b", r"\bremarkable\b",
-    # AI Verbs
-    r"\bdelve\b", r"\bdive into\b", r"\bunpack\b", r"\bleverage\b",
-    r"\butilize\b", r"\bunlock\b", r"\bempower\b", r"\belevate\b",
-    # Metaphors
-    r"\blandscape\b", r"\becosystem\b", r"\btapestry\b", r"\bfabric\b",
-    r"\blens\b", r"\bpillar\b", r"\broadmap\b", r"\bbeacon\b",
-    # Corporate/NGO
-    r"\bsynergy\b", r"\bstakeholders\b", r"\bbeneficiaries\b", r"\bcapacity building\b",
-    r"\balign\b", r"\bbandwidth\b", r"\bdeliverables\b"
-]
 
 # --- Pydantic Models for Validation ---
 
@@ -101,18 +46,15 @@ class ArticleSection(BaseModel):
     content: str
 
 class ArticleData(BaseModel):
-    title: str = Field(..., description="SEO-optimized headline")
+    title: str
     slug: Optional[str] = None
-    excerpt: str = Field(..., description="160-char meta description")
-    content: str = Field(..., description="Main HTML content with systematic WORD-LEVEL hyperlinking to real sources")
-    seo_keywords: List[str] = Field(default_factory=list)
-    meta_description: str = Field(..., description="SEO meta description")
-    word_count: int = Field(..., description="Actual word count")
+    excerpt: str
+    content: str
+    seo_keywords: List[str]
+    meta_description: str
+    word_count: int
     readability_score: Optional[float] = None
-    references: List[str] = Field(default_factory=list, description="Systematic list of source URLs and titles")
-    mermaid_diagram: Optional[str] = None
-    pull_quotes: List[str] = Field(default_factory=list)
-    real_case_evidence: List[Dict[str, str]] = Field(default_factory=list, description="Real Kenyan cases named and linked")
+    references: List[str] = Field(default_factory=list)
 
 class GenerationResult(BaseModel):
     success: bool
@@ -226,24 +168,14 @@ class CekaContentGenerator:
         self._validate_environment()
         
         # Initialize Gemini
-        if genai and GEMINI_API_KEY:
-            genai.configure(api_key=GEMINI_API_KEY)
-            self.gemini_models = {
-                'complex': genai.GenerativeModel('gemini-1.5-pro'),
-                'standard': genai.GenerativeModel('gemini-1.5-flash'),
-                'simple': genai.GenerativeModel('gemini-1.5-flash')
-            }
+        genai.configure(api_key=GEMINI_API_KEY)
+        self.gemini_models = {
+            'complex': genai.GenerativeModel('gemini-1.5-pro'),
+            'standard': genai.GenerativeModel('gemini-1.5-flash'),
+            'simple': genai.GenerativeModel('gemini-1.5-flash')
+        }
         
-        # Initialize Other LLMs for Meshing (Improvements)
-        self.groq_client = AsyncOpenAI(api_key=GROQ_API_KEY, base_url="https://api.groq.com/openai/v1") if GROQ_API_KEY else None
-        self.deepseek_client = AsyncOpenAI(api_key=DEEPSEEK_API_KEY, base_url="https://api.deepseek.com") if DEEPSEEK_API_KEY else None
-        self.cerebras_client = AsyncOpenAI(api_key=CEREBRAS_API_KEY, base_url="https://api.cerebras.ai/v1") if CEREBRAS_API_KEY else None
-
         self.rate_limiter = AdvancedRateLimiter()
-        
-        # Initialize Orchestrator for failover synthesis
-        self.orchestrator = MultiLLMOrchestrator() if MultiLLMOrchestrator else None
-        
         self.cache = {}
         self.cache_timeout = 300 # 5 minutes
         self.last_cache_refresh = datetime.min
@@ -254,6 +186,8 @@ class CekaContentGenerator:
     
     async def _init_db_pool(self):
         # Create a connection pool to the database
+        # For simplicity in this script, we'll assume direct connection if string provided
+        # or use Supabase-py client (simulated here with HTTP for broader compatibility)
         if DB_CONNECTION_STRING:
              return await asyncpg.create_pool(DB_CONNECTION_STRING)
         return None
@@ -281,6 +215,7 @@ class CekaContentGenerator:
 
     async def _get_pending_queue_items(self, limit: int = 5) -> List[Dict]:
         try:
+            # Atomic update to lock items would be better, but standard select for now
             params = {
                 "select": "*",
                 "status": "eq.pending",
@@ -308,13 +243,15 @@ class CekaContentGenerator:
 
     async def _fetch_related_data(self, topic_id: str):
         # Fetch topic, tone, template
-        topic_data = await self._supabase_request("GET", f"content_topics?id=eq.{topic_id}")
-        topic = topic_data[0] if topic_data else None
+        # Ideally this would be a joined query or multiple parallel requests
+        topic = await self._supabase_request("GET", f"content_topics?id=eq.{topic_id}")
+        topic = topic[0] if topic else None
         
         if not topic:
              raise ValueError(f"Topic not found: {topic_id}")
 
         # Basic rotation logic for tone/template if not specified
+        # For this implementation, we pick random active ones if list empty
         tones = await self._supabase_request("GET", "tone_profiles?is_active=eq.true")
         templates = await self._supabase_request("GET", "content_templates?is_active=eq.true")
         
@@ -323,167 +260,11 @@ class CekaContentGenerator:
         
         return topic, selected_tone, selected_template
 
-    # --- Jargon Filtering (Improvement) ---
-    def _filter_jargon(self, text: str, limit: int = 5) -> str:
-        count = 0
-        def replace(match):
-            nonlocal count
-            count += 1
-            if count > limit:
-                word = match.group(0).lower()
-                replacements = {
-                    "sovereignty": "independence",
-                    "vault": "repository",
-                    "ultimate": "best",
-                    "transcend": "surpass",
-                    "paradigm": "model",
-                    "symphony": "coordination",
-                    "seamless": "smooth",
-                    "transformative": "powerful",
-                    "enigma": "mystery"
-                }
-                return replacements.get(word, word)
-            return match.group(0)
-
-        for pattern in RESTRICTED_JARGON:
-            text = re.sub(pattern, replace, text, flags=re.IGNORECASE)
-        return text
-
-    # --- Parallel Meshing Logic (Improvement) ---
-    async def _generate_meshed_content(self, topic: Dict, tone: Dict, template: Dict) -> GenerationResult:
-        logger.info(f"Initiating parallel meshed generation for: {topic['name']}")
-        
-        # Parallel Task 1: DeepSeek for Constitutional/Legal Context
-        legal_task = self._deep_reasoning(topic)
-        
-        # Parallel Task 2: Groq/Cerebras for Rapid Structure & Hooks
-        structure_task = self._rapid_structure(topic, tone)
-        
-        # Execute context extraction in parallel
-        legal_context, structure_hook = await asyncio.gather(legal_task, structure_task)
-        
-        # Final Task: Synthesis (Conglomerating all into the final mesh)
-        prompt = self._build_meshed_prompt(topic, tone, template, legal_context, structure_hook)
-        system_instruction = "YOU ARE THE CEKA MESH SYNTHESIZER. Finalize the blog post with investigative depth and layman English."
-
-        try:
-            # Fallback chain for final synthesis
-            provider_chain = ["gemini", "deepseek", "groq", "cerebras"]
-            
-            result_text = None
-            if self.orchestrator:
-                result_text = self.orchestrator.synthesize(prompt, system_instruction, provider_chain)
-            
-            if not result_text:
-                # Emergency hard-fallback to direct Gemini if orchestrator failed or not available
-                if not genai: return GenerationResult(success=False, error="No synthesis provider available", model_name="none")
-                model = genai.GenerativeModel("gemini-1.5-pro")
-                response = model.generate_content(f"{system_instruction}\n\n{prompt}")
-                result_text = response.text
-            
-            if not result_text: return GenerationResult(success=False, error="Synthesis failed", model_name="none")
-
-            # Filter Jargon (Enforced Improvement)
-            text = self._filter_jargon(result_text)
-            
-            # Parse response
-            try:
-                # Clean up if model included markdown blocks
-                text = re.sub(r'^```json\s*', '', text)
-                text = re.sub(r'\s*```$', '', text)
-                
-                data_dict = json.loads(text)
-                
-                # Apply jargon filter specifically to the title/slug if missed by text filter
-                if "title" in data_dict:
-                    data_dict["title"] = self._filter_jargon(data_dict["title"], limit=0) # ZERO jargon in titles
-                
-                article_data = ArticleData(**data_dict)
-                
-                return GenerationResult(
-                    success=True,
-                    data=article_data,
-                    tokens_used=0,
-                    model_name="orchestrator"
-                )
-            except Exception as e:
-                logger.error(f"Parse Error: {e}")
-                return GenerationResult(success=False, error=str(e), model_name="orchestrator")
-        except Exception as e:
-            logger.error(f"Synthesis Error: {e}")
-            return GenerationResult(success=False, error=str(e), model_name="orchestrator")
-
-    async def _deep_reasoning(self, topic: Dict) -> str:
-        if not self.deepseek_client: return "Standard Kenyan legal context."
-        try:
-            resp = await self.deepseek_client.chat.completions.create(
-                model="deepseek-reasoner",
-                messages=[{"role": "user", "content": f"Extract precise Kenyan legal context and relevant constitutional sections for: {topic['name']}. Focus on accuracy and precedence."}]
-            )
-            return resp.choices[0].message.content
-        except Exception as e:
-            logger.error(f"DeepSeek Error: {e}")
-            return "Standard Kenyan legal context."
-
-    async def _rapid_structure(self, topic: Dict, tone: Dict) -> str:
-        client = self.cerebras_client or self.groq_client
-        if not client: return "Standard article structure."
-        try:
-            model = "llama3.1-8b"
-            resp = await client.chat.completions.create(
-                model=model,
-                messages=[{"role": "user", "content": f"Create a compelling article structure, creative headlines, and pull-quote candidates for a blog about {topic['name']} with tone: {tone.get('name', 'Professional')}."}]
-            )
-            return resp.choices[0].message.content
-        except Exception as e:
-            logger.error(f"Rapid Model Error: {e}")
-            return "Standard article structure."
-
-    def _build_meshed_prompt(self, topic: Dict, tone: Dict, template: Dict, legal_context: str, structure_hook: str) -> str:
-        bill_data_context = ""
-        if "bill" in topic['name'].lower():
-            bill_data_context = "\nDATABASE INTELLIGENCE: Include latest updates from the Legislative Tracker and reference specific bill stage movements recorded this week."
-
-        prompt_parts = [
-            "# MASTER GOVERNING PROMPT:",
-            MASTER_BLOG_PROMPT,
-            "---",
-            "# ARCHITECTURAL SKELETON:",
-            f"GOAL: Conglomerate multi-model inputs into a synonymous, high-fidelity blog post about {topic['name']}.",
-            "---",
-            f"LEGAL CONTEXT (from DeepSeek-Reasoner):\n{legal_context}",
-            "---",
-            f"STRUCTURE & HOOKS (from Cerebras/Groq):\n{structure_hook}",
-            "---",
-            bill_data_context,
-            "---",
-            f"EDITORIAL FEATURE CACHE (The Full DNA of CEKA Blogs):",
-            json.dumps(EDITORIAL_FEATURE_CACHE, indent=2),
-            "---",
-            "SELECTION LOGIC — TASTEFUL INTERWEAVING:",
-            "1. TOPIC-TYPE MATCHING: If the topic is Finance, PRIORITIZE 'How the Money Moves' diagrams. If Legal, PRIORITIZE 'Rights' boxes.",
-            "2. REAL-CASE INTEGRATION: You MUST include at least one REAL case of a Kenyan citizen (Name, Location, Link) impacted by this topic. Use the news context provided. NO MOCK DATA.",
-            "3. HYPERLINKING MANDATE: Systematically hyperlink names, institutions, and statistics to their sources inside the HTML content. ADD a 'Sources & References' section at the end of the post.",
-            "---",
-            "STRICT QUALITY MANDATE:",
-            "- ADHERE 100% TO THE MASTER GOVERNING PROMPT.",
-            "- PERFORM ALL SECTION 9 HYPERLINKING CHECKS.",
-            "- PERFORM ALL SECTION 10 QUALITY CHECKS.",
-            "---",
-            "OUTPUT: Valid JSON following the ArticleData schema. No markdown wrapper.",
-            "---",
-            f"TEMPLATE:\n{json.dumps(template.get('content_structure', {}))}"
-        ]
-        return "\n".join(prompt_parts)
-
-    # --- Content Generation Logic (Original with Improvements) ---
+    # --- Content Generation Logic ---
 
     def _build_prompt(self, topic: Dict, tone: Dict, template: Dict) -> str:
-        # Fallback to original prompt with Master governance
         prompt_parts = [
-            "# MASTER GOVERNING PROMPT:",
-            MASTER_BLOG_PROMPT,
-            "---",
+            "SYSTEM PROMPT: YOU ARE A SENIOR INVESTIGATIVE JOURNALIST AND CIVIC EDUCATOR FOR CIVIC EDUCATION KENYA (CEKA).",
             f"YOUR GOAL IS TO WRITE A HIGH-QUALITY, SEO-OPTIMIZED ARTICLE ABOUT: {topic['name']}",
             "---",
             f"TOPIC DESCRIPTION: {topic['description']}",
@@ -492,12 +273,11 @@ class CekaContentGenerator:
             f"TONE INSTRUCTIONS: {tone['gemini_instruction'] if tone else 'Professional and informative.'}",
             "---",
             "MANDATORY REQUIREMENTS:",
-            "1. SELECTION LOGIC: Do not pick randomly. Analyze the topic first. (a) Is it a process? Use a FLOWCHART. (b) Is it a conflict? Use DEBATE format. (c) Is it a service change? Use STEP-BY-STEP.",
-            "2. TASTEFUL INTERWEAVING: Integrate editorial elements naturally into the narrative flow.",
-            "3. KENYAN CONTEXT ONLY: Every claim must be grounded in Kenyan law, named institutions, or verifiable events.",
-            "4. PLAIN LANGUAGE: Target reading level is Form 4 Kenya. No legal jargon without immediate explanation.",
-            "5. NAMED REFERENCES: Include at least {topic.get('min_kenyan_references', 3)} references by name.",
-            "6. OUTPUT FORMAT: Valid JSON only. No markdown wrapper.",
+            "1. CONTEXT: The content MUST be specifically tailored to the Kenyan legal and political context.",
+            f"2. LOCAL REFERENCES: You MUST include at least {topic.get('min_kenyan_references', 3)} specific references to Kenyan laws (Constitution 2010), institutions (e.g., IEBC, EACC), or locations.",
+            "3. STRUCTURE: Follow the structure defined below exactly.",
+            f"4. LENGTH: Target approximately {topic.get('target_word_count', 1000)} words.",
+            "5. OUTPUT FORMAT: The final output MUST be a valid JSON object.",
             "---",
             f"TEMPLATE STRUCTURE:\n{json.dumps(template.get('content_structure', {}), indent=2)}",
             "---",
@@ -507,15 +287,15 @@ class CekaContentGenerator:
             '  "title": "A catchy, SEO-friendly headline",',
             '  "slug": "url-friendly-slug",',
             '  "excerpt": "A 160-char summary for meta description",',
-            '  "content": "The full article content in HTML format",',
+            '  "content": "The full article content in HTML format (use <h2>, <p>, <ul>, etc.)",',
             '  "seo_keywords": ["keyword1", "keyword2"],',
             '  "meta_description": "SEO meta description",',
             '  "word_count": 1200,',
             '  "references": ["Ref 1", "Ref 2"]',
             "}",
             "```",
-            "Use British English (Kenyan standard).",
-            "STRICT QUALITY MANDATE: PERFORM ALL CHECKS FROM SECTION 7 OF THE MASTER PROMPT."
+            "Use British English (Kenyan standard). Ensure the content is accurate, unbiased, and empowering.",
+            "DO NOT include any markdown code block formatting (like ```json) in the response outside of the JSON object itself, or better yet, return PURE JSON."
         ]
         return "\n".join(prompt_parts)
 
@@ -545,21 +325,14 @@ class CekaContentGenerator:
             self.rate_limiter.consume(model_name, response.usage_metadata.total_token_count)
             self.rate_limiter.record_success(model_name)
             
-            # Filter Jargon (Enforced Improvement)
-            text = self._filter_jargon(response.text)
-            
             # Parse response
             try:
-                # Clean up if model included markdown blocks
+                text = response.text
+                # Clean up if model included markdown blocks despite instructions
                 text = re.sub(r'^```json\s*', '', text)
                 text = re.sub(r'\s*```$', '', text)
                 
                 data_dict = json.loads(text)
-                
-                # Apply jargon filter specifically to the title/slug if missed by text filter
-                if "title" in data_dict:
-                    data_dict["title"] = self._filter_jargon(data_dict["title"], limit=0) # ZERO jargon in titles
-                
                 article_data = ArticleData(**data_dict)
                 
                 return GenerationResult(
@@ -569,7 +342,7 @@ class CekaContentGenerator:
                     model_name=model_name
                 )
             except json.JSONDecodeError as e:
-                logger.error(f"JSON Parse Error: {e}. Raw text: {text[:100]}...")
+                logger.error(f"JSON Parse Error: {e}. Raw text: {response.text[:100]}...")
                 return GenerationResult(success=False, error="Failed to parse JSON response", model_name=model_name)
             except ValidationError as e:
                 logger.error(f"Validation Error: {e}")
@@ -585,20 +358,14 @@ class CekaContentGenerator:
             return
 
         article = result.data
-        
-        # Construct full content with Mermaid integration (Improvement)
-        full_content = article.content
-        if article.mermaid_diagram:
-            full_content += f"\n\n<pre class='mermaid'>\n{article.mermaid_diagram}\n</pre>"
-
         data = {
             "queue_id": queue_item['id'],
             "topic_id": topic['id'],
             "title": article.title,
             "slug": article.slug or self._generate_slug(article.title),
             "excerpt": article.excerpt,
-            "content": full_content,
-            "html_content": full_content,
+            "content": article.content,
+            "html_content": article.content, # In this case same, but could be transformed
             "seo_keywords": article.seo_keywords,
             "meta_description": article.meta_description,
             "word_count": article.word_count,
@@ -627,7 +394,7 @@ class CekaContentGenerator:
     # --- Main Loop ---
 
     async def process_queue(self):
-        logger.info("Starting Meshed Queue Processor loop...") # Improvement label
+        logger.info("Starting queue processing loop...")
         while True:
             try:
                 items = await self._get_pending_queue_items(limit=3)
@@ -652,23 +419,29 @@ class CekaContentGenerator:
         logger.info(f"Processing item {queue_id} for topic {item.get('topic_id')}")
         
         try:
-            # 1. Update status to processing (Original Logic)
+            # 1. Update status to processing
             await self._update_queue_status(queue_id, "processing")
             
-            # 2. Fetch context (Original Logic)
+            # 2. Fetch context
             topic, tone, template = await self._fetch_related_data(item['topic_id'])
             
-            # 3. Generate with Meshed Mesh (Improvement)
-            result = await self._generate_meshed_content(topic, tone, template)
+            # 3. Build prompt
+            prompt = self._build_prompt(topic, tone, template)
+            
+            # 4. Determine model complexity (simple logic for now)
+            model_type = 'complex' if topic.get('priority', 2) == 1 else 'standard'
+            
+            # 5. Generate
+            result = await self._call_gemini_api(prompt, model_type=model_type)
             
             if result.success:
-                # 4. Save Article with Mermaid and design (Improvement Integrated)
+                # 6. Save Article
                 await self.save_generated_article(result, item, topic)
                 
-                # 5. Complete Queue Item (Original Logic)
+                # 7. Complete Queue Item
                 await self._update_queue_status(queue_id, "completed", details={'tokens': result.tokens_used})
             else:
-                # Handle generation failure (soft fail - Original Logic)
+                # Handle generation failure (soft fail)
                 await self._update_queue_status(queue_id, "failed", details={'error': result.error})
 
         except Exception as e:
