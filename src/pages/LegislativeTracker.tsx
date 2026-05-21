@@ -585,7 +585,7 @@ const LegislativeTracker = () => {
             </aside>
 
             {/* BILLS JOURNEY: Main Content */}
-            <main className="lg:col-span-9 space-y-12">
+            <main className="lg:col-span-9 space-y-12 min-w-0 w-full">
               <Tabs defaultValue="all_stages" onValueChange={setActiveTab} className="w-full">
                 <div className="flex flex-col gap-4 mb-10 border-b border-border/50 pb-4">
                   {/* Stage Tabs — Desktop: scrollable pill row; Mobile/Tablet: Select dropdown */}
@@ -700,9 +700,10 @@ const LegislativeTracker = () => {
                         initial={{ opacity: 0, scale: 0.98 }}
                         animate={{ opacity: 1, scale: 1 }}
                         key={bill.id}
+                        className="w-full min-w-0"
                       >
-                        <Card className="group relative overflow-hidden border-none bg-white dark:bg-[#111] shadow-ios-high dark:shadow-ios-high-dark rounded-[40px] transition-all hover:bg-slate-50/50 dark:hover:bg-white/[0.02]">
-                          <div className="flex flex-col md:flex-row">
+                        <Card className="group relative overflow-hidden border-none bg-white dark:bg-[#111] shadow-ios-high dark:shadow-ios-high-dark rounded-[40px] w-full transition-all hover:bg-slate-50/50 dark:hover:bg-white/[0.02]">
+                          <div className="flex flex-col md:flex-row w-full min-w-0">
                             {/* Visual Progress Pillar */}
                             <div className="md:w-48 p-8 flex flex-col justify-between border-r border-border/50 bg-slate-50/30 dark:bg-white/[0.01]">
                               <div className="space-y-4">
@@ -796,8 +797,8 @@ const LegislativeTracker = () => {
                                 )}
                               </div>
 
-                              <div className="flex flex-wrap items-center justify-between gap-6 pt-6 border-t border-border/50">
-                                <div className="flex items-center gap-4 min-w-0 flex-1">
+                              <div className="flex flex-col sm:flex-row flex-wrap items-start sm:items-center justify-between gap-6 pt-6 border-t border-border/50">
+                                <div className="flex items-center gap-4 min-w-0 w-full sm:w-auto">
                                   {bill.sponsor && (
                                     <div className="flex items-center gap-3 min-w-0 flex-1">
                                       <div className="h-8 w-8 rounded-full bg-slate-200 dark:bg-white/10 flex items-center justify-center font-bold text-xs shrink-0">
@@ -820,7 +821,7 @@ const LegislativeTracker = () => {
                                   )}
                                 </div>
 
-                                <div className="flex flex-wrap items-center gap-3">
+                                <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 w-full sm:w-auto">
                                   {bill.pdf_url && (
                                     <Button
                                       variant="outline"
