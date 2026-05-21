@@ -300,35 +300,111 @@ class SovereignCorroborator:
             # 4. Status Decision Engine (Active Propagation)
             sovereign_status = context.get("status")
             status_reasons = []
-            
-            # Check for high-confidence termination events in web hits
-            for hit in context.get("active_web_hits", []):
-                snippet = hit["snippet"].lower()
-                headline = hit["headline"].lower()
-                
-                # 🚨 YEAR PARITY GUARD: Only propagate if snippet matches the bill's year
-                bill_year = str(context.get("session_year") or "2026")
-                if bill_year not in (headline + " " + snippet):
-                    # If snippet mentions a DIFFERENT year (e.g. 2024), skip to prevent regression
-                    if any(y in (headline + " " + snippet) for y in ["2023", "2024", "2025"]):
+
+            # ── Status Lock: If the bill has a manual status_lock, skip all automated status changes ──
+            bill_record = (self.db.select("bills", "status_lock,stages,session_year", eq="id", eq_val=bill_id) or [None])[0]
+            if bill_record and bill_record.get("status_lock"):
+                logger.info(f"    🔒 Status locked for '{context['title']}' — skipping automated status propagation.")
+            else:
+                # ── Stage Regression Guard: Determine the highest confirmed non-discarded stage ──
+                stages_json = context.get("stages_json") or (bill_record or {}).get("stages") or {}
+                if isinstance(stages_json, str):
+                    try:
+                        stages_json = json.loads(stages_json)
+                    except Exception:
+                        stages_json = {}
+
+                # Map stage keys to order for regression check
+                _STAGE_ORDER = {
+                    "pre_publication": 0, "publication": 1, "first_reading": 2,
+                    "second_reading": 3, "committee": 4, "report": 5,
+                    "third_reading": 6, "mediation": 7, "assent": 8, "discarded": 99
+                }
+                highest_confirmed_order = -1
+                for sk, sv in stages_json.items():
+                    if isinstance(sv, dict) and sv.get("status") == "completed" and sk != "discarded":
+                        highest_confirmed_order = max(highest_confirmed_order, _STAGE_ORDER.get(sk, -1))
+
+                # ── Year Resolution: bill's actual session_year, no hardcoded fallback ──
+                bill_year_raw = (bill_record or {}).get("session_year") or context.get("date_introduced", "")[:4]
+                bill_year = str(bill_year_raw) if bill_year_raw else None
+
+                # Year inference tokens for when year isn't explicitly mentioned
+                _CURRENT_YEAR_TOKENS = ["2026", "2026/27", "fy 2026", "latest", "current", "ongoing"]
+                _OLD_YEAR_TOKENS = ["2023", "2024", "2025", "2022", "2021"]
+
+                # Check for high-confidence termination or assent events in web hits
+                for hit in context.get("active_web_hits", []):
+                    snippet = hit["snippet"].lower()
+                    headline = hit["headline"].lower()
+                    combined = headline + " " + snippet
+
+                    # ── YEAR PROXIMITY GUARD ──
+                    # Step 1: If combined text mentions a DIFFERENT year explicitly, skip
+                    mentions_old_year = any(y in combined for y in _OLD_YEAR_TOKENS)
+                    mentions_bill_year = bill_year and bill_year in combined
+                    mentions_current_tokens = any(t in combined for t in _CURRENT_YEAR_TOKENS if t != bill_year)
+
+                    if mentions_old_year and not mentions_bill_year:
+                        # Old year present, bill year absent → almost certainly about a different bill
+                        logger.debug(f"      [Year Guard] Skipping hit: old year detected, bill year absent — {headline[:60]}")
                         continue
 
-                # If similarity is high (>0.85) AND snippet mentions withdrawal/rejection
-                if hit["similarity_score"] > 0.85 or context["title"].lower() in headline:
-                    if any(w in (headline + " " + snippet) for w in ['withdrawn', 'rejected', 'negatived', 'lapsed', 'nullified']):
-                        sovereign_status = "DISCARDED"
-                        status_reasons.append(f"Confirmed {hit['source']} via {hit['headline']}")
-                    elif 'assent' in (headline + " " + snippet) or 'signed into law' in snippet:
-                        sovereign_status = "ASSENT"
-                        status_reasons.append(f"Confirmed Assent via {hit['source']}")
+                    if not mentions_bill_year and not mentions_current_tokens:
+                        # Neither bill year nor current-year inference tokens → ambiguous, skip for safety
+                        logger.debug(f"      [Year Guard] Skipping hit: no year signal — {headline[:60]}")
+                        continue
 
-            # Normalize and Apply
-            if STAGES_OK:
-                sovereign_status = normalize_stage_label(sovereign_status)
-            
-            if sovereign_status != context.get("status"):
-                logger.info(f"    📢 PROPAGating Status change: {context['status']} -> {sovereign_status} ({', '.join(status_reasons)})")
-                update_data["status"] = sovereign_status
+                    # Step 2: For terminal keywords, require year proximity (within ~80 chars)
+                    TERMINATION_WORDS = ['withdrawn', 'rejected', 'negatived', 'lapsed', 'nullified', 'not passed']
+
+                    if hit["similarity_score"] > 0.85 or context["title"].lower() in headline:
+                        # ── Check for DISCARDED signals with year-proximity enforcement ──
+                        found_termination = False
+                        for tw in TERMINATION_WORDS:
+                            tw_idx = combined.find(tw)
+                            if tw_idx == -1:
+                                continue
+                            # Year proximity: bill_year must appear within 80 chars of the termination word
+                            if bill_year:
+                                year_idx = combined.find(bill_year)
+                                if year_idx != -1 and abs(year_idx - tw_idx) <= 80:
+                                    found_termination = True
+                                    break
+                                # Also check current-year inference tokens near the termination word
+                                for token in _CURRENT_YEAR_TOKENS:
+                                    tok_idx = combined.find(token)
+                                    if tok_idx != -1 and abs(tok_idx - tw_idx) <= 80:
+                                        found_termination = True
+                                        break
+                                if found_termination:
+                                    break
+                            else:
+                                # No bill year known — only accept if no old year is mentioned at all
+                                if not mentions_old_year:
+                                    found_termination = True
+                                    break
+
+                        if found_termination:
+                            # ── Stage Regression Guard: Don't regress if a later stage is confirmed ──
+                            if highest_confirmed_order >= _STAGE_ORDER.get("second_reading", 3):
+                                logger.info(f"      [Regression Guard] Blocking DISCARDED — bill has confirmed stages up to order {highest_confirmed_order}")
+                            else:
+                                sovereign_status = "DISCARDED"
+                                status_reasons.append(f"Confirmed {hit['source']} via {hit['headline']}")
+
+                        # ── Check for ASSENT signals ──
+                        elif 'assent' in combined or 'signed into law' in snippet:
+                            sovereign_status = "ASSENT"
+                            status_reasons.append(f"Confirmed Assent via {hit['source']}")
+
+                # Normalize and Apply
+                if STAGES_OK:
+                    sovereign_status = normalize_stage_label(sovereign_status)
+
+                if sovereign_status != context.get("status"):
+                    logger.info(f"    📢 PROPAGating Status change: {context['status']} -> {sovereign_status} ({', '.join(status_reasons)})")
+                    update_data["status"] = sovereign_status
 
             self.db.update("bills", update_data, eq="id", eq_val=bill_id)
             logger.info(f"✅ Analysis & Status Propagation complete for: {context['title']}")

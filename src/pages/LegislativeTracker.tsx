@@ -19,7 +19,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Link } from 'react-router-dom';
 import {
   FileText, Search, Filter, Calendar, ArrowRight, PlusCircle, ArrowUpDown,
-  TrendingUp, RefreshCw, Layers, CheckCircle, Clock, Users, BookOpen, Globe, Shield, Scale
+  TrendingUp, RefreshCw, Layers, CheckCircle, Clock, Users, BookOpen, Globe, Shield, Scale, ChevronDown
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -74,6 +74,11 @@ const LegislativeTracker = () => {
   const [sortBy, setSortBy] = useState<SortOption>('date-desc');
   const [stats, setStats] = useState<{ total: number; byStatus: any }>({ total: 0, byStatus: {} });
   const [realtimeFlash, setRealtimeFlash] = useState<string | null>(null);
+  // Per-card Read More state for neural_summary
+  const [expandedSummaries, setExpandedSummaries] = useState<Record<string, boolean>>({});
+  const toggleSummaryExpanded = (billId: string) =>
+    setExpandedSummaries(prev => ({ ...prev, [billId]: !prev[billId] }));
+  const NEURAL_SUMMARY_COLLAPSE = 220; // chars before ellipsis kicks in
 
   // Debounce search input - only trigger after 300ms of no typing and 3+ chars
   useEffect(() => {
@@ -340,7 +345,7 @@ const LegislativeTracker = () => {
             <div className="mt-12 relative max-w-xl group">
               {/* Deep iOS-Inspired Glow & Shadow Layer */}
               <div className="absolute inset-x-0 -inset-y-4 bg-gradient-to-br from-kenya-green/20 via-primary/10 to-kenya-green/20 blur-3xl opacity-30 group-hover:opacity-50 transition-opacity -z-10" />
-              
+
               <motion.div
                 initial={{ opacity: 0, scale: 0.98 }}
                 animate={{ opacity: 1, scale: 1 }}
@@ -395,8 +400,8 @@ const LegislativeTracker = () => {
                           <TrendingUp className="h-8 w-8" />
                         </div>
                         <div>
-                          <h4 className="font-black text-[10px] uppercase tracking-[0.2em] mb-1">Scanning Intelligence...</h4>
-                          <p className="font-bold text-sm">Deep-scanning tabloid summaries for the day...</p>
+                          <h4 className="font-black text-[10px] uppercase tracking-[0.2em] mb-1">Scanning for Bills...</h4>
+                          <p className="font-bold text-sm">Deep-scanning - will only be a moment...</p>
                         </div>
                       </div>
                     )}
@@ -408,7 +413,7 @@ const LegislativeTracker = () => {
                   <div className="bg-primary text-white text-[9px] font-black uppercase px-4 h-full flex items-center shrink-0 z-20 shadow-2xl relative">
                     {/* Bevel effect for ticker label */}
                     <div className="absolute inset-0 bg-white/10 opacity-10 pointer-events-none" />
-                    Live Status
+                    Live
                   </div>
                   <div className="flex-1 overflow-hidden relative">
                     <motion.div
@@ -473,9 +478,9 @@ const LegislativeTracker = () => {
         {/* VAULT INTERFACE */}
         <div className="container pb-24">
           <div className="grid lg:grid-cols-12 gap-10">
-            {/* SEARCH & FILTERS: Sidebar for Desktop, Floating Tray for Mobile */}
-            <aside className="lg:col-span-3 space-y-8">
-              <div className="sticky top-24 space-y-8">
+            {/* SEARCH & FILTERS: Sidebar for Desktop, Dropdown tray for Mobile/Tablet */}
+            <aside className="lg:col-span-3 space-y-4 lg:space-y-8">
+              <div className="lg:sticky lg:top-24 space-y-4 lg:space-y-8">
                 <div className="space-y-4">
                   <h3 className="font-black text-lg flex items-center gap-2">
                     <Search className="h-5 w-5 text-primary" />
@@ -506,12 +511,31 @@ const LegislativeTracker = () => {
                   </div>
                 </div>
 
-                <div className="space-y-4">
+                {/* CATEGORIES — Desktop: button grid, Mobile/Tablet: Select dropdown */}
+                <div className="space-y-3">
                   <h3 className="font-black text-lg flex items-center gap-2">
                     <Filter className="h-5 w-5 text-primary" />
                     Categories
                   </h3>
-                  <div className="grid grid-cols-1 gap-2">
+
+                  {/* Mobile/Tablet select */}
+                  <div className="block lg:hidden">
+                    <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                      <SelectTrigger className="h-12 rounded-2xl bg-white dark:bg-[#111] border-slate-200 dark:border-white/5 font-bold text-sm">
+                        <SelectValue placeholder="All Portfolios" />
+                      </SelectTrigger>
+                      <SelectContent className="rounded-2xl border-none shadow-2xl">
+                        {['all', 'Finance', 'Education', 'Healthcare', 'Environment'].map(cat => (
+                          <SelectItem key={cat} value={cat} className="font-bold">
+                            {cat === 'all' ? 'All Portfolios' : cat}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Desktop button grid */}
+                  <div className="hidden lg:grid grid-cols-1 gap-2">
                     {['all', 'Finance', 'Education', 'Healthcare', 'Environment'].map(cat => (
                       <button
                         key={cat}
@@ -557,53 +581,95 @@ const LegislativeTracker = () => {
             {/* BILLS JOURNEY: Main Content */}
             <main className="lg:col-span-9 space-y-12">
               <Tabs defaultValue="all_stages" onValueChange={setActiveTab} className="w-full">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10 border-b border-border/50 pb-2">
-                  <TabsList className="bg-transparent h-auto p-0 flex-wrap justify-start gap-6 overflow-x-auto no-scrollbar">
-                    {[
-                      { value: 'all_stages', label: 'All Stages' },
-                      { value: 'pre_publication', label: 'Pre-publication' },
-                      { value: 'first_reading', label: '1st Reading' },
-                      { value: 'second_reading', label: '2nd Reading' },
-                      { value: 'committee', label: 'Committee' },
-                      { value: 'report', label: 'Report' },
-                      { value: 'third', label: '3rd Reading' },
-                      { value: 'assent', label: 'Assent' },
-                      { value: 'publication', label: 'Published' },
-                      { value: 'discarded', label: 'Discarded' },
-                    ].map(tab => (
-                      <TabsTrigger
-                        key={tab.value}
-                        value={tab.value}
-                        className="p-0 bg-transparent border-none data-[state=active]:bg-transparent data-[state=active]:shadow-none relative h-10 px-1"
-                      >
-                        <span className="text-[10px] font-black uppercase tracking-widest opacity-60 group-data-[state=active]:opacity-100">
-                          {tab.label}
-                        </span>
-                        <AnimatePresence>
-                          {activeTab === tab.value && (
-                            <motion.div
-                              layoutId="tab_underline"
-                              className={cn(
-                                "absolute bottom-0 left-0 w-full h-1 rounded-full",
-                                tab.value === 'discarded' ? 'bg-red-500' : 'bg-primary'
-                              )}
-                            />
-                          )}
-                        </AnimatePresence>
-                      </TabsTrigger>
-                    ))}
-                  </TabsList>
+                <div className="flex flex-col gap-4 mb-10 border-b border-border/50 pb-4">
+                  {/* Stage Tabs — Desktop: scrollable pill row; Mobile/Tablet: Select dropdown */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
 
-                  <div className="flex items-center gap-4">
-                    <Select value={sortBy} onValueChange={(v: any) => setSortBy(v)}>
-                      <SelectTrigger className="w-[160px] h-10 rounded-xl bg-slate-50 dark:bg-white/5 border-none font-bold text-xs uppercase tracking-widest">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent className="rounded-xl border-none shadow-2xl">
-                        <SelectItem value="date-desc">Newest First</SelectItem>
-                        <SelectItem value="alpha-asc">A-Z</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    {/* Mobile stage select */}
+                    <div className="flex sm:hidden items-center gap-3">
+                      <Select value={activeTab} onValueChange={setActiveTab}>
+                        <SelectTrigger className="flex-1 h-12 rounded-2xl bg-white dark:bg-[#111] border-slate-200 dark:border-white/5 font-bold text-sm">
+                          <SelectValue placeholder="All Stages" />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-2xl border-none shadow-2xl">
+                          {[
+                            { value: 'all_stages', label: 'All Stages' },
+                            { value: 'pre_publication', label: 'Pre-publication' },
+                            { value: 'first_reading', label: '1st Reading' },
+                            { value: 'second_reading', label: '2nd Reading' },
+                            { value: 'committee', label: 'Committee' },
+                            { value: 'report', label: 'Report' },
+                            { value: 'third', label: '3rd Reading' },
+                            { value: 'assent', label: 'Assent' },
+                            { value: 'publication', label: 'Published' },
+                            { value: 'discarded', label: 'Discarded' },
+                          ].map(tab => (
+                            <SelectItem key={tab.value} value={tab.value} className="font-bold">
+                              {tab.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Select value={sortBy} onValueChange={(v: any) => setSortBy(v)}>
+                        <SelectTrigger className="w-[130px] h-12 rounded-2xl bg-white dark:bg-[#111] border-slate-200 dark:border-white/5 font-bold text-xs uppercase tracking-widest">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-xl border-none shadow-2xl">
+                          <SelectItem value="date-desc">Newest</SelectItem>
+                          <SelectItem value="alpha-asc">A-Z</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* Tablet/Desktop scrollable tab pills */}
+                    <TabsList className="hidden sm:flex bg-transparent h-auto p-0 flex-wrap justify-start gap-x-6 gap-y-2 overflow-x-auto no-scrollbar flex-1">
+                      {[
+                        { value: 'all_stages', label: 'All Stages' },
+                        { value: 'pre_publication', label: 'Pre-publication' },
+                        { value: 'first_reading', label: '1st Reading' },
+                        { value: 'second_reading', label: '2nd Reading' },
+                        { value: 'committee', label: 'Committee' },
+                        { value: 'report', label: 'Report' },
+                        { value: 'third', label: '3rd Reading' },
+                        { value: 'assent', label: 'Assent' },
+                        { value: 'publication', label: 'Published' },
+                        { value: 'discarded', label: 'Discarded' },
+                      ].map(tab => (
+                        <TabsTrigger
+                          key={tab.value}
+                          value={tab.value}
+                          className="p-0 bg-transparent border-none data-[state=active]:bg-transparent data-[state=active]:shadow-none relative h-10 px-1"
+                        >
+                          <span className="text-[10px] font-black uppercase tracking-widest opacity-60 group-data-[state=active]:opacity-100">
+                            {tab.label}
+                          </span>
+                          <AnimatePresence>
+                            {activeTab === tab.value && (
+                              <motion.div
+                                layoutId="tab_underline"
+                                className={cn(
+                                  "absolute bottom-0 left-0 w-full h-1 rounded-full",
+                                  tab.value === 'discarded' ? 'bg-red-500' : 'bg-primary'
+                                )}
+                              />
+                            )}
+                          </AnimatePresence>
+                        </TabsTrigger>
+                      ))}
+                    </TabsList>
+
+                    {/* Sort — Desktop only (mobile sort is in the mobile row above) */}
+                    <div className="hidden sm:flex items-center gap-4">
+                      <Select value={sortBy} onValueChange={(v: any) => setSortBy(v)}>
+                        <SelectTrigger className="w-[160px] h-10 rounded-xl bg-slate-50 dark:bg-white/5 border-none font-bold text-xs uppercase tracking-widest">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-xl border-none shadow-2xl">
+                          <SelectItem value="date-desc">Newest First</SelectItem>
+                          <SelectItem value="alpha-asc">A-Z</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
                 </div>
 
@@ -696,8 +762,25 @@ const LegislativeTracker = () => {
                                       <span className="text-[10px] font-black uppercase tracking-widest">Quick Summary</span>
                                     </div>
                                     <p className="text-sm font-medium leading-relaxed opacity-80">
-                                      {bill.neural_summary}
+                                      {expandedSummaries[bill.id] || bill.neural_summary.length <= NEURAL_SUMMARY_COLLAPSE
+                                        ? bill.neural_summary
+                                        : bill.neural_summary.slice(0, NEURAL_SUMMARY_COLLAPSE) + '…'}
                                     </p>
+                                    {bill.neural_summary.length > NEURAL_SUMMARY_COLLAPSE && (
+                                      <motion.button
+                                        onClick={() => toggleSummaryExpanded(bill.id)}
+                                        whileTap={{ scale: 0.97 }}
+                                        className="mt-3 flex items-center gap-1 text-kenya-green font-black text-[10px] uppercase tracking-widest hover:opacity-80 transition-opacity"
+                                      >
+                                        {expandedSummaries[bill.id] ? 'Show Less' : 'Read More'}
+                                        <motion.span
+                                          animate={{ rotate: expandedSummaries[bill.id] ? 180 : 0 }}
+                                          transition={{ duration: 0.22 }}
+                                        >
+                                          <ChevronDown className="h-3 w-3" />
+                                        </motion.span>
+                                      </motion.button>
+                                    )}
                                   </div>
                                 ) : (
                                   <p className="text-lg text-muted-foreground leading-relaxed max-w-3xl line-clamp-3">
@@ -721,7 +804,7 @@ const LegislativeTracker = () => {
                                   )}
                                 </div>
 
-                                <div className="flex items-center gap-3">
+                                <div className="flex flex-wrap items-center gap-3">
                                   {bill.pdf_url && (
                                     <Button
                                       variant="outline"
@@ -732,7 +815,27 @@ const LegislativeTracker = () => {
                                       <BookOpen className="ml-2 h-4 w-4" />
                                     </Button>
                                   )}
-                                  <AIContextButton label="Summarize" context={bill.title + ": " + bill.summary} className="h-12 px-6" />
+
+                                  {/* Split Summary Pill — Non-deep left half / Deep Summary right half */}
+                                  <div className="flex items-stretch h-12 rounded-2xl overflow-hidden border border-slate-200 dark:border-white/10 shadow-ios-soft">
+                                    {/* Non-deep: quick AI context — existing AIContextButton behaviour */}
+                                    <AIContextButton
+                                      label="Summary"
+                                      context={bill.title + ": " + bill.summary}
+                                      className="h-full px-5 rounded-none border-none border-r border-slate-200 dark:border-white/10 text-xs font-black uppercase tracking-widest bg-white dark:bg-[#111] hover:bg-slate-50 dark:hover:bg-white/5 transition-colors"
+                                    />
+                                    {/* Deep Summary: links to bill detail description section */}
+                                    <Button
+                                      asChild
+                                      variant="ghost"
+                                      className="h-full px-5 rounded-none text-xs font-black uppercase tracking-widest text-kenya-green hover:bg-kenya-green/5 transition-colors"
+                                    >
+                                      <Link to={`/bill/${getBillIdentifier(bill)}`}>
+                                        Deep ↗
+                                      </Link>
+                                    </Button>
+                                  </div>
+
                                   <BillFollowButton billId={bill.id} variant="ghost" className="h-12 px-6 rounded-2xl" />
                                   <Button asChild className="h-12 px-10 rounded-2xl bg-kenya-green text-white font-black hover:bg-kenya-green/90 shadow-xl">
                                     <Link to={`/bill/${getBillIdentifier(bill)}#memoranda`}>

@@ -10,6 +10,8 @@ interface BillResponseFormProps {
   billTitle: string;
   /** Called when the user submits so the parent can show a success state. */
   onSubmitSuccess?: (responseText: string) => void;
+  /** Optional prefill text — used when a concern card is tapped to pre-populate the textarea. */
+  prefillQuery?: string | null;
 }
 
 const MAX_CHARS = 1500;
@@ -18,6 +20,7 @@ export const BillResponseForm: React.FC<BillResponseFormProps> = ({
   billId,
   billTitle,
   onSubmitSuccess,
+  prefillQuery,
 }) => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -28,6 +31,7 @@ export const BillResponseForm: React.FC<BillResponseFormProps> = ({
   const [error, setError] = useState<string | null>(null);
   const remaining = MAX_CHARS - response.length;
 
+  // Load previously saved response for this user+bill
   useEffect(() => {
     if (!user || !billId) return;
     billService.getUserBillResponse(billId).then((r) => {
@@ -37,6 +41,14 @@ export const BillResponseForm: React.FC<BillResponseFormProps> = ({
       }
     });
   }, [user, billId]);
+
+  // When a concern card taps and passes a prefillQuery, inject it — but only if textarea is empty
+  useEffect(() => {
+    if (prefillQuery && prefillQuery.trim().length > 0) {
+      setResponse(prefillQuery.slice(0, MAX_CHARS));
+      setSubmitted(false);
+    }
+  }, [prefillQuery]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

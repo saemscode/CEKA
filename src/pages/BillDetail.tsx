@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, Link, useLocation } from 'react-router-dom';
-import { ArrowLeft, Calendar, User, Tag, ExternalLink, Clock, Eye, Share2, Clipboard, Download, CheckCircle2, Circle, ShieldCheck, Newspaper, Info, Lock, FileText, XCircle, Target, TrendingUp, Sparkles } from 'lucide-react';
+import { ArrowLeft, Calendar, User, Tag, ExternalLink, Clock, Eye, Share2, Clipboard, Download, CheckCircle2, Circle, ShieldCheck, Newspaper, Info, Lock, FileText, XCircle, Target, TrendingUp, Sparkles, ChevronDown, ChevronUp } from 'lucide-react';
 import { buildTimeline, getStageColor, getStageIndex, BILL_STAGES } from '@/lib/billStages';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -98,6 +98,50 @@ const LegislativeTimeline = ({ stages, language }: { stages: ReturnType<typeof b
   );
 };
 
+// ── Markdown-aware prose renderer for the enriched description ──
+// Parses **bold** section headers and - bullet lists into proper HTML elements
+const ProseRenderer = ({ content }: { content: string }) => {
+  const lines = content.split('\n');
+
+  return (
+    <div className="space-y-4 text-lg text-slate-600 dark:text-slate-300 leading-relaxed font-medium">
+      {lines.map((line, idx) => {
+        const trimmed = line.trim();
+        if (!trimmed) return <div key={idx} className="h-2" />;
+
+        // **Section Header** bold lines
+        const boldHeaderMatch = trimmed.match(/^\*\*(.+?)\*\*:?\s*$/);
+        if (boldHeaderMatch) {
+          return (
+            <h4 key={idx} className="text-sm font-black uppercase tracking-widest text-kenya-green mt-6 mb-2 first:mt-0">
+              {boldHeaderMatch[1].replace(/:$/, '')}
+            </h4>
+          );
+        }
+
+        // - Bullet list items
+        if (trimmed.startsWith('- ')) {
+          return (
+            <div key={idx} className="flex gap-3 items-start pl-2">
+              <span className="text-kenya-green font-black text-base leading-none mt-1 shrink-0">—</span>
+              <p className="text-base text-slate-600 dark:text-slate-300 leading-relaxed">
+                {trimmed.slice(2)}
+              </p>
+            </div>
+          );
+        }
+
+        // Regular paragraph
+        return (
+          <p key={idx} className="text-base md:text-lg text-slate-600 dark:text-slate-300 leading-relaxed">
+            {trimmed}
+          </p>
+        );
+      })}
+    </div>
+  );
+};
+
 const BillDetail = () => {
   const { slug } = useParams();
   const location = useLocation();
@@ -111,6 +155,14 @@ const BillDetail = () => {
   const [signatureCount, setSignatureCount] = useState(0);
   const [signatureGoal, setSignatureGoal] = useState(1000);
   const memorandaRef = useRef<HTMLDivElement>(null);
+  const responseFormRef = useRef<HTMLDivElement>(null);
+
+  // NEW: prefill query state for concern → response form link
+  const [prefillQuery, setPrefillQuery] = useState<string | null>(null);
+
+  // NEW: Read More state for description and neural_summary
+  const [descriptionExpanded, setDescriptionExpanded] = useState(false);
+  const DESCRIPTION_COLLAPSE_THRESHOLD = 600; // chars
 
   // Hash-based deep-link scroll — fires once after bill is loaded
   useEffect(() => {
@@ -232,6 +284,16 @@ const BillDetail = () => {
 
   const safeStages = getSafeStages();
 
+  // Concern tap handler: prefill response form & smooth-scroll to it
+  const handleConcernTap = useCallback((concern: string) => {
+    setPrefillQuery(`What's your thought on "${concern}"?`);
+    if (responseFormRef.current) {
+      setTimeout(() => {
+        responseFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 80);
+    }
+  }, []);
+
   if (loading) {
     return (
       <Layout>
@@ -277,6 +339,13 @@ const BillDetail = () => {
     try { return JSON.parse(bill.stages as unknown as string); } catch { return null; }
   })();
   const stages = buildTimeline(bill.status, dbStages, bill.date || bill.created_at);
+
+  // Description: determine if long enough to warrant a Read More
+  const descriptionText = bill.description || '';
+  const descriptionIsLong = descriptionText.length > DESCRIPTION_COLLAPSE_THRESHOLD;
+  const descriptionToRender = descriptionIsLong && !descriptionExpanded
+    ? descriptionText.slice(0, DESCRIPTION_COLLAPSE_THRESHOLD)
+    : descriptionText;
 
   return (
     <Layout>
@@ -382,10 +451,36 @@ const BillDetail = () => {
                   <h3 className="text-xs font-black uppercase tracking-[0.3em] text-slate-400 shrink-0">{translate("Legislative Narrative", language)}</h3>
                   <div className="h-1px flex-grow bg-slate-200 dark:bg-white/5" />
                 </div>
+
+                {/* DESCRIPTION — Markdown-aware renderer with Read More */}
                 <div className="prose prose-slate dark:prose-invert max-w-none">
-                  <p className="text-lg text-slate-600 dark:text-slate-300 leading-relaxed font-medium">
-                    {bill.description || 'This bill is currently undergoing active legislative processing. Comprehensive details regarding its subsections, specific clauses, and policy implications are being processed for public review.'}
-                  </p>
+                  {descriptionText ? (
+                    <div>
+                      <ProseRenderer content={descriptionToRender} />
+
+                      {descriptionIsLong && (
+                        <motion.button
+                          onClick={() => setDescriptionExpanded(prev => !prev)}
+                          whileTap={{ scale: 0.97 }}
+                          className="mt-4 flex items-center gap-2 text-kenya-green font-black text-xs uppercase tracking-widest group/readmore transition-all"
+                        >
+                          <span className="border-b border-kenya-green/30 group-hover/readmore:border-kenya-green transition-colors">
+                            {descriptionExpanded ? 'Show Less' : 'Read Full Analysis'}
+                          </span>
+                          <motion.span
+                            animate={{ rotate: descriptionExpanded ? 180 : 0 }}
+                            transition={{ duration: 0.25 }}
+                          >
+                            <ChevronDown className="h-4 w-4" />
+                          </motion.span>
+                        </motion.button>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-lg text-slate-600 dark:text-slate-300 leading-relaxed font-medium">
+                      This bill is currently undergoing active legislative processing. Comprehensive details regarding its subsections, specific clauses, and policy implications are being processed for public review.
+                    </p>
+                  )}
                 </div>
 
                 {bill.constitutional_section && (
@@ -453,7 +548,7 @@ const BillDetail = () => {
                 </div>
               )}
 
-              {/* AI CITIZEN CONCERNS */}
+              {/* AI CITIZEN CONCERNS — CEKA colors, 2-col grid, iOS tap animations */}
               {bill && Array.isArray(bill.ai_concerns) && bill.ai_concerns.length > 0 && (
                 <motion.div
                   initial={{ opacity: 0, y: 16 }}
@@ -462,18 +557,30 @@ const BillDetail = () => {
                 >
                   <div className="flex items-center justify-between">
                     <h2 className="text-2xl font-black tracking-tight leading-tight">
-                      Concerns <span className="text-amber-500 mx-1">to</span> Note
+                      Concerns <span className="text-kenya-green mx-1">to</span> Note
                     </h2>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Tap any concern to respond</p>
                   </div>
-                  <div className="grid grid-cols-1 gap-3">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {(bill.ai_concerns as string[]).map((concern, i) => (
-                      <div
+                      <motion.button
                         key={i}
-                        className="flex gap-4 items-start p-4 rounded-2xl bg-amber-500/5 dark:bg-amber-500/10 border border-amber-200/30 dark:border-amber-500/20"
+                        onClick={() => handleConcernTap(concern)}
+                        whileHover={{ scale: 1.018, y: -2 }}
+                        whileTap={{ scale: 0.97, y: 0 }}
+                        transition={{ type: 'spring', stiffness: 400, damping: 22 }}
+                        className="flex gap-4 items-start p-4 rounded-2xl bg-kenya-green/[0.04] dark:bg-kenya-green/10 border border-kenya-green/15 dark:border-kenya-green/20 text-left cursor-pointer group/concern hover:bg-kenya-green/[0.08] dark:hover:bg-kenya-green/15 hover:border-kenya-green/30 hover:shadow-ios-soft transition-all duration-200 active:bg-kenya-green/10"
                       >
-                        <span className="text-amber-500 font-black text-sm mt-0.5 shrink-0">{i + 1}.</span>
-                        <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">{concern}</p>
-                      </div>
+                        <span className="text-kenya-green font-black text-sm mt-0.5 shrink-0">{i + 1}.</span>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed group-hover/concern:text-slate-900 dark:group-hover/concern:text-white transition-colors">
+                            {concern}
+                          </p>
+                          <p className="mt-2 text-[10px] font-black uppercase tracking-widest text-kenya-green/60 group-hover/concern:text-kenya-green transition-colors">
+                            Tap to respond →
+                          </p>
+                        </div>
+                      </motion.button>
                     ))}
                   </div>
                 </motion.div>
@@ -502,7 +609,7 @@ const BillDetail = () => {
                       className="h-12 px-6 rounded-2xl border-kenya-green/20 text-kenya-green font-black text-xs uppercase tracking-widest hover:bg-kenya-green/5 shadow-ios-soft"
                     >
                       <Share2 className="mr-2 h-4 w-4" />
-                      Amplify Action
+                      Share {bill.title} Petition
                     </Button>
                   </div>
 
@@ -519,12 +626,13 @@ const BillDetail = () => {
                          />
                       </div>
 
-                     {/* QUICK CIVIC RESPONSE */}
-                     <div className="order-1 xl:order-2">
+                     {/* QUICK CIVIC RESPONSE — with prefill from concern tap */}
+                     <div className="order-1 xl:order-2" ref={responseFormRef}>
                         <BillResponseForm
                           billId={bill.id}
                           billTitle={bill.title}
                           onSubmitSuccess={(text) => setUserResponse(text)}
+                          prefillQuery={prefillQuery}
                         />
                      </div>
                   </div>

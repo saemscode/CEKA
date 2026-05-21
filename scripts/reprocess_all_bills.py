@@ -31,6 +31,7 @@ try:
     from supabase_direct import SupabaseDirect
     from sovereign_corroborator import SovereignCorroborator
     from multi_llm_orchestrator import MultiLLMOrchestrator
+    from enriched_bill_prompts import build_enrichment_prompt
 except ImportError as e:
     print(f"Error: Missing dependency — {e}")
     exit(1)
@@ -211,7 +212,7 @@ class BatchIntelligenceUpgrader:
 
         update_data = {
             "summary": intel.get("summary") or current_bill.get("summary"),
-            "description": intel.get("short_title") or current_bill.get("description"),
+            # description is now reserved for the enriched narrative — don't overwrite with short_title
             "sponsor": intel.get("sponsor") or current_bill.get("sponsor") or "Government",
             "constitutional_section": intel.get("constitutional_section") or current_bill.get("constitutional_section"),
             "is_money_bill": intel.get("is_money_bill"), # NEW
@@ -226,13 +227,43 @@ class BatchIntelligenceUpgrader:
         if text and len(text) >= 50:
             update_data["text_content"] = text[:50000]
 
-        # Stage detection — only override if we have strong signal
-        if text and len(text) >= 50:
-            detected_stage = self._detect_stage(text, current_bill.get("status", ""))
-            if detected_stage:
-                update_data["status"] = detected_stage
-            elif intel.get("status") and intel["status"] != "Not explicitly stated in the provided text":
-                update_data["status"] = intel["status"]
+        # ── Stage Regression Guard ──
+        # Determine the highest confirmed non-discarded stage from the DB stages JSON
+        current_stages = current_bill.get("stages") or {}
+        if isinstance(current_stages, str):
+            try:
+                current_stages = json.loads(current_stages)
+            except Exception:
+                current_stages = {}
+
+        _STAGE_ORDER = {
+            "pre_publication": 0, "publication": 1, "first_reading": 2,
+            "second_reading": 3, "committee": 4, "report": 5,
+            "third_reading": 6, "mediation": 7, "assent": 8,
+        }
+        highest_confirmed = -1
+        for sk, sv in current_stages.items():
+            if isinstance(sv, dict) and sv.get("status") == "completed" and sk != "discarded":
+                highest_confirmed = max(highest_confirmed, _STAGE_ORDER.get(sk, -1))
+
+        # Check for status_lock
+        has_lock = current_bill.get("status_lock", False)
+
+        # Stage detection — only override if we have strong signal AND no regression
+        if not has_lock:
+            if text and len(text) >= 50:
+                detected_stage = self._detect_stage(text, current_bill.get("status", ""))
+                if detected_stage:
+                    update_data["status"] = detected_stage
+                elif intel.get("status") and intel["status"] != "Not explicitly stated in the provided text":
+                    inferred_status = intel["status"]
+                    # ── Regression Guard: Don't let LLM regress to DISCARDED if stages show progress ──
+                    inferred_lower = inferred_status.lower().strip()
+                    is_terminal = inferred_lower in ("discarded", "withdrawn", "rejected", "negatived", "lapsed")
+                    if is_terminal and highest_confirmed >= _STAGE_ORDER.get("first_reading", 2):
+                        logger.info(f"    [Regression Guard] Blocking LLM-inferred '{inferred_status}' — confirmed stages up to order {highest_confirmed}")
+                    else:
+                        update_data["status"] = inferred_status
         
         # Remove None values
         update_data = {k: v for k, v in update_data.items() if v is not None}
@@ -253,7 +284,7 @@ class BatchIntelligenceUpgrader:
         # ── Step 1: Text Extraction ──────────────────────────────────────
         text = bill.get("text_content") or ""
         if not text or len(text) < 50:
-            logger.info("  [1/3] Text missing — attempting re-extraction from PDF URL...")
+            logger.info("  [1/4] Text missing — attempting re-extraction from PDF URL...")
             pdf_url = bill.get("pdf_url") or bill.get("url")
             text = self._extract_pdf_text(pdf_url)
             if text and len(text) >= 50:
@@ -261,10 +292,10 @@ class BatchIntelligenceUpgrader:
             else:
                 logger.info("    → No PDF text — will use title-only LLM inference.")
         else:
-            logger.info(f"  [1/3] Text already present ({len(text)} chars).")
+            logger.info(f"  [1/4] Text already present ({len(text)} chars).")
 
         # ── Step 2: LLM Distillation (ALWAYS runs — title-only if no text) ─
-        logger.info("  [2/3] Running Multi-LLM Distillation...")
+        logger.info("  [2/4] Running Multi-LLM Distillation...")
         title_only = not text or len(text) < 50
         try:
             intel = self._run_distillation(title, text if not title_only else "")
@@ -280,8 +311,86 @@ class BatchIntelligenceUpgrader:
             except Exception:
                 pass
 
+        # ── Step 2.5: Enriched Description (Human-Tone Narrative → description column) ──
+        logger.info("  [2.5/4] Generating Human-Tone Enriched Description...")
+        try:
+            # Re-fetch the latest bill record so we have fresh intel from Step 2
+            fresh_bills = self.db.select("bills", "*", eq="id", eq_val=bill_id)
+            fresh_bill = fresh_bills[0] if fresh_bills else bill
+
+            # Only re-enrich if description is empty OR the bill was recently updated
+            should_enrich = (
+                not fresh_bill.get("description") or
+                not fresh_bill.get("enriched_at") or
+                fresh_bill.get("analysis_status") == "pending"
+            )
+
+            if should_enrich:
+                enrich_prompt = build_enrichment_prompt(
+                    title=title,
+                    text_content=text,
+                    existing_summary=fresh_bill.get("summary"),
+                    existing_description=fresh_bill.get("description"),
+                    constitutional_section=fresh_bill.get("constitutional_section"),
+                    sponsor=fresh_bill.get("sponsor"),
+                    status=fresh_bill.get("status"),
+                    ai_concerns=json.loads(fresh_bill["ai_concerns"]) if isinstance(fresh_bill.get("ai_concerns"), str) else fresh_bill.get("ai_concerns"),
+                    category=fresh_bill.get("category"),
+                )
+
+                enriched_raw = self.orchestrator.synthesize(
+                    enrich_prompt,
+                    "You are CEKA's Human-Tone Legislative Enrichment Engine. Return pure prose only. No JSON, no markdown fences, no preamble."
+                )
+
+                if enriched_raw and len(enriched_raw.strip()) >= 300:
+                    # ── Normalization: strip any markdown fences or JSON that leaked through ──
+                    normalized = enriched_raw.strip()
+
+                    # Strip markdown fences if the LLM wrapped the output
+                    if normalized.startswith("```"):
+                        lines = normalized.split("\n")
+                        normalized = "\n".join(
+                            l for l in lines if not l.startswith("```")
+                        ).strip()
+
+                    # Strip JSON-like preamble ({, [) if it leaked through
+                    if normalized and normalized[0] in ("{", "["):
+                        normalized = ""  # Invalid — LLM returned JSON instead of prose
+
+                    # Strip common LLM preambles
+                    preamble_markers = [
+                        "here is the enriched", "here's the enriched",
+                        "the following is", "below is", "i'll now",
+                    ]
+                    first_line_lower = normalized.split("\n")[0].lower().strip()
+                    if any(first_line_lower.startswith(p) for p in preamble_markers):
+                        # Skip first line — it's a preamble
+                        normalized = "\n".join(normalized.split("\n")[1:]).strip()
+
+                    if normalized and len(normalized) >= 300:
+                        self.db.update(
+                            "bills",
+                            {
+                                "description": normalized[:8000],
+                                "enriched_at": datetime.now(timezone.utc).isoformat(),
+                            },
+                            eq="id",
+                            eq_val=bill_id
+                        )
+                        logger.info(f"    ✅ Enriched description saved ({len(normalized)} chars).")
+                    else:
+                        logger.warning("    ⚠️ Normalization resulted in empty/short output — enrichment skipped.")
+                else:
+                    logger.warning("    ⚠️ LLM returned empty or too-short enrichment — skipping.")
+            else:
+                logger.info("    → Enrichment skipped (already enriched and no updates).")
+        except Exception as e:
+            logger.error(f"    ❌ Enrichment step failed: {e}")
+
         # ── Step 3: Sovereign Corroborator ────────────────────────────────
-        logger.info("  [3/3] Regenerating Sovereign Intelligence Narrative...")
+        logger.info("  [3/4] Wait skipped — Sovereign Corroborator running...")
+        logger.info("  [4/4] Regenerating Sovereign Intelligence Narrative...")
         try:
             success = self.corroborator.process_bill(bill_id)
             if success:

@@ -279,11 +279,13 @@ def detect_stage_from_text(text: str, bill_title: str) -> Optional[str]:
                     # 🚨 STRENGTHENED GUARD: If it's a critical terminal stage (Discarded), 
                     # REQUIRE the year to be present either in the line or very nearby (same paragraph)
                     if stage_key == "discarded" and bill_year:
-                        paragraph_text = line # simplified for now
                         if str(bill_year) not in line:
-                            # Search in a small window around the line
-                            # (not implemented here yet, but the line check is already stricter)
-                            pass
+                            # Check if ANY other year is present — if so, this line is about a different bill
+                            other_years = [y for y in re.findall(r'\b(20\d{2})\b', line) if int(y) != bill_year]
+                            if other_years:
+                                continue  # Line references a different year — skip to prevent contamination
+                            # No year at all in the line — ambiguous, but safe to skip for terminal stages
+                            continue
 
                     detected_stages.append(stage_key)
                     break 
