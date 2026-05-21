@@ -593,7 +593,7 @@ const BillDetail = () => {
                   whileInView={{ opacity: 1, y: 0 }}
                   className="space-y-10 pb-12"
                 >
-                  <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+                  <div className="flex flex-col gap-5 sm:gap-6">
                     <div className="space-y-2">
                        <h2 className="text-3xl md:text-4xl font-black tracking-tight leading-tight uppercase">
                         ✍️ Raise <span className="text-kenya-green">Your</span> Voice
