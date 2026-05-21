@@ -29,7 +29,7 @@ const LegislativeTimeline = ({ stages, language }: { stages: ReturnType<typeof b
   );
 
   return (
-    <div className="relative mt-8 space-y-8 before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-kenya-green before:via-slate-200 dark:before:via-white/5 before:to-slate-100 dark:before:to-transparent">
+    <div className="relative mt-8 space-y-8 before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-kenya-green before:from-[75%] before:to-slate-200 dark:before:to-white/5">
       {stages.map((stage, index) => (
         <motion.div
           key={stage.id}

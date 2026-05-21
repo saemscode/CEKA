@@ -78,7 +78,7 @@ const LegislativeTracker = () => {
   // Pagination & Virtualization Alternative
   const [visibleCount, setVisibleCount] = useState(10);
   const observerTarget = useRef<HTMLDivElement>(null);
-  
+
   // Reset pagination on filter change
   useEffect(() => {
     setVisibleCount(10);
@@ -513,7 +513,7 @@ const LegislativeTracker = () => {
                 <div className="space-y-4">
                   <h3 className="font-black text-lg flex items-center gap-2">
                     <Search className="h-5 w-5 text-primary" />
-                    Search Our Records
+                    Search Bills
                   </h3>
                   <div className="relative group space-y-3">
                     <Input
@@ -524,18 +524,24 @@ const LegislativeTracker = () => {
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
                     />
-                    <div className="flex items-center gap-2 px-2">
-                      <button
-                        onClick={() => setDeepSearch(!deepSearch)}
-                        className={cn(
-                          "text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full transition-all",
-                          deepSearch
-                            ? "bg-primary text-white"
-                            : "bg-slate-100 dark:bg-white/5 opacity-50"
-                        )}
-                      >
-                        {deepSearch ? 'Deep Neural Search Active' : 'Enable Deep PDF Search'}
-                      </button>
+                    <div className="flex items-center justify-between px-2 pt-2">
+                       <div className="flex flex-col">
+                         <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                           {deepSearch ? 'Deep Intelligence' : 'Standard Search'}
+                         </span>
+                         <span className="text-[9px] text-slate-400/60 font-medium">
+                           {deepSearch ? 'Scanning PDF content...' : 'Indexing metadata only'}
+                         </span>
+                       </div>
+                       <label className="relative inline-flex items-center cursor-pointer group">
+                         <input
+                           type="checkbox"
+                           className="sr-only peer"
+                           checked={deepSearch}
+                           onChange={() => setDeepSearch(!deepSearch)}
+                         />
+                         <div className="w-12 h-6 bg-slate-200 dark:bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-kenya-green shadow-inner"></div>
+                       </label>
                     </div>
                   </div>
                 </div>
@@ -696,184 +702,184 @@ const LegislativeTracker = () => {
                     <>
                       {filteredBills.slice(0, visibleCount).map((bill) => (
                         <motion.div
-                        layout
-                        initial={{ opacity: 0, scale: 0.98 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        key={bill.id}
-                        className="w-full min-w-0"
-                      >
-                        <Card className="group relative overflow-hidden border-none bg-white dark:bg-[#111] shadow-ios-high dark:shadow-ios-high-dark rounded-[40px] w-full transition-all hover:bg-slate-50/50 dark:hover:bg-white/[0.02]">
-                          <div className="flex flex-col md:flex-row w-full min-w-0">
-                            {/* Visual Progress Pillar */}
-                            <div className="md:w-48 p-8 flex flex-col justify-between border-r border-border/50 bg-slate-50/30 dark:bg-white/[0.01]">
-                              <div className="space-y-4">
-                                <div className="h-14 w-14 rounded-2xl bg-white dark:bg-white/5 shadow-sm flex items-center justify-center">
-                                  <Scale className="h-7 w-7 text-primary" />
+                          layout
+                          initial={{ opacity: 0, scale: 0.98 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          key={bill.id}
+                          className="w-full min-w-0"
+                        >
+                          <Card className="group relative overflow-hidden border-none bg-white dark:bg-[#111] shadow-ios-high dark:shadow-ios-high-dark rounded-[40px] w-full transition-all hover:bg-slate-50/50 dark:hover:bg-white/[0.02]">
+                            <div className="flex flex-col md:flex-row w-full min-w-0">
+                              {/* Visual Progress Pillar */}
+                              <div className="md:w-48 p-8 flex flex-col justify-between border-r border-border/50 bg-slate-50/30 dark:bg-white/[0.01]">
+                                <div className="space-y-4">
+                                  <div className="h-14 w-14 rounded-2xl bg-white dark:bg-white/5 shadow-sm flex items-center justify-center">
+                                    <Scale className="h-7 w-7 text-primary" />
+                                  </div>
+                                  <div className="space-y-1">
+                                    <div className="text-[10px] font-black uppercase tracking-widest opacity-40">Current Stage</div>
+                                    <div className={cn(
+                                      "text-sm font-black",
+                                      (bill.stage_index || 0) === -1 ? 'text-red-500' : 'text-kenya-green'
+                                    )}>{bill.status}</div>
+                                  </div>
                                 </div>
-                                <div className="space-y-1">
-                                  <div className="text-[10px] font-black uppercase tracking-widest opacity-40">Current Stage</div>
-                                  <div className={cn(
-                                    "text-sm font-black",
-                                    (bill.stage_index || 0) === -1 ? 'text-red-500' : 'text-kenya-green'
-                                  )}>{bill.status}</div>
+
+                                {/* 8-rectangle stage journey mini-visualizer */}
+                                <div className="grid grid-cols-8 gap-1 h-1.5 mt-8">
+                                  {BILL_STAGES.map((_, idx) => {
+                                    const isDiscarded = (bill.stage_index || 0) === -1;
+                                    return (
+                                      <div
+                                        key={idx}
+                                        className={cn(
+                                          "rounded-full transition-all",
+                                          isDiscarded
+                                            ? "bg-red-400 dark:bg-red-600" // all red when discarded
+                                            : idx <= (bill.stage_index || 0)
+                                              ? "bg-kenya-green"
+                                              : "bg-slate-200 dark:bg-white/10"
+                                        )}
+                                      />
+                                    );
+                                  })}
                                 </div>
                               </div>
 
-                              {/* 8-rectangle stage journey mini-visualizer */}
-                              <div className="grid grid-cols-8 gap-1 h-1.5 mt-8">
-                                {BILL_STAGES.map((_, idx) => {
-                                  const isDiscarded = (bill.stage_index || 0) === -1;
-                                  return (
-                                    <div
-                                      key={idx}
-                                      className={cn(
-                                        "rounded-full transition-all",
-                                        isDiscarded
-                                          ? "bg-red-400 dark:bg-red-600" // all red when discarded
-                                          : idx <= (bill.stage_index || 0)
-                                            ? "bg-kenya-green"
-                                            : "bg-slate-200 dark:bg-white/10"
-                                      )}
-                                    />
-                                  );
-                                })}
-                              </div>
-                            </div>
-
-                            {/* Bill Intelligence */}
-                            <div className="flex-1 p-6 md:p-10 space-y-6 md:space-y-8 min-w-0">
-                              <div className="flex flex-wrap items-center justify-between gap-4">
-                                <div className="flex gap-2">
-                                  <Badge className="bg-primary/10 text-primary border-none font-bold rounded-lg px-3">
-                                    {bill.category}
-                                  </Badge>
-                                  {bill.stage_index === 2 && (
-                                    <Badge className="bg-orange-500/10 text-orange-500 border-none font-bold rounded-lg px-3">
-                                      Public Feedback Needed
+                              {/* Bill Intelligence */}
+                              <div className="flex-1 p-6 md:p-10 space-y-6 md:space-y-8 min-w-0">
+                                <div className="flex flex-wrap items-center justify-between gap-4">
+                                  <div className="flex gap-2">
+                                    <Badge className="bg-primary/10 text-primary border-none font-bold rounded-lg px-3">
+                                      {bill.category}
                                     </Badge>
-                                  )}
-                                </div>
-                                <div className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40">
-                                  {new Date(bill.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
-                                </div>
-                              </div>
-
-                              <div className="space-y-4 min-w-0">
-                                <h3 className="text-3xl font-[1000] tracking-tight leading-none dark:text-white group-hover:text-primary transition-colors break-words">
-                                  <Link to={`/bill/${getBillIdentifier(bill)}#memoranda`}>{bill.title}</Link>
-                                </h3>
-
-                                {bill.neural_summary ? (
-                                  <div className="bg-kenya-green/[0.03] border border-kenya-green/10 rounded-3xl p-6 mb-4">
-                                    <div className="flex items-center gap-2 text-kenya-green mb-3">
-                                      <Globe className="h-4 w-4" />
-                                      <span className="text-[10px] font-black uppercase tracking-widest">Quick Summary</span>
-                                    </div>
-                                    <p className="text-sm font-medium leading-relaxed opacity-80">
-                                      {expandedSummaries[bill.id] || bill.neural_summary.length <= NEURAL_SUMMARY_COLLAPSE
-                                        ? bill.neural_summary
-                                        : bill.neural_summary.slice(0, NEURAL_SUMMARY_COLLAPSE) + '…'}
-                                    </p>
-                                    {bill.neural_summary.length > NEURAL_SUMMARY_COLLAPSE && (
-                                      <motion.button
-                                        onClick={() => toggleSummaryExpanded(bill.id)}
-                                        whileTap={{ scale: 0.97 }}
-                                        className="mt-3 flex items-center gap-1 text-kenya-green font-black text-[10px] uppercase tracking-widest hover:opacity-80 transition-opacity"
-                                      >
-                                        {expandedSummaries[bill.id] ? 'Show Less' : 'Read More'}
-                                        <motion.span
-                                          animate={{ rotate: expandedSummaries[bill.id] ? 180 : 0 }}
-                                          transition={{ duration: 0.22 }}
-                                        >
-                                          <ChevronDown className="h-3 w-3" />
-                                        </motion.span>
-                                      </motion.button>
+                                    {bill.stage_index === 2 && (
+                                      <Badge className="bg-orange-500/10 text-orange-500 border-none font-bold rounded-lg px-3">
+                                        Public Feedback Needed
+                                      </Badge>
                                     )}
                                   </div>
-                                ) : (
-                                  <p className="text-lg text-muted-foreground leading-relaxed max-w-3xl line-clamp-3">
-                                    {bill.summary}
-                                  </p>
-                                )}
-                              </div>
+                                  <div className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40">
+                                    {new Date(bill.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                                  </div>
+                                </div>
 
-                              <div className="flex flex-col sm:flex-row flex-wrap items-start sm:items-center justify-between gap-6 pt-6 border-t border-border/50">
-                                <div className="flex items-center gap-4 min-w-0 w-full sm:w-auto">
-                                  {bill.sponsor && (
-                                    <div className="flex items-center gap-3 min-w-0 flex-1">
-                                      <div className="h-8 w-8 rounded-full bg-slate-200 dark:bg-white/10 flex items-center justify-center font-bold text-xs shrink-0">
-                                        {bill.sponsor.charAt(0)}
+                                <div className="space-y-4 min-w-0">
+                                  <h3 className="text-3xl font-[1000] tracking-tight leading-none dark:text-white group-hover:text-primary transition-colors break-words">
+                                    <Link to={`/bill/${getBillIdentifier(bill)}#memoranda`}>{bill.title}</Link>
+                                  </h3>
+
+                                  {bill.neural_summary ? (
+                                    <div className="bg-kenya-green/[0.03] border border-kenya-green/10 rounded-3xl p-6 mb-4">
+                                      <div className="flex items-center gap-2 text-kenya-green mb-3">
+                                        <Globe className="h-4 w-4" />
+                                        <span className="text-[10px] font-black uppercase tracking-widest">Quick Summary</span>
                                       </div>
-                                      <div className="text-xs font-bold leading-none min-w-0 flex-1">
-                                        <div className="opacity-40 uppercase tracking-widest text-[8px] mb-1">Mover / Sponsor</div>
-                                        <div 
-                                          onClick={() => toggleSponsorExpanded(bill.id)}
-                                          className={cn(
-                                            "cursor-pointer transition-all hover:opacity-80 py-1 pr-6 -ml-1 pl-1",
-                                            expandedSponsors[bill.id] ? "break-words whitespace-normal leading-tight" : "truncate"
-                                          )}
-                                          title={bill.sponsor}
+                                      <p className="text-sm font-medium leading-relaxed opacity-80">
+                                        {expandedSummaries[bill.id] || bill.neural_summary.length <= NEURAL_SUMMARY_COLLAPSE
+                                          ? bill.neural_summary
+                                          : bill.neural_summary.slice(0, NEURAL_SUMMARY_COLLAPSE) + '…'}
+                                      </p>
+                                      {bill.neural_summary.length > NEURAL_SUMMARY_COLLAPSE && (
+                                        <motion.button
+                                          onClick={() => toggleSummaryExpanded(bill.id)}
+                                          whileTap={{ scale: 0.97 }}
+                                          className="mt-3 flex items-center gap-1 text-kenya-green font-black text-[10px] uppercase tracking-widest hover:opacity-80 transition-opacity"
                                         >
-                                          {bill.sponsor}
-                                        </div>
-                                      </div>
+                                          {expandedSummaries[bill.id] ? 'Show Less' : 'Read More'}
+                                          <motion.span
+                                            animate={{ rotate: expandedSummaries[bill.id] ? 180 : 0 }}
+                                            transition={{ duration: 0.22 }}
+                                          >
+                                            <ChevronDown className="h-3 w-3" />
+                                          </motion.span>
+                                        </motion.button>
+                                      )}
                                     </div>
+                                  ) : (
+                                    <p className="text-lg text-muted-foreground leading-relaxed max-w-3xl line-clamp-3">
+                                      {bill.summary}
+                                    </p>
                                   )}
                                 </div>
 
-                                <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 w-full sm:w-auto">
-                                  {bill.pdf_url && (
-                                    <Button
-                                      variant="outline"
-                                      onClick={() => vaultService.openDocument(bill.pdf_url!)}
-                                      className="h-12 px-6 rounded-2xl border-slate-200 dark:border-white/10 font-black text-xs uppercase tracking-widest"
-                                    >
-                                      Download PDF
-                                      <BookOpen className="ml-2 h-4 w-4" />
-                                    </Button>
-                                  )}
+                                <div className="flex flex-col sm:flex-row flex-wrap items-start sm:items-center justify-between gap-6 pt-6 border-t border-border/50">
+                                  <div className="flex items-center gap-4 min-w-0 w-full sm:w-auto">
+                                    {bill.sponsor && (
+                                      <div className="flex items-center gap-3 min-w-0 flex-1">
+                                        <div className="h-8 w-8 rounded-full bg-slate-200 dark:bg-white/10 flex items-center justify-center font-bold text-xs shrink-0">
+                                          {bill.sponsor.charAt(0)}
+                                        </div>
+                                        <div className="text-xs font-bold leading-none min-w-0 flex-1">
+                                          <div className="opacity-40 uppercase tracking-widest text-[8px] mb-1">Mover / Sponsor</div>
+                                          <div
+                                            onClick={() => toggleSponsorExpanded(bill.id)}
+                                            className={cn(
+                                              "cursor-pointer transition-all hover:opacity-80 py-1 pr-6 -ml-1 pl-1",
+                                              expandedSponsors[bill.id] ? "break-words whitespace-normal leading-tight" : "truncate"
+                                            )}
+                                            title={bill.sponsor}
+                                          >
+                                            {bill.sponsor}
+                                          </div>
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
 
-                                  {/* Split Summary Pill — Non-deep left half / Deep Summary right half */}
-                                  <div className="flex items-stretch h-12 rounded-2xl overflow-hidden border border-slate-200 dark:border-white/10 shadow-ios-soft">
-                                    {/* Non-deep: quick AI context — existing AIContextButton behaviour */}
-                                    <AIContextButton
-                                      label="Summary"
-                                      context={bill.title + ": " + bill.summary}
-                                      className="h-full px-5 rounded-none border-none border-r border-slate-200 dark:border-white/10 text-xs font-black uppercase tracking-widest bg-white dark:bg-[#111] hover:bg-slate-50 dark:hover:bg-white/5 transition-colors"
-                                    />
-                                    {/* Deep Summary: links to bill detail description section */}
-                                    <Button
-                                      asChild
-                                      variant="ghost"
-                                      className="h-full px-5 rounded-none text-xs font-black uppercase tracking-widest text-kenya-green hover:bg-kenya-green/5 transition-colors"
-                                    >
-                                      <Link to={`/bill/${getBillIdentifier(bill)}`}>
-                                        Deep ↗
+                                  <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 w-full sm:w-auto">
+                                    {bill.pdf_url && (
+                                      <Button
+                                        variant="outline"
+                                        onClick={() => vaultService.openDocument(bill.pdf_url!)}
+                                        className="h-12 px-6 rounded-2xl border-slate-200 dark:border-white/10 font-black text-xs uppercase tracking-widest"
+                                      >
+                                        Download PDF
+                                        <BookOpen className="ml-2 h-4 w-4" />
+                                      </Button>
+                                    )}
+
+                                    {/* Split Summary Pill — Non-deep left half / Deep Summary right half */}
+                                    <div className="flex items-stretch h-12 rounded-2xl overflow-hidden border border-slate-200 dark:border-white/10 shadow-ios-soft">
+                                      {/* Non-deep: quick AI context — existing AIContextButton behaviour */}
+                                      <AIContextButton
+                                        label="Summary"
+                                        context={bill.title + ": " + bill.summary}
+                                        className="h-full px-5 rounded-none border-none border-r border-slate-200 dark:border-white/10 text-xs font-black uppercase tracking-widest bg-white dark:bg-[#111] hover:bg-slate-50 dark:hover:bg-white/5 transition-colors"
+                                      />
+                                      {/* Deep Summary: links to bill detail description section */}
+                                      <Button
+                                        asChild
+                                        variant="ghost"
+                                        className="h-full px-5 rounded-none text-xs font-black uppercase tracking-widest text-kenya-green hover:bg-kenya-green/5 transition-colors"
+                                      >
+                                        <Link to={`/bill/${getBillIdentifier(bill)}`}>
+                                          Deep ↗
+                                        </Link>
+                                      </Button>
+                                    </div>
+
+                                    <BillFollowButton billId={bill.id} variant="ghost" className="h-12 px-6 rounded-2xl" />
+                                    <Button asChild className="h-12 px-10 rounded-2xl bg-kenya-green text-white font-black hover:bg-kenya-green/90 shadow-xl">
+                                      <Link to={`/bill/${getBillIdentifier(bill)}#memoranda`}>
+                                        Follow Progress
+                                        <ArrowRight className="ml-2 h-4 w-4" />
                                       </Link>
                                     </Button>
                                   </div>
-
-                                  <BillFollowButton billId={bill.id} variant="ghost" className="h-12 px-6 rounded-2xl" />
-                                  <Button asChild className="h-12 px-10 rounded-2xl bg-kenya-green text-white font-black hover:bg-kenya-green/90 shadow-xl">
-                                    <Link to={`/bill/${getBillIdentifier(bill)}#memoranda`}>
-                                      Follow Progress
-                                      <ArrowRight className="ml-2 h-4 w-4" />
-                                    </Link>
-                                  </Button>
                                 </div>
                               </div>
                             </div>
-                          </div>
-                        </Card>
-                      </motion.div>
-                    ))}
-                    {filteredBills.length > visibleCount && (
-                      <div ref={observerTarget} className="py-10 flex justify-center opacity-70">
-                        <Button variant="outline" onClick={() => setVisibleCount(v => v + 10)} className="rounded-2xl border-kenya-green/20 text-kenya-green hover:bg-kenya-green/5 font-black uppercase tracking-widest text-[10px]">
-                          Load More Bills <ChevronDown className="ml-2 h-4 w-4" />
-                        </Button>
-                      </div>
-                    )}
+                          </Card>
+                        </motion.div>
+                      ))}
+                      {filteredBills.length > visibleCount && (
+                        <div ref={observerTarget} className="py-10 flex justify-center opacity-70">
+                          <Button variant="outline" onClick={() => setVisibleCount(v => v + 10)} className="rounded-2xl border-kenya-green/20 text-kenya-green hover:bg-kenya-green/5 font-black uppercase tracking-widest text-[10px]">
+                            Load More Bills <ChevronDown className="ml-2 h-4 w-4" />
+                          </Button>
+                        </div>
+                      )}
                     </>
                   )}
                 </TabsContent>
