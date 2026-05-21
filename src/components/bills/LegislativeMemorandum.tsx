@@ -41,6 +41,25 @@ const LottieViewer = ({ path, className, loop = true }: { path: string, classNam
   return <Lottie animationData={animationData} loop={loop} className={cn("w-full h-full", className)} />;
 };
 
+const EmailOpenIcon = ({ size = 24, className = "" }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" className={className} xmlns="http://www.w3.org/2000/svg">
+    <path d="M12.55,14.63,19.45,10a1,1,0,0,1,1.55.83V20a1,1,0,0,1-1,1H4a1,1,0,0,1-1-1V10.87A1,1,0,0,1,4.55,10l6.9,4.59A1,1,0,0,0,12.55,14.63Z" fill="currentColor" opacity="0.8" />
+    <path d="M6,11V3H18v8l-5.45,3.63a1,1,0,0,1-1.1,0Zm5.45,3.63L4.55,10A1,1,0,0,0,3,10.87V20a1,1,0,0,0,1,1H20a1,1,0,0,0,1-1V10.87A1,1,0,0,0,19.45,10l-6.9,4.59A1,1,0,0,1,11.45,14.63Z" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
+const PositionManIcon = ({ size = 24, className = "" }) => (
+  <svg width={size} height={size} viewBox="0 0 100 100" className={className} xmlns="http://www.w3.org/2000/svg">
+    <path d="M63.848 73.354l-1.383 1.71c1.87.226 3.68.491 5.375.812l-5.479 1.623l7.313 1.945l5.451-1.719c3.348 1.123 7.984 2.496 9.52 4.057h-10.93l1.086 3.176h11.342c-.034 1.79-3.234 3.244-6.29 4.422l-7.751-1.676l-7.303 2.617l7.8 1.78c-4.554 1.24-12.2 1.994-18.53 2.341l-.266-3.64h-7.606l-.267 3.64c-6.33-.347-13.975-1.1-18.53-2.34l7.801-1.781l-7.303-2.617l-7.752 1.676c-3.012-.915-6.255-2.632-6.289-4.422H25.2l1.086-3.176h-10.93c1.536-1.561 6.172-2.934 9.52-4.057l5.451 1.719l7.313-1.945l-5.479-1.623a82.552 82.552 0 0 1 5.336-.807l-1.363-1.713c-14.785 1.537-27.073 4.81-30.295 9.979C.7 91.573 19.658 99.86 49.37 99.989c.442.022.878.006 1.29 0c29.695-.136 48.636-8.42 43.501-16.654c-3.224-5.171-15.52-8.445-30.314-9.981z" fill="currentColor"></path><path d="M49.855 0A10.5 10.5 0 0 0 39.5 10.5A10.5 10.5 0 0 0 50 21a10.5 10.5 0 0 0 10.5-10.5A10.5 10.5 0 0 0 50 0a10.5 10.5 0 0 0-.145 0zm-.057 23.592c-7.834.002-15.596 3.368-14.78 10.096l2 14.625c.351 2.573 2.09 6.687 4.687 6.687h.185l2.127 24.531c.092 1.105.892 2 2 2h8c1.108 0 1.908-.895 2-2l2.127-24.53h.186c2.597 0 4.335-4.115 4.687-6.688l2-14.625c.524-6.734-7.384-10.097-15.219-10.096z" fill="currentColor"></path>
+  </svg>
+);
+
+const AddProfileIcon = ({ size = 24, className = "" }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" className={className} xmlns="http://www.w3.org/2000/svg">
+    <path d="M2,21h8a1,1,0,0,0,0-2H3.071A7.011,7.011,0,0,1,10,13a5.044,5.044,0,1,0-3.377-1.337A9.01,9.01,0,0,0,1,20,1,1,0,0,0,2,21ZM10,5A3,3,0,1,1,7,8,3,3,0,0,1,10,5ZM23,16a1,1,0,0,1-1,1H19v3a1,1,0,0,1-2,0V17H14a1,1,0,0,1,0-2h3V12a1,1,0,0,1,2,0v3h3A1,1,0,0,1,23,16Z" fill="currentColor"/>
+  </svg>
+);
+
 const SuccessStep = ({ billTitle, onReset }: { billTitle: string; onReset: () => void }) => {
   return (
     <motion.div
@@ -211,14 +230,15 @@ const CATEGORY_COMMITTEE: Record<string, string> = {
 };
 
 const VARIANT_META = [
-  { id: 'A', label: 'Full', desc: 'Comprehensive — all constitutional anchors, policy implications, full record' },
-  { id: 'B', label: 'Simple', desc: 'Plain-language — clear, personal, accessible to every Kenyan' },
-  { id: 'C', label: 'Technical', desc: 'Discipline-aware — law, finance, health or governance context' },
-  { id: 'D', label: 'Activist Special', desc: 'Short, sharp, bilingual — zero diplomatic cushioning' },
-  { id: 'E', label: 'Lugha ya Taifa (Swahili)', desc: 'Maelezo kamili kwa Kiswahili — inalinda haki zako kikatiba' },
+  { id: 'A', label: 'Full', desc: 'Comprehensive: all constitutional anchors, policy implications, full record' },
+  { id: 'B', label: 'Simple', desc: 'Plain-language: clear, personal, accessible to every Kenyan' },
+  { id: 'C', label: 'Technical', desc: 'Discipline-aware: law, finance, health or governance context' },
+  { id: 'D', label: 'Activist Special', desc: 'Short, sharp, bilingual: zero diplomatic cushioning' },
+  { id: 'E', label: 'Lugha ya Taifa (Swahili)', desc: 'Maelezo kamili kwa Kiswahili: inalinda haki zako kikatiba' },
+  { id: 'F', label: 'See More Templates', desc: 'Browse the community gallery for custom-built templates' },
 ] as const;
 
-type VariantId = 'A' | 'B' | 'C' | 'D' | 'E';
+type VariantId = 'A' | 'B' | 'C' | 'D' | 'E' | 'F';
 type PositionId = 'OPPOSE' | 'SUPPORT' | 'AMEND';
 
 const POSITION_META: { id: PositionId; label: string; color: string }[] = [
@@ -298,6 +318,7 @@ export const LegislativeMemorandum: React.FC<LegislativeMemorandumProps> = ({
   const [hasConsent, setHasConsent] = useState(false);
   const [signatureCount, setSignatureCount] = useState(0);
   const [successState, setSuccessState] = useState<SuccessState>('editing');
+  const [isPetitionStyleOpen, setIsPetitionStyleOpen] = useState(false);
 
   // Location autocomplete state
   const [countySearch, setCountySearch] = useState('');
@@ -332,8 +353,8 @@ export const LegislativeMemorandum: React.FC<LegislativeMemorandumProps> = ({
   const houseLabel = billHouse || 'National Assembly';
   const isNASenate = (billHouse || '').toLowerCase().includes('senate');
   const topRecipient = isNASenate
-    ? `Clerk of the Senate and the Standing Committee — ${committeeLabel}`
-    : `Clerk of the National Assembly and the Departmental Committee — ${committeeLabel}`;
+    ? `Clerk of the Senate`
+    : `Clerk of the National Assembly`;
 
   let parsedConcerns: string[] = [];
   if (Array.isArray(billAiConcerns)) {
@@ -685,16 +706,16 @@ Mwananchi wa Jamhuri ya Kenya`;
                 <button
                   onClick={() => setIsGalleryOpen(true)}
                   title="Templates by CEKA Community"
-                  className="p-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/10 transition-colors text-slate-400 hover:text-kenya-green"
+                  className="p-3.5 rounded-2xl bg-white dark:bg-slate-800 shadow-ios-soft border border-slate-200 dark:border-white/10 hover:border-kenya-green dark:hover:border-kenya-green transition-all hover:scale-105 active:scale-95 text-kenya-green"
                 >
-                  <LibraryIcon size={16} />
+                  <LibraryIcon size={18} />
                 </button>
                 <button
                   onClick={() => setIsCreatorOpen(true)}
                   title="Template Creator"
-                  className="p-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/10 transition-colors text-slate-400 hover:text-kenya-green"
+                  className="p-3.5 rounded-2xl bg-white dark:bg-slate-800 shadow-ios-soft border border-slate-200 dark:border-white/10 hover:border-kenya-green dark:hover:border-kenya-green transition-all hover:scale-105 active:scale-95 text-kenya-green"
                 >
-                  <PenNewSquareIcon size={16} />
+                  <PenNewSquareIcon size={18} />
                 </button>
               </div>
             </div>
@@ -854,14 +875,14 @@ Mwananchi wa Jamhuri ya Kenya`;
             <div className="space-y-4 sm:space-y-6">
               <div className="flex items-center justify-between gap-2 flex-wrap">
                 <div className="flex items-center gap-3">
-                  <KeyIcon size={16} className="text-kenya-green flex-shrink-0" />
+                  <EmailOpenIcon size={18} className="text-kenya-green flex-shrink-0" />
                   <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-900 dark:text-white">Recipients</h3>
                 </div>
                 <button
                   onClick={() => setIsAddingEmail(true)}
-                  className="text-[10px] font-black text-kenya-green uppercase tracking-widest flex items-center gap-1.5 hover:underline flex-shrink-0"
+                  className="text-[10px] font-black text-kenya-green uppercase tracking-widest flex items-center gap-1.5 hover:opacity-70 transition-opacity flex-shrink-0"
                 >
-                  <AddRowIcon size={12} /> Add Recipient
+                  <AddProfileIcon size={16} /> Add Recipient
                 </button>
               </div>
 
@@ -942,47 +963,76 @@ Mwananchi wa Jamhuri ya Kenya`;
 
             {/* ── Template Variant Selector ── */}
             <div className="space-y-3">
-              <div className="flex items-center gap-3">
-                <SparklesIcon size={16} className="text-kenya-green flex-shrink-0" />
-                <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-900 dark:text-white">Petition Style</h3>
+              <div 
+                className="flex items-center justify-between gap-2 flex-wrap cursor-pointer group/style" 
+                onClick={() => setIsPetitionStyleOpen(!isPetitionStyleOpen)}
+              >
+                <div className="flex items-center gap-3">
+                  <PositionManIcon size={18} className="text-kenya-green flex-shrink-0" />
+                  <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-900 dark:text-white">Petition Style</h3>
+                </div>
+                <div className="text-slate-400 group-hover/style:text-kenya-green transition-colors">
+                  <motion.svg animate={{ rotate: isPetitionStyleOpen ? 180 : 0 }} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="6 9 12 15 18 9"></polyline>
+                  </motion.svg>
+                </div>
               </div>
-              <div className="grid grid-cols-2 gap-2">
-                {VARIANT_META.map(v => (
-                  <motion.button
-                    key={v.id}
-                    type="button"
-                    whileTap={{ scale: 0.97 }}
-                    onClick={() => setSelectedVariant(v.id as VariantId)}
-                    className={cn(
-                      'relative p-4 rounded-2xl border text-left transition-all duration-200',
-                      selectedVariant === v.id
-                        ? 'bg-kenya-green/10 border-kenya-green/30 shadow-ios-soft'
-                        : 'bg-slate-50 dark:bg-white/5 border-transparent hover:border-slate-200 dark:hover:border-white/10'
-                    )}
+              
+              <AnimatePresence initial={false}>
+                {isPetitionStyleOpen && (
+                  <motion.div 
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    className="overflow-hidden"
                   >
-                    <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <p className={cn('text-[9px] font-black uppercase tracking-widest mb-1', selectedVariant === v.id ? 'text-kenya-green' : 'text-slate-400')}>
-                          Variant {v.id}
-                        </p>
-                        <p className={cn('text-xs font-black leading-tight', selectedVariant === v.id ? 'text-slate-900 dark:text-white' : 'text-slate-600 dark:text-slate-300')}>
-                          {v.label}
-                        </p>
-                        <p className="text-[9px] text-slate-400 mt-1 leading-relaxed hidden sm:block">{v.desc}</p>
-                      </div>
-                      {selectedVariant === v.id && (
-                        <motion.div
-                          initial={{ scale: 0 }}
-                          animate={{ scale: 1 }}
-                          className="h-5 w-5 rounded-full bg-kenya-green flex items-center justify-center flex-shrink-0 mt-0.5"
+                    <div className="grid grid-cols-2 gap-2 pt-2 pb-4">
+                      {VARIANT_META.map(v => (
+                        <motion.button
+                          key={v.id}
+                          type="button"
+                          whileTap={{ scale: 0.97 }}
+                          onClick={() => {
+                            if (v.id === 'F') {
+                              setIsGalleryOpen(true);
+                            } else {
+                              setSelectedVariant(v.id as VariantId);
+                            }
+                          }}
+                          className={cn(
+                            'relative p-4 rounded-2xl border text-left transition-all duration-200',
+                            selectedVariant === v.id && v.id !== 'F'
+                              ? 'bg-kenya-green/10 border-kenya-green/30 shadow-ios-soft'
+                              : 'bg-slate-50 dark:bg-white/5 border-transparent hover:border-slate-200 dark:hover:border-white/10',
+                            v.id === 'F' && 'border-kenya-green/30 border-dashed bg-transparent hover:bg-kenya-green/5'
+                          )}
                         >
-                          <IOSTickIcon size={10} className="text-white" />
-                        </motion.div>
-                      )}
+                          <div className="flex items-start justify-between gap-2">
+                            <div>
+                              <p className={cn('text-[9px] font-black uppercase tracking-widest mb-1', selectedVariant === v.id ? 'text-kenya-green' : 'text-slate-400')}>
+                                Variant {v.id}
+                              </p>
+                              <p className={cn('text-xs font-black leading-tight', selectedVariant === v.id ? 'text-slate-900 dark:text-white' : 'text-slate-600 dark:text-slate-300')}>
+                                {v.label}
+                              </p>
+                              <p className="text-[9px] text-slate-400 mt-1 leading-relaxed hidden sm:block">{v.desc}</p>
+                            </div>
+                            {selectedVariant === v.id && v.id !== 'F' && (
+                              <motion.div
+                                initial={{ scale: 0 }}
+                                animate={{ scale: 1 }}
+                                className="h-5 w-5 rounded-full bg-kenya-green flex items-center justify-center flex-shrink-0 mt-0.5"
+                              >
+                                <IOSTickIcon size={10} className="text-white" />
+                              </motion.div>
+                            )}
+                          </div>
+                        </motion.button>
+                      ))}
                     </div>
-                  </motion.button>
-                ))}
-              </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
 
             {/* ── Position Selector ── */}
@@ -1154,7 +1204,20 @@ Mwananchi wa Jamhuri ya Kenya`;
             </div>
 
             <div className="pt-5 sm:pt-6 border-t border-black/5 dark:border-white/5 flex items-center justify-between opacity-30 grayscale hover:grayscale-0 hover:opacity-100 transition-all duration-700">
-              <p className="text-[9px] font-black uppercase tracking-widest">Contact at tech@civiceducationkenya.com for queries</p>
+              <p 
+                className="text-[9px] font-black uppercase tracking-widest cursor-pointer hover:text-kenya-green transition-colors" 
+                onClick={() => {
+                  const to = 'tech@civiceducationkenya.com';
+                  const isDeskt = !/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+                  if (isDeskt) {
+                    window.open(`https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(to)}`, '_blank');
+                  } else {
+                    window.location.href = `mailto:${to}`;
+                  }
+                }}
+              >
+                Contact at tech@civiceducationkenya.com for queries
+              </p>
               <div className="flex gap-3 sm:gap-4">
                 <SecureShieldIcon size={13} />
                 <SecurePCIcon size={13} />
