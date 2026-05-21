@@ -14,6 +14,7 @@ interface BillFollowButtonProps {
   size?: 'sm' | 'default' | 'lg';
   showCount?: boolean;
   className?: string;
+  showLabelOnMobile?: boolean;
 }
 
 export function BillFollowButton({
@@ -21,7 +22,8 @@ export function BillFollowButton({
   variant = 'outline',
   size = 'sm',
   showCount = true,
-  className
+  className,
+  showLabelOnMobile = true
 }: BillFollowButtonProps) {
   const { isFollowing, followCount, loading, toggleFollow } = useBillFollowing(billId);
   const { user } = useAuth();
@@ -37,7 +39,7 @@ export function BillFollowButton({
     try {
       await toggleFollow();
       toast({
-        title: isFollowing ? "Unfollowed bill" : "Following bill",
+        title: isFollowing ? "Stopped Following" : "Now Following",
         description: isFollowing
           ? "You will no longer receive updates about this bill."
           : "You will receive notifications when this bill is updated.",
@@ -59,18 +61,31 @@ export function BillFollowButton({
         onClick={handleFollow}
         disabled={loading}
         className={cn(
-          "flex items-center gap-2",
-          isFollowing ? 'bg-kenya-green hover:bg-kenya-green/90' : '',
+          "flex items-center gap-2 transition-all duration-300",
+          isFollowing ? 'bg-kenya-green hover:bg-kenya-green/90 text-white' : '',
           className
         )}
       >
-        <Heart
-          className={`h-4 w-4 ${isFollowing ? 'fill-current' : ''}`}
-        />
-        {isFollowing ? 'Following' : 'Follow'}
+        <div className="relative">
+          <img 
+            src="/context/icons 3/person-2-svgrepo-com.svg" 
+            className={cn("h-4 w-4 transition-transform", isFollowing && "scale-110")}
+            alt="Follow"
+          />
+          {!isFollowing && (
+            <div className="absolute -top-1 -right-1 h-2 w-2 bg-kenya-green rounded-full border border-white dark:border-slate-900" />
+          )}
+        </div>
+        
+        <span className={cn(
+          "font-bold",
+          !showLabelOnMobile && "hidden sm:inline"
+        )}>
+          {isFollowing ? 'Followers' : 'Followers'}
+        </span>
+
         {showCount && followCount > 0 && (
-          <span className="flex items-center gap-1 text-xs">
-            <Users className="h-3 w-3" />
+          <span className="flex items-center gap-1 text-xs opacity-80 border-l border-current/20 pl-1.5 ml-0.5">
             {followCount}
           </span>
         )}

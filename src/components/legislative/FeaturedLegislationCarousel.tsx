@@ -133,14 +133,28 @@ const FeaturedLegislationCarousel: React.FC<FeaturedLegislationCarouselProps> = 
                                      <div className="flex items-center gap-2 mt-auto">
                                          <Button
                                              asChild
-                                             className="flex-1 rounded-2xl h-12 bg-kenya-green hover:bg-kenya-green/90 text-white font-bold group/btn shadow-md hover:shadow-lg transition-all"
+                                             className="flex-1 rounded-2xl h-12 bg-kenya-green hover:bg-kenya-green/90 text-white font-bold group/btn shadow-md hover:shadow-lg transition-all px-3 sm:px-4"
                                          >
                                              <Link to={`/bill/${bill.slug || bill.id}#memoranda`}>
-                                                 Track This Bill
-                                                 <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover/btn:translate-x-1" />
+                                                 <span className="hidden sm:inline-flex items-center">
+                                                     <span className="hidden lg:inline">Track This Bill</span>
+                                                     <span className="hidden md:inline lg:hidden">Track Bill</span>
+                                                     <span className="inline md:hidden">Track</span>
+                                                     <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover/btn:translate-x-1" />
+                                                 </span>
+                                                 <span className="sm:hidden flex items-center justify-center">
+                                                     <span className="mr-1 inline xs:hidden text-xs">Track...</span>
+                                                     <span className="mr-1 hidden xs:inline text-sm">Track</span>
+                                                     <ArrowRight className="h-4 w-4 transition-transform group-hover/btn:translate-x-1" />
+                                                 </span>
                                              </Link>
                                          </Button>
-                                         <BillFollowButton billId={bill.id} variant="ghost" className="h-12 w-14 rounded-2xl border border-slate-200 dark:border-white/10" />
+                                         <BillFollowButton 
+                                             billId={bill.id} 
+                                             variant="ghost" 
+                                             className="h-12 w-14 xs:w-auto xs:px-4 rounded-2xl border border-slate-200 dark:border-white/10 shrink-0"
+                                             showLabelOnMobile={false}
+                                         />
                                      </div>
                                 </CardContent>
                             </Card>

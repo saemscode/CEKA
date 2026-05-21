@@ -50,16 +50,16 @@ const EmailOpenIcon = ({ size = 24, className = "" }) => (
 
 const EmailAltIcon = ({ size = 20, className = "" }) => (
   <svg width={size} height={size} viewBox="0 0 20 20" className={className} xmlns="http://www.w3.org/2000/svg">
-    <rect x="0" fill="none" width="20" height="20"/>
+    <rect x="0" fill="none" width="20" height="20" />
     <g>
-      <path d="M16 1.1L4 5.9c-1.1.4-2 1.8-2 3v8.7c0 1.2.9 1.8 2 1.4l12-4.8c1.1-.4 2-1.8 2-3V2.5c0-1.2-.9-1.8-2-1.4zm.6 2.6l-6 9.3-6.7-4.5c-.1-.1-.4-.4-.2-.7.2-.4.7-.2.7-.2l6.3 2.3s4.8-6.3 5.1-6.7c.1-.2.4-.3.7-.1.3.2.2.5.1.6z" fill="currentColor"/>
+      <path d="M16 1.1L4 5.9c-1.1.4-2 1.8-2 3v8.7c0 1.2.9 1.8 2 1.4l12-4.8c1.1-.4 2-1.8 2-3V2.5c0-1.2-.9-1.8-2-1.4zm.6 2.6l-6 9.3-6.7-4.5c-.1-.1-.4-.4-.2-.7.2-.4.7-.2.7-.2l6.3 2.3s4.8-6.3 5.1-6.7c.1-.2.4-.3.7-.1.3.2.2.5.1.6z" fill="currentColor" />
     </g>
   </svg>
 );
 
 const WriteIcon = ({ size = 24, className = "" }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" className={className} xmlns="http://www.w3.org/2000/svg">
-    <path fill-rule="evenodd" clip-rule="evenodd" d="M19.186 2.09c.521.25 1.136.612 1.625 1.101.49.49.852 1.104 1.1 1.625.313.654.11 1.408-.401 1.92l-7.214 7.213c-.31.31-.688.541-1.105.675l-4.222 1.353a.75.75 0 0 1-.943-.944l1.353-4.221a2.75 2.75 0 0 1 .674-1.105l7.214-7.214c.512-.512 1.266-.714 1.92-.402zm.211 2.516a3.608 3.608 0 0 0-.828-.586l-6.994 6.994a1.002 1.002 0 0 0-.178.241L9.9 14.102l2.846-1.496c.09-.047.171-.107.242-.178l6.994-6.994a3.61 3.61 0 0 0-.586-.828zM4.999 5.5A.5.5 0 0 1 5.47 5l5.53.005a1 1 0 0 0 0-2L5.5 3A2.5 2.5 0 0 0 3 5.5v12.577c0 .76.082 1.185.319 1.627.224.419.558.754.977.978.442.236.866.318 1.627.318h12.154c.76 0 1.185-.082 1.627-.318.42-.224.754-.559.978-.978.236-.442.318-.866.318-1.627V13a1 1 0 1 0-2 0v5.077c0 .459-.021.571-.082.684a.364.364 0 0 1-.157.157c-.113.06-.225.082-.684.082H5.923c-.459 0-.57-.022-.684-.082a.363.363 0 0 1-.157-.157c-.06-.113-.082-.225-.082-.684V5.5z" fill="currentColor"/>
+    <path fill-rule="evenodd" clip-rule="evenodd" d="M19.186 2.09c.521.25 1.136.612 1.625 1.101.49.49.852 1.104 1.1 1.625.313.654.11 1.408-.401 1.92l-7.214 7.213c-.31.31-.688.541-1.105.675l-4.222 1.353a.75.75 0 0 1-.943-.944l1.353-4.221a2.75 2.75 0 0 1 .674-1.105l7.214-7.214c.512-.512 1.266-.714 1.92-.402zm.211 2.516a3.608 3.608 0 0 0-.828-.586l-6.994 6.994a1.002 1.002 0 0 0-.178.241L9.9 14.102l2.846-1.496c.09-.047.171-.107.242-.178l6.994-6.994a3.61 3.61 0 0 0-.586-.828zM4.999 5.5A.5.5 0 0 1 5.47 5l5.53.005a1 1 0 0 0 0-2L5.5 3A2.5 2.5 0 0 0 3 5.5v12.577c0 .76.082 1.185.319 1.627.224.419.558.754.977.978.442.236.866.318 1.627.318h12.154c.76 0 1.185-.082 1.627-.318.42-.224.754-.559.978-.978.236-.442.318-.866.318-1.627V13a1 1 0 1 0-2 0v5.077c0 .459-.021.571-.082.684a.364.364 0 0 1-.157.157c-.113.06-.225.082-.684.082H5.923c-.459 0-.57-.022-.684-.082a.363.363 0 0 1-.157-.157c-.06-.113-.082-.225-.082-.684V5.5z" fill="currentColor" />
   </svg>
 );
 
@@ -71,7 +71,7 @@ const PositionManIcon = ({ size = 24, className = "" }) => (
 
 const AddProfileIcon = ({ size = 24, className = "" }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" className={className} xmlns="http://www.w3.org/2000/svg">
-    <path d="M2,21h8a1,1,0,0,0,0-2H3.071A7.011,7.011,0,0,1,10,13a5.044,5.044,0,1,0-3.377-1.337A9.01,9.01,0,0,0,1,20,1,1,0,0,0,2,21ZM10,5A3,3,0,1,1,7,8,3,3,0,0,1,10,5ZM23,16a1,1,0,0,1-1,1H19v3a1,1,0,0,1-2,0V17H14a1,1,0,0,1,0-2h3V12a1,1,0,0,1,2,0v3h3A1,1,0,0,1,23,16Z" fill="currentColor"/>
+    <path d="M2,21h8a1,1,0,0,0,0-2H3.071A7.011,7.011,0,0,1,10,13a5.044,5.044,0,1,0-3.377-1.337A9.01,9.01,0,0,0,1,20,1,1,0,0,0,2,21ZM10,5A3,3,0,1,1,7,8,3,3,0,0,1,10,5ZM23,16a1,1,0,0,1-1,1H19v3a1,1,0,0,1-2,0V17H14a1,1,0,0,1,0-2h3V12a1,1,0,0,1,2,0v3h3A1,1,0,0,1,23,16Z" fill="currentColor" />
   </svg>
 );
 
@@ -712,7 +712,7 @@ Mwananchi wa Jamhuri ya Kenya`;
           <div className="px-5 sm:px-8 py-4 sm:py-5 flex items-center justify-between bg-slate-50/50 dark:bg-white/5 border-b border-black/5 dark:border-white/5 gap-3 flex-wrap">
             <div className="flex items-center gap-3 min-w-0">
               <EmailAltIcon size={18} className="text-kenya-green" />
-              <h1 className="text-xl sm:text-2xl font-black uppercase tracking-[0.2em] text-slate-800 dark:text-white truncate">Submit Your Petition</h1>
+              <h1 className="text-xl sm:text-2xl font-black uppercase tracking-[0.2em] text-slate-800 dark:text-white truncate">Submit Your Email</h1>
             </div>
             <div className="flex items-center gap-3 flex-shrink-0">
               <SignatureCounter current={signatureCount} goal={signatureGoal} variant="compact" className="w-[90px]" />
@@ -978,12 +978,12 @@ Mwananchi wa Jamhuri ya Kenya`;
 
             {/* ── Template Variant Selector ── */}
             <div className="space-y-3">
-              <div 
-                className="flex items-center justify-between gap-2 flex-wrap cursor-pointer group/style" 
+              <div
+                className="flex items-center justify-between gap-2 flex-wrap cursor-pointer group/style"
                 onClick={() => setIsPetitionStyleOpen(!isPetitionStyleOpen)}
               >
                 <div className="flex items-center gap-3">
-                  <PositionManIcon size={18} className="text-kenya-green flex-shrink-0" />
+                  <StarIcon size={16} className="text-kenya-green flex-shrink-0" />
                   <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-900 dark:text-white">Petition Style</h3>
                 </div>
                 <div className="text-slate-400 group-hover/style:text-kenya-green transition-colors">
@@ -992,10 +992,10 @@ Mwananchi wa Jamhuri ya Kenya`;
                   </motion.svg>
                 </div>
               </div>
-              
+
               <AnimatePresence initial={false}>
                 {isPetitionStyleOpen && (
-                  <motion.div 
+                  <motion.div
                     initial={{ height: 0, opacity: 0 }}
                     animate={{ height: 'auto', opacity: 1 }}
                     exit={{ height: 0, opacity: 0 }}
@@ -1053,7 +1053,7 @@ Mwananchi wa Jamhuri ya Kenya`;
             {/* ── Position Selector ── */}
             <div className="space-y-3">
               <div className="flex items-center gap-3">
-                <StarIcon size={16} className="text-kenya-green flex-shrink-0" />
+                <PositionManIcon size={18} className="text-kenya-green flex-shrink-0" />
                 <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-900 dark:text-white">Your Position</h3>
               </div>
               <div className="grid grid-cols-3 gap-2">
@@ -1241,8 +1241,8 @@ Mwananchi wa Jamhuri ya Kenya`;
             </div>
 
             <div className="pt-5 sm:pt-6 border-t border-black/5 dark:border-white/5 flex items-center justify-between opacity-30 grayscale hover:grayscale-0 hover:opacity-100 transition-all duration-700">
-              <p 
-                className="text-[9px] font-black uppercase tracking-widest cursor-pointer hover:text-kenya-green transition-colors" 
+              <p
+                className="text-[9px] font-black uppercase tracking-widest cursor-pointer hover:text-kenya-green transition-colors"
                 onClick={() => {
                   const to = 'tech@civiceducationkenya.com';
                   const isDeskt = !/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
