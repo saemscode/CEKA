@@ -2,7 +2,7 @@
 import { vaultService } from '@/services/vaultService';
 import { notificationService } from '@/services/notificationService'; // Added
 import { useAuth } from '@/providers/AuthProvider'; // Added
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useRef, useCallback } from 'react';
 import Layout from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -74,6 +74,32 @@ const LegislativeTracker = () => {
   const [sortBy, setSortBy] = useState<SortOption>('date-desc');
   const [stats, setStats] = useState<{ total: number; byStatus: any }>({ total: 0, byStatus: {} });
   const [realtimeFlash, setRealtimeFlash] = useState<string | null>(null);
+
+  // Pagination & Virtualization Alternative
+  const [visibleCount, setVisibleCount] = useState(10);
+  const observerTarget = useRef<HTMLDivElement>(null);
+  
+  // Reset pagination on filter change
+  useEffect(() => {
+    setVisibleCount(10);
+  }, [debouncedSearchTerm, activeTab, selectedCategory, sortBy, deepSearch]);
+
+  // Infinite Scroll Intersection Observer
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      entries => {
+        if (entries[0].isIntersecting) {
+          setVisibleCount(prev => prev + 10);
+        }
+      },
+      { threshold: 0.1 }
+    );
+    if (observerTarget.current) {
+      observer.observe(observerTarget.current);
+    }
+    return () => observer.disconnect();
+  }, [observerTarget]);
+
   // Per-card Read More state for neural_summary and sponsor text
   const [expandedSummaries, setExpandedSummaries] = useState<Record<string, boolean>>({});
   const toggleSummaryExpanded = (billId: string) =>
@@ -555,29 +581,6 @@ const LegislativeTracker = () => {
                     ))}
                   </div>
                 </div>
-
-                <Card className="rounded-[32px] border-none bg-kenya-green/5 overflow-hidden">
-                  <CardContent className="p-6 space-y-4">
-                    <div className="flex items-center justify-between">
-                      <Scale className="h-8 w-8 text-kenya-green opacity-40" />
-                      <Badge className="bg-kenya-green text-white border-none font-black text-xs">
-                        {stats.total} BILLS
-                      </Badge>
-                    </div>
-                    <h5 className="font-black uppercase tracking-tighter text-lg">Bills Records</h5>
-                    <div className="space-y-2">
-                      {Object.entries(stats.byStatus).slice(0, 4).map(([status, count]: any) => (
-                        <div key={status} className="flex justify-between items-center text-xs">
-                          <span className="opacity-60">{status}</span>
-                          <span className="font-black text-kenya-green">{count}</span>
-                        </div>
-                      ))}
-                    </div>
-                    <p className="text-[10px] text-muted-foreground leading-relaxed pt-2 border-t border-kenya-green/10">
-                      We aim to deliver to you the most accurate data from credible sources across the country.
-                    </p>
-                  </CardContent>
-                </Card>
               </div>
             </aside>
 
@@ -690,8 +693,9 @@ const LegislativeTracker = () => {
                       <p className="text-muted-foreground">The Legislative Tracker is currently scanning for updates on this bill.</p>
                     </div>
                   ) : (
-                    filteredBills.map((bill) => (
-                      <motion.div
+                    <>
+                      {filteredBills.slice(0, visibleCount).map((bill) => (
+                        <motion.div
                         layout
                         initial={{ opacity: 0, scale: 0.98 }}
                         animate={{ opacity: 1, scale: 1 }}
@@ -861,7 +865,15 @@ const LegislativeTracker = () => {
                           </div>
                         </Card>
                       </motion.div>
-                    ))
+                    ))}
+                    {filteredBills.length > visibleCount && (
+                      <div ref={observerTarget} className="py-10 flex justify-center opacity-70">
+                        <Button variant="outline" onClick={() => setVisibleCount(v => v + 10)} className="rounded-2xl border-kenya-green/20 text-kenya-green hover:bg-kenya-green/5 font-black uppercase tracking-widest text-[10px]">
+                          Load More Bills <ChevronDown className="ml-2 h-4 w-4" />
+                        </Button>
+                      </div>
+                    )}
+                    </>
                   )}
                 </TabsContent>
               </Tabs>

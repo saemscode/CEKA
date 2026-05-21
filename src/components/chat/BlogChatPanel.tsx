@@ -144,13 +144,14 @@ export const BlogChatPanel: React.FC<BlogChatPanelProps> = ({ blogPost, classNam
             // Create room if it doesn't exist
             if (!chatRoom) {
                 const { error: createError } = await supabase
-                    .from('chat_rooms')
+                    .from('public_rooms')
                     .insert({
                         id: roomId,
                         name: `Discussion: ${blogPost.title}`,
-                        type: 'public',
+                        category: 'Discourse',
+                        slug: blogPost.slug,
                         description: `Chat discussion for the blog post "${blogPost.title}"`,
-                        created_by: user.id,
+                        is_active: true
                     });
 
                 if (createError && !createError.message.includes('duplicate')) {

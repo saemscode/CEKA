@@ -18,6 +18,7 @@ import JoinRoomGuide from './JoinRoomGuide';
 import SidebarPolls from './SidebarPolls';
 import { InteractionLogger } from './InteractionLogger';
 import { MentionSuggestions } from './MentionSuggestions';
+import { PromptInputBox } from './PromptInputBox';
 import { cn } from '@/lib/utils';
 import {
     Empty,
@@ -82,12 +83,12 @@ const CommunityChat = () => {
     // Fetch dynamic rooms from sovereign table
     const fetchRooms = useCallback(async () => {
         const { data, error } = await supabase
-            .from('public_rooms' as any)
+            .from('public_rooms')
             .select('*')
             .eq('is_active', true);
 
         if (!error && data) {
-            setRooms(data.map(r => ({
+            setRooms(data.map((r: any) => ({
                 id: r.id,
                 name: r.name,
                 type: 'public'
@@ -415,6 +416,30 @@ const CommunityChat = () => {
         </Card>
     );
 
+    const handleCloseGuide = () => {
+        setShowGuide(false);
+        if (activeRoom) {
+            setHasSeenGuide(prev => ({ ...prev, [activeRoom]: true }));
+        }
+    };
+
+    const handleSendMessage = async (content: string, files?: File[]) => {
+        if (!content.trim() && (!files || files.length === 0)) return;
+        setSending(true);
+        try {
+            const { error } = await supabase.from('chat_messages').insert({
+                content: content.trim(),
+                room_id: activeRoom,
+                user_id: user?.id,
+            });
+            if (error) throw error;
+        } catch (error: any) {
+            toast({ title: "Dispatch Failure", description: error.message, variant: "destructive" });
+        } finally {
+            setSending(false);
+        }
+    };
+
     return (
         <div className="grid lg:grid-cols-12 gap-6 h-[800px] font-sans">
 
@@ -537,54 +562,63 @@ const CommunityChat = () => {
                                 return (
                                     <motion.div
                                         key={message.id}
-                                        initial={isInitialLoad.current ? false : { opacity: 0, y: 10 }}
-                                        animate={{ opacity: 1, y: 0 }}
+                                        initial={isInitialLoad.current ? false : { opacity: 0, scale: 0.95, y: 10 }}
+                                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                                        transition={{ type: "spring", damping: 20, stiffness: 100 }}
                                         id={`message-${message.id}`}
                                         className={cn(
-                                            "group flex gap-4 transition-all duration-500",
+                                            "group flex gap-3 transition-all duration-500 mb-6",
                                             isOwn ? "flex-row-reverse" : "flex-row",
-                                            isHighlighted && "bg-primary/5 -mx-6 px-6 py-2 border-y border-primary/10 shadow-inner"
+                                            isHighlighted && "bg-primary/5 -mx-6 px-6 py-4 border-y border-primary/10 shadow-inner"
                                         )}
                                     >
                                         {/* Avatar Column */}
-                                        <div className="w-10 shrink-0">
-                                            {showAvatar && (
-                                                <Avatar className="h-10 w-10 rounded-[14px] shadow-sm border-2 border-white dark:border-white/10 ring-1 ring-slate-200/50">
-                                                    <AvatarImage src={message.profile?.avatar_url || ''} />
-                                                    <AvatarFallback className="bg-primary/5 font-bold text-xs p-1">
-                                                        <img src="/lovable-uploads/bea0d682-b245-4391-b21b-80fdf695fdae.png" alt="CEKA" className="opacity-20 grayscale brightness-0 invert shadow-none" />
-                                                    </AvatarFallback>
-                                                </Avatar>
+                                        <div className="w-10 shrink-0 mt-1">
+                                            {showAvatar ? (
+                                                <div className="relative group">
+                                                    <Avatar className="h-10 w-10 rounded-[16px] shadow-ios-soft border-2 border-white dark:border-white/10 ring-1 ring-black/5 transition-transform group-hover:scale-110 duration-300">
+                                                        <AvatarImage src={message.profile?.avatar_url || ''} />
+                                                        <AvatarFallback className="bg-slate-100 dark:bg-white/5 font-black text-[10px] text-primary">
+                                                            {message.profile?.full_name?.charAt(0) || 'C'}
+                                                        </AvatarFallback>
+                                                    </Avatar>
+                                                    <div className="absolute -bottom-1 -right-1 h-3.5 w-3.5 bg-green-500 border-2 border-white dark:border-[#1C1C1E] rounded-full" />
+                                                </div>
+                                            ) : (
+                                                <div className="w-10" />
                                             )}
                                         </div>
 
                                         {/* Content Column */}
-                                        <div className={cn("flex-1 flex flex-col space-y-1.5", isOwn ? "items-end" : "items-start")}>
+                                        <div className={cn("flex-1 flex flex-col space-y-1", isOwn ? "items-end" : "items-start")}>
                                             {showAvatar && (
-                                                <div className="flex items-center gap-2 mb-0.5">
-                                                    <span className="text-[11px] font-bold text-slate-900 dark:text-slate-100 uppercase tracking-tight">
+                                                <div className={cn(
+                                                    "flex items-center gap-2 mb-1 px-1",
+                                                    isOwn ? "flex-row-reverse" : "flex-row"
+                                                )}>
+                                                    <span className="text-[11px] font-black text-slate-900 dark:text-slate-100 uppercase tracking-widest opacity-80">
                                                         {message.profile?.full_name || 'Anonymous Citizen'}
                                                     </span>
-                                                    <span className="text-[10px] text-muted-foreground font-medium">
+                                                    <span className="text-[9px] text-muted-foreground/50 font-black uppercase tracking-tighter">
                                                         {formatMessageDate(message.created_at)}
                                                     </span>
                                                 </div>
                                             )}
 
                                             <div className={cn(
-                                                "relative px-4 py-3 rounded-[24px] max-w-[85%] text-sm leading-relaxed shadow-sm transition-transform group-hover:scale-[1.01]",
+                                                "relative px-4.5 py-3 rounded-[22px] max-w-[85%] text-sm leading-relaxed shadow-ios-soft transition-all duration-300 group-hover:shadow-ios-low",
                                                 isOwn
-                                                    ? "bg-primary text-white rounded-tr-none font-medium"
-                                                    : "bg-slate-100 dark:bg-white/5 text-slate-800 dark:text-slate-200 rounded-tl-none"
+                                                    ? "bg-primary text-white rounded-tr-[4px] font-medium selection:bg-white/20 selection:text-white"
+                                                    : "bg-slate-100 dark:bg-white/5 text-slate-800 dark:text-slate-200 rounded-tl-[4px] border border-white/50 dark:border-white/5"
                                             )}>
-                                                <p className="whitespace-pre-wrap break-words">{message.content}</p>
+                                                <p className="whitespace-pre-wrap break-words font-medium tracking-tight">{message.content}</p>
 
                                                 {/* Interaction Logging Component (Silent) */}
                                                 <InteractionLogger targetId={message.id} targetType="message" metadata={{ room_id: activeRoom }} />
                                             </div>
 
-                                            {/* Social Layer */}
-                                            <div className="flex flex-col gap-1 w-full max-w-[85%]">
+                                            {/* Social Layer - Perfectly aligned with bubble edge */}
+                                            <div className={cn("flex flex-col gap-1 w-full max-w-[85%] mt-1", isOwn ? "items-end" : "items-start")}>
                                                 <ChatReactions messageId={message.id} />
                                                 <ChatReplies messageId={message.id} room_id={activeRoom} />
                                             </div>
@@ -609,40 +643,17 @@ const CommunityChat = () => {
                         )}
                     </AnimatePresence>
 
-                    <form onSubmit={sendMessage} className="w-full">
-                        <div className="relative group">
-                            <div className="absolute left-1.5 top-1.5 flex items-center gap-1">
-                                <Button variant="ghost" size="icon" className="h-10 w-10 rounded-2xl text-slate-400 hover:text-primary transition-colors">
-                                    <Paperclip className="h-5 w-5" />
-                                </Button>
-                            </div>
-
-                            <Input
-                                value={newMessage}
-                                onChange={handleInputChange}
-                                onFocus={() => isInitialLoad.current = false}
-                                placeholder={`Message ${rooms.find(r => r.id === activeRoom)?.name}...`}
-                                disabled={sending}
-                                className="h-14 pl-14 pr-16 rounded-[24px] bg-slate-100/50 dark:bg-white/5 border-none shadow-inner text-base focus-visible:ring-2 focus-visible:ring-primary/20 transition-all placeholder:text-muted-foreground/60"
-                            />
-
-                            <div className="absolute right-1.5 top-1.5">
-                                <Button
-                                    type="submit"
-                                    disabled={sending || !newMessage.trim()}
-                                    className={cn(
-                                        "h-11 w-11 rounded-[20px] shadow-lg transition-all duration-300",
-                                        newMessage.trim() ? "bg-primary text-white scale-100" : "bg-slate-200 dark:bg-white/10 text-slate-400 scale-95"
-                                    )}
-                                >
-                                    {sending ? <CEKALoader variant="ios" size="sm" /> : <Send className="h-5 w-5 ml-0.5" />}
-                                </Button>
-                            </div>
-                        </div>
+                    <div className="w-full">
+                        <PromptInputBox 
+                            onSend={handleSendMessage}
+                            isLoading={sending}
+                            placeholder={`Message ${rooms.find(r => r.id === activeRoom)?.name || 'the Assembly'}...`}
+                            disabled={!user}
+                        />
                         <p className="mt-3 text-[10px] text-center text-muted-foreground/50 font-medium uppercase tracking-[0.15em]">
                             Authorized conversation • End-to-end synchronized
                         </p>
-                    </form>
+                    </div>
                 </CardFooter>
             </Card>
 
@@ -664,16 +675,16 @@ const CommunityChat = () => {
                                     <div className="space-y-2">
                                         <div className="flex justify-between text-[8px] font-black uppercase tracking-widest text-muted-foreground mb-1">
                                             <span>Sovereign Will</span>
-                                            <span>{Math.round((audit.votes_against / (audit.votes_for + audit.votes_against || 1)) * 100)}% Rejection</span>
+                                            <span>{Math.round((audit.votes_against / ((audit.votes_for + audit.votes_against) || 1)) * 100)}% Rejection</span>
                                         </div>
                                         <div className="h-1.5 w-full bg-slate-200 dark:bg-white/10 rounded-full overflow-hidden flex">
                                             <div
                                                 className="bg-kenya-red h-full"
-                                                style={{ width: `${(audit.votes_against / (audit.votes_for + audit.votes_against || 1)) * 100}%` }}
+                                                style={{ width: `${(audit.votes_against / ((audit.votes_for + audit.votes_against) || 1)) * 100}%` }}
                                             />
                                             <div
                                                 className="bg-kenya-green h-full"
-                                                style={{ width: `${(audit.votes_for / (audit.votes_for + audit.votes_against || 1)) * 100}%` }}
+                                                style={{ width: `${(audit.votes_for / ((audit.votes_for + audit.votes_against) || 1)) * 100}%` }}
                                             />
                                         </div>
                                         <div className="flex gap-2">
@@ -735,8 +746,8 @@ const CommunityChat = () => {
                                 >
                                     <div className="relative">
                                         <Avatar className="h-10 w-10 rounded-[14px] shadow-sm border-2 border-white dark:border-black/40 ring-1 ring-slate-200/50">
-                                            <AvatarImage src={u.avatar_url || ''} />
-                                            <AvatarFallback className="text-[10px] bg-slate-100 font-bold">{u.full_name?.charAt(0) || '?'}</AvatarFallback>
+                                            <AvatarImage src={u.avatar_url || undefined} />
+                                            <AvatarFallback className="text-[10px] bg-slate-100 font-bold">{u.full_name?.charAt(0) || 'C'}</AvatarFallback>
                                         </Avatar>
                                         <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-black ring-1 ring-black/10" />
                                     </div>
@@ -755,6 +766,11 @@ const CommunityChat = () => {
                     </div>
                 </Card>
             </div>
+            <JoinRoomGuide 
+                isOpen={showGuide} 
+                onClose={handleCloseGuide} 
+                roomName={rooms.find(r => r.id === activeRoom)?.name || 'Assembly'} 
+            />
         </div>
     );
 };

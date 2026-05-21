@@ -387,7 +387,7 @@ const BillDetail = () => {
 
               {/* MOMENTUM BAR - Quick View */}
               <div className="mt-8 max-w-xl">
-                 <SignatureCounter current={signatureCount} goal={signatureGoal} variant="compact" className="bg-transparent backdrop-blur-none border-none p-0 shadow-none" />
+                <SignatureCounter current={signatureCount} goal={signatureGoal} variant="compact" className="bg-transparent backdrop-blur-none border-none p-0 shadow-none" />
               </div>
             </motion.div>
 
@@ -595,14 +595,14 @@ const BillDetail = () => {
                 >
                   <div className="flex flex-col gap-5 sm:gap-6">
                     <div className="space-y-2">
-                       <h2 className="text-3xl md:text-4xl font-black tracking-tight leading-tight uppercase">
-                        ✍️ Raise <span className="text-kenya-green">Your</span> Voice
+                      <h2 className="text-3xl md:text-4xl font-black tracking-tight leading-tight uppercase">
+                        ✍️ Submit <span className="text-kenya-green">Your</span> Memorandum
                       </h2>
                       <p className="text-sm font-medium text-slate-500 max-w-lg">
-                        Choose your method of submission: Save a quick civic response locally, or submit a formal memorandum directly to Parliament.
+                        Choose your method of submission: Submit a formal memorandum directly to Parliament or save a quick civic response locally.
                       </p>
                     </div>
-                    
+
                     <Button
                       variant="outline"
                       onClick={() => setShareDrawerOpen(true)}
@@ -618,37 +618,37 @@ const BillDetail = () => {
                   </div>
 
                   <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 items-start">
-                      {/* FORMAL MEMORANDUM GENERATOR */}
-                      <div id="memoranda" ref={memorandaRef} className="order-2 xl:order-1 scroll-mt-24">
-                         <LegislativeMemorandum 
-                            billId={bill.id}
-                            billTitle={bill.title}
-                            billSummary={bill.summary}
-                            deadline={bill.participation_deadline}
-                            constitutionalSection={bill.constitutional_section}
-                            signatureGoal={signatureGoal}
-                            billNo={bill.bill_no}
-                            billHouse={bill.house}
-                            billSessionYear={bill.session_year}
-                            billCategory={bill.category}
-                            billSponsor={bill.sponsor}
-                            billStatus={bill.status}
-                            billNeuralSummary={bill.neural_summary}
-                            billTabloidSummary={bill.tabloid_summary}
-                            billAiConcerns={bill.ai_concerns}
-                            billCurrentStage={getStageByStatus(bill.status).label}
-                          />
-                      </div>
+                    {/* FORMAL MEMORANDUM GENERATOR */}
+                    <div id="memoranda" ref={memorandaRef} className="order-2 xl:order-1 scroll-mt-24">
+                      <LegislativeMemorandum
+                        billId={bill.id}
+                        billTitle={bill.title}
+                        billSummary={bill.summary}
+                        deadline={bill.participation_deadline}
+                        constitutionalSection={bill.constitutional_section}
+                        signatureGoal={signatureGoal}
+                        billNo={bill.bill_no}
+                        billHouse={bill.house}
+                        billSessionYear={bill.session_year}
+                        billCategory={bill.category}
+                        billSponsor={bill.sponsor}
+                        billStatus={bill.status}
+                        billNeuralSummary={bill.neural_summary}
+                        billTabloidSummary={bill.tabloid_summary}
+                        billAiConcerns={bill.ai_concerns}
+                        billCurrentStage={getStageByStatus(bill.status).label}
+                      />
+                    </div>
 
-                     {/* QUICK CIVIC RESPONSE — with prefill from concern tap */}
-                     <div className="order-1 xl:order-2" ref={responseFormRef}>
-                        <BillResponseForm
-                          billId={bill.id}
-                          billTitle={bill.title}
-                          onSubmitSuccess={(text) => setUserResponse(text)}
-                          prefillQuery={prefillQuery}
-                        />
-                     </div>
+                    {/* QUICK CIVIC RESPONSE — with prefill from concern tap */}
+                    <div className="order-1 xl:order-2" ref={responseFormRef}>
+                      <BillResponseForm
+                        billId={bill.id}
+                        billTitle={bill.title}
+                        onSubmitSuccess={(text) => setUserResponse(text)}
+                        prefillQuery={prefillQuery}
+                      />
+                    </div>
                   </div>
 
                   <SocialShareDrawer
@@ -741,25 +741,25 @@ const BillDetail = () => {
 
                 {/* SIGNATURE TRACKER SIDEBAR MODULE */}
                 <div className="p-8 rounded-[40px] bg-white/80 dark:bg-slate-900/40 backdrop-blur-3xl border border-black/5 dark:border-white/10 shadow-ios-soft space-y-8">
-                   <div className="flex items-center justify-between">
-                     <div className="flex items-center gap-3">
-                       <Target size={18} className="text-kenya-green" />
-                       <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Action Momentum</p>
-                     </div>
-                     <p className="text-[10px] font-black text-kenya-green uppercase tracking-widest">{Math.round((signatureCount / signatureGoal) * 100)}% Verified</p>
-                   </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <Target size={18} className="text-kenya-green" />
+                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Action Momentum</p>
+                    </div>
+                    <p className="text-[10px] font-black text-kenya-green uppercase tracking-widest">{Math.round((signatureCount / signatureGoal) * 100)}% Verified</p>
+                  </div>
 
-                   <SignatureCounter current={signatureCount} goal={signatureGoal} variant="compact" className="bg-transparent backdrop-blur-none border-none p-0 shadow-none" />
+                  <SignatureCounter current={signatureCount} goal={signatureGoal} variant="compact" className="bg-transparent backdrop-blur-none border-none p-0 shadow-none" />
 
-                   <div className="p-4 rounded-3xl bg-slate-50 dark:bg-white/10 border border-black/5 dark:border-white/5">
-                      <div className="flex items-center gap-3 mb-2">
-                         <Sparkles size={14} className="text-kenya-green" />
-                         <p className="text-[10px] font-black uppercase tracking-widest">Viral Spike</p>
-                      </div>
-                      <p className="text-[10px] text-slate-500 font-medium leading-relaxed">
-                         WhatsApp engagement up <span className="font-bold text-slate-900 dark:text-white">40%</span> in the last 24h.
-                      </p>
-                   </div>
+                  <div className="p-4 rounded-3xl bg-slate-50 dark:bg-white/10 border border-black/5 dark:border-white/5">
+                    <div className="flex items-center gap-3 mb-2">
+                      <Sparkles size={14} className="text-kenya-green" />
+                      <p className="text-[10px] font-black uppercase tracking-widest">Viral Spike</p>
+                    </div>
+                    <p className="text-[10px] text-slate-500 font-medium leading-relaxed">
+                      WhatsApp engagement up <span className="font-bold text-slate-900 dark:text-white">40%</span> in the last 24h.
+                    </p>
+                  </div>
                 </div>
 
                 {/* ENGAGEMENT TOOLS */}
