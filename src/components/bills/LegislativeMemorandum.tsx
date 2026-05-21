@@ -334,8 +334,20 @@ export const LegislativeMemorandum: React.FC<LegislativeMemorandumProps> = ({
     ? `Clerk of the Senate and the Standing Committee — ${committeeLabel}`
     : `Clerk of the National Assembly and the Departmental Committee — ${committeeLabel}`;
 
-  const concernsBlock = (billAiConcerns && billAiConcerns.length > 0)
-    ? billAiConcerns.map(c => `  - ${c}`).join('\n')
+  let parsedConcerns: string[] = [];
+  if (Array.isArray(billAiConcerns)) {
+    parsedConcerns = billAiConcerns;
+  } else if (typeof billAiConcerns === 'string') {
+    try {
+      const p = JSON.parse(billAiConcerns);
+      parsedConcerns = Array.isArray(p) ? p : [billAiConcerns];
+    } catch {
+      parsedConcerns = [billAiConcerns];
+    }
+  }
+
+  const concernsBlock = parsedConcerns.length > 0
+    ? parsedConcerns.map((c: string) => `  - ${c}`).join('\n')
     : '  [No citizen concerns on record yet]';
 
   const constitutionalAnchorsBlock = pursuantArticles || 'Articles 10(2), 118(1) of the Constitution of Kenya 2010';

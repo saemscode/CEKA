@@ -128,7 +128,7 @@ const Navbar = () => {
         style={{ paddingTop: 'max(env(safe-area-inset-top), 8px)' }}
       >
         <div className="container mx-auto px-6 flex items-center justify-between">
-          <Link to="/" className="z-50"><Logo className="h-8 w-auto" /></Link>
+          <Logo className="h-8 w-auto z-50" />
 
           {/* Desktop Navigation Menu - Hover-enabled */}
           <NavigationMenu className="hidden lg:flex">
