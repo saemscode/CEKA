@@ -215,9 +215,10 @@ const VARIANT_META = [
   { id: 'B', label: 'Simple', desc: 'Plain-language — clear, personal, accessible to every Kenyan' },
   { id: 'C', label: 'Technical', desc: 'Discipline-aware — law, finance, health or governance context' },
   { id: 'D', label: 'Activist Special', desc: 'Short, sharp, bilingual — zero diplomatic cushioning' },
+  { id: 'E', label: 'Lugha ya Taifa (Swahili)', desc: 'Maelezo kamili kwa Kiswahili — inalinda haki zako kikatiba' },
 ] as const;
 
-type VariantId = 'A' | 'B' | 'C' | 'D';
+type VariantId = 'A' | 'B' | 'C' | 'D' | 'E';
 type PositionId = 'OPPOSE' | 'SUPPORT' | 'AMEND';
 
 const POSITION_META: { id: PositionId; label: string; color: string }[] = [
@@ -352,29 +353,8 @@ export const LegislativeMemorandum: React.FC<LegislativeMemorandumProps> = ({
 
   const constitutionalAnchorsBlock = pursuantArticles || 'Articles 10(2), 118(1) of the Constitution of Kenya 2010';
 
-  const positionParaA = {
-    OPPOSE: `Having reviewed the Bill in its current form, I OPPOSE the passage of ${billTitle} for the reasons set out above. I call on this Committee to recommend the withdrawal of the Bill and its return to the sponsor for substantive redrafting that addresses the concerns raised herein.`,
-    SUPPORT: `Having reviewed the Bill in its current form, I SUPPORT the passage of ${billTitle} and call on this Committee to expedite its consideration and recommend it for Third Reading without unnecessary delay.`,
-    AMEND: `Having reviewed the Bill in its current form, I SUPPORT the passage of ${billTitle} SUBJECT TO AMENDMENTS. I call on this Committee to incorporate the concerns raised herein as mandatory amendments before recommending the Bill for Third Reading.`,
-  };
-
-  const positionParaB = {
-    OPPOSE: `I do not support this Bill. In my view, it will cause more harm than good to ordinary Kenyans. I am asking the Committee to reject it or send it back for a complete rethink.`,
-    SUPPORT: `I support this Bill. I believe it will benefit Kenyans if passed, and I am asking the Committee to move it forward without unnecessary delay.`,
-    AMEND: `I support the idea behind this Bill, but it needs fixing before it becomes law. I am asking the Committee to address the concerns I have raised above before passing it.`,
-  };
-
-  const positionParaC = {
-    OPPOSE: `This petitioner submits that ${billTitle}, in its current form, is technically and constitutionally deficient for the reasons stated in Sections III through VI above. The petitioner recommends that the Committee reject the Bill at Committee Stage and return it to the sponsor with directions for substantive amendment.`,
-    SUPPORT: `This petitioner submits that ${billTitle} is technically sound and constitutionally consistent for the reasons stated above. The petitioner recommends that the Committee expedite its report and recommend the Bill for Third Reading.`,
-    AMEND: `This petitioner submits that ${billTitle} is directionally sound but technically insufficient in the areas identified in Section VI above. The petitioner recommends that the Committee introduce targeted amendments addressing the stated deficiencies before recommending the Bill for Third Reading.`,
-  };
-
-  const positionParaD = {
-    OPPOSE: `I OPPOSE this Bill. Its current form does not serve the people of Kenya. It serves neither our constitutional values under ${constitutionalAnchorsBlock} nor the economic and social realities of ordinary citizens. Reject it. Send it back. Do not pass this into law until it is fundamentally reworked.`,
-    SUPPORT: `I SUPPORT this Bill. The time for delay is over. The people this Bill benefits cannot wait for procedural hesitation. Pass it. Pass it now.`,
-    AMEND: `I SUPPORT this Bill in principle, NOT in its current form. The concerns above are not minor. Address them with binding amendments. Then pass it. Not before.`,
-  };
+  const actionVerb = userPosition === 'AMEND' ? 'PROPOSE AMENDMENTS TO' : userPosition;
+  const outcomeVerb = userPosition === 'OPPOSE' ? 'Rejects' : userPosition === 'SUPPORT' ? 'Passes' : 'Amends';
 
   const buildVariantA = (): string => `${topRecipient}
 Parliament of Kenya
@@ -382,65 +362,25 @@ Parliament Road, Nairobi
 
 ${todayLong}
 
-RE: PUBLIC MEMORANDUM ON ${billTitle.toUpperCase()}
-    ${billNo ? billNo + ', ' : ''}${billSessionYear || ''} | STATUS: ${(billCurrentStage || billStatus || '').toUpperCase()}
+RE: PUBLIC MEMORANDUM ON ${billTitle.toUpperCase()} ${billNo ? '(BILL NO. ' + billNo + ')' : ''}
 
-The above subject refers.
+1. IDENTIFICATION & JURISDICTION
+I, ${firstName} ${lastName}, a resident of ${uConstituency} Constituency, ${uCounty} County, and a citizen of the Republic of Kenya, submit this memorandum in exercise of my right to public participation under Articles 1(1), 10(2)(a), and 118(1)(b) of the Constitution of Kenya.
 
-CONSTITUTIONAL MANDATE FOR THIS SUBMISSION
+2. PETITIONER'S POSITION
+Having reviewed the contents of the Bill, I formally ${actionVerb} the ${billTitle}.
 
-Pursuant to Articles 10(2)(a) and 118(1)(b) of the Constitution of Kenya 2010, every legislative process must facilitate public participation. This memorandum is submitted in fulfilment of that constitutional obligation and in the exercise of my rights as a citizen under Article 1 of the Constitution, which vests sovereign power in the people.
+3. GROUNDS FOR POSITION (Why It Matters To Me)
+[Enter your primary reasons, legal grounds, and personal concerns regarding this Bill here]
 
-IDENTIFICATION OF PETITIONER
-
-I, ${firstName} ${lastName}, a resident of ${uConstituency} Constituency, ${uCounty} County, registered voter and citizen of the Republic of Kenya, hereby submit this memorandum for the consideration of the Committee.
-
-BILL PARTICULARS
-
-Title:         ${billTitle}
-Bill Number:   ${billNo || '[Bill No. Not Available]'}
-Session Year:  ${billSessionYear || '[Year Not Available]'}
-House:         ${houseLabel}
-Sponsor:       ${billSponsor || '[Sponsor Not Available]'}
-Status:        ${billStatus || '[Status Not Available]'}
-Current Stage: ${billCurrentStage || '[Stage Not Available]'}
-Category:      ${billCategory || '[Category Not Available]'}
-
-SUMMARY OF THE BILL
-
-${billNeuralSummary || billSummary}
-
-CONSTITUTIONAL FRAMEWORK
-
-The following constitutional provisions are directly engaged by this Bill:
-${constitutionalAnchorsBlock}
-
-This memorandum holds that all amendments and legislative actions must be consistent with the constitutional provisions above, and that any provision of this Bill that conflicts with these articles must be revised or struck out before assent.
-
-CITIZEN CONCERNS ON RECORD
-
-The following concerns have been identified as matters of public interest arising from this Bill:
-
-${concernsBlock}
-
-PETITIONER'S POSITION
-
-${positionParaA[userPosition]}
-
-PRAYER
-
-This memorandum respectfully prays that the Committee:
-
-1. Acknowledges receipt of this submission as part of the public participation record for ${billTitle}.
-2. Considers the constitutional anchors and citizen concerns set out herein in its deliberations.
-3. ${userPosition === 'OPPOSE' ? 'Recommends the withdrawal or rejection of the Bill in its current form.' : userPosition === 'SUPPORT' ? 'Recommends the Bill for passage without delay.' : 'Recommends specific amendments addressing the concerns cited herein before passage.'}
-4. Tables a Committee Report that specifically addresses the public concerns raised during this participation process.
+4. PRAYER
+Therefore, I respectfully pray that the Committee:
+1. Acknowledges receipt of this citizen submission.
+2. Formally factors this position during the Committee's reading and report making.
+3. Ultimately ${outcomeVerb} the Bill in accordance with the will of the people.
 
 Respectfully submitted,
-
 ${firstName} ${lastName}
-${uConstituency} Constituency, ${uCounty} County
-Date: ${todayLong}
 Citizen of the Republic of Kenya`;
 
   const buildVariantB = (): string => `${topRecipient}
@@ -448,167 +388,107 @@ Parliament of Kenya
 
 ${todayLong}
 
-RE: MY VIEW ON ${billTitle.toUpperCase()}
+RE: PUBLIC MEMORANDUM ON ${billTitle.toUpperCase()} ${billNo ? '(BILL NO. ' + billNo + ')' : ''}
 
-To the Committee,
+1. IDENTIFICATION
+My name is ${firstName} ${lastName}, and I live in ${uConstituency}, ${uCounty} County. I am submitting this memorandum under Article 118 of the Constitution, which gives me the right to participate in decisions that affect my life.
 
-My name is ${firstName} ${lastName}, and I live in ${uConstituency}, ${uCounty} County. I am writing because Article 118 of the Constitution gives me the right to take part in decisions that affect my life, and ${billTitle} is one of them.
+2. MY POSITION
+After reviewing the Bill, I officially ${actionVerb} the ${billTitle}.
 
-WHAT THIS BILL IS ABOUT
+3. WHY IT MATTERS TO ME
+[Enter your main reasons and how this Bill affects you directly here]
 
-${billTabloidSummary || billSummary}
-
-WHY IT MATTERS TO ME
-
-${billNeuralSummary || billSummary}
-
-The concerns that many Kenyans like me have raised include:
-
-${concernsBlock}
-
-MY POSITION
-
-${positionParaB[userPosition]}
-
-I am asking this Committee to record my views as part of the public participation process and to show Kenyans that their voices count.
+4. PRAYER
+I am asking this Committee to:
+1. Record my views as part of the public participation process.
+2. Take my position seriously when writing the final report.
+3. ${outcomeVerb === 'Rejects' ? 'Reject' : outcomeVerb === 'Passes' ? 'Pass' : 'Amend'} the Bill as I and other citizens have requested.
 
 Yours faithfully,
+${firstName} ${lastName}`;
 
-${firstName} ${lastName}
-${uConstituency} Constituency, ${uCounty} County
-Date: ${todayLong}`;
-
-  const buildVariantC = (): string => {
-    const catBlock = (() => {
-      const cat = (billCategory || '').toLowerCase();
-      if (cat.includes('finance') || cat.includes('tax')) {
-        return `This Bill engages Kenya's fiscal architecture as governed by Part 12 of the Constitution and the Public Finance Management Act, 2012. The provisions proposed herein must satisfy the constitutional requirement under Article 201 that public finance be managed in a manner that promotes equitable development and transparency. The following fiscal and economic considerations arise from a technical reading of the Bill's provisions:\n\n${billSummary}\n\nThe Bill's revenue implications must be assessed against Kenya's current economic conditions, cost of compliance burdens on SMEs, and the projected impact on consumer pricing across affected sectors.`;
-      } else if (cat.includes('health')) {
-        return `This Bill engages Kenya's constitutional obligations under Article 43(1)(a), which guarantees the right to the highest attainable standard of health. A technical assessment of the Bill's provisions against World Health Organization standards and Kenya's existing regulatory framework reveals the following gaps and opportunities:\n\n${billSummary}`;
-      } else if (cat.includes('law') || cat.includes('justice') || cat.includes('criminal')) {
-        return `A technical reading of the amendments raises the following questions of legal interpretation and procedural compliance:\n\n${billSummary}\n\nThe amendments must be assessed for consistency with the principle of legality, the right to a fair hearing under Article 50, and Kenya's obligations under international legal instruments to which it is signatory.`;
-      } else {
-        return `This Bill engages the constitutional framework on devolution under Chapter 11, the principles of good governance under Article 10, and the accountability obligations of state and public officers under Chapter 6. The following governance and administrative considerations arise:\n\n${billSummary}`;
-      }
-    })();
-    return `${topRecipient}
+  const buildVariantC = (): string => `${topRecipient}
 Parliament of Kenya
 Parliament Road, Nairobi
 
 ${todayLong}
 
-RE: TECHNICAL MEMORANDUM IN RESPECT OF ${billTitle.toUpperCase()}
-    BILL NO. ${billNo || '[Bill No.]'} | ${billSessionYear || ''} | ${houseLabel.toUpperCase()}
+RE: TECHNICAL MEMORANDUM ON ${billTitle.toUpperCase()} ${billNo ? '(BILL NO. ' + billNo + ')' : ''}
 
-SUBMITTED PURSUANT TO ARTICLES 10(2), 118(1)(b) AND 119 OF THE CONSTITUTION OF KENYA 2010
+1. JURISDICTION AND LOCUS STANDI
+I, ${firstName} ${lastName}, of ${uConstituency} Constituency, ${uCounty} County, submit this technical memorandum under the framework of Articles 10(2)(a), 118(1)(b) and 119 of the Constitution of Kenya 2010.
 
----
+2. PETITIONER'S POSITION
+A technical review of the legislative proposals indicates that the Bill requires action. I formally ${actionVerb} the ${billTitle}.
 
-I. PETITIONER
+3. TECHNICAL GROUNDS FOR POSITION
+[Enter your specific legal, economic, or policy-based grounds for your position here]
 
-${firstName} ${lastName}
-${uConstituency} Constituency | ${uCounty} County
-
----
-
-II. BILL PARTICULARS
-
-  Title:         ${billTitle}
-  Bill No.:      ${billNo || '[Not Available]'}
-  Session Year:  ${billSessionYear || '[Not Available]'}
-  House:         ${houseLabel}
-  Sponsor:       ${billSponsor || '[Not Available]'}
-  Category:      ${billCategory || '[Not Available]'}
-  Current Stage: ${billCurrentStage || '[Not Available]'}
-  Status:        ${billStatus || '[Not Available]'}
-
----
-
-III. EXECUTIVE SUMMARY
-
-${billNeuralSummary || billSummary}
-
----
-
-IV. TECHNICAL ANALYSIS
-
-${catBlock}
-
----
-
-V. CONSTITUTIONAL FRAMEWORK ANALYSIS
-
-The following constitutional provisions are directly engaged by this Bill:
-
-${constitutionalAnchorsBlock}
-
-This petitioner notes that any provision of the Bill that is inconsistent with the above constitutional anchors is invalid to the extent of that inconsistency, per Article 2(4) of the Constitution.
-
----
-
-VI. IDENTIFIED RISKS AND CONCERNS
-
-${concernsBlock}
-
----
-
-VII. POSITION AND RECOMMENDATION
-
-${positionParaC[userPosition]}
-
----
-
-VIII. PRAYER
-
+4. PRAYER
 This memorandum prays that the Committee:
-
-(a) Receives and records this technical memorandum as part of the public participation record for ${billTitle};
-(b) Commissions or requests a technical impact assessment from the relevant government agencies where not yet done;
-(c) Tables a Committee Report that engages the technical and constitutional concerns raised herein with specificity; and
-(d) Acts in accordance with the petitioner's position stated in Section VII above.
+1. Receives and records this technical memorandum as part of the public participation record.
+2. Addresses the technical constraints raised herein within the Committee Report.
+3. Consequently ${outcomeVerb} the Bill.
 
 Signed,
-
-${firstName} ${lastName}
-${uConstituency} Constituency | ${uCounty} County
-Date: ${todayLong}`;
-  };
+${firstName} ${lastName}`;
 
   const buildVariantD = (): string => `${topRecipient}
 Parliament of Kenya
 
 ${todayLong}
 
-RE: ${billTitle.toUpperCase()} | ${billNo ? billNo + ' | ' : ''}${(billCurrentStage || '').toUpperCase()}
+RE: PUBLIC MEMORANDUM ON ${billTitle.toUpperCase()} ${billNo ? '(BILL NO. ' + billNo + ')' : ''}
 
-Wabunge na Waheshimiwa wa Kamati,
-Members of the Committee,
+1. IDENTIFICATION & JURISDICTION
+I am ${firstName} ${lastName}, of ${uConstituency}, ${uCounty}. I write under my constitutional right to be heard (Article 118), and I intend to be.
 
-I am ${firstName} ${lastName}, of ${uConstituency}, ${uCounty}. I write under my constitutional right to be heard, and I intend to be.
+2. MY POSITION
+My stance is uncompromising: I ${userPosition === 'AMEND' ? 'DEMAND AMENDMENTS TO' : userPosition} the ${billTitle}.
 
-THE MATTER AT HAND
+3. GROUNDS FOR MY DEMAND
+[Enter your core concerns and the immediate impact of this Bill here]
 
-${billTabloidSummary || billNeuralSummary || billSummary}
-
-The full record of concerns raised by citizens on this Bill stands as follows:
-
-${concernsBlock}
-
-MY POSITION IS CLEAR
-
-${positionParaD[userPosition]}
-
-MY DEMAND
-
-Record this submission. Answer it in your Committee Report. Show this country that public participation is not a formality.
-
-Ninyi ni wawakilishi wetu. Tunawaangalia.
-You are our representatives. We are watching.
+4. PRAYER
+You are our representatives, and we are watching. I demand that the Committee:
+1. Count this submission as formal public participation.
+2. Address these demands transparently in the Committee Report.
+3. ${outcomeVerb === 'Rejects' ? 'Reject' : outcomeVerb === 'Passes' ? 'Approve' : 'Amend'} the Bill, acting in the interest of the people, not yourselves.
 
 ${firstName} ${lastName}
-${uConstituency} | ${uCounty}
-${todayLong}
 Mwananchi wa Jamhuri ya Kenya`;
+
+  const buildVariantE = (): string => {
+    const swahiliAction = userPosition === 'OPPOSE' ? 'NAUPINGA' : userPosition === 'SUPPORT' ? 'NAUUNGA MKONO' : 'NAPENDEKEZA MAREKEBISHO KWA';
+    const swahiliOutcome = userPosition === 'OPPOSE' ? 'Iutupe' : userPosition === 'SUPPORT' ? 'Iupitishe' : 'Iufanyie marekebisho';
+    return `${topRecipient}
+Bunge la Kenya
+Barabara ya Bunge, Nairobi
+
+${todayLong}
+
+KUHUSU: MAONI YANGU JUU YA MSWADA WA ${billTitle.toUpperCase()} ${billNo ? '(NAMBARI YA MSWADA ' + billNo + ')' : ''}
+
+1. UTAMBULISHO NA MAMLAKA 
+Mimi ni ${firstName} ${lastName}, mkaazi wa Eneo Bunge la ${uConstituency}, Kaunti ya ${uCounty}. Ninawasilisha maoni haya kwa kuzingatia haki yangu ya kikatiba ya ushiriki wa umma chini ya Vifungu 1(1), 10(2)(a), na 118(1)(b) vya Katiba ya Kenya.
+
+2. MSIMAMO WANGU
+Baada ya kusoma na kuelewa Mswada huu, mimi rasmi ${swahiliAction} Mswada wa ${billTitle}.
+
+3. SABABU ZA MSIMAMO WANGU (Kwa nini jambo hili ni muhimu kwangu)
+[Weka sababu zako kuu na hofu zako kuhusu Mswada huu hapa]
+
+4. OMBI LANGU KWA KAMATI
+Kwa hivyo, ninaomba Kamati hii kwa heshima:
+1. Inakili maoni haya kama sehemu rasmi ya ushiriki wa umma.
+2. Izingatie msimamo huu kikamilifu wakati wa kuandaa Ripoti ya Kamati.
+3. Hatimaye ${swahiliOutcome} Mswada huu kulingana na matakwa ya wananchi.
+
+Wako mwaminifu,
+${firstName} ${lastName}
+Mwananchi wa Jamhuri ya Kenya`;
+  };
 
   // Real-time Constitutional Enrichment for Memoranda
   useEffect(() => {
@@ -663,7 +543,8 @@ Mwananchi wa Jamhuri ya Kenya`;
     if (selectedVariant === 'A') body = buildVariantA();
     else if (selectedVariant === 'B') body = buildVariantB();
     else if (selectedVariant === 'C') body = buildVariantC();
-    else body = buildVariantD();
+    else if (selectedVariant === 'D') body = buildVariantD();
+    else body = buildVariantE();
     setMessageBody(body);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
