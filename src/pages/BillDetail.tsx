@@ -606,10 +606,10 @@ const BillDetail = () => {
                     <Button
                       variant="outline"
                       onClick={() => setShareDrawerOpen(true)}
-                      className="h-12 px-6 rounded-2xl border-kenya-green/20 text-kenya-green font-black text-xs uppercase tracking-widest hover:bg-kenya-green/5 shadow-ios-soft"
+                      className="h-12 px-6 rounded-2xl border-kenya-green/20 text-kenya-green font-black text-xs uppercase tracking-widest hover:bg-kenya-green/5 shadow-ios-soft max-w-full"
                     >
-                      <Share2 className="mr-2 h-4 w-4" />
-                      Share {bill.title} Petition
+                      <Share2 className="mr-2 h-4 w-4 flex-shrink-0" />
+                      <span className="truncate">Share {bill.title} Petition</span>
                     </Button>
                   </div>
 
