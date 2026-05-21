@@ -753,8 +753,8 @@ const LegislativeTracker = () => {
                                 </div>
                               </div>
 
-                              <div className="space-y-4">
-                                <h3 className="text-3xl font-[1000] tracking-tight leading-none dark:text-white group-hover:text-primary transition-colors">
+                              <div className="space-y-4 min-w-0">
+                                <h3 className="text-3xl font-[1000] tracking-tight leading-none dark:text-white group-hover:text-primary transition-colors break-words">
                                   <Link to={`/bill/${getBillIdentifier(bill)}#memoranda`}>{bill.title}</Link>
                                 </h3>
 
