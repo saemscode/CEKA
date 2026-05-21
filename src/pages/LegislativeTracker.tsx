@@ -74,10 +74,13 @@ const LegislativeTracker = () => {
   const [sortBy, setSortBy] = useState<SortOption>('date-desc');
   const [stats, setStats] = useState<{ total: number; byStatus: any }>({ total: 0, byStatus: {} });
   const [realtimeFlash, setRealtimeFlash] = useState<string | null>(null);
-  // Per-card Read More state for neural_summary
+  // Per-card Read More state for neural_summary and sponsor text
   const [expandedSummaries, setExpandedSummaries] = useState<Record<string, boolean>>({});
   const toggleSummaryExpanded = (billId: string) =>
     setExpandedSummaries(prev => ({ ...prev, [billId]: !prev[billId] }));
+  const [expandedSponsors, setExpandedSponsors] = useState<Record<string, boolean>>({});
+  const toggleSponsorExpanded = (billId: string) =>
+    setExpandedSponsors(prev => ({ ...prev, [billId]: !prev[billId] }));
   const NEURAL_SUMMARY_COLLAPSE = 220; // chars before ellipsis kicks in
 
   // Debounce search input - only trigger after 300ms of no typing and 3+ chars
@@ -733,7 +736,7 @@ const LegislativeTracker = () => {
                             </div>
 
                             {/* Bill Intelligence */}
-                            <div className="flex-1 p-8 md:p-10 space-y-8">
+                            <div className="flex-1 p-6 md:p-10 space-y-6 md:space-y-8 min-w-0">
                               <div className="flex flex-wrap items-center justify-between gap-4">
                                 <div className="flex gap-2">
                                   <Badge className="bg-primary/10 text-primary border-none font-bold rounded-lg px-3">
@@ -790,15 +793,24 @@ const LegislativeTracker = () => {
                               </div>
 
                               <div className="flex flex-wrap items-center justify-between gap-6 pt-6 border-t border-border/50">
-                                <div className="flex items-center gap-4">
+                                <div className="flex items-center gap-4 min-w-0 flex-1">
                                   {bill.sponsor && (
-                                    <div className="flex items-center gap-3">
-                                      <div className="h-8 w-8 rounded-full bg-slate-200 dark:bg-white/10 flex items-center justify-center font-bold text-xs">
+                                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                                      <div className="h-8 w-8 rounded-full bg-slate-200 dark:bg-white/10 flex items-center justify-center font-bold text-xs shrink-0">
                                         {bill.sponsor.charAt(0)}
                                       </div>
-                                      <div className="text-xs font-bold leading-none">
+                                      <div className="text-xs font-bold leading-none min-w-0 flex-1">
                                         <div className="opacity-40 uppercase tracking-widest text-[8px] mb-1">Mover / Sponsor</div>
-                                        {bill.sponsor}
+                                        <div 
+                                          onClick={() => toggleSponsorExpanded(bill.id)}
+                                          className={cn(
+                                            "cursor-pointer transition-all hover:opacity-80 py-1 pr-6 -ml-1 pl-1",
+                                            expandedSponsors[bill.id] ? "break-words whitespace-normal leading-tight" : "truncate"
+                                          )}
+                                          title={bill.sponsor}
+                                        >
+                                          {bill.sponsor}
+                                        </div>
                                       </div>
                                     </div>
                                   )}
