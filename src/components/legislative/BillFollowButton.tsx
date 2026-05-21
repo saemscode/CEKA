@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Heart, Users, X, Bell, FileText, Shield } from 'lucide-react';
+import { Heart, Users, X, Bell, FileText, Shield, Plus } from 'lucide-react';
 import { useBillFollowing } from '@/hooks/useBillFollowing';
 import { useAuth } from '@/providers/AuthProvider';
 import { useToast } from '@/components/ui/use-toast';
@@ -73,7 +73,9 @@ export function BillFollowButton({
             alt="Follow"
           />
           {!isFollowing && (
-            <div className="absolute -top-1 -right-1 h-2 w-2 bg-kenya-green rounded-full border border-white dark:border-slate-900" />
+            <div className="absolute -top-1.5 -right-1.5 h-3.5 w-3.5 bg-kenya-green rounded-full border border-white dark:border-slate-900 flex items-center justify-center">
+              <Plus className="h-2 w-2 text-white" />
+            </div>
           )}
         </div>
         

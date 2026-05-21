@@ -559,8 +559,35 @@ const LegislativeTracker = () => {
                       <SelectTrigger className="h-12 rounded-2xl bg-white dark:bg-[#111] border-slate-200 dark:border-white/5 font-bold text-sm">
                         <SelectValue placeholder="All Portfolios" />
                       </SelectTrigger>
-                      <SelectContent className="rounded-2xl border-none shadow-2xl">
-                        {['all', 'Finance', 'Education', 'Healthcare', 'Environment'].map(cat => (
+                      <SelectContent className="rounded-2xl border-none shadow-2xl max-h-[40vh]">
+                        {[
+                          'all',
+                          'Finance, Taxation & Budget',
+                          'Devolution & County Governments',
+                          'Parliamentary & Legislative Affairs',
+                          'Public Administration & Civil Service',
+                          'Health & Medical Services',
+                          'Law, Justice & Judiciary',
+                          'Agriculture, Livestock & Food Security',
+                          'Education, Science & Research',
+                          'Labour, Employment & Social Protection',
+                          'Environment & Climate Change',
+                          'Roads, Transport & Infrastructure',
+                          'Trade, Investment & Industry',
+                          'Constitutional & Legal Reform',
+                          'Security, Defence & Intelligence',
+                          'Youth, Sports & Creative Economy',
+                          'ICT, Digital Economy & Communications',
+                          'Cooperatives & MSMEs',
+                          'Gender, Culture & Heritage',
+                          'Mining, Blue Economy & Maritime',
+                          'Energy & Petroleum',
+                          'Housing & Urban Development',
+                          'Water, Sanitation & Irrigation',
+                          'Tourism & Wildlife',
+                          'Lands & Natural Resources',
+                          'Foreign Affairs, Diaspora & International Treaties'
+                        ].map(cat => (
                           <SelectItem key={cat} value={cat} className="font-bold">
                             {cat === 'all' ? 'All Portfolios' : cat}
                           </SelectItem>
@@ -570,8 +597,35 @@ const LegislativeTracker = () => {
                   </div>
 
                   {/* Desktop button grid */}
-                  <div className="hidden lg:grid grid-cols-1 gap-2">
-                    {['all', 'Finance', 'Education', 'Healthcare', 'Environment'].map(cat => (
+                  <div className="hidden lg:grid grid-cols-1 gap-2 max-h-[60vh] overflow-y-auto no-scrollbar pr-1">
+                    {[
+                      'all',
+                      'Finance, Taxation & Budget',
+                      'Devolution & County Governments',
+                      'Parliamentary & Legislative Affairs',
+                      'Public Administration & Civil Service',
+                      'Health & Medical Services',
+                      'Law, Justice & Judiciary',
+                      'Agriculture, Livestock & Food Security',
+                      'Education, Science & Research',
+                      'Labour, Employment & Social Protection',
+                      'Environment & Climate Change',
+                      'Roads, Transport & Infrastructure',
+                      'Trade, Investment & Industry',
+                      'Constitutional & Legal Reform',
+                      'Security, Defence & Intelligence',
+                      'Youth, Sports & Creative Economy',
+                      'ICT, Digital Economy & Communications',
+                      'Cooperatives & MSMEs',
+                      'Gender, Culture & Heritage',
+                      'Mining, Blue Economy & Maritime',
+                      'Energy & Petroleum',
+                      'Housing & Urban Development',
+                      'Water, Sanitation & Irrigation',
+                      'Tourism & Wildlife',
+                      'Lands & Natural Resources',
+                      'Foreign Affairs, Diaspora & International Treaties'
+                    ].map(cat => (
                       <button
                         key={cat}
                         onClick={() => setSelectedCategory(cat)}
