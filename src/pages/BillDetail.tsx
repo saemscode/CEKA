@@ -609,7 +609,11 @@ const BillDetail = () => {
                       className="h-12 px-6 rounded-2xl border-kenya-green/20 text-kenya-green font-black text-xs uppercase tracking-widest hover:bg-kenya-green/5 shadow-ios-soft max-w-full"
                     >
                       <Share2 className="mr-2 h-4 w-4 flex-shrink-0" />
-                      <span className="truncate">Share {bill.title} Petition</span>
+                      <div className="flex items-center min-w-0 max-w-full">
+                        <span className="shrink-0 flex-none mr-1">Share</span>
+                        <span className="truncate max-w-full">{bill.title}</span>
+                        <span className="shrink-0 flex-none ml-1">Petition</span>
+                      </div>
                     </Button>
                   </div>
 
