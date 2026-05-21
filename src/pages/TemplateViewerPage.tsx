@@ -245,10 +245,23 @@ const TemplateViewerPage = () => {
             {/* Right Column: Submission Form */}
             <div className="lg:col-span-7">
                <LegislativeMemorandum
-                billId={template.metadata?.billId || template.id}
-                billTitle={template.title}
-                billSummary={template.body}
-              />
+                 billId={template.metadata?.billId || template.id}
+                 billTitle={template.title}
+                 billSummary={template.body}
+                 deadline={billData?.participation_deadline}
+                 constitutionalSection={billData?.constitutional_section}
+                 signatureGoal={billData?.signature_goal || 1000}
+                 billNo={billData?.bill_no}
+                 billHouse={billData?.house}
+                 billSessionYear={billData?.session_year}
+                 billCategory={billData?.category}
+                 billSponsor={billData?.sponsor}
+                 billStatus={billData?.status}
+                 billNeuralSummary={billData?.neural_summary}
+                 billTabloidSummary={billData?.tabloid_summary}
+                 billAiConcerns={billData?.ai_concerns}
+                 billCurrentStage={billData?.status}
+               />
             </div>
           </div>
         </div>

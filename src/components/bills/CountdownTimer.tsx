@@ -39,7 +39,7 @@ export const CountdownTimer: React.FC<CountdownTimerProps> = ({ deadline, classN
 
   if (!deadline || !timeLeft) return (
     <div className={cn("p-4 rounded-3xl bg-slate-50 dark:bg-white/5 border border-black/5 dark:border-white/10 flex items-center justify-center", className)}>
-      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Template Open for Signatures</p>
+      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">All Template Are Free To Use</p>
     </div>
   );
 

@@ -124,14 +124,22 @@ export const SubmissionVerification: React.FC<SubmissionVerificationProps> = ({
               )}
             </Button>
 
-            <div className="flex flex-col items-center gap-3">
+            <div className="flex flex-col items-center gap-4 mt-2">
               <button 
                 onClick={onResend}
-                className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40 hover:text-white transition-colors"
+                className="text-[10px] font-black uppercase tracking-[0.2em] text-white/60 hover:text-white transition-colors py-2"
               >
                 Resend Code
               </button>
-              <p className="text-[10px] flex items-center gap-2 text-white/30 uppercase tracking-widest font-black">
+              
+              <div className="bg-white/5 border border-white/10 p-4 rounded-3xl w-full text-center">
+                <p className="text-[9px] uppercase tracking-widest text-white/50 leading-relaxed font-bold">
+                  Check <span className="text-white/80">Spam or Junk</span> if missing.<br />
+                  <span className="text-kenya-green mt-1 block">Abuse Limit: 3 requests per hour</span>
+                </p>
+              </div>
+
+              <p className="text-[10px] flex items-center gap-2 text-white/30 uppercase tracking-widest font-black mt-2">
                 <Mail size={10} /> Powered by CEKA
               </p>
             </div>

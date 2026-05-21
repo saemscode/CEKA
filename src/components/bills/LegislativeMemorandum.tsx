@@ -29,7 +29,7 @@ import { SubmissionVerification } from "./SubmissionVerification";
 // Helper component for remote Lottie loading to prevent broken assets
 const LottieViewer = ({ path, className, loop = true }: { path: string, className?: string, loop?: boolean }) => {
   const [animationData, setAnimationData] = useState<any>(null);
-  
+
   useEffect(() => {
     fetch(path)
       .then(res => res.json())
@@ -54,7 +54,7 @@ const SuccessStep = ({ billTitle, onReset }: { billTitle: string; onReset: () =>
           <div className="w-16 h-16 sm:w-20 sm:h-20 flex-shrink-0">
             <LottieViewer path="/assets/lottie/Fire.json" />
           </div>
-          
+
           {/* CORE SUCCESS LOTTIE */}
           <div className="w-32 h-32 sm:w-48 sm:h-48 relative">
             <LottieViewer path="/assets/lottie/Success.json" loop={false} />
@@ -120,8 +120,8 @@ const SuccessStep = ({ billTitle, onReset }: { billTitle: string; onReset: () =>
             <MailSendIcon size={18} className="text-white" /> Follow CEKA
           </button>
         </motion.div>
-        
-        <button 
+
+        <button
           onClick={onReset}
           className="mt-10 text-[9px] font-black uppercase tracking-[0.3em] text-slate-400 hover:text-kenya-green transition-colors"
         >
@@ -193,6 +193,39 @@ const COUNTY_CONSTITUENCIES: Record<string, string[]> = {
   "West Pokot": ['Kacheliba', 'Kapenguria', 'Pokot South', 'Sigor'],
 };
 
+// ── Template taxonomy ─────────────────────────────────────────────────────────
+const CATEGORY_COMMITTEE: Record<string, string> = {
+  'Finance': 'Finance and National Planning Committee',
+  'Finance & Taxation': 'Finance and National Planning Committee',
+  'Health': 'Health Committee',
+  'Law & Criminal Justice': 'Justice and Legal Affairs Committee',
+  'Governance': 'Justice, Legal Affairs and Human Rights Committee',
+  'Environment': 'Environment and Natural Resources Committee',
+  'Education': 'Education and Research Committee',
+  'Agriculture': 'Agriculture and Livestock Committee',
+  'Devolution & Counties': 'Devolution and Intergovernmental Relations Committee',
+  'Infrastructure': 'Transport, Public Works and Housing Committee',
+  'Social Affairs': 'Labour and Social Welfare Committee',
+  'Defence & Security': 'Administration and National Security Committee',
+  'Constitutional': 'Constitution Implementation Oversight Committee',
+};
+
+const VARIANT_META = [
+  { id: 'A', label: 'Full', desc: 'Comprehensive — all constitutional anchors, policy implications, full record' },
+  { id: 'B', label: 'Simple', desc: 'Plain-language — clear, personal, accessible to every Kenyan' },
+  { id: 'C', label: 'Technical', desc: 'Discipline-aware — law, finance, health or governance context' },
+  { id: 'D', label: 'Activist Special', desc: 'Short, sharp, bilingual — zero diplomatic cushioning' },
+] as const;
+
+type VariantId = 'A' | 'B' | 'C' | 'D';
+type PositionId = 'OPPOSE' | 'SUPPORT' | 'AMEND';
+
+const POSITION_META: { id: PositionId; label: string; color: string }[] = [
+  { id: 'OPPOSE', label: 'Oppose', color: 'bg-kenya-red/10 border-kenya-red/20 text-kenya-red' },
+  { id: 'SUPPORT', label: 'Support', color: 'bg-kenya-green/10 border-kenya-green/20 text-kenya-green' },
+  { id: 'AMEND', label: 'Support with Amendments', color: 'bg-amber-500/10 border-amber-500/20 text-amber-600' },
+];
+
 interface LegislativeMemorandumProps {
   billId: string;
   billTitle: string;
@@ -200,6 +233,17 @@ interface LegislativeMemorandumProps {
   deadline?: string | null;
   signatureGoal?: number;
   constitutionalSection?: string | null;
+  // Extended bill context for template engine
+  billNo?: string | null;
+  billHouse?: string | null;
+  billSessionYear?: number | null;
+  billCategory?: string | null;
+  billSponsor?: string | null;
+  billStatus?: string | null;
+  billNeuralSummary?: string | null;
+  billTabloidSummary?: string | null;
+  billAiConcerns?: string[] | null;
+  billCurrentStage?: string | null;
 }
 
 type SuccessState = 'editing' | 'submitted';
@@ -210,7 +254,17 @@ export const LegislativeMemorandum: React.FC<LegislativeMemorandumProps> = ({
   billSummary,
   deadline,
   signatureGoal = 1000,
-  constitutionalSection
+  constitutionalSection,
+  billNo,
+  billHouse,
+  billSessionYear,
+  billCategory,
+  billSponsor,
+  billStatus,
+  billNeuralSummary,
+  billTabloidSummary,
+  billAiConcerns,
+  billCurrentStage,
 }) => {
   const {
     identity,
@@ -225,6 +279,8 @@ export const LegislativeMemorandum: React.FC<LegislativeMemorandumProps> = ({
 
   const [subject, setSubject] = useState('');
   const [messageBody, setMessageBody] = useState('');
+  const [selectedVariant, setSelectedVariant] = useState<VariantId>('A');
+  const [userPosition, setUserPosition] = useState<PositionId>('OPPOSE');
   const [selectedRecipients, setSelectedRecipients] = useState({
     clerk: true,
     financeCommittee: true,
@@ -261,6 +317,286 @@ export const LegislativeMemorandum: React.FC<LegislativeMemorandumProps> = ({
   const filteredConstituencies = availableConstituencies.filter(c =>
     c.toLowerCase().includes(constituencySearch.toLowerCase())
   );
+
+  // ── Template derived values ──────────────────────────────────────────────
+  const todayLong = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+  const firstName = identity.name ? identity.name.split(' ')[0] : '[FIRST NAME]';
+  const lastName = identity.name ? identity.name.split(' ').slice(1).join(' ') || '' : '[LAST NAME]';
+  const uConstituency = identity.constituency || '[CONSTITUENCY]';
+  const uCounty = identity.county || '[COUNTY]';
+
+  const committeeLabel = billCategory
+    ? (CATEGORY_COMMITTEE[billCategory] || 'Relevant Departmental Committee')
+    : 'Relevant Departmental Committee';
+  const houseLabel = billHouse || 'National Assembly';
+  const isNASenate = (billHouse || '').toLowerCase().includes('senate');
+  const topRecipient = isNASenate
+    ? `Clerk of the Senate and the Standing Committee — ${committeeLabel}`
+    : `Clerk of the National Assembly and the Departmental Committee — ${committeeLabel}`;
+
+  const concernsBlock = (billAiConcerns && billAiConcerns.length > 0)
+    ? billAiConcerns.map(c => `  - ${c}`).join('\n')
+    : '  [No citizen concerns on record yet]';
+
+  const constitutionalAnchorsBlock = pursuantArticles || 'Articles 10(2), 118(1) of the Constitution of Kenya 2010';
+
+  const positionParaA = {
+    OPPOSE: `Having reviewed the Bill in its current form, I OPPOSE the passage of ${billTitle} for the reasons set out above. I call on this Committee to recommend the withdrawal of the Bill and its return to the sponsor for substantive redrafting that addresses the concerns raised herein.`,
+    SUPPORT: `Having reviewed the Bill in its current form, I SUPPORT the passage of ${billTitle} and call on this Committee to expedite its consideration and recommend it for Third Reading without unnecessary delay.`,
+    AMEND: `Having reviewed the Bill in its current form, I SUPPORT the passage of ${billTitle} SUBJECT TO AMENDMENTS. I call on this Committee to incorporate the concerns raised herein as mandatory amendments before recommending the Bill for Third Reading.`,
+  };
+
+  const positionParaB = {
+    OPPOSE: `I do not support this Bill. In my view, it will cause more harm than good to ordinary Kenyans. I am asking the Committee to reject it or send it back for a complete rethink.`,
+    SUPPORT: `I support this Bill. I believe it will benefit Kenyans if passed, and I am asking the Committee to move it forward without unnecessary delay.`,
+    AMEND: `I support the idea behind this Bill, but it needs fixing before it becomes law. I am asking the Committee to address the concerns I have raised above before passing it.`,
+  };
+
+  const positionParaC = {
+    OPPOSE: `This petitioner submits that ${billTitle}, in its current form, is technically and constitutionally deficient for the reasons stated in Sections III through VI above. The petitioner recommends that the Committee reject the Bill at Committee Stage and return it to the sponsor with directions for substantive amendment.`,
+    SUPPORT: `This petitioner submits that ${billTitle} is technically sound and constitutionally consistent for the reasons stated above. The petitioner recommends that the Committee expedite its report and recommend the Bill for Third Reading.`,
+    AMEND: `This petitioner submits that ${billTitle} is directionally sound but technically insufficient in the areas identified in Section VI above. The petitioner recommends that the Committee introduce targeted amendments addressing the stated deficiencies before recommending the Bill for Third Reading.`,
+  };
+
+  const positionParaD = {
+    OPPOSE: `I OPPOSE this Bill. Its current form does not serve the people of Kenya. It serves neither our constitutional values under ${constitutionalAnchorsBlock} nor the economic and social realities of ordinary citizens. Reject it. Send it back. Do not pass this into law until it is fundamentally reworked.`,
+    SUPPORT: `I SUPPORT this Bill. The time for delay is over. The people this Bill benefits cannot wait for procedural hesitation. Pass it. Pass it now.`,
+    AMEND: `I SUPPORT this Bill in principle, NOT in its current form. The concerns above are not minor. Address them with binding amendments. Then pass it. Not before.`,
+  };
+
+  const buildVariantA = (): string => `${topRecipient}
+Parliament of Kenya
+Parliament Road, Nairobi
+
+${todayLong}
+
+RE: PUBLIC MEMORANDUM ON ${billTitle.toUpperCase()}
+    ${billNo ? billNo + ', ' : ''}${billSessionYear || ''} | STATUS: ${(billCurrentStage || billStatus || '').toUpperCase()}
+
+The above subject refers.
+
+CONSTITUTIONAL MANDATE FOR THIS SUBMISSION
+
+Pursuant to Articles 10(2)(a) and 118(1)(b) of the Constitution of Kenya 2010, every legislative process must facilitate public participation. This memorandum is submitted in fulfilment of that constitutional obligation and in the exercise of my rights as a citizen under Article 1 of the Constitution, which vests sovereign power in the people.
+
+IDENTIFICATION OF PETITIONER
+
+I, ${firstName} ${lastName}, a resident of ${uConstituency} Constituency, ${uCounty} County, registered voter and citizen of the Republic of Kenya, hereby submit this memorandum for the consideration of the Committee.
+
+BILL PARTICULARS
+
+Title:         ${billTitle}
+Bill Number:   ${billNo || '[Bill No. Not Available]'}
+Session Year:  ${billSessionYear || '[Year Not Available]'}
+House:         ${houseLabel}
+Sponsor:       ${billSponsor || '[Sponsor Not Available]'}
+Status:        ${billStatus || '[Status Not Available]'}
+Current Stage: ${billCurrentStage || '[Stage Not Available]'}
+Category:      ${billCategory || '[Category Not Available]'}
+
+SUMMARY OF THE BILL
+
+${billNeuralSummary || billSummary}
+
+CONSTITUTIONAL FRAMEWORK
+
+The following constitutional provisions are directly engaged by this Bill:
+${constitutionalAnchorsBlock}
+
+This memorandum holds that all amendments and legislative actions must be consistent with the constitutional provisions above, and that any provision of this Bill that conflicts with these articles must be revised or struck out before assent.
+
+CITIZEN CONCERNS ON RECORD
+
+The following concerns have been identified as matters of public interest arising from this Bill:
+
+${concernsBlock}
+
+PETITIONER'S POSITION
+
+${positionParaA[userPosition]}
+
+PRAYER
+
+This memorandum respectfully prays that the Committee:
+
+1. Acknowledges receipt of this submission as part of the public participation record for ${billTitle}.
+2. Considers the constitutional anchors and citizen concerns set out herein in its deliberations.
+3. ${userPosition === 'OPPOSE' ? 'Recommends the withdrawal or rejection of the Bill in its current form.' : userPosition === 'SUPPORT' ? 'Recommends the Bill for passage without delay.' : 'Recommends specific amendments addressing the concerns cited herein before passage.'}
+4. Tables a Committee Report that specifically addresses the public concerns raised during this participation process.
+
+Respectfully submitted,
+
+${firstName} ${lastName}
+${uConstituency} Constituency, ${uCounty} County
+Date: ${todayLong}
+Citizen of the Republic of Kenya`;
+
+  const buildVariantB = (): string => `${topRecipient}
+Parliament of Kenya
+
+${todayLong}
+
+RE: MY VIEW ON ${billTitle.toUpperCase()}
+
+To the Committee,
+
+My name is ${firstName} ${lastName}, and I live in ${uConstituency}, ${uCounty} County. I am writing because Article 118 of the Constitution gives me the right to take part in decisions that affect my life, and ${billTitle} is one of them.
+
+WHAT THIS BILL IS ABOUT
+
+${billTabloidSummary || billSummary}
+
+WHY IT MATTERS TO ME
+
+${billNeuralSummary || billSummary}
+
+The concerns that many Kenyans like me have raised include:
+
+${concernsBlock}
+
+MY POSITION
+
+${positionParaB[userPosition]}
+
+I am asking this Committee to record my views as part of the public participation process and to show Kenyans that their voices count.
+
+Yours faithfully,
+
+${firstName} ${lastName}
+${uConstituency} Constituency, ${uCounty} County
+Date: ${todayLong}`;
+
+  const buildVariantC = (): string => {
+    const catBlock = (() => {
+      const cat = (billCategory || '').toLowerCase();
+      if (cat.includes('finance') || cat.includes('tax')) {
+        return `This Bill engages Kenya's fiscal architecture as governed by Part 12 of the Constitution and the Public Finance Management Act, 2012. The provisions proposed herein must satisfy the constitutional requirement under Article 201 that public finance be managed in a manner that promotes equitable development and transparency. The following fiscal and economic considerations arise from a technical reading of the Bill's provisions:\n\n${billSummary}\n\nThe Bill's revenue implications must be assessed against Kenya's current economic conditions, cost of compliance burdens on SMEs, and the projected impact on consumer pricing across affected sectors.`;
+      } else if (cat.includes('health')) {
+        return `This Bill engages Kenya's constitutional obligations under Article 43(1)(a), which guarantees the right to the highest attainable standard of health. A technical assessment of the Bill's provisions against World Health Organization standards and Kenya's existing regulatory framework reveals the following gaps and opportunities:\n\n${billSummary}`;
+      } else if (cat.includes('law') || cat.includes('justice') || cat.includes('criminal')) {
+        return `A technical reading of the amendments raises the following questions of legal interpretation and procedural compliance:\n\n${billSummary}\n\nThe amendments must be assessed for consistency with the principle of legality, the right to a fair hearing under Article 50, and Kenya's obligations under international legal instruments to which it is signatory.`;
+      } else {
+        return `This Bill engages the constitutional framework on devolution under Chapter 11, the principles of good governance under Article 10, and the accountability obligations of state and public officers under Chapter 6. The following governance and administrative considerations arise:\n\n${billSummary}`;
+      }
+    })();
+    return `${topRecipient}
+Parliament of Kenya
+Parliament Road, Nairobi
+
+${todayLong}
+
+RE: TECHNICAL MEMORANDUM IN RESPECT OF ${billTitle.toUpperCase()}
+    BILL NO. ${billNo || '[Bill No.]'} | ${billSessionYear || ''} | ${houseLabel.toUpperCase()}
+
+SUBMITTED PURSUANT TO ARTICLES 10(2), 118(1)(b) AND 119 OF THE CONSTITUTION OF KENYA 2010
+
+---
+
+I. PETITIONER
+
+${firstName} ${lastName}
+${uConstituency} Constituency | ${uCounty} County
+
+---
+
+II. BILL PARTICULARS
+
+  Title:         ${billTitle}
+  Bill No.:      ${billNo || '[Not Available]'}
+  Session Year:  ${billSessionYear || '[Not Available]'}
+  House:         ${houseLabel}
+  Sponsor:       ${billSponsor || '[Not Available]'}
+  Category:      ${billCategory || '[Not Available]'}
+  Current Stage: ${billCurrentStage || '[Not Available]'}
+  Status:        ${billStatus || '[Not Available]'}
+
+---
+
+III. EXECUTIVE SUMMARY
+
+${billNeuralSummary || billSummary}
+
+---
+
+IV. TECHNICAL ANALYSIS
+
+${catBlock}
+
+---
+
+V. CONSTITUTIONAL FRAMEWORK ANALYSIS
+
+The following constitutional provisions are directly engaged by this Bill:
+
+${constitutionalAnchorsBlock}
+
+This petitioner notes that any provision of the Bill that is inconsistent with the above constitutional anchors is invalid to the extent of that inconsistency, per Article 2(4) of the Constitution.
+
+---
+
+VI. IDENTIFIED RISKS AND CONCERNS
+
+${concernsBlock}
+
+---
+
+VII. POSITION AND RECOMMENDATION
+
+${positionParaC[userPosition]}
+
+---
+
+VIII. PRAYER
+
+This memorandum prays that the Committee:
+
+(a) Receives and records this technical memorandum as part of the public participation record for ${billTitle};
+(b) Commissions or requests a technical impact assessment from the relevant government agencies where not yet done;
+(c) Tables a Committee Report that engages the technical and constitutional concerns raised herein with specificity; and
+(d) Acts in accordance with the petitioner's position stated in Section VII above.
+
+Signed,
+
+${firstName} ${lastName}
+${uConstituency} Constituency | ${uCounty} County
+Date: ${todayLong}`;
+  };
+
+  const buildVariantD = (): string => `${topRecipient}
+Parliament of Kenya
+
+${todayLong}
+
+RE: ${billTitle.toUpperCase()} | ${billNo ? billNo + ' | ' : ''}${(billCurrentStage || '').toUpperCase()}
+
+Wabunge na Waheshimiwa wa Kamati,
+Members of the Committee,
+
+I am ${firstName} ${lastName}, of ${uConstituency}, ${uCounty}. I write under my constitutional right to be heard, and I intend to be.
+
+THE MATTER AT HAND
+
+${billTabloidSummary || billNeuralSummary || billSummary}
+
+The full record of concerns raised by citizens on this Bill stands as follows:
+
+${concernsBlock}
+
+MY POSITION IS CLEAR
+
+${positionParaD[userPosition]}
+
+MY DEMAND
+
+Record this submission. Answer it in your Committee Report. Show this country that public participation is not a formality.
+
+Ninyi ni wawakilishi wetu. Tunawaangalia.
+You are our representatives. We are watching.
+
+${firstName} ${lastName}
+${uConstituency} | ${uCounty}
+${todayLong}
+Mwananchi wa Jamhuri ya Kenya`;
 
   // Real-time Constitutional Enrichment for Memoranda
   useEffect(() => {
@@ -308,42 +644,26 @@ export const LegislativeMemorandum: React.FC<LegislativeMemorandumProps> = ({
     fetchStats();
   }, [billId]);
 
+  // Regenerate template text whenever variant, position, identity, or bill data changes
   useEffect(() => {
-    setSubject(`RE: MEMORANDUM OF OBJECTION TO ${billTitle.toUpperCase()}`);
-    const template = `Dear Clerk of the National Assembly and Members of the Finance Committee,
+    setSubject(`RE: MEMORANDUM ON ${billTitle.toUpperCase()}${billNo ? ' — ' + billNo : ''}`);
+    let body = '';
+    if (selectedVariant === 'A') body = buildVariantA();
+    else if (selectedVariant === 'B') body = buildVariantB();
+    else if (selectedVariant === 'C') body = buildVariantC();
+    else body = buildVariantD();
+    setMessageBody(body);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    selectedVariant, userPosition, pursuantArticles,
+    identity.name, identity.constituency, identity.county,
+    billTitle, billSummary, billNeuralSummary, billTabloidSummary,
+    billAiConcerns, billNo, billHouse, billSessionYear,
+    billCategory, billSponsor, billStatus, billCurrentStage,
+  ]);
 
-The above subject refers;
-
-Pursuant to ${pursuantArticles} of the Constitution 2010 that mandates Public Participation in any Legislative Process I, {{full_name}}, a resident of {{constituency}} Constituency, {{county}} County, wish to submit my Memoranda as follows:
-
-Regarding: ${billTitle}
-Context: ${billSummary}
-
-In conclusion, I call for the withdrawal of this Bill as it is made in Bad Faith, ignorant to the Current Economic Needs and Political Wills of the People of Kenya. I thus pray that you Reject it for the sake of a better Kenya.
-
-Yours Faithfully,
-
-{{full_name}}
-Date: {{date}}
-
-Citizen of Kenya`;
-    setMessageBody(template);
-  }, [billTitle, billSummary, pursuantArticles]);
-
-  const getProcessedBody = () => {
-    let processed = messageBody;
-    const tokens: Record<string, string> = {
-      '{{full_name}}': identity.name || '[FIRST NAME]',
-      '{{constituency}}': identity.constituency || '[CONSTITUENCY]',
-      '{{county}}': identity.county || '[COUNTY]',
-      '{{date}}': new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }),
-      '{{bill_title}}': billTitle
-    };
-    Object.entries(tokens).forEach(([token, value]) => {
-      processed = processed.split(token).join(value);
-    });
-    return processed;
-  };
+  // Live preview — always returns the freshly-built text (messageBody already resolved via useEffect)
+  const getProcessedBody = () => messageBody;
 
   const recipients = {
     clerk: { name: "Clerk of the National Assembly", email: "cna@parliament.go.ke" },
@@ -444,9 +764,9 @@ Citizen of Kenya`;
     return (
       <div className="relative p-[1px] rounded-[40px] bg-gradient-to-br from-kenya-green/30 to-kenya-green/5 shadow-ios-high overflow-hidden">
         <div className="bg-white/95 dark:bg-slate-900/80 backdrop-blur-3xl rounded-[39px] overflow-hidden">
-          <SuccessStep 
-            billTitle={billTitle} 
-            onReset={() => setSuccessState('editing')} 
+          <SuccessStep
+            billTitle={billTitle}
+            onReset={() => setSuccessState('editing')}
           />
         </div>
       </div>
@@ -463,7 +783,7 @@ Citizen of Kenya`;
           <div className="px-5 sm:px-8 py-4 sm:py-5 flex items-center justify-between bg-slate-50/50 dark:bg-white/5 border-b border-black/5 dark:border-white/5 gap-3 flex-wrap">
             <div className="flex items-center gap-3 min-w-0">
               <div className="h-4 w-4 rounded-full bg-kenya-green shadow-[0_0_10px_rgba(0,186,0,0.3)] flex-shrink-0" />
-              <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 truncate">Process Active</p>
+              <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 truncate">Submit Your Petition</p>
             </div>
             <div className="flex items-center gap-3 flex-shrink-0">
               <SignatureCounter current={signatureCount} goal={signatureGoal} variant="compact" className="w-[90px]" />
@@ -725,6 +1045,79 @@ Citizen of Kenya`;
               </div>
             </div>
 
+
+
+            {/* ── Template Variant Selector ── */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <SparklesIcon size={16} className="text-kenya-green flex-shrink-0" />
+                <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-900 dark:text-white">Petition Style</h3>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                {VARIANT_META.map(v => (
+                  <motion.button
+                    key={v.id}
+                    type="button"
+                    whileTap={{ scale: 0.97 }}
+                    onClick={() => setSelectedVariant(v.id as VariantId)}
+                    className={cn(
+                      'relative p-4 rounded-2xl border text-left transition-all duration-200',
+                      selectedVariant === v.id
+                        ? 'bg-kenya-green/10 border-kenya-green/30 shadow-ios-soft'
+                        : 'bg-slate-50 dark:bg-white/5 border-transparent hover:border-slate-200 dark:hover:border-white/10'
+                    )}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <p className={cn('text-[9px] font-black uppercase tracking-widest mb-1', selectedVariant === v.id ? 'text-kenya-green' : 'text-slate-400')}>
+                          Variant {v.id}
+                        </p>
+                        <p className={cn('text-xs font-black leading-tight', selectedVariant === v.id ? 'text-slate-900 dark:text-white' : 'text-slate-600 dark:text-slate-300')}>
+                          {v.label}
+                        </p>
+                        <p className="text-[9px] text-slate-400 mt-1 leading-relaxed hidden sm:block">{v.desc}</p>
+                      </div>
+                      {selectedVariant === v.id && (
+                        <motion.div
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          className="h-5 w-5 rounded-full bg-kenya-green flex items-center justify-center flex-shrink-0 mt-0.5"
+                        >
+                          <IOSTickIcon size={10} className="text-white" />
+                        </motion.div>
+                      )}
+                    </div>
+                  </motion.button>
+                ))}
+              </div>
+            </div>
+
+            {/* ── Position Selector ── */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <StarIcon size={16} className="text-kenya-green flex-shrink-0" />
+                <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-900 dark:text-white">Your Position</h3>
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                {POSITION_META.map(p => (
+                  <motion.button
+                    key={p.id}
+                    type="button"
+                    whileTap={{ scale: 0.97 }}
+                    onClick={() => setUserPosition(p.id)}
+                    className={cn(
+                      'p-3 sm:p-4 rounded-2xl border text-center transition-all duration-200 font-black text-[10px] uppercase tracking-widest',
+                      userPosition === p.id
+                        ? p.color + ' shadow-ios-soft'
+                        : 'bg-slate-50 dark:bg-white/5 border-transparent text-slate-400 hover:border-slate-200 dark:hover:border-white/10'
+                    )}
+                  >
+                    {p.label}
+                  </motion.button>
+                ))}
+              </div>
+            </div>
+
             {/* ── Memorandum Content ── */}
             <div className="space-y-4 sm:space-y-6">
               <div className="flex items-center justify-between gap-2 flex-wrap">
@@ -823,6 +1216,11 @@ Citizen of Kenya`;
               </div>
 
               <div className="flex flex-col gap-3">
+                <div className="bg-kenya-green/5 dark:bg-kenya-green/10 p-4 rounded-3xl border border-kenya-green/10 mb-1">
+                  <p className="text-[11px] font-medium text-slate-600 dark:text-slate-300 leading-relaxed">
+                    <strong className="text-kenya-green dark:text-kenya-green text-xs">Anti-Spam Verification:</strong> To protect the integrity of the petition, we'll send a <strong className="text-slate-900 dark:text-white">6-digit code</strong> to your email. You only verify once.
+                  </p>
+                </div>
                 <div className="flex flex-col sm:flex-row gap-3">
                   <Button
                     onClick={handleInitialSubmit}

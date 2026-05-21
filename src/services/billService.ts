@@ -22,7 +22,7 @@ export interface Bill {
   b2_url?: string | null;
   corroboration_score?: number;
   analysis_status?: 'pending' | 'processing' | 'completed' | 'failed';
-  sources?: any[];
+  sources?: any[]
   views_count?: number;
   follow_count?: number;
   // Bill Pipeline Enhancement fields
@@ -30,6 +30,10 @@ export interface Bill {
   tabloid_summary?: string | null;
   participation_deadline?: string | null;
   signature_goal?: number | null;
+  // Legislative metadata
+  bill_no?: string | null;
+  house?: string | null;
+  session_year?: number | null;
 }
 
 /** Returns the canonical URL-safe identifier for sharing — slug if populated, UUID otherwise. */

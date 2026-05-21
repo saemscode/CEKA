@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, Link, useLocation } from 'react-router-dom';
 import { ArrowLeft, Calendar, User, Tag, ExternalLink, Clock, Eye, Share2, Clipboard, Download, CheckCircle2, Circle, ShieldCheck, Newspaper, Info, Lock, FileText, XCircle, Target, TrendingUp, Sparkles, ChevronDown, ChevronUp } from 'lucide-react';
-import { buildTimeline, getStageColor, getStageIndex, BILL_STAGES } from '@/lib/billStages';
+import { buildTimeline, getStageColor, getStageIndex, getStageByStatus, BILL_STAGES } from '@/lib/billStages';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -617,13 +617,23 @@ const BillDetail = () => {
                       {/* FORMAL MEMORANDUM GENERATOR */}
                       <div id="memoranda" ref={memorandaRef} className="order-2 xl:order-1 scroll-mt-24">
                          <LegislativeMemorandum 
-                           billId={bill.id}
-                           billTitle={bill.title}
-                           billSummary={bill.summary}
-                           deadline={bill.participation_deadline}
-                           constitutionalSection={bill.constitutional_section}
-                           signatureGoal={signatureGoal}
-                         />
+                            billId={bill.id}
+                            billTitle={bill.title}
+                            billSummary={bill.summary}
+                            deadline={bill.participation_deadline}
+                            constitutionalSection={bill.constitutional_section}
+                            signatureGoal={signatureGoal}
+                            billNo={bill.bill_no}
+                            billHouse={bill.house}
+                            billSessionYear={bill.session_year}
+                            billCategory={bill.category}
+                            billSponsor={bill.sponsor}
+                            billStatus={bill.status}
+                            billNeuralSummary={bill.neural_summary}
+                            billTabloidSummary={bill.tabloid_summary}
+                            billAiConcerns={bill.ai_concerns}
+                            billCurrentStage={getStageByStatus(bill.status).label}
+                          />
                       </div>
 
                      {/* QUICK CIVIC RESPONSE — with prefill from concern tap */}
