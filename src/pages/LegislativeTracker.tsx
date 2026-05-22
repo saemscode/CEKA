@@ -369,7 +369,7 @@ const LegislativeTracker = () => {
                 Civic Education Kenya (CEKA) presents
               </Badge>
               <h1 className="text-5xl md:text-8xl font-[1000] tracking-tight leading-[0.9] mb-8 dark:text-white">
-                The <span className="text-transparent bg-clip-text bg-gradient-to-r from-kenya-green to-primary">Bill</span>Line.
+                The <span className="text-transparent bg-clip-text bg-gradient-to-r from-kenya-green to-primary">Legislative</span>Tracker.
               </h1>
               <p className="text-xl md:text-2xl text-muted-foreground font-medium leading-relaxed max-w-2xl">
                 The most advanced legislative tracker in Kenya. Real-time updates from
