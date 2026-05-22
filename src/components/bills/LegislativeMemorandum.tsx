@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
 import { motion, AnimatePresence } from 'framer-motion';
 import Lottie from "lottie-react";
 import {
@@ -25,6 +26,7 @@ import { SignatureCounter } from "./SignatureCounter";
 import { CountdownTimer } from "./CountdownTimer";
 import { MPLookup } from "./MPLookup";
 import { SubmissionVerification } from "./SubmissionVerification";
+import { FINANCE_BILL_2026_CLAUSES } from '@/data/financeBill2026';
 
 // Helper component for remote Lottie loading to prevent broken assets
 const LottieViewer = ({ path, className, loop = true }: { path: string, className?: string, loop?: boolean }) => {
@@ -334,6 +336,17 @@ export const LegislativeMemorandum: React.FC<LegislativeMemorandumProps> = ({
   const [signatureCount, setSignatureCount] = useState(0);
   const [successState, setSuccessState] = useState<SuccessState>('editing');
   const [isPetitionStyleOpen, setIsPetitionStyleOpen] = useState(false);
+  const [selectedFinanceClauses, setSelectedFinanceClauses] = useState<Set<string>>(new Set());
+  const isFinanceBill = (billTitle.toLowerCase().includes('finance') && (billTitle.includes('2024') || billTitle.includes('2025') || billTitle.includes('2026'))) || 
+                        billNo?.toLowerCase().includes('finance') ||
+                        billTitle.toLowerCase().includes('sovereign petition');
+
+  const toggleFinanceClause = (id: string) => {
+    const newSelected = new Set(selectedFinanceClauses);
+    if (newSelected.has(id)) newSelected.delete(id);
+    else newSelected.add(id);
+    setSelectedFinanceClauses(newSelected);
+  };
 
   // Location autocomplete state
   const [countySearch, setCountySearch] = useState('');
@@ -589,10 +602,33 @@ Mwananchi wa Jamhuri ya Kenya`;
     billTitle, billSummary, billNeuralSummary, billTabloidSummary,
     billAiConcerns, billNo, billHouse, billSessionYear,
     billCategory, billSponsor, billStatus, billCurrentStage,
+    selectedFinanceClauses,
   ]);
 
-  // Live preview — always returns the freshly-built text (messageBody already resolved via useEffect)
-  const getProcessedBody = () => messageBody;
+  // Combined body with technical modules if finance bill
+  const getProcessedBody = () => {
+    if (!isFinanceBill || selectedFinanceClauses.size === 0) return messageBody;
+
+    const technicalList = FINANCE_BILL_2026_CLAUSES.filter(c => selectedFinanceClauses.has(c.id));
+    const connectors = ["Also,", "Moreover,", "Additionally,", "Furthermore,", "Crucially,"];
+    let technicalBlock = "\n\nDETAILED TECHNICAL OBJECTIONS/AMENDMENTS:\n";
+    
+    technicalList.forEach((c, i) => {
+      const conn = i === 0 ? "Firstly," : connectors[i % connectors.length];
+      technicalBlock += `${conn} regarding ${c.clauseId} (${c.title}):\n- Concern: ${c.concern}\n- Position: ${c.position}\n\n`;
+    });
+
+    if (selectedFinanceClauses.has('unconstitutional-assembly-violation')) {
+      technicalBlock += "\nFINAL CONSTITUTIONAL OBJECTION:\nI further raise that this National Assembly is unconstitutionally constituted under Articles 27(8) and 81(b) of the Constitution, violating Article 3(2).\n";
+    }
+
+    // Insert before the prayer
+    const parts = messageBody.split(/4\. PRAYER|4\. OMBI/);
+    if (parts.length === 2) {
+      return parts[0] + technicalBlock + (messageBody.includes('OMBI') ? "\n4. OMBI" : "\n4. PRAYER") + parts[1];
+    }
+    return messageBody + "\n\n" + technicalBlock;
+  };
 
   const recipients = {
     clerk: { name: "Clerk of the National Assembly", email: "cna@parliament.go.ke" },
@@ -1081,6 +1117,50 @@ Mwananchi wa Jamhuri ya Kenya`;
               </div>
             </div>
 
+            {/* ── Technical Objections (Finance Bill Specific) ── */}
+            {isFinanceBill && (
+              <div className="space-y-4 sm:space-y-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <SparklesIcon size={20} className="text-kenya-green" />
+                    <h2 className="text-xl font-black uppercase tracking-[0.1em] text-slate-900 dark:text-white">Technical Objections</h2>
+                  </div>
+                  <Badge className="bg-kenya-green/10 text-kenya-green border-kenya-green/20 font-black text-[9px] uppercase tracking-widest">
+                    46 Technical Pillars Available
+                  </Badge>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[350px] overflow-y-auto p-2 custom-scrollbar">
+                  {FINANCE_BILL_2026_CLAUSES.map((c) => (
+                    <div
+                      key={c.id}
+                      onClick={() => toggleFinanceClause(c.id)}
+                      className={cn(
+                        "p-4 rounded-3xl border-2 cursor-pointer transition-all duration-200 group relative",
+                        selectedFinanceClauses.has(c.id)
+                          ? "bg-kenya-green/5 border-kenya-green"
+                          : "bg-white dark:bg-white/5 border-transparent hover:border-slate-200 dark:hover:border-white/10"
+                      )}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="space-y-1">
+                          <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">{c.clauseId}</p>
+                          <h4 className="text-xs font-black text-slate-900 dark:text-white leading-tight uppercase group-hover:text-kenya-green transition-colors">{c.title}</h4>
+                          <p className="text-[10px] text-slate-500 line-clamp-2 leading-relaxed">{c.concern}</p>
+                        </div>
+                        {selectedFinanceClauses.has(c.id) && (
+                          <div className="h-5 w-5 rounded-full bg-kenya-green flex items-center justify-center shrink-0">
+                            <IOSTickIcon size={10} className="text-white" />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-[9px] font-medium text-slate-400 italic">Select the clauses above to inject professional, human-toned technical grounds into your memorandum.</p>
+              </div>
+            )}
+
             {/* ── Memorandum Content ── */}
             <div className="space-y-4 sm:space-y-6">
               <div className="flex items-center justify-between gap-2 flex-wrap">
@@ -1142,7 +1222,7 @@ Mwananchi wa Jamhuri ya Kenya`;
                   <Textarea
                     readOnly
                     value={getProcessedBody()}
-                    className="min-h-[220px] sm:min-h-[260px] rounded-[28px] sm:rounded-[32px] border-none bg-slate-50 dark:bg-white/5 text-sm sm:text-base leading-relaxed p-5 sm:p-8 green-scrollbar font-serif text-slate-600 dark:text-slate-300 shadow-inner"
+                    className="min-h-[220px] sm:min-h-[260px] rounded-[28px] sm:rounded-[32px] border-none bg-slate-50 dark:bg-white/5 text-sm sm:text-base leading-relaxed p-5 sm:p-8 custom-scrollbar font-serif text-slate-600 dark:text-slate-300 shadow-inner"
                   />
                   <div className="absolute top-4 right-4 opacity-10 pointer-events-none">
                     <BankIcon size={60} />
@@ -1154,7 +1234,7 @@ Mwananchi wa Jamhuri ya Kenya`;
                   <Textarea
                     value={messageBody}
                     onChange={(e) => setMessageBody(e.target.value)}
-                    className="min-h-[120px] bg-transparent border-none text-base sm:text-xl leading-relaxed p-0 green-scrollbar opacity-60 focus:opacity-100 transition-opacity"
+                    className="min-h-[120px] bg-transparent border-none text-base sm:text-xl leading-relaxed p-0 custom-scrollbar opacity-60 focus:opacity-100 transition-opacity"
                   />
                 </div>
               </div>

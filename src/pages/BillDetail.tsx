@@ -1,6 +1,12 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, Link, useLocation } from 'react-router-dom';
-import { ArrowLeft, Calendar, User, Tag, ExternalLink, Clock, Eye, Share2, Clipboard, Download, CheckCircle2, Circle, ShieldCheck, Newspaper, Info, Lock, FileText, XCircle, Target, TrendingUp, Sparkles, ChevronDown, ChevronUp } from 'lucide-react';
+import {
+  ArrowLeftIcon, CalendarIcon, UserIcon, TagIcon, ExternalLinkIcon, ClockIcon,
+  EyeIcon, Share2Icon, ClipboardIcon, DownloadIcon, CheckCircleIcon,
+  CircleIcon, ShieldCheckIcon, NewspaperIcon, InfoIcon, LockIcon,
+  FileTextIcon, XCircleIcon, TargetIcon, TrendingUpIcon, SparklesIcon,
+  ChevronDownIcon, ChevronUpIcon
+} from '@/components/ui/CustomIcons';
 import { buildTimeline, getStageColor, getStageIndex, getStageByStatus, BILL_STAGES } from '@/lib/billStages';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -14,7 +20,6 @@ import { useLanguage, Language } from '@/contexts/LanguageContext';
 import { supabase } from "@/integrations/supabase/client";
 import { BillResponseForm } from '@/components/bills/BillResponseForm';
 import { LegislativeMemorandum } from '@/components/bills/LegislativeMemorandum';
-import { CitizenMemorandumBuilder } from '@/components/bills/CitizenMemorandumBuilder';
 import { SocialShareDrawer } from '@/components/bills/SocialShareDrawer';
 import { BillFollowButton } from '@/components/legislative/BillFollowButton';
 import { SignatureCounter } from '@/components/bills/SignatureCounter';
@@ -53,10 +58,10 @@ const LegislativeTimeline = ({ stages, language }: { stages: ReturnType<typeof b
                   : "bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10 text-slate-400"
           )}>
             {stage.discarded
-              ? <XCircle className="h-5 w-5" />
+              ? <XCircleIcon className="h-5 w-5" />
               : stage.completed
-                ? <CheckCircle2 className="h-5 w-5" />
-                : <Circle className="h-4 w-4" />}
+                ? <CheckCircleIcon className="h-5 w-5" />
+                : <CircleIcon className="h-4 w-4" />}
           </div>
 
           {/* Content Card */}
@@ -325,13 +330,13 @@ const BillDetail = () => {
         <div className="min-h-screen flex items-center justify-center p-4">
           <div className="max-w-md w-full text-center space-y-6">
             <div className="h-20 w-20 rounded-full bg-kenya-red/5 flex items-center justify-center mx-auto">
-              <Clipboard className="h-10 w-10 text-kenya-red opacity-40" />
+              <ClipboardIcon className="h-10 w-10 text-kenya-red opacity-40" />
             </div>
             <h1 className="text-3xl font-extrabold tracking-tight">{error || 'Bill Missing'}</h1>
             <p className="text-slate-500">The legislative engine could not locate the specific trace for this document.</p>
             <Button asChild className="rounded-2xl h-12 px-8 bg-kenya-green font-bold shadow-lg">
               <Link to="/legislative-tracker">
-                <ArrowLeft className="mr-2 h-4 w-4" />
+                <ArrowLeftIcon className="mr-2 h-4 w-4" />
                 Back to Tracker
               </Link>
             </Button>
@@ -349,8 +354,10 @@ const BillDetail = () => {
   })();
   const stages = buildTimeline(bill.status, dbStages, bill.date || bill.created_at);
 
-  const isFinanceBill = bill.title.toLowerCase().includes('finance bill 2026') || 
-                       bill.id === '74961912-8ba7-47f2-bf61-9ae3abafe2e1'; // Dev fallback
+  const isFinanceBill = (bill.title.toLowerCase().includes('finance') && (bill.title.includes('2024') || bill.title.includes('2025') || bill.title.includes('2026'))) || 
+                        bill.bill_no?.toLowerCase().includes('finance') ||
+                        bill.id === '74961912-8ba7-47f2-bf61-9ae3abafe2e1' ||
+                        bill.title.toLowerCase().includes('sovereign petition');
 
   // Description: determine if long enough to warrant a Read More
   const descriptionText = bill.description || '';
@@ -375,7 +382,7 @@ const BillDetail = () => {
             >
               <Link to="/legislative-tracker" className="inline-flex items-center gap-2 text-slate-400 hover:text-kenya-green font-bold text-xs uppercase tracking-widest transition-colors mb-6 group">
                 <div className="h-8 w-8 rounded-full bg-white dark:bg-white/5 flex items-center justify-center shadow-sm group-hover:-translate-x-1 transition-transform">
-                  <ArrowLeft className="h-4 w-4" />
+                  <ArrowLeftIcon className="h-4 w-4" />
                 </div>
                 Back to Legislative Tracker
               </Link>
@@ -405,10 +412,10 @@ const BillDetail = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-12">
               {[
-                { icon: <User className="h-4 w-4" />, label: "Mover / Sponsor", value: bill.sponsor, color: "text-blue-500 bg-blue-500/5" },
-                { icon: <Calendar className="h-4 w-4" />, label: "Date Introduced", value: new Date(bill.date || bill.created_at).toLocaleDateString(), color: "text-kenya-green bg-kenya-green/5" },
-                { icon: <Tag className="h-4 w-4" />, label: "Legislative Category", value: bill.category, color: "text-kenya-red bg-kenya-red/5" },
-                { icon: <Eye className="h-4 w-4" />, label: "Constitution Articles Reference", value: bill.constitutional_section?.split(' - ')[0] || 'Unspecified', color: "text-amber-500 bg-amber-500/5" }
+                { icon: <UserIcon className="h-4 w-4" />, label: "Mover / Sponsor", value: bill.sponsor, color: "text-blue-500 bg-blue-500/5" },
+                { icon: <CalendarIcon className="h-4 w-4" />, label: "Date Introduced", value: new Date(bill.date || bill.created_at).toLocaleDateString(), color: "text-kenya-green bg-kenya-green/5" },
+                { icon: <TagIcon className="h-4 w-4" />, label: "Legislative Category", value: bill.category, color: "text-kenya-red bg-kenya-red/5" },
+                { icon: <EyeIcon className="h-4 w-4" />, label: "Constitution Articles Reference", value: bill.constitutional_section?.split(' - ')[0] || 'Unspecified', color: "text-amber-500 bg-amber-500/5" }
               ].map((item, idx) => (
                 <motion.div
                   key={idx}
@@ -432,14 +439,14 @@ const BillDetail = () => {
             <div className="flex flex-wrap gap-4 mt-8">
               {bill.b2_url && (
                 <Button className="h-14 px-8 rounded-2xl bg-kenya-green text-white font-black text-xs uppercase tracking-widest hover:scale-[1.02] active:scale-[0.98] transition-all shadow-xl shadow-kenya-green/20">
-                  <Download className="mr-2 h-4 w-4" />
+                  <DownloadIcon className="mr-2 h-4 w-4" />
                   {translate("Download Resource", language)}
                 </Button>
               )}
               {bill.pdf_url && (
                 <Button variant="outline" asChild className="h-14 px-8 rounded-2xl border-black/5 dark:border-white/10 bg-white/50 dark:bg-white/5 backdrop-blur-md font-bold text-xs uppercase tracking-widest">
                   <a href={bill.pdf_url} target="_blank" rel="noopener noreferrer">
-                    <FileText className="mr-2 h-4 w-4" />
+                    <FileTextIcon className="mr-2 h-4 w-4" />
                     {translate("Official Bill PDF", language)}
                   </a>
                 </Button>
@@ -483,7 +490,7 @@ const BillDetail = () => {
                             animate={{ rotate: descriptionExpanded ? 180 : 0 }}
                             transition={{ duration: 0.25 }}
                           >
-                            <ChevronDown className="h-4 w-4" />
+                            <ChevronDownIcon className="h-4 w-4" />
                           </motion.span>
                         </motion.button>
                       )}
@@ -498,7 +505,7 @@ const BillDetail = () => {
                 {bill.constitutional_section && (
                   <div className="mt-8 p-6 rounded-3xl bg-kenya-green/[0.03] border border-kenya-green/10 flex gap-4 items-start">
                     <div className="h-10 w-10 rounded-2xl bg-kenya-green/10 flex items-center justify-center shrink-0">
-                      <Eye className="h-5 w-5 text-kenya-green" />
+                      <EyeIcon className="h-5 w-5 text-kenya-green" />
                     </div>
                     <div>
                       <p className="text-[10px] font-black uppercase tracking-widest text-kenya-green mb-1">Constitutional Context</p>
@@ -512,7 +519,7 @@ const BillDetail = () => {
                 <div className="flex items-center justify-between">
                   <h2 className="text-3xl font-black tracking-tight leading-tight">Timeline <span className="text-kenya-green mx-1">&</span> Trace</h2>
                   <div className="h-8 w-8 rounded-full bg-slate-100 dark:bg-white/5 flex items-center justify-center">
-                    <Clock className="h-3.5 w-3.5 text-slate-400" />
+                    <ClockIcon className="h-3.5 w-3.5 text-slate-400" />
                   </div>
                 </div>
 
@@ -542,7 +549,7 @@ const BillDetail = () => {
                       >
                         <div className="flex items-start gap-4">
                           <div className="h-12 w-12 rounded-2xl bg-blue-500/5 flex items-center justify-center shrink-0">
-                            <Newspaper className="h-5 w-5 text-blue-500 opacity-50" />
+                            <NewspaperIcon className="h-5 w-5 text-blue-500 opacity-50" />
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">{item.source_name}</p>
@@ -620,7 +627,7 @@ const BillDetail = () => {
                       onClick={() => setShareDrawerOpen(true)}
                       className="h-12 px-6 rounded-2xl border-kenya-green/20 text-kenya-green font-black text-xs uppercase tracking-widest hover:bg-kenya-green/5 shadow-ios-soft max-w-full"
                     >
-                      <Share2 className="mr-2 h-4 w-4 flex-shrink-0" />
+                      <Share2Icon className="mr-2 h-4 w-4 flex-shrink-0" />
                       <div className="flex items-center min-w-0 max-w-full">
                         <span className="shrink-0 flex-none mr-1">Share</span>
                         <span className="truncate max-w-full">{bill.title}</span>
@@ -632,44 +639,24 @@ const BillDetail = () => {
                   <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 items-start">
                     {/* FORMAL MEMORANDUM GENERATOR */}
                     <div id="memoranda" ref={memorandaRef} className={cn("scroll-mt-24", isFinanceBill ? "col-span-full" : "order-2 xl:order-1")}>
-                      {isFinanceBill ? (
-                        <CitizenMemorandumBuilder 
-                          billTitle={bill.title} 
-                          onDispatch={(memo) => {
-                            const recipients = ["cna@parliament.go.ke", "financecommitteena@parliament.go.ke"].join(',');
-                            const ccs = ["maoni@parliament.go.ke", "info@parliament.go.ke"].join(',');
-                            const subject = encodeURIComponent(`RE: FORMAL MEMORANDUM ON ${bill.title.toUpperCase()}`);
-                            const body = encodeURIComponent(memo);
-                            const isDesktop = !/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-                            
-                            if (isDesktop) {
-                              window.open(`https://mail.google.com/mail/?view=cm&fs=1&to=${recipients}&cc=${ccs}&su=${subject}&body=${body}`, '_blank');
-                            } else {
-                              window.location.href = `mailto:${recipients}?cc=${ccs}&subject=${subject}&body=${body}`;
-                            }
-                            toast({ title: "Memorandum Dispatched", description: "Your formal submission has been prepared in your mail client." });
-                          }}
-                        />
-                      ) : (
-                        <LegislativeMemorandum
-                          billId={bill.id}
-                          billTitle={bill.title}
-                          billSummary={bill.summary}
-                          deadline={bill.participation_deadline}
-                          constitutionalSection={bill.constitutional_section}
-                          signatureGoal={signatureGoal}
-                          billNo={bill.bill_no}
-                          billHouse={bill.house}
-                          billSessionYear={bill.session_year}
-                          billCategory={bill.category}
-                          billSponsor={bill.sponsor}
-                          billStatus={bill.status}
-                          billNeuralSummary={bill.neural_summary}
-                          billTabloidSummary={bill.tabloid_summary}
-                          billAiConcerns={bill.ai_concerns}
-                          billCurrentStage={getStageByStatus(bill.status).label}
-                        />
-                      )}
+                      <LegislativeMemorandum
+                        billId={bill.id}
+                        billTitle={bill.title}
+                        billSummary={bill.description}
+                        deadline={bill.participation_deadline}
+                        constitutionalSection={bill.constitutional_section}
+                        signatureGoal={signatureGoal}
+                        billNo={bill.bill_no}
+                        billHouse={bill.house}
+                        billSessionYear={bill.session_year}
+                        billCategory={bill.category}
+                        billSponsor={bill.sponsor}
+                        billStatus={bill.status}
+                        billNeuralSummary={bill.neural_summary}
+                        billTabloidSummary={bill.tabloid_summary}
+                        billAiConcerns={bill.ai_concerns}
+                        billCurrentStage={getStageByStatus(bill.status).label}
+                      />
                     </div>
 
                     {/* QUICK CIVIC RESPONSE — only show for non-Finance bills to avoid extra steps */}
@@ -704,7 +691,7 @@ const BillDetail = () => {
                 {/* FIDELITY GAUGE */}
                 <Card className="rounded-[40px] border-none bg-gradient-to-br from-slate-900 to-black text-white shadow-2xl overflow-hidden relative">
                   <div className="absolute top-0 right-0 p-8 opacity-10">
-                    <ShieldCheck className="h-32 w-32" />
+                    <ShieldCheckIcon className="h-32 w-32" />
                   </div>
                   <CardHeader className="pb-2">
                     <CardTitle className="text-[10px] font-black uppercase tracking-widest text-kenya-green">{translate("Data Fidelity Score", language)}</CardTitle>
@@ -744,18 +731,18 @@ const BillDetail = () => {
                         className="p-4 rounded-3xl bg-slate-50 dark:bg-white/5 border border-black/5 dark:border-white/5 flex items-center gap-4 group/doc hover:bg-slate-100 dark:hover:bg-white/10 transition-colors no-underline block"
                       >
                         <div className="h-12 w-12 rounded-2xl bg-white dark:bg-slate-800 shadow-sm flex items-center justify-center shrink-0 text-kenya-red">
-                          <FileText className="h-5 w-5 group-hover/doc:scale-110 transition-transform" />
+                          <FileTextIcon className="h-5 w-5 group-hover/doc:scale-110 transition-transform" />
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-xs font-black text-slate-900 dark:text-white truncate">Full Gazette Version</p>
                           <p className="text-[9px] text-slate-400 uppercase tracking-tighter">Official Bill PDF • Open or Download</p>
                         </div>
-                        <ExternalLink className="h-3.5 w-3.5 text-slate-300" />
+                        <ExternalLinkIcon className="h-3.5 w-3.5 text-slate-300" />
                       </a>
                     ) : (
                       <div className="p-4 rounded-3xl bg-slate-50 dark:bg-white/5 border border-dashed border-black/10 dark:border-white/10 flex items-center gap-4 opacity-50">
                         <div className="h-12 w-12 rounded-2xl bg-white dark:bg-slate-800 shadow-sm flex items-center justify-center shrink-0 text-slate-400">
-                          <FileText className="h-5 w-5" />
+                          <FileTextIcon className="h-5 w-5" />
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-xs font-black text-slate-900 dark:text-white truncate">Full Gazette Version</p>
@@ -777,7 +764,7 @@ const BillDetail = () => {
                 <div className="p-8 rounded-[40px] bg-white/80 dark:bg-slate-900/40 backdrop-blur-3xl border border-black/5 dark:border-white/10 shadow-ios-soft space-y-8">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <Target size={18} className="text-kenya-green" />
+                      <TargetIcon size={18} className="text-kenya-green" />
                       <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">How Many Emails Sent</p>
                     </div>
                     <p className="text-[10px] font-black text-kenya-green uppercase tracking-widest">{Math.round((signatureCount / signatureGoal) * 100)}% Confirmed</p>
@@ -788,7 +775,7 @@ const BillDetail = () => {
                   {engagementInsights && (
                     <div className="p-4 rounded-3xl bg-slate-50 dark:bg-white/10 border border-black/5 dark:border-white/5">
                       <div className="flex items-center gap-3 mb-2">
-                        <Sparkles size={14} className="text-kenya-green" />
+                        <SparklesIcon size={14} className="text-kenya-green" />
                         <p className="text-[10px] font-black uppercase tracking-widest">
                           {engagementInsights.velocity > 15 ? 'Viral Spike' : 'Live Interaction'}
                         </p>
@@ -814,7 +801,7 @@ const BillDetail = () => {
                   <CardContent className="p-8 space-y-6">
                     <div className="space-y-4">
                       <div className="h-12 w-12 rounded-2xl bg-white dark:bg-slate-900 shadow-ios-soft flex items-center justify-center">
-                        <Share2 className="h-5 w-5 text-kenya-green" />
+                        <Share2Icon className="h-5 w-5 text-kenya-green" />
                       </div>
                       <h4 className="text-xl font-black tracking-tighter uppercase">Public Discourse</h4>
                       <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
@@ -830,7 +817,7 @@ const BillDetail = () => {
                 {/* UPDATES TRACE */}
                 <div className="px-6 space-y-4">
                   <div className="flex items-center gap-3 text-slate-400">
-                    <Clock className="h-3 w-3" />
+                    <ClockIcon className="h-3 w-3" />
                     <span className="text-[10px] font-black uppercase tracking-[0.2em]">Last Updated: {new Date(bill.updated_at).toLocaleDateString()}</span>
                   </div>
                 </div>

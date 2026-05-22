@@ -255,95 +255,98 @@
   overflow: hidden !important;
 }
 
-/* Green scrollbar styling */
-@layer base {
-
-  /* Webkit browsers (Chrome, Safari, Edge) */
-  ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-  }
-
-  ::-webkit-scrollbar-track {
-    background: #f1f5f9;
-    border-radius: 4px;
-  }
-
-  ::-webkit-scrollbar-thumb {
-    background: linear-gradient(to bottom, #006600, #004d00);
-    border-radius: 4px;
-    border: 2px solid #f1f5f9;
-  }
-
-  ::-webkit-scrollbar-thumb:hover {
-    background: linear-gradient(to bottom, #047857, #065f46);
-  }
-
-  /* Firefox */
-  * {
-    scrollbar-width: auto;
-    scrollbar-color: #006600 #f1f5f9;
-  }
-
-  /* Dark mode scrollbars */
-  .dark ::-webkit-scrollbar-track {
-    background: #374151;
-  }
-
-  .dark ::-webkit-scrollbar-thumb {
-    background: linear-gradient(to bottom, #008800, #006600);
-    border-color: #374151;
-  }
-
-  .dark ::-webkit-scrollbar-thumb:hover {
-    background: linear-gradient(to bottom, #059669, #047857);
-  }
-
-  .dark * {
-    scrollbar-color: #008800 #374151;
-  }
+/* Green scrollbar styling - Global Priority */
+/* Webkit browsers (Chrome, Safari, Edge) */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
 }
 
-/* Green scrollbar utility class */
-.green-scrollbar {
-  scrollbar-width: thin;
-  scrollbar-color: #059669 #f1f5f9;
+::-webkit-scrollbar-track {
+  background: #f8fafc;
+  border-radius: 5px;
 }
 
-.green-scrollbar::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(to bottom, #006600, #004d00);
+  border-radius: 5px;
+  border: 2.5px solid #f8fafc;
+  box-shadow: inset 0 0 1px rgba(255,255,255,0.2);
 }
 
-.green-scrollbar::-webkit-scrollbar-track {
-  background: #f1f5f9;
-  border-radius: 3px;
-}
-
-.green-scrollbar::-webkit-scrollbar-thumb {
-  background: linear-gradient(to bottom, #059669, #047857);
-  border-radius: 3px;
-}
-
-.green-scrollbar::-webkit-scrollbar-thumb:hover {
+::-webkit-scrollbar-thumb:hover {
   background: linear-gradient(to bottom, #047857, #065f46);
 }
 
-/* Dark mode green scrollbar */
-.dark .green-scrollbar {
-  scrollbar-color: #10b981 #374151;
+/* Explicit scrollbar buttons (the arrows requested by user) */
+::-webkit-scrollbar-button:single-button {
+  background-color: #f8fafc;
+  display: block;
+  border-style: solid;
+  height: 13px;
+  width: 13px;
 }
 
-.dark .green-scrollbar::-webkit-scrollbar-track {
-  background: #374151;
+/* Up arrow */
+::-webkit-scrollbar-button:single-button:vertical:decrement {
+  border-width: 0 5px 8px 5px;
+  border-color: transparent transparent #006600 transparent;
 }
 
-.dark .green-scrollbar::-webkit-scrollbar-thumb {
+/* Down arrow */
+::-webkit-scrollbar-button:single-button:vertical:increment {
+  border-width: 8px 5px 0 5px;
+  border-color: #006600 transparent transparent transparent;
+}
+
+/* Firefox Support */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #006600 #f8fafc;
+}
+
+/* Dark mode scrollbars */
+.dark ::-webkit-scrollbar-track {
+  background: #1e293b;
+}
+
+.dark ::-webkit-scrollbar-thumb {
   background: linear-gradient(to bottom, #10b981, #059669);
+  border-color: #1e293b;
 }
 
-.dark .green-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(to bottom, #059669, #047857);
+.dark ::-webkit-scrollbar-button:single-button {
+  background-color: #1e293b;
+}
+
+.dark ::-webkit-scrollbar-button:single-button:vertical:decrement {
+  border-color: transparent transparent #10b981 transparent;
+}
+
+.dark ::-webkit-scrollbar-button:single-button:vertical:increment {
+  border-color: #10b981 transparent transparent transparent;
+}
+
+/* Custom scrollbar utility class (synced with components) */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #006600 #f8fafc;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: #f8fafc;
+  border-radius: 5px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: linear-gradient(to bottom, #006600, #004d00);
+  border-radius: 5px;
+  border: 2px solid #f8fafc;
 }
 
 /* ===== CEKA THEME BASE STYLES ===== */

@@ -3,7 +3,7 @@ import { billService } from '@/services/billService';
 import { useAuth } from '@/providers/AuthProvider';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { MessageSquare, Save, Share2, CheckCircle2 } from 'lucide-react';
+import { MessageSquareIcon, SaveIcon, Share2Icon, CheckCircleIcon } from '@/components/ui/CustomIcons';
 
 interface BillResponseFormProps {
   billId: string;
@@ -87,7 +87,7 @@ export const BillResponseForm: React.FC<BillResponseFormProps> = ({
     <div className="rounded-[32px] border-none bg-white/80 dark:bg-slate-900/40 backdrop-blur-3xl shadow-ios-high dark:shadow-none dark:border dark:border-white/10 overflow-hidden">
       <div className="px-6 py-4 border-b border-black/5 dark:border-white/5 bg-slate-50/50 dark:bg-white/5">
         <p className="text-[10px] font-black uppercase tracking-[0.2em] text-kenya-green flex items-center gap-2">
-          <MessageSquare className="h-4 w-4" />
+          <MessageSquareIcon className="h-4 w-4" />
           General Response
         </p>
       </div>
@@ -101,7 +101,7 @@ export const BillResponseForm: React.FC<BillResponseFormProps> = ({
         {submitted && (
           <div className="p-4 rounded-2xl bg-kenya-green/10 border border-kenya-green/20 animate-in fade-in slide-in-from-top-2 duration-300">
             <div className="flex items-center gap-2 text-kenya-green font-bold text-sm mb-1">
-              <CheckCircle2 size={16} />
+              <CheckCircleIcon size={16} />
               Response Saved Locally
             </div>
             <p className="text-xs text-slate-500 dark:text-slate-400 italic line-clamp-2">
@@ -150,7 +150,7 @@ export const BillResponseForm: React.FC<BillResponseFormProps> = ({
                   : "bg-midnight text-white hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-midnight/20"
               )}
             >
-              <Save size={16} />
+              <SaveIcon size={16} />
               {submitting ? 'Saving…' : submitted ? 'Update Response' : 'Save Response'}
             </button>
 
@@ -160,7 +160,7 @@ export const BillResponseForm: React.FC<BillResponseFormProps> = ({
                 onClick={handleShareToChat}
                 className="h-12 rounded-2xl bg-white/50 dark:bg-white/5 border border-black/5 dark:border-white/10 font-bold text-xs uppercase tracking-widest hover:bg-white/80 dark:hover:bg-white/10 transition-all flex items-center justify-center gap-2"
               >
-                <Share2 size={16} />
+                <Share2Icon size={16} />
                 Share to Community
               </button>
             )}
