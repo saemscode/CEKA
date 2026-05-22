@@ -637,14 +637,15 @@ const BillDetail = () => {
                           billTitle={bill.title} 
                           onDispatch={(memo) => {
                             const recipients = ["cna@parliament.go.ke", "financecommitteena@parliament.go.ke"].join(',');
+                            const ccs = ["maoni@parliament.go.ke", "info@parliament.go.ke"].join(',');
                             const subject = encodeURIComponent(`RE: FORMAL MEMORANDUM ON ${bill.title.toUpperCase()}`);
                             const body = encodeURIComponent(memo);
                             const isDesktop = !/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
                             
                             if (isDesktop) {
-                              window.open(`https://mail.google.com/mail/?view=cm&fs=1&to=${recipients}&su=${subject}&body=${body}`, '_blank');
+                              window.open(`https://mail.google.com/mail/?view=cm&fs=1&to=${recipients}&cc=${ccs}&su=${subject}&body=${body}`, '_blank');
                             } else {
-                              window.location.href = `mailto:${recipients}?subject=${subject}&body=${body}`;
+                              window.location.href = `mailto:${recipients}?cc=${ccs}&subject=${subject}&body=${body}`;
                             }
                             toast({ title: "Memorandum Dispatched", description: "Your formal submission has been prepared in your mail client." });
                           }}

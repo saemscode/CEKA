@@ -366,5 +366,13 @@ export const FINANCE_BILL_2026_CLAUSES: FinanceBillClause[] = [
     concern: "Changes the calculation of timelines for tax objections from working days to calendar days. This effectively 'steals' time from the citizen by counting Saturdays and Sundays against their right to legal defense.",
     position: "I demand that timelines remain as 'Working Days' to protect the right to fair administrative action.",
     category: 'DELETE'
+  },
+  {
+    id: 'unconstitutional-assembly-violation',
+    clauseId: 'Articles 27(8), 81(b), 3(2)',
+    title: 'Unconstitutionality of National Assembly Composition',
+    concern: "The current composition of the National Assembly is in blatant violation of the Two-Thirds Gender Rule (Articles 27(8) and 81(b)) and the Supreme Court Advisory Opinion 2 of 2012. Any business conducted, including the passage of the Finance Bill 2026, is therefore unconstitutional under Article 3(2).",
+    position: "I formally challenge the legality of the National Assembly to process this Bill and demand its literal dissolution to comply with the Constitution.",
+    category: 'DELETE'
   }
 ];
