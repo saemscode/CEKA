@@ -8,13 +8,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Lottie from "lottie-react";
 import {
   BankIcon, CommentsIcon, LocationIcon, KeyIcon,
-  SearchIcon, StarIcon, CloseIcon, SparklesIcon, IOSLoadingIcon, IOSTickIcon
+  SearchIcon, StarIcon, CloseIcon, IOSLoadingIcon, IOSTickIcon
 } from "../ui/CustomIcons";
 import {
   DetailsIcon, LibraryIcon, PenNewSquareIcon, AddRowIcon, RemoveRowIcon,
   MailOpenAltIcon, Send2Icon, Share2Icon, SaveAddIcon,
   TwitterColorIcon, SecureShieldIcon, SecurePCIcon, MailSendIcon, XCircleIcon,
-  CancelCloseIcon, HourglassIcon, PreciseTickIcon
+  CancelCloseIcon, HourglassIcon, PreciseTickIcon, MailBulkIcon
 } from "../ui/CustomIcons";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
@@ -340,9 +340,9 @@ export const LegislativeMemorandum: React.FC<LegislativeMemorandumProps> = ({
   const [selectedFinanceClauses, setSelectedFinanceClauses] = useState<Map<string, PositionId>>(new Map());
   const [clauseAmendments, setClauseAmendments] = useState<Map<string, string>>(new Map());
   const [expandedAMENDId, setExpandedAMENDId] = useState<string | null>(null);
-  const isFinanceBill = (billTitle.toLowerCase().includes('finance') && (billTitle.includes('2024') || billTitle.includes('2025') || billTitle.includes('2026'))) || 
-                        billNo?.toLowerCase().includes('finance') ||
-                        billTitle.toLowerCase().includes('sovereign petition');
+  const isFinanceBill = (billTitle.toLowerCase().includes('finance') && (billTitle.includes('2024') || billTitle.includes('2025') || billTitle.includes('2026'))) ||
+    billNo?.toLowerCase().includes('finance') ||
+    billTitle.toLowerCase().includes('sovereign petition');
 
   // Trigger bulk selection: when overall userPosition changes, FORCE all technical clauses to it
   useEffect(() => {
@@ -645,19 +645,19 @@ Mwananchi wa Jamhuri ya Kenya`;
     const technicalList = FINANCE_BILL_2026_CLAUSES.filter(c => selectedFinanceClauses.has(c.id));
     const connectors = ["Also,", "Moreover,", "Additionally,", "Furthermore,", "Crucially,", "Beyond this,", "In addition,"];
     let technicalBlock = "\n\nDETAILED TECHNICAL ANALYSIS BY CLAUSE:\n";
-    
+
     technicalList.forEach((c, i) => {
       const pos = selectedFinanceClauses.get(c.id) || userPosition;
       const posText = pos === 'OPPOSE' ? "STRONGLY OPPOSE" : pos === 'SUPPORT' ? "FORMALLY SUPPORT" : "PROPOSE AMENDMENT TO";
-      
+
       const conn = i === 0 ? "To begin with my technical objections," : connectors[i % connectors.length];
-      
+
       const customAmendment = clauseAmendments.get(c.id);
-      const justification = pos === 'AMEND' 
+      const justification = pos === 'AMEND'
         ? (customAmendment ? `Proposed Amendment: ${customAmendment}` : "While the intent is understood, a strategic amendment is required to mitigate unintended secondary impacts.")
         : pos === 'SUPPORT'
-        ? "The legislative intent is sound and aligns with progressive policy goals."
-        : "The proposed measure introduces significant friction and requires total reconsideration.";
+          ? "The legislative intent is sound and aligns with progressive policy goals."
+          : "The proposed measure introduces significant friction and requires total reconsideration.";
 
       technicalBlock += `${conn} regarding ${c.clauseId} (${c.title}):\n- Position: ${posText}\n- Ground: ${c.concern}\n- Technical Note: ${justification}\n\n`;
     });
@@ -792,8 +792,8 @@ Mwananchi wa Jamhuri ya Kenya`;
           <div className="px-5 sm:px-8 py-4 sm:py-5 flex items-center justify-between bg-slate-50/50 dark:bg-white/5 border-b border-black/5 dark:border-white/5 gap-3 flex-wrap">
             <div className="flex items-center gap-6 min-w-0">
               <div className="flex flex-col items-center">
-                <div className="w-12 h-12 sm:w-16 sm:h-16 flex-shrink-0 animate-pulse-gentle">
-                  <img src="/context/icons 3/mail-bulk-svgrepo-com.svg" alt="Petition" className="w-full h-full text-kenya-green" style={{ filter: 'invert(27%) sepia(91%) saturate(2352%) hue-rotate(105deg) brightness(95%) contrast(105%)' }} />
+                 <div className="w-12 h-12 sm:w-16 sm:h-16 flex-shrink-0">
+                  <MailBulkIcon className="w-full h-full text-kenya-green animate-pulse-gentle" />
                 </div>
                 <span className="text-[10px] font-black uppercase tracking-widest text-kenya-green mt-1">Petition</span>
               </div>
@@ -1168,14 +1168,13 @@ Mwananchi wa Jamhuri ya Kenya`;
               <div className="space-y-4 sm:space-y-6">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <SparklesIcon size={20} className="text-kenya-green" />
-                    <h2 className="text-xl font-black uppercase tracking-[0.1em] text-slate-900 dark:text-white">Technical Objections</h2>
+                    <h2 className="text-xl font-black uppercase tracking-[0.1em] text-slate-900 dark:text-white">Select Clauses</h2>
                   </div>
                   <Badge className="bg-kenya-green/10 text-kenya-green border-kenya-green/20 font-black text-[9px] uppercase tracking-widest">
-                    46 Technical Pillars Available
+                    Tap through 46 Clauses
                   </Badge>
                 </div>
-                
+
                 <div className="grid grid-cols-1 gap-4 max-h-[500px] overflow-y-auto p-2 custom-scrollbar">
                   {FINANCE_BILL_2026_CLAUSES.map((c) => {
                     const activePos = selectedFinanceClauses.get(c.id);
@@ -1185,9 +1184,9 @@ Mwananchi wa Jamhuri ya Kenya`;
                         className={cn(
                           "rounded-[32px] border-2 transition-all duration-500 group relative overflow-hidden flex",
                           activePos === 'SUPPORT' ? "bg-kenya-green/5 border-kenya-green/40 shadow-lg shadow-kenya-green/5" :
-                          activePos === 'OPPOSE' ? "bg-kenya-red/5 border-kenya-red/40 shadow-lg shadow-kenya-red/5" :
-                          activePos === 'AMEND' ? "bg-amber-500/5 border-amber-500/40 shadow-lg shadow-amber-500/5" :
-                          "bg-white dark:bg-white/5 border-transparent hover:border-slate-200 dark:hover:border-white/10"
+                            activePos === 'OPPOSE' ? "bg-kenya-red/5 border-kenya-red/40 shadow-lg shadow-kenya-red/5" :
+                              activePos === 'AMEND' ? "bg-amber-500/5 border-amber-500/40 shadow-lg shadow-amber-500/5" :
+                                "bg-white dark:bg-white/5 border-transparent hover:border-slate-200 dark:hover:border-white/10"
                         )}
                       >
                         {/* 80% Content Section */}
@@ -1196,28 +1195,28 @@ Mwananchi wa Jamhuri ya Kenya`;
                             <Badge className={cn(
                               "font-black text-[9px] uppercase tracking-[0.2em] px-2 py-0.5 rounded-lg border-none",
                               activePos === 'SUPPORT' ? "bg-kenya-green text-white" :
-                              activePos === 'OPPOSE' ? "bg-kenya-red text-white" :
-                              activePos === 'AMEND' ? "bg-amber-500 text-white" :
-                              "bg-slate-100 dark:bg-white/10 text-slate-500"
+                                activePos === 'OPPOSE' ? "bg-kenya-red text-white" :
+                                  activePos === 'AMEND' ? "bg-amber-500 text-white" :
+                                    "bg-slate-100 dark:bg-white/10 text-slate-500"
                             )}>
                               {c.clauseId}
                             </Badge>
                             {activePos && (
-                              <motion.span 
-                                initial={{ opacity: 0, x: -10 }} 
+                              <motion.span
+                                initial={{ opacity: 0, x: -10 }}
                                 animate={{ opacity: 1, x: 0 }}
                                 className={cn(
                                   "text-[10px] font-black uppercase tracking-widest",
                                   activePos === 'SUPPORT' ? "text-kenya-green" :
-                                  activePos === 'OPPOSE' ? "text-kenya-red" :
-                                  "text-amber-600"
+                                    activePos === 'OPPOSE' ? "text-kenya-red" :
+                                      "text-amber-600"
                                 )}
                               >
                                 {activePos}
                               </motion.span>
                             )}
                           </div>
-                          
+
                           <h4 className="text-sm sm:text-base font-black text-slate-900 dark:text-white leading-tight uppercase group-hover:text-kenya-green transition-colors">
                             {c.title}
                           </h4>
@@ -1257,7 +1256,7 @@ Mwananchi wa Jamhuri ya Kenya`;
                             <PreciseTickIcon size={20} />
                             <span className="text-[7px] font-black uppercase tracking-widest">Support</span>
                           </button>
-                          
+
                           <button
                             onClick={() => setFinanceClausePosition(c.id, 'OPPOSE')}
                             className={cn(
@@ -1268,7 +1267,7 @@ Mwananchi wa Jamhuri ya Kenya`;
                             <CancelCloseIcon size={20} />
                             <span className="text-[7px] font-black uppercase tracking-widest">Oppose</span>
                           </button>
-                          
+
                           <button
                             onClick={() => setFinanceClausePosition(c.id, 'AMEND')}
                             className={cn(
