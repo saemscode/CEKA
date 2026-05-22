@@ -1,0 +1,73 @@
+≡ƒÜÇ Starting OCR Failover Worker v1.6 (The Hammer)...
+≡ƒöì Found 10 targets.
+≡ƒôä Processing: The Labour Migration And Management (no.2) Bill (senate Bill No. 42 Of 2024)
+≡ƒôÑ Downloading to handle headers...
+≡ƒôû Rendering local PDF...
+≡ƒôä Processing: The Division Of Revenue Bill,2026 (national Assembly Bills No.2 Of 2026)
+≡ƒôÑ Downloading to handle headers...
+Γ¥î Failed: page.goto: Download is starting
+Call log:
+  - navigating to "file:///D:/CEKA/ceka%20v010/CEKA/ocr_tmp_f34b672d-9a1b-4a68-adc5-b09ed6a6f2ea.pdf", waiting until "load"
+
+≡ƒôû Rendering local PDF...
+Γ¥î Failed: page.goto: Download is starting
+Call log:
+  - navigating to "file:///D:/CEKA/ceka%20v010/CEKA/ocr_tmp_7fd131d5-c1c5-4f64-8284-5b5d52853995.pdf", waiting until "load"
+
+≡ƒôä Processing: The County Governments (revenue Raising Process Bill, 2023
+≡ƒôÑ Downloading to handle headers...
+≡ƒôû Rendering local PDF...
+Γ¥î Failed: page.goto: Download is starting
+Call log:
+  - navigating to "file:///D:/CEKA/ceka%20v010/CEKA/ocr_tmp_5a7b49dc-b789-4900-9ea4-8f34c161e6e3.pdf", waiting until "load"
+
+≡ƒôä Processing: Supplementary Appropriation Bill 2024
+≡ƒôÑ Downloading to handle headers...
+≡ƒôû Rendering local PDF...
+Γ¥î Failed: page.goto: Download is starting
+≡ƒôä Processing: The Education Laws (amendment) Bill,2025
+Call log:
+  - navigating to "file:///D:/CEKA/ceka%20v010/CEKA/ocr_tmp_f59effc9-824a-42b7-8120-2b555f1d5129.pdf", waiting until "load"
+
+≡ƒôÑ Downloading to handle headers...
+≡ƒôû Rendering local PDF...
+Γ¥î Failed: page.goto: Download is starting
+≡ƒôä Processing: The Kenyan Citizenship And Immigration(amendment) Bill,2025
+Call log:
+  - navigating to "file:///D:/CEKA/ceka%20v010/CEKA/ocr_tmp_bb0e848b-4693-4a8c-92f9-7519b59a13ed.pdf", waiting until "load"
+
+≡ƒôÑ Downloading to handle headers...
+≡ƒôû Rendering local PDF...
+Γ¥î Failed: page.goto: Download is starting
+Call log:
+  - navigating to "file:///D:/CEKA/ceka%20v010/CEKA/ocr_tmp_c3791fa8-977e-4a5a-88c2-4f141cf7d283.pdf", waiting until "load"
+
+≡ƒôä Processing: The Kenya Roads(amendment Bill,2024
+≡ƒôÑ Downloading to handle headers...
+≡ƒôû Rendering local PDF...
+≡ƒôä Processing: The Appropriation Bill, 2024
+Γ¥î Failed: page.goto: Download is starting
+Call log:
+  - navigating to "file:///D:/CEKA/ceka%20v010/CEKA/ocr_tmp_9f3af582-a7cd-453e-8063-ce5e625dcc37.pdf", waiting until "load"
+
+≡ƒôÑ Downloading to handle headers...
+≡ƒôû Rendering local PDF...
+Γ¥î Failed: page.goto: Download is starting
+Call log:
+  - navigating to "file:///D:/CEKA/ceka%20v010/CEKA/ocr_tmp_30c99a64-8baf-4eb0-a287-5de156b31336.pdf", waiting until "load"
+
+≡ƒôä Processing: The Basic Education (amendment) Bill ,2023
+≡ƒôÑ Downloading to handle headers...
+≡ƒôû Rendering local PDF...
+Γ¥î Failed: page.goto: Download is starting
+≡ƒôä Processing: The Division Of Revenue (amendment) Bill, 2024
+Call log:
+  - navigating to "file:///D:/CEKA/ceka%20v010/CEKA/ocr_tmp_62d1e42f-d570-490e-866f-c1a3be45b709.pdf", waiting until "load"
+
+≡ƒôÑ Downloading to handle headers...
+≡ƒôû Rendering local PDF...
+Γ¥î Failed: page.goto: Download is starting
+Call log:
+  - navigating to "file:///D:/CEKA/ceka%20v010/CEKA/ocr_tmp_acdd2434-8e64-4563-9554-743f3290eb94.pdf", waiting until "load"
+
+≡ƒÅü Batch complete.

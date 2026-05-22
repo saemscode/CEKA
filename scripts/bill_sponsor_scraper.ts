@@ -334,6 +334,10 @@ async function processBill(
   if (!text || text.trim().length < MIN_VALID_PDF_CHARS) {
     const status = (buffer.length > OCR_THRESHOLD_BYTES) ? "OCR_REQUIRED" : "STUB";
     console.warn(`  [${status}] Size: ${buffer.length} bytes, Text chars: ${text?.length || 0}`);
+    
+    // PERSIST TO DB: Update the sponsor as a flag for the OCR worker
+    await pg.query("UPDATE public.bills SET sponsor = $1 WHERE id = $2", [status, bill.id]);
+    
     fs.appendFileSync(OUTPUT_CSV, `"${bill.id}","${bill.title}","","${status}","STUB_PDF"\n`);
     return;
   }

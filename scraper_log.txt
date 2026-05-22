@@ -1,0 +1,6 @@
+Γùç injected env (50) from .env // tip: Γîÿ multiple files { path: ['.env.local', '.env'] }
+
+[CEKA-Scraper v4.0] Full Precision HAM Mode engaged.
+  [INFO] No bills matching generic/empty sponsor conditions found.
+
+[COMPLETE] Run finished. Check data/bill_sponsors_trace.csv for audit.

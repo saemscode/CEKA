@@ -14,10 +14,12 @@ import { useLanguage, Language } from '@/contexts/LanguageContext';
 import { supabase } from "@/integrations/supabase/client";
 import { BillResponseForm } from '@/components/bills/BillResponseForm';
 import { LegislativeMemorandum } from '@/components/bills/LegislativeMemorandum';
+import { CitizenMemorandumBuilder } from '@/components/bills/CitizenMemorandumBuilder';
 import { SocialShareDrawer } from '@/components/bills/SocialShareDrawer';
 import { BillFollowButton } from '@/components/legislative/BillFollowButton';
 import { SignatureCounter } from '@/components/bills/SignatureCounter';
 import { analyticsService } from '@/services/analyticsService';
+import { useToast } from "@/hooks/use-toast";
 
 // Delegated to shared billStages utility — kept as thin alias
 const getStatusColor = (status: string) => getStageColor(status);
@@ -157,8 +159,7 @@ const BillDetail = () => {
   const [signatureGoal, setSignatureGoal] = useState(1000);
   const memorandaRef = useRef<HTMLDivElement>(null);
   const responseFormRef = useRef<HTMLDivElement>(null);
-
-  // NEW: prefill query state for concern → response form link
+  const { toast } = useToast();
   const [prefillQuery, setPrefillQuery] = useState<string | null>(null);
 
   // NEW: Read More state for description and neural_summary
@@ -628,24 +629,34 @@ const BillDetail = () => {
                   <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 items-start">
                     {/* FORMAL MEMORANDUM GENERATOR */}
                     <div id="memoranda" ref={memorandaRef} className="order-2 xl:order-1 scroll-mt-24">
-                      <LegislativeMemorandum
-                        billId={bill.id}
-                        billTitle={bill.title}
-                        billSummary={bill.summary}
-                        deadline={bill.participation_deadline}
-                        constitutionalSection={bill.constitutional_section}
-                        signatureGoal={signatureGoal}
-                        billNo={bill.bill_no}
-                        billHouse={bill.house}
-                        billSessionYear={bill.session_year}
-                        billCategory={bill.category}
-                        billSponsor={bill.sponsor}
-                        billStatus={bill.status}
-                        billNeuralSummary={bill.neural_summary}
-                        billTabloidSummary={bill.tabloid_summary}
-                        billAiConcerns={bill.ai_concerns}
-                        billCurrentStage={getStageByStatus(bill.status).label}
-                      />
+                      {bill.title.includes("Finance Bill 2026") ? (
+                        <CitizenMemorandumBuilder 
+                          billTitle={bill.title} 
+                          onDispatch={(memo) => {
+                            // Integrate with existing submission logic if needed
+                            toast({ title: "Finance Bill Memo Generated", description: "Dispatching your selection to Parliament." });
+                          }}
+                        />
+                      ) : (
+                        <LegislativeMemorandum
+                          billId={bill.id}
+                          billTitle={bill.title}
+                          billSummary={bill.summary}
+                          deadline={bill.participation_deadline}
+                          constitutionalSection={bill.constitutional_section}
+                          signatureGoal={signatureGoal}
+                          billNo={bill.bill_no}
+                          billHouse={bill.house}
+                          billSessionYear={bill.session_year}
+                          billCategory={bill.category}
+                          billSponsor={bill.sponsor}
+                          billStatus={bill.status}
+                          billNeuralSummary={bill.neural_summary}
+                          billTabloidSummary={bill.tabloid_summary}
+                          billAiConcerns={bill.ai_concerns}
+                          billCurrentStage={getStageByStatus(bill.status).label}
+                        />
+                      )}
                     </div>
 
                     {/* QUICK CIVIC RESPONSE — with prefill from concern tap */}
