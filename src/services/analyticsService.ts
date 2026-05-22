@@ -325,26 +325,44 @@ class AnalyticsService {
      */
     async getBillEngagementInsights(billId: string) {
         try {
-            // 1. Get total views from the bill itself (canonical source)
+            // 1. Get total views and slug from the bill itself (canonical source)
             const { data: bill } = await supabase
                 .from('bills')
-                .select('views_count, title')
+                .select('views_count, title, slug')
                 .eq('id', billId)
-                .single();
+                .single() as { data: any, error: any };
+
+            const billSlug = bill?.slug;
 
             // 2. Get views in the last 24h for velocity
+            // We check for both /bill/UUID and /bill/SLUG to ensure data continuity
             const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-            const { count: dailyViews } = await supabase
+            
+            let query = supabase
                 .from('page_views' as any)
                 .select('*', { count: 'exact', head: true })
-                .eq('page_path', `/bill/${billId}`)
                 .gte('created_at', twentyFourHoursAgo);
 
-            // 3. Get total unique users for reach
-            const { data: uniqueUsers } = await supabase
+            if (billSlug) {
+                query = query.or(`page_path.eq./bill/${billId},page_path.eq./bill/${billSlug}`);
+            } else {
+                query = query.eq('page_path', `/bill/${billId}`);
+            }
+
+            const { count: dailyViews } = await query;
+
+            // 3. Get total unique reach
+            let uniqueQuery = supabase
                 .from('page_views' as any)
-                .select('user_id', { count: 'exact' } as any)
-                .eq('page_path', `/bill/${billId}`);
+                .select('user_id', { count: 'exact' } as any);
+
+            if (billSlug) {
+                uniqueQuery = uniqueQuery.or(`page_path.eq./bill/${billId},page_path.eq./bill/${billSlug}`);
+            } else {
+                uniqueQuery = uniqueQuery.eq('page_path', `/bill/${billId}`);
+            }
+            
+            const { data: uniqueUsers } = await uniqueQuery;
             
             // Deduplicate unique reach (rough estimate from row count if user_id is null)
             const reachCount = uniqueUsers?.length || 0;

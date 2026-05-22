@@ -1,5 +1,3 @@
-// Global AI Assistant FAB - positioned above donation button
-// Credit warnings at 10, 5, 2 remaining — Vercel feature flags integrated
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,16 +11,6 @@ import { CEKALoader } from '@/components/ui/ceka-loader';
 
 // ============================================================================
 // VERCEL FEATURE FLAGS
-// These are read from environment variables set in your Vercel project dashboard.
-// To override them: Vercel Dashboard → Project → Settings → Environment Variables
-// Redeploy after changing any flag for it to take effect.
-//
-// FLAG REFERENCE:
-//   VITE_FLAG_AI_ENABLED          → "true" / "false"  — kill switch for the entire assistant
-//   VITE_FLAG_DAILY_LIMIT         → number as string   — daily message cap (default: "20")
-//   VITE_FLAG_WARN_THRESHOLD_HIGH → number as string   — first warning (default: "10")
-//   VITE_FLAG_WARN_THRESHOLD_MID  → number as string   — second warning (default: "5")
-//   VITE_FLAG_WARN_THRESHOLD_LOW  → number as string   — final warning (default: "2")
 // ============================================================================
 const FLAGS = {
     AI_ENABLED: import.meta.env.VITE_FLAG_AI_ENABLED !== 'false',
@@ -40,9 +28,13 @@ const RATE_LIMIT_KEY = 'ceka_ai_usage';
 const getUsageToday = (): number => {
     const stored = localStorage.getItem(RATE_LIMIT_KEY);
     if (!stored) return 0;
-    const { count, date } = JSON.parse(stored);
-    if (date !== new Date().toDateString()) return 0;
-    return count;
+    try {
+        const { count, date } = JSON.parse(stored);
+        if (date !== new Date().toDateString()) return 0;
+        return count;
+    } catch (e) {
+        return 0;
+    }
 };
 
 const incrementUsage = () => {
@@ -56,7 +48,6 @@ const incrementUsage = () => {
 
 // ============================================================================
 // CREDIT WARNING LOGIC
-// Returns the warning tier for the current remaining count, or null if safe.
 // ============================================================================
 type WarningTier = 'high' | 'mid' | 'low' | null;
 
@@ -96,7 +87,6 @@ const WARNING_CONFIG: Record<
 
 // ============================================================================
 // CREDIT WARNING BANNER
-// Renders inline above the input bar when approaching the daily limit.
 // ============================================================================
 interface CreditWarningProps {
     remaining: number;
@@ -133,7 +123,7 @@ const CreditWarningBanner: React.FC<CreditWarningProps> = ({ remaining }) => {
 };
 
 // ============================================================================
-// COUNTER BADGE — shown in the header, colour-shifts with warning tier
+// COUNTER BADGE
 // ============================================================================
 interface CounterBadgeProps {
     remaining: number;
@@ -175,14 +165,17 @@ interface Message {
 // ============================================================================
 // MAIN COMPONENT
 // ============================================================================
-const GlobalAIAssistant = () => {
+interface GlobalAIAssistantProps {
+    isHidden?: boolean;
+    onHide?: () => void;
+}
+
+const GlobalAIAssistant: React.FC<GlobalAIAssistantProps> = ({ isHidden, onHide }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [query, setQuery] = useState('');
     const [messages, setMessages] = useState<Message[]>([]);
     const [loading, setLoading] = useState(false);
     const [usage, setUsage] = useState(0);
-    const [isVisible, setIsVisible] = useState(false);
-    const [isIdle, setIsIdle] = useState(false);
     const [showPulse, setShowPulse] = useState(false);
     const [isHovering, setIsHovering] = useState(false);
 
@@ -195,73 +188,38 @@ const GlobalAIAssistant = () => {
     const remaining = FLAGS.DAILY_LIMIT - usage;
     const isExhausted = usage >= FLAGS.DAILY_LIMIT;
 
-    // Engagement effects
     useEffect(() => {
         const pulseTimer = setTimeout(() => {
             if (!isOpen) setShowPulse(true);
         }, 15000);
 
-        const idleTimer = setTimeout(() => {
-            if (!isOpen && !isHovering) setIsIdle(true);
-        }, 45000);
+        return () => clearTimeout(pulseTimer);
+    }, [isOpen]);
 
-        return () => {
-            clearTimeout(pulseTimer);
-            clearTimeout(idleTimer);
-        };
-    }, [isOpen, isHovering]);
-
-    // Sync refs
     useEffect(() => { queryRef.current = query; }, [query]);
     useEffect(() => { usageRef.current = usage; }, [usage]);
     useEffect(() => { loadingRef.current = loading; }, [loading]);
 
-    const hiddenPaths = [] as string[];
-    const shouldHide = hiddenPaths.some(p => location.pathname.startsWith(p));
-
     useEffect(() => {
         setUsage(getUsageToday());
-
         const handleTrigger = (e: any) => {
             const { query: triggerQuery } = e.detail;
             setIsOpen(true);
             setQuery(triggerQuery);
-            setTimeout(() => {
-                handleSend(triggerQuery);
-            }, 50);
+            setTimeout(() => { handleSend(triggerQuery); }, 50);
         };
-
-        const visibilityTimer = setTimeout(() => {
-            setIsVisible(true);
-        }, 5000);
-
         window.addEventListener('ceka-ai-trigger', handleTrigger);
-        return () => {
-            window.removeEventListener('ceka-ai-trigger', handleTrigger);
-            clearTimeout(visibilityTimer);
-        };
+        return () => window.removeEventListener('ceka-ai-trigger', handleTrigger);
     }, []);
-
-    useEffect(() => {
-        const handleSendNow = () => handleSend();
-        document.addEventListener('ceka-ai-send-now', handleSendNow);
-        return () => document.removeEventListener('ceka-ai-send-now', handleSendNow);
-    }, []);
-
-    const extractBillIdFromPath = (path: string): string | null => {
-        const match = path.match(/\/bill\/([0-9a-fA-F-]{36})/);
-        return match ? match[1] : null;
-    };
 
     const handleSend = async (overrideQuery?: string) => {
         const activeQuery = overrideQuery !== undefined ? overrideQuery : queryRef.current;
-
         if (!activeQuery.trim() || loadingRef.current) return;
 
         if (usageRef.current >= FLAGS.DAILY_LIMIT) {
             setMessages(prev => [...prev, {
                 role: 'ai',
-                content: `You've used all ${FLAGS.DAILY_LIMIT} queries for today. Come back tomorrow — we'll be here.`
+                content: `You've used all ${FLAGS.DAILY_LIMIT} queries for today. Come back tomorrow.`
             }]);
             return;
         }
@@ -276,257 +234,143 @@ const GlobalAIAssistant = () => {
                 body: {
                     query: userMsg,
                     context: location.pathname,
-                    billId: extractBillIdFromPath(location.pathname) || null,
                     pageTitle: document.title || null
                 }
             });
 
             if (error) throw error;
-
             if (data.error) {
-                let userMessage: string;
-                if (data.exhausted) {
-                    userMessage = "All of our AI systems are currently at capacity. This is a temporary spike in demand – please try again in a few minutes.";
-                } else if (data.message?.includes('rate limit') || data.message?.includes('429')) {
-                    userMessage = "Our AI systems are experiencing high demand right now. Please try again in a moment.";
-                } else if (data.message?.includes('timeout') || data.message?.includes('timed out')) {
-                    userMessage = "Your question is taking a bit longer than usual to process. Please try again.";
-                } else {
-                    userMessage = data.message || "Something went wrong on our end. Please try again shortly.";
-                }
-
-                setMessages(prev => [...prev, { role: 'ai', content: userMessage }]);
+                setMessages(prev => [...prev, { role: 'ai', content: data.message || "Error processing request." }]);
                 return;
             }
 
             const newUsage = incrementUsage();
             setUsage(newUsage);
-
-            setMessages(prev => [...prev, {
-                role: 'ai',
-                content: data.answer || "I couldn't process that request. Please try again."
-            }]);
+            setMessages(prev => [...prev, { role: 'ai', content: data.answer || "No response received." }]);
         } catch (err: any) {
-            let errorMessage: string;
-            if (err?.message?.includes('FetchError') || err?.message?.includes('network') || err?.message?.includes('Failed to fetch')) {
-                errorMessage = "We're having trouble reaching our AI service. Please check your internet connection and try again.";
-            } else if (err?.message?.includes('timeout')) {
-                errorMessage = "The request took too long to complete. Please try again in a moment.";
-            } else {
-                errorMessage = "Something went wrong on our end. Please try again shortly.";
-            }
-            setMessages(prev => [...prev, { role: 'ai', content: errorMessage }]);
+            setMessages(prev => [...prev, { role: 'ai', content: "Something went wrong. Please try again." }]);
         } finally {
             setLoading(false);
         }
     };
 
-    // Kill switch: if the feature flag disables AI entirely, render nothing
     if (!FLAGS.AI_ENABLED) return null;
-    if (shouldHide) return null;
 
     return (
-        <div
-            className={cn(
-                "fixed z-50 transition-all duration-1000 ease-out",
-                !isVisible && !isOpen && "opacity-0 translate-y-20 pointer-events-none"
-            )}
-            style={{
-                zIndex: 50,
-                bottom: isOpen ? 'auto' : '204px',
-                right: isOpen ? 'auto' : '2rem',
-                ...(isOpen ? {
-                    top: '50%',
-                    left: '50%',
-                    transform: 'translate(-50%, -50%)'
-                } : {})
-            }}
-        >
-            <AnimatePresence>
-                {isOpen && (
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.9 }}
-                        className="w-80 bg-white/10 dark:bg-gray-900/10 backdrop-blur-xl border border-white/20 dark:border-gray-700/20 rounded-2xl shadow-2xl overflow-hidden flex flex-col h-[520px]"
-                    >
-                        {/* Header */}
-                        <div className="bg-gradient-to-r from-kenya-green/10 to-primary/10 p-4 border-b border-white/10 dark:border-gray-700/10">
-                            <div className="flex justify-between items-center">
-                                <h3 className="font-bold text-lg flex items-center text-slate-800 dark:text-white">
-                                    <div className="relative mr-3">
-                                        <Bot className="h-6 w-6 text-kenya-green drop-shadow-sm" />
-                                        <div className="absolute inset-0 bg-kenya-green/20 blur-sm rounded-full" />
-                                    </div>
-                                    CEKA AI
-                                </h3>
-                                <div className="flex items-center gap-2">
-                                    <CounterBadge remaining={remaining} total={FLAGS.DAILY_LIMIT} />
-                                    <button
-                                        className="relative group rounded-full p-2 hover:bg-white/10 dark:hover:bg-gray-800/10 transition-all duration-300 backdrop-blur-sm"
-                                        onClick={() => setIsOpen(false)}
-                                    >
-                                        <X className="h-4 w-4 text-slate-500 dark:text-gray-400 group-hover:text-kenya-red transition-colors" />
-                                        <div className="absolute inset-0 rounded-full bg-white/5 scale-0 group-hover:scale-100 transition-transform duration-300" />
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Messages */}
-                        <div className="flex-1 overflow-y-auto p-4 space-y-4 green-scrollbar">
-                            {messages.length === 0 && (
-                                <div className="text-center py-8 space-y-4">
-                                    <div className="h-16 w-16 rounded-2xl bg-kenya-green/10 flex items-center justify-center mx-auto animate-float">
-                                        <Sparkles className="h-8 w-8 text-kenya-green" />
-                                    </div>
-                                    <div>
-                                        <p className="font-bold text-slate-800 dark:text-white">Your Civic Assistant</p>
-                                        <p className="text-xs text-slate-500 dark:text-gray-400 mt-1">Ask about legislation or the Constitution</p>
-                                    </div>
-                                    <div className="flex flex-wrap gap-2 justify-center">
-                                        {['What is Article 43?', 'Explain Finance Bill', 'What can I do as a citizen?'].map(q => (
-                                            <button
-                                                key={q}
-                                                onClick={() => {
-                                                    setQuery(q);
-                                                    handleSend(q);
-                                                }}
-                                                className="text-xs px-4 py-2 rounded-xl bg-white/10 dark:bg-white/5 border border-white/20 dark:border-white/10 hover:bg-kenya-green/10 hover:border-kenya-green/20 transition-all hover:scale-105 backdrop-blur-sm"
-                                            >
-                                                {q}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-
-                            {messages.map((m, i) => (
-                                <motion.div
-                                    key={i}
-                                    initial={{ opacity: 0, y: 10 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                                >
-                                    <div className={`max-w-[90%] p-3 rounded-2xl text-xs md:text-sm shadow-lg backdrop-blur-md ${m.role === 'user'
-                                        ? 'bg-kenya-green text-white rounded-tr-none'
-                                        : 'bg-white/10 dark:bg-gray-800/20 border border-white/20 dark:border-white/10 text-slate-800 dark:text-white rounded-tl-none'
-                                        }`}>
-                                        <div className={cn(
-                                            "prose prose-sm dark:prose-invert prose-headings:mt-3 prose-headings:mb-1 prose-p:my-1 prose-li:my-0.5 whitespace-pre-wrap break-words max-w-full overflow-hidden leading-snug",
-                                            m.role === 'user' && "text-white prose-p:text-white prose-headings:text-white prose-strong:text-white prose-em:text-white prose-code:text-white"
-                                        )}>
-                                            <ReactMarkdown>
-                                                {m.content}
-                                            </ReactMarkdown>
-                                        </div>
-                                    </div>
-                                </motion.div>
-                            ))}
-
-                            {loading && (
-                                <div className="flex justify-start">
-                                    <div className="bg-white/10 dark:bg-gray-800/20 border border-white/20 dark:border-white/10 p-3 rounded-2xl rounded-tl-none shadow-lg backdrop-blur-md">
-                                        <CEKALoader variant="default" size="sm" />
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Credit warning banner — mounts between messages and input */}
-                        {!isExhausted && <CreditWarningBanner remaining={remaining} />}
-
-                        {/* Exhausted state banner */}
-                        {isExhausted && (
-                            <div className="mx-4 mt-2 px-3 py-2 rounded-xl border bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-700/40 flex items-center gap-2">
-                                <Flame className="h-3 w-3 text-red-500 shrink-0" />
-                                <span className="text-[10px] font-semibold text-red-600 dark:text-red-400 leading-tight">
-                                    Daily limit reached. Resets at midnight.
-                                </span>
-                            </div>
-                        )}
-
-                        {/* Input */}
-                        <div className="p-4 border-t border-white/10 dark:border-gray-700/10 bg-white/5 dark:bg-black/20">
-                            <div className="flex gap-2">
-                                <Input
-                                    placeholder="Ask about Kenya law..."
-                                    value={query}
-                                    onChange={(e) => setQuery(e.target.value)}
-                                    onKeyPress={(e) => e.key === 'Enter' && handleSend()}
-                                    className="h-10 text-sm rounded-xl border-white/20 dark:border-white/10 bg-white/10 dark:bg-black/20 focus:ring-kenya-green/50 placeholder:text-slate-400"
-                                    disabled={isExhausted}
-                                />
-                                <Button
-                                    onClick={() => handleSend()}
-                                    size="icon"
-                                    className="h-10 w-10 rounded-xl bg-gradient-to-br from-kenya-green to-primary hover:from-primary hover:to-kenya-green text-white shrink-0 shadow-lg hover:scale-105 transition-all"
-                                    disabled={loading || isExhausted}
-                                >
-                                    <Send className="h-4 w-4" />
-                                </Button>
-                            </div>
-                        </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
-
-            {!isOpen && (
+        <AnimatePresence>
+            {!isHidden && (
                 <motion.div
-                    onMouseEnter={() => {
-                        setIsHovering(true);
-                        setIsIdle(false);
+                    drag={!isOpen ? "x" : false}
+                    dragConstraints={{ left: 0, right: 300 }}
+                    dragElastic={0.1}
+                    onDragEnd={(_, info) => {
+                        if (!isOpen && info.offset.x > 80) {
+                            onHide?.();
+                        }
                     }}
-                    onMouseLeave={() => setIsHovering(false)}
-                    className="relative group cursor-pointer"
-                    onClick={() => {
-                        setIsOpen(true);
-                        setShowPulse(false);
+                    initial={{ opacity: 0, x: 50 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: 200 }}
+                    className="fixed z-50 transition-none"
+                    style={{
+                        zIndex: 50,
+                        bottom: isOpen ? 'auto' : '204px',
+                        right: isOpen ? 'auto' : '2rem',
+                        position: 'fixed',
+                        touchAction: 'none',
+                        ...(isOpen ? {
+                            top: '50%',
+                            left: '50%',
+                            transform: 'translate(-50%, -50%)',
+                        } : {})
                     }}
                 >
-                    <div className="relative w-48 h-12 flex items-center">
-                        <div
-                            className={`absolute right-12 top-0 h-12 flex items-center transition-all duration-500 ease-out ${isHovering
-                                ? 'opacity-100 translate-x-0'
-                                : 'opacity-0 translate-x-4 pointer-events-none'
-                                }`}
-                        >
-                            <div
-                                className={`absolute inset-0 rounded-full transition-all duration-500 ease-out ${isHovering
-                                    ? 'bg-black/20 backdrop-blur-sm scale-100'
-                                    : 'bg-black/0 backdrop-blur-none scale-75'
-                                    }`}
-                            />
-                            <span
-                                className={`relative px-4 py-2 text-white font-semibold text-sm whitespace-nowrap transition-all duration-500 ease-out drop-shadow-lg ${isHovering
-                                    ? 'opacity-100 scale-100'
-                                    : 'opacity-0 scale-90'
-                                    }`}
+                    <AnimatePresence>
+                        {isOpen && (
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.9 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.9 }}
+                                className="w-80 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-2xl overflow-hidden flex flex-col h-[520px]"
                             >
-                                Ask CEKA AI
-                            </span>
-                        </div>
-                        <div
-                            className={`absolute right-0 w-12 h-12 rounded-full flex items-center justify-center transition-all duration-500 ease-out shadow-2xl ${isHovering || showPulse
-                                ? 'bg-gradient-to-br from-kenya-green via-primary to-kenya-green shadow-kenya-green/50 scale-110'
-                                : 'bg-gradient-to-br from-kenya-green to-primary shadow-kenya-green/40 scale-100'
-                                }`}
+                                <div className="p-4 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center bg-gray-50/50 dark:bg-gray-800/50">
+                                    <h3 className="font-bold flex items-center gap-2 text-slate-800 dark:text-white">
+                                        <Bot className="h-5 w-5 text-kenya-green" />
+                                        CEKA AI
+                                    </h3>
+                                    <div className="flex items-center gap-3">
+                                        <CounterBadge remaining={remaining} total={FLAGS.DAILY_LIMIT} />
+                                        <button onClick={() => setIsOpen(false)} className="hover:text-red-500 transition-colors">
+                                            <X className="h-4 w-4" />
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                                    {messages.map((m, i) => (
+                                        <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                                            <div className={`max-w-[85%] p-3 rounded-2xl text-sm ${m.role === 'user' ? 'bg-kenya-green text-white' : 'bg-gray-100 dark:bg-gray-800 text-slate-800 dark:text-white'}`}>
+                                                <div className="prose prose-sm dark:prose-invert max-w-none">
+                                                    <ReactMarkdown>
+                                                        {m.content}
+                                                    </ReactMarkdown>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                    {loading && <CEKALoader variant="default" size="sm" />}
+                                </div>
+
+                                {!isExhausted && <CreditWarningBanner remaining={remaining} />}
+                                
+                                <div className="p-4 border-t border-gray-100 dark:border-gray-800">
+                                    <div className="flex gap-2">
+                                        <Input
+                                            placeholder="Ask a question..."
+                                            value={query}
+                                            onChange={(e) => setQuery(e.target.value)}
+                                            onKeyPress={(e) => e.key === 'Enter' && handleSend()}
+                                            disabled={isExhausted}
+                                            className="bg-gray-50 dark:bg-gray-800"
+                                        />
+                                        <Button onClick={() => handleSend()} size="icon" disabled={loading || isExhausted}>
+                                            <Send className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                </div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+
+                    {!isOpen && (
+                        <motion.div
+                            onMouseEnter={() => setIsHovering(true)}
+                            onMouseLeave={() => setIsHovering(false)}
+                            className="relative group cursor-pointer"
+                            onClick={() => { setIsOpen(true); setShowPulse(false); }}
                         >
-                            <div className="absolute inset-1 rounded-full bg-gradient-to-br from-white/20 to-transparent" />
-                            <HelpCircle
-                                className={`relative z-10 transition-all duration-300 ease-out ${isHovering
-                                    ? 'h-6 w-6 text-white drop-shadow-lg'
-                                    : 'h-5 w-5 text-white/90'
-                                    }`}
-                            />
-                            {showPulse && !isHovering && (
-                                <div className="absolute inset-0 rounded-full bg-kenya-green animate-ping opacity-20" />
-                            )}
-                        </div>
-                    </div>
+                            <div className="w-48 h-12 flex items-center relative">
+                                <div className={cn(
+                                    "absolute right-12 px-4 py-2 bg-black/80 text-white rounded-full text-sm font-medium transition-all duration-300",
+                                    isHovering ? "opacity-100 translate-x-0" : "opacity-0 translate-x-4 pointer-events-none"
+                                )}>
+                                    Ask CEKA AI
+                                </div>
+                                <div className={cn(
+                                    "absolute right-0 w-12 h-12 rounded-full flex items-center justify-center shadow-lg transition-all duration-300",
+                                    isHovering ? "bg-kenya-green scale-110 shadow-kenya-green/20" : "bg-kenya-green"
+                                )}>
+                                    <HelpCircle className="h-6 w-6 text-white" />
+                                    {showPulse && !isHovering && (
+                                        <div className="absolute inset-0 rounded-full bg-kenya-green animate-ping opacity-25" />
+                                    )}
+                                </div>
+                            </div>
+                        </motion.div>
+                    )}
                 </motion.div>
             )}
-        </div>
+        </AnimatePresence>
     );
 };
 

@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { TrendingUp, ArrowRight, ChevronLeft, ChevronRight, Sparkles } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { BillFollowButton } from './BillFollowButton';
+import { getBillIdentifier } from '@/services/billService';
 
 interface Bill {
     id: string;
@@ -136,7 +137,7 @@ const FeaturedLegislationCarousel: React.FC<FeaturedLegislationCarouselProps> = 
                                              asChild
                                              className="flex-1 rounded-2xl h-12 bg-kenya-green hover:bg-kenya-green/90 text-white font-bold group/btn shadow-md hover:shadow-lg transition-all px-3 sm:px-4"
                                          >
-                                             <Link to={`/bill/${bill.slug || bill.id}#memoranda`}>
+                                             <Link to={`/bill/${getBillIdentifier(bill)}#memoranda`}>
                                                  <span className="hidden sm:inline-flex items-center">
                                                      <span className="hidden lg:inline">Track This Bill</span>
                                                      <span className="hidden md:inline lg:hidden">Track Bill</span>

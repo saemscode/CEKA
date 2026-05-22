@@ -772,7 +772,7 @@ class NotificationService {
           source_id: billId,
           title: '🏛️ Bill Matches Your Interests',
           message: `"${billTitle}" (${billCategory}) may interest you based on your civic focus areas.`,
-          link: `/bill/${billId}`,
+          link: `/bill/${billId}`, // TODO: In a real environment, we'd fetch the slug here, but for now we maintain ID for notifications to ensure reliability
           priority: 'normal',
           metadata: { type: 'interest_match', bill_id: billId, category: billCategory }
         }));
