@@ -13,7 +13,8 @@ import {
 import {
   DetailsIcon, LibraryIcon, PenNewSquareIcon, AddRowIcon, RemoveRowIcon,
   MailOpenAltIcon, Send2Icon, Share2Icon, SaveAddIcon,
-  TwitterColorIcon, SecureShieldIcon, SecurePCIcon, MailSendIcon
+  TwitterColorIcon, SecureShieldIcon, SecurePCIcon, MailSendIcon, XCircleIcon,
+  CancelCloseIcon, HourglassIcon, PreciseTickIcon
 } from "../ui/CustomIcons";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
@@ -336,16 +337,30 @@ export const LegislativeMemorandum: React.FC<LegislativeMemorandumProps> = ({
   const [signatureCount, setSignatureCount] = useState(0);
   const [successState, setSuccessState] = useState<SuccessState>('editing');
   const [isPetitionStyleOpen, setIsPetitionStyleOpen] = useState(false);
-  const [selectedFinanceClauses, setSelectedFinanceClauses] = useState<Set<string>>(new Set());
+  const [selectedFinanceClauses, setSelectedFinanceClauses] = useState<Map<string, PositionId>>(new Map());
   const isFinanceBill = (billTitle.toLowerCase().includes('finance') && (billTitle.includes('2024') || billTitle.includes('2025') || billTitle.includes('2026'))) || 
                         billNo?.toLowerCase().includes('finance') ||
                         billTitle.toLowerCase().includes('sovereign petition');
 
-  const toggleFinanceClause = (id: string) => {
-    const newSelected = new Set(selectedFinanceClauses);
-    if (newSelected.has(id)) newSelected.delete(id);
-    else newSelected.add(id);
-    setSelectedFinanceClauses(newSelected);
+  // Trigger color inheritance: when overall userPosition changes, sync all selected clauses to it
+  useEffect(() => {
+    if (isFinanceBill && selectedFinanceClauses.size > 0) {
+      const nextMap = new Map(selectedFinanceClauses);
+      Array.from(nextMap.keys()).forEach(key => {
+        nextMap.set(key, userPosition);
+      });
+      setSelectedFinanceClauses(nextMap);
+    }
+  }, [userPosition]);
+
+  const setFinanceClausePosition = (id: string, position: PositionId) => {
+    const nextMap = new Map(selectedFinanceClauses);
+    if (nextMap.get(id) === position) {
+      nextMap.delete(id); // Deselect if same button clicked
+    } else {
+      nextMap.set(id, position);
+    }
+    setSelectedFinanceClauses(nextMap);
   };
 
   // Location autocomplete state
@@ -419,8 +434,8 @@ I, ${firstName} ${lastName}, a resident of ${uConstituency} Constituency, ${uCou
 2. PETITIONER'S POSITION
 Having reviewed the contents of the Bill, I formally ${actionVerb} the ${billTitle}.
 
-3. GROUNDS FOR POSITION (Why It Matters To Me)
-[Enter your primary reasons, legal grounds, and personal concerns regarding this Bill here]
+3. GROUNDS FOR POSITION
+My position is informed by a comprehensive review of the legislative proposals and their anticipated impact on the socio-economic welfare of the people of Kenya. I find the current draft requires significant reconsideration to align with the principles of social justice, transparency, and economic sustainability. My specific technical objections are detailed in the subsequent sections of this submission.
 
 4. PRAYER
 Therefore, I respectfully pray that the Committee:
@@ -446,7 +461,7 @@ My name is ${firstName} ${lastName}, and I live in ${uConstituency}, ${uCounty} 
 After reviewing the Bill, I officially ${actionVerb} the ${billTitle}.
 
 3. WHY IT MATTERS TO ME
-[Enter your main reasons and how this Bill affects you directly here]
+As a citizen, I am concerned that the current legislative direction does not sufficiently protect the vulnerable members of our society. I believe in a Kenya where every law serves the common good, and I wish to place on record my specific concerns regarding the clauses I have flagged in this PETITION.
 
 4. PRAYER
 I am asking this Committee to:
@@ -472,7 +487,7 @@ I, ${firstName} ${lastName}, of ${uConstituency} Constituency, ${uCounty} County
 A technical review of the legislative proposals indicates that the Bill requires action. I formally ${actionVerb} the ${billTitle}.
 
 3. TECHNICAL GROUNDS FOR POSITION
-[Enter your specific legal, economic, or policy-based grounds for your position here]
+The technical inadequacies identified in the proposed legislation pertain to its conflict with existing fiscal policies and its potential to disrupt market stability. I have highlighted the specific clauses that require immediate redrafting or total deletion to avoid catastrophic regulatory friction.
 
 4. PRAYER
 This memorandum prays that the Committee:
@@ -497,7 +512,7 @@ I am ${firstName} ${lastName}, of ${uConstituency}, ${uCounty}. I write under my
 My stance is uncompromising: I ${userPosition === 'AMEND' ? 'DEMAND AMENDMENTS TO' : userPosition} the ${billTitle}.
 
 3. GROUNDS FOR MY DEMAND
-[Enter your core concerns and the immediate impact of this Bill here]
+The people of Kenya are currently over-burdened by over-taxation and regulatory overreach. I am submitting this PETITION to demand that our representatives prioritize the welfare of ordinary citizens over bureaucratic convenience. The grounds for my demand are explicitly tied to the clauses I have marked for rejection in this memorandum.
 
 4. PRAYER
 You are our representatives, and we are watching. I demand that the Committee:
@@ -525,8 +540,8 @@ Mimi ni ${firstName} ${lastName}, mkaazi wa Eneo Bunge la ${uConstituency}, Kaun
 2. MSIMAMO WANGU
 Baada ya kusoma na kuelewa Mswada huu, mimi rasmi ${swahiliAction} Mswada wa ${billTitle}.
 
-3. SABABU ZA MSIMAMO WANGU (Kwa nini jambo hili ni muhimu kwangu)
-[Weka sababu zako kuu na hofu zako kuhusu Mswada huu hapa]
+3. SABABU ZA MSIMAMO WANGU
+Msimamo wangu umetokana na hofu yangu kwa mustakabali wa uchumi wa nchi yetu na maisha ya mwananchi wa kawaida. Napendekeza bunge lizingatie vilio vya wananchi na kurekebisha vipengele vilivyotajwa hapa chini ili kuhakikisha haki na usawa kwa Wakenya wote.
 
 4. OMBI LANGU KWA KAMATI
 Kwa hivyo, ninaomba Kamati hii kwa heshima:
@@ -607,19 +622,30 @@ Mwananchi wa Jamhuri ya Kenya`;
 
   // Combined body with technical modules if finance bill
   const getProcessedBody = () => {
-    if (!isFinanceBill || selectedFinanceClauses.size === 0) return messageBody;
+    const isFB = isFinanceBill;
+    if (!isFB || selectedFinanceClauses.size === 0) return messageBody;
 
     const technicalList = FINANCE_BILL_2026_CLAUSES.filter(c => selectedFinanceClauses.has(c.id));
-    const connectors = ["Also,", "Moreover,", "Additionally,", "Furthermore,", "Crucially,"];
-    let technicalBlock = "\n\nDETAILED TECHNICAL OBJECTIONS/AMENDMENTS:\n";
+    const connectors = ["Also,", "Moreover,", "Additionally,", "Furthermore,", "Crucially,", "Beyond this,", "In addition,"];
+    let technicalBlock = "\n\nDETAILED TECHNICAL ANALYSIS BY CLAUSE:\n";
     
     technicalList.forEach((c, i) => {
-      const conn = i === 0 ? "Firstly," : connectors[i % connectors.length];
-      technicalBlock += `${conn} regarding ${c.clauseId} (${c.title}):\n- Concern: ${c.concern}\n- Position: ${c.position}\n\n`;
+      const pos = selectedFinanceClauses.get(c.id) || userPosition;
+      const posText = pos === 'OPPOSE' ? "STRONGLY OPPOSE" : pos === 'SUPPORT' ? "FORMALLY SUPPORT" : "PROPOSE AMENDMENT TO";
+      
+      const conn = i === 0 ? "To begin with my technical objections," : connectors[i % connectors.length];
+      
+      const justification = pos === 'AMEND' 
+        ? "While the intent is understood, a strategic amendment is required to mitigate unintended secondary impacts."
+        : pos === 'SUPPORT'
+        ? "The legislative intent is sound and aligns with progressive policy goals."
+        : "The proposed measure introduces significant friction and requires total reconsideration.";
+
+      technicalBlock += `${conn} regarding ${c.clauseId} (${c.title}):\n- Position: ${posText}\n- Ground: ${c.concern}\n- Technical Note: ${justification}\n\n`;
     });
 
     if (selectedFinanceClauses.has('unconstitutional-assembly-violation')) {
-      technicalBlock += "\nFINAL CONSTITUTIONAL OBJECTION:\nI further raise that this National Assembly is unconstitutionally constituted under Articles 27(8) and 81(b) of the Constitution, violating Article 3(2).\n";
+      technicalBlock += "\nFINAL CONSTITUTIONAL BOMBSHELL:\nI further raise that this National Assembly is unconstitutionally constituted under Articles 27(8) and 81(b) of the Constitution, violating Article 3(2). Any legislation passed under the current composition is inherently legally fragile.\n";
     }
 
     // Insert before the prayer
@@ -1017,79 +1043,81 @@ Mwananchi wa Jamhuri ya Kenya`;
 
 
 
-            {/* ── Template Variant Selector ── */}
-            <div className="space-y-3">
-              <div
-                className="flex items-center justify-between gap-2 flex-wrap cursor-pointer group/style"
-                onClick={() => setIsPetitionStyleOpen(!isPetitionStyleOpen)}
-              >
-                <div className="flex items-center gap-3">
-                  <StarIcon size={16} className="text-kenya-green flex-shrink-0" />
-                  <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-900 dark:text-white">Petition Style</h3>
+            {/* ── Template Variant Selector (Exchanger: Hidden for Finance Bill) ── */}
+            {!isFinanceBill && (
+              <div className="space-y-3">
+                <div
+                  className="flex items-center justify-between gap-2 flex-wrap cursor-pointer group/style"
+                  onClick={() => setIsPetitionStyleOpen(!isPetitionStyleOpen)}
+                >
+                  <div className="flex items-center gap-3">
+                    <StarIcon size={16} className="text-kenya-green flex-shrink-0" />
+                    <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-900 dark:text-white">Petition Style</h3>
+                  </div>
+                  <div className="text-slate-400 group-hover/style:text-kenya-green transition-colors">
+                    <motion.svg animate={{ rotate: isPetitionStyleOpen ? 180 : 0 }} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="6 9 12 15 18 9"></polyline>
+                    </motion.svg>
+                  </div>
                 </div>
-                <div className="text-slate-400 group-hover/style:text-kenya-green transition-colors">
-                  <motion.svg animate={{ rotate: isPetitionStyleOpen ? 180 : 0 }} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="6 9 12 15 18 9"></polyline>
-                  </motion.svg>
-                </div>
-              </div>
 
-              <AnimatePresence initial={false}>
-                {isPetitionStyleOpen && (
-                  <motion.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: 'auto', opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    className="overflow-hidden"
-                  >
-                    <div className="grid grid-cols-2 gap-2 pt-2 pb-4">
-                      {VARIANT_META.map(v => (
-                        <motion.button
-                          key={v.id}
-                          type="button"
-                          whileTap={{ scale: 0.97 }}
-                          onClick={() => {
-                            if (v.id === 'F') {
-                              setIsGalleryOpen(true);
-                            } else {
-                              setSelectedVariant(v.id as VariantId);
-                            }
-                          }}
-                          className={cn(
-                            'relative p-4 rounded-2xl border text-left transition-all duration-200',
-                            selectedVariant === v.id && v.id !== 'F'
-                              ? 'bg-kenya-green/10 border-kenya-green/30 shadow-ios-soft'
-                              : 'bg-slate-50 dark:bg-white/5 border-transparent hover:border-slate-200 dark:hover:border-white/10',
-                            v.id === 'F' && 'border-kenya-green/30 border-dashed bg-transparent hover:bg-kenya-green/5'
-                          )}
-                        >
-                          <div className="flex items-start justify-between gap-2">
-                            <div>
-                              <p className={cn('text-[9px] font-black uppercase tracking-widest mb-1', selectedVariant === v.id ? 'text-kenya-green' : 'text-slate-400')}>
-                                Variant {v.id}
-                              </p>
-                              <p className={cn('text-xs font-black leading-tight', selectedVariant === v.id ? 'text-slate-900 dark:text-white' : 'text-slate-600 dark:text-slate-300')}>
-                                {v.label}
-                              </p>
-                              <p className="text-[9px] text-slate-400 mt-1 leading-relaxed hidden sm:block">{v.desc}</p>
-                            </div>
-                            {selectedVariant === v.id && v.id !== 'F' && (
-                              <motion.div
-                                initial={{ scale: 0 }}
-                                animate={{ scale: 1 }}
-                                className="h-5 w-5 rounded-full bg-kenya-green flex items-center justify-center flex-shrink-0 mt-0.5"
-                              >
-                                <IOSTickIcon size={10} className="text-white" />
-                              </motion.div>
+                <AnimatePresence initial={false}>
+                  {isPetitionStyleOpen && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="grid grid-cols-2 gap-2 pt-2 pb-4">
+                        {VARIANT_META.map(v => (
+                          <motion.button
+                            key={v.id}
+                            type="button"
+                            whileTap={{ scale: 0.97 }}
+                            onClick={() => {
+                              if (v.id === 'F') {
+                                setIsGalleryOpen(true);
+                              } else {
+                                setSelectedVariant(v.id as VariantId);
+                              }
+                            }}
+                            className={cn(
+                              'relative p-4 rounded-2xl border text-left transition-all duration-200',
+                              selectedVariant === v.id && v.id !== 'F'
+                                ? 'bg-kenya-green/10 border-kenya-green/30 shadow-ios-soft'
+                                : 'bg-slate-50 dark:bg-white/5 border-transparent hover:border-slate-200 dark:hover:border-white/10',
+                              v.id === 'F' && 'border-kenya-green/30 border-dashed bg-transparent hover:bg-kenya-green/5'
                             )}
-                          </div>
-                        </motion.button>
-                      ))}
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
+                          >
+                            <div className="flex items-start justify-between gap-2">
+                              <div>
+                                <p className={cn('text-[9px] font-black uppercase tracking-widest mb-1', selectedVariant === v.id ? 'text-kenya-green' : 'text-slate-400')}>
+                                  Variant {v.id}
+                                </p>
+                                <p className={cn('text-xs font-black leading-tight', selectedVariant === v.id ? 'text-slate-900 dark:text-white' : 'text-slate-600 dark:text-slate-300')}>
+                                  {v.label}
+                                </p>
+                                <p className="text-[9px] text-slate-400 mt-1 leading-relaxed hidden sm:block">{v.desc}</p>
+                              </div>
+                              {selectedVariant === v.id && v.id !== 'F' && (
+                                <motion.div
+                                  initial={{ scale: 0 }}
+                                  animate={{ scale: 1 }}
+                                  className="h-5 w-5 rounded-full bg-kenya-green flex items-center justify-center flex-shrink-0 mt-0.5"
+                                >
+                                  <IOSTickIcon size={10} className="text-white" />
+                                </motion.div>
+                              )}
+                            </div>
+                          </motion.button>
+                        ))}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            )}
 
             {/* ── Position Selector ── */}
             <div className="space-y-3">
@@ -1130,32 +1158,94 @@ Mwananchi wa Jamhuri ya Kenya`;
                   </Badge>
                 </div>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[350px] overflow-y-auto p-2 custom-scrollbar">
-                  {FINANCE_BILL_2026_CLAUSES.map((c) => (
-                    <div
-                      key={c.id}
-                      onClick={() => toggleFinanceClause(c.id)}
-                      className={cn(
-                        "p-4 rounded-3xl border-2 cursor-pointer transition-all duration-200 group relative",
-                        selectedFinanceClauses.has(c.id)
-                          ? "bg-kenya-green/5 border-kenya-green"
-                          : "bg-white dark:bg-white/5 border-transparent hover:border-slate-200 dark:hover:border-white/10"
-                      )}
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="space-y-1">
-                          <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">{c.clauseId}</p>
-                          <h4 className="text-xs font-black text-slate-900 dark:text-white leading-tight uppercase group-hover:text-kenya-green transition-colors">{c.title}</h4>
-                          <p className="text-[10px] text-slate-500 line-clamp-2 leading-relaxed">{c.concern}</p>
-                        </div>
-                        {selectedFinanceClauses.has(c.id) && (
-                          <div className="h-5 w-5 rounded-full bg-kenya-green flex items-center justify-center shrink-0">
-                            <IOSTickIcon size={10} className="text-white" />
-                          </div>
+                <div className="grid grid-cols-1 gap-4 max-h-[500px] overflow-y-auto p-2 custom-scrollbar">
+                  {FINANCE_BILL_2026_CLAUSES.map((c) => {
+                    const activePos = selectedFinanceClauses.get(c.id);
+                    return (
+                      <div
+                        key={c.id}
+                        className={cn(
+                          "rounded-[32px] border-2 transition-all duration-500 group relative overflow-hidden flex",
+                          activePos === 'SUPPORT' ? "bg-kenya-green/5 border-kenya-green/40 shadow-lg shadow-kenya-green/5" :
+                          activePos === 'OPPOSE' ? "bg-kenya-red/5 border-kenya-red/40 shadow-lg shadow-kenya-red/5" :
+                          activePos === 'AMEND' ? "bg-amber-500/5 border-amber-500/40 shadow-lg shadow-amber-500/5" :
+                          "bg-white dark:bg-white/5 border-transparent hover:border-slate-200 dark:hover:border-white/10"
                         )}
+                      >
+                        {/* 80% Content Section */}
+                        <div className="w-[80%] p-5 sm:p-7 space-y-2">
+                          <div className="flex items-center gap-3">
+                            <Badge className={cn(
+                              "font-black text-[9px] uppercase tracking-[0.2em] px-2 py-0.5 rounded-lg border-none",
+                              activePos === 'SUPPORT' ? "bg-kenya-green text-white" :
+                              activePos === 'OPPOSE' ? "bg-kenya-red text-white" :
+                              activePos === 'AMEND' ? "bg-amber-500 text-white" :
+                              "bg-slate-100 dark:bg-white/10 text-slate-500"
+                            )}>
+                              {c.clauseId}
+                            </Badge>
+                            {activePos && (
+                              <motion.span 
+                                initial={{ opacity: 0, x: -10 }} 
+                                animate={{ opacity: 1, x: 0 }}
+                                className={cn(
+                                  "text-[10px] font-black uppercase tracking-widest",
+                                  activePos === 'SUPPORT' ? "text-kenya-green" :
+                                  activePos === 'OPPOSE' ? "text-kenya-red" :
+                                  "text-amber-600"
+                                )}
+                              >
+                                {activePos}
+                              </motion.span>
+                            )}
+                          </div>
+                          
+                          <h4 className="text-sm sm:text-base font-black text-slate-900 dark:text-white leading-tight uppercase group-hover:text-kenya-green transition-colors">
+                            {c.title}
+                          </h4>
+                          <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 font-medium leading-relaxed italic">
+                            "{c.concern}"
+                          </p>
+                        </div>
+
+                        {/* 20% Action Partition */}
+                        <div className="w-[20%] border-l border-black/5 dark:border-white/5 flex flex-col items-stretch overflow-hidden bg-white/40 dark:bg-black/20">
+                          <button
+                            onClick={() => setFinanceClausePosition(c.id, 'SUPPORT')}
+                            className={cn(
+                              "flex-1 flex flex-col items-center justify-center gap-1 transition-all hover:bg-kenya-green/10",
+                              activePos === 'SUPPORT' ? "bg-kenya-green text-white" : "text-slate-400"
+                            )}
+                          >
+                            <PreciseTickIcon size={20} />
+                            <span className="text-[7px] font-black uppercase tracking-widest">Support</span>
+                          </button>
+                          
+                          <button
+                            onClick={() => setFinanceClausePosition(c.id, 'OPPOSE')}
+                            className={cn(
+                              "flex-1 flex flex-col items-center justify-center gap-1 border-y border-black/5 dark:border-white/5 transition-all hover:bg-kenya-red/10",
+                              activePos === 'OPPOSE' ? "bg-kenya-red text-white" : "text-slate-400"
+                            )}
+                          >
+                            <CancelCloseIcon size={20} />
+                            <span className="text-[7px] font-black uppercase tracking-widest">Oppose</span>
+                          </button>
+                          
+                          <button
+                            onClick={() => setFinanceClausePosition(c.id, 'AMEND')}
+                            className={cn(
+                              "flex-1 flex flex-col items-center justify-center gap-1 transition-all hover:bg-amber-500/10",
+                              activePos === 'AMEND' ? "bg-amber-500 text-white" : "text-slate-400"
+                            )}
+                          >
+                            <HourglassIcon size={18} />
+                            <span className="text-[7px] font-black uppercase tracking-widest">Amend</span>
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
                 <p className="text-[9px] font-medium text-slate-400 italic">Select the clauses above to inject professional, human-toned technical grounds into your memorandum.</p>
               </div>
