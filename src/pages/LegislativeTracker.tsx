@@ -298,6 +298,7 @@ const LegislativeTracker = () => {
 
   const [intelligenceAlerts, setIntelligenceAlerts] = useState<any[]>([]);
   const [currentAlertIndex, setCurrentAlertIndex] = useState(0);
+  const [currentTabloidIndex, setCurrentTabloidIndex] = useState(0);
 
   useEffect(() => {
     const fetchIntelligence = async () => {
@@ -335,7 +336,16 @@ const LegislativeTracker = () => {
     return () => clearInterval(interval);
   }, [intelligenceAlerts]);
 
+  useEffect(() => {
+    if (tabloidUpdates.length <= 1) return;
+    const interval = setInterval(() => {
+      setCurrentTabloidIndex(prev => (prev + 1) % tabloidUpdates.length);
+    }, 10000); // 10 seconds for tabloid reading
+    return () => clearInterval(interval);
+  }, [tabloidUpdates]);
+
   const activeAlert = intelligenceAlerts[currentAlertIndex];
+  const activeTabloid = tabloidUpdates[currentTabloidIndex];
   const trendingBill = trendingBills[0] || billsData[0] || { id: "trending-placeholder", title: "Finance Bill", created_at: new Date().toISOString() };
 
   return (
@@ -383,9 +393,9 @@ const LegislativeTracker = () => {
                 {/* Upper Layer: The Tabloid Carousel (Full Context Preserved) */}
                 <div className="bg-white/80 dark:bg-black/90 backdrop-blur-3xl p-8 min-h-[180px] flex flex-col justify-center border-b border-white/10 dark:border-white/5">
                   <AnimatePresence mode="wait">
-                    {tabloidUpdates.length > 0 ? (
+                    {tabloidUpdates.length > 0 && activeTabloid ? (
                       <motion.div
-                        key={currentAlertIndex}
+                        key={currentTabloidIndex}
                         initial={{ opacity: 0, x: 20, filter: 'blur(10px)' }}
                         animate={{ opacity: 1, x: 0, filter: 'blur(0px)' }}
                         exit={{ opacity: 0, x: -20, filter: 'blur(10px)' }}
@@ -395,7 +405,7 @@ const LegislativeTracker = () => {
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
                             <h4 className="font-black text-[10px] uppercase tracking-[0.3em] text-kenya-green">Get Daily News Updates</h4>
-                            {tabloidUpdates[currentAlertIndex]?.status === 'ASSENT' && (
+                            {activeTabloid?.status === 'ASSENT' && (
                               <span className="flex h-2 w-2 rounded-full bg-kenya-green shadow-[0_0_8px_rgba(0,255,0,0.5)]" />
                             )}
                           </div>
@@ -405,19 +415,19 @@ const LegislativeTracker = () => {
                         </div>
 
                         <p className="font-extrabold text-lg md:text-xl leading-tight dark:text-gray-100 tracking-tight">
-                          {tabloidUpdates[currentAlertIndex].tabloid_summary}
+                          {activeTabloid.tabloid_summary}
                         </p>
 
                         <div className="flex items-center justify-between pt-2">
                           <div className="text-[10px] font-bold opacity-40 uppercase tracking-widest">
-                            Source: {tabloidUpdates[currentAlertIndex].title}
+                            Source: {activeTabloid.title}
                           </div>
                           <Button
                             variant="link"
                             asChild
                             className="p-0 h-auto text-primary font-black text-xs uppercase tracking-widest gap-2"
                           >
-                            <Link to={`/bill/${getBillIdentifier(tabloidUpdates[currentAlertIndex])}#memoranda`}>
+                            <Link to={`/bill/${getBillIdentifier(activeTabloid)}#memoranda`}>
                               See Bill Here <ArrowRight className="h-3 w-3" />
                             </Link>
                           </Button>

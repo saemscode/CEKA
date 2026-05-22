@@ -17,6 +17,7 @@ import { LegislativeMemorandum } from '@/components/bills/LegislativeMemorandum'
 import { SocialShareDrawer } from '@/components/bills/SocialShareDrawer';
 import { BillFollowButton } from '@/components/legislative/BillFollowButton';
 import { SignatureCounter } from '@/components/bills/SignatureCounter';
+import { analyticsService } from '@/services/analyticsService';
 
 // Delegated to shared billStages utility — kept as thin alias
 const getStatusColor = (status: string) => getStageColor(status);
@@ -164,6 +165,9 @@ const BillDetail = () => {
   const [descriptionExpanded, setDescriptionExpanded] = useState(false);
   const DESCRIPTION_COLLAPSE_THRESHOLD = 600; // chars
 
+  // Analytics State
+  const [engagementInsights, setEngagementInsights] = useState<any>(null);
+
   // Hash-based deep-link scroll — fires once after bill is loaded
   useEffect(() => {
     if (!loading && bill && location.hash === '#memoranda' && memorandaRef.current) {
@@ -256,6 +260,10 @@ const BillDetail = () => {
       // Load news mentions
       const newsData = await billService.getBillNewsMentions(billData.id);
       setNews(newsData);
+
+      // Load live engagement insights
+      const insights = await analyticsService.getBillEngagementInsights(billData.id);
+      setEngagementInsights(insights);
     } catch (error) {
       console.error('Error loading bill:', error);
       setError('Communication trace lost with the legislative server.');
@@ -744,22 +752,35 @@ const BillDetail = () => {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <Target size={18} className="text-kenya-green" />
-                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Action Momentum</p>
+                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">How Many Emails Sent</p>
                     </div>
-                    <p className="text-[10px] font-black text-kenya-green uppercase tracking-widest">{Math.round((signatureCount / signatureGoal) * 100)}% Verified</p>
+                    <p className="text-[10px] font-black text-kenya-green uppercase tracking-widest">{Math.round((signatureCount / signatureGoal) * 100)}% Confirmed</p>
                   </div>
 
                   <SignatureCounter current={signatureCount} goal={signatureGoal} variant="compact" className="bg-transparent backdrop-blur-none border-none p-0 shadow-none" />
 
-                  <div className="p-4 rounded-3xl bg-slate-50 dark:bg-white/10 border border-black/5 dark:border-white/5">
-                    <div className="flex items-center gap-3 mb-2">
-                      <Sparkles size={14} className="text-kenya-green" />
-                      <p className="text-[10px] font-black uppercase tracking-widest">Viral Spike</p>
+                  {engagementInsights && (
+                    <div className="p-4 rounded-3xl bg-slate-50 dark:bg-white/10 border border-black/5 dark:border-white/5">
+                      <div className="flex items-center gap-3 mb-2">
+                        <Sparkles size={14} className="text-kenya-green" />
+                        <p className="text-[10px] font-black uppercase tracking-widest">
+                          {engagementInsights.velocity > 15 ? 'Viral Spike' : 'Live Interaction'}
+                        </p>
+                      </div>
+                      <p 
+                        className="text-[10px] text-slate-500 font-medium leading-relaxed cursor-pointer hover:text-kenya-green transition-colors"
+                        onClick={() => setShareDrawerOpen(true)}
+                      >
+                        {engagementInsights.totalViews > 50 ? (
+                          <>This Bill has been seen by <span className="font-bold text-slate-900 dark:text-white">{engagementInsights.totalViews} citizens</span>. <span className="text-kenya-green underline">Share to reach more</span></>
+                        ) : engagementInsights.dailyViews > 0 ? (
+                          <>Engagement velocity is at <span className="font-bold text-slate-900 dark:text-white">high momentum</span> today. <span className="text-kenya-green underline">Invite others</span></>
+                        ) : (
+                          <>Be among the <span className="font-bold text-slate-900 dark:text-white">first to act</span> on this Bill. <span className="text-kenya-green underline">Share the trace</span></>
+                        )}
+                      </p>
                     </div>
-                    <p className="text-[10px] text-slate-500 font-medium leading-relaxed">
-                      WhatsApp engagement up <span className="font-bold text-slate-900 dark:text-white">40%</span> in the last 24h.
-                    </p>
-                  </div>
+                  )}
                 </div>
 
                 {/* ENGAGEMENT TOOLS */}

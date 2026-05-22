@@ -710,9 +710,11 @@ Mwananchi wa Jamhuri ya Kenya`;
 
           {/* Status Header */}
           <div className="px-5 sm:px-8 py-4 sm:py-5 flex items-center justify-between bg-slate-50/50 dark:bg-white/5 border-b border-black/5 dark:border-white/5 gap-3 flex-wrap">
-            <div className="flex items-center gap-3 min-w-0">
-              <EmailAltIcon size={18} className="text-kenya-green" />
-              <h1 className="text-xl sm:text-2xl font-black uppercase tracking-[0.2em] text-slate-800 dark:text-white truncate">Submit Your Email</h1>
+            <div className="flex items-center gap-6 min-w-0">
+              <div className="w-16 h-16 sm:w-20 sm:h-20 flex-shrink-0 animate-pulse-gentle">
+                <img src="/context/icons 3/mail-bulk-svgrepo-com.svg" alt="Petition" className="w-full h-full text-kenya-green" style={{ filter: 'invert(27%) sepia(91%) saturate(2352%) hue-rotate(105deg) brightness(95%) contrast(105%)' }} />
+              </div>
+              <h1 className="text-4xl sm:text-7xl font-[1000] uppercase tracking-[-0.04em] text-slate-900 dark:text-white leading-[0.9]">Submit <span className="text-kenya-green">Email</span> here</h1>
             </div>
             <div className="flex items-center gap-3 flex-shrink-0">
               <SignatureCounter current={signatureCount} goal={signatureGoal} variant="compact" className="w-[90px]" />
@@ -743,8 +745,8 @@ Mwananchi wa Jamhuri ya Kenya`;
             {/* ── Your Details ── */}
             <div className="space-y-4 sm:space-y-6">
               <div className="flex items-center gap-3">
-                <DetailsIcon size={16} className="text-kenya-green flex-shrink-0" />
-                <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-900 dark:text-white">Your Details</h3>
+                <DetailsIcon size={20} className="text-kenya-green flex-shrink-0" />
+                <h2 className="text-xl font-black uppercase tracking-[0.1em] text-slate-900 dark:text-white">Your Credentials</h2>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
@@ -890,8 +892,8 @@ Mwananchi wa Jamhuri ya Kenya`;
             <div className="space-y-4 sm:space-y-6">
               <div className="flex items-center justify-between gap-2 flex-wrap">
                 <div className="flex items-center gap-3">
-                  <EmailOpenIcon size={18} className="text-kenya-green flex-shrink-0" />
-                  <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-900 dark:text-white">Recipients</h3>
+                  <MailSendIcon size={20} className="text-kenya-green flex-shrink-0" />
+                  <h2 className="text-xl font-black uppercase tracking-[0.1em] text-slate-900 dark:text-white">Recipients</h2>
                 </div>
                 <button
                   onClick={() => setIsAddingEmail(true)}

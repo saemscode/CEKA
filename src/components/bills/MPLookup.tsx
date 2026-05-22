@@ -19,18 +19,18 @@ export const MPLookup: React.FC<MPLookupProps> = ({
 }) => {
   const mp = getMPByConstituency(constituency);
 
-    if (!mp) return (
+  if (!mp) return (
     <div className={cn("p-4 rounded-3xl bg-slate-50 dark:bg-white/5 border border-dashed border-black/10 dark:border-white/10 opacity-60", className)}>
-       <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 text-center">Data pending for {constituency || 'Location'}</p>
+      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 text-center">Data pending for {constituency || 'Location'}</p>
     </div>
   );
 
   return (
-    <div 
+    <div
       className={cn(
         "group relative p-4 rounded-[28px] border transition-all duration-500 cursor-pointer overflow-hidden",
-        isSelected 
-          ? "bg-kenya-green border-kenya-green text-white shadow-xl shadow-kenya-green/20" 
+        isSelected
+          ? "bg-kenya-green border-kenya-green text-white shadow-xl shadow-kenya-green/20"
           : "bg-white dark:bg-slate-900/40 border-black/5 dark:border-white/10 hover:border-kenya-green/30 hover:bg-kenya-green/[0.02]",
         className
       )}
@@ -38,7 +38,7 @@ export const MPLookup: React.FC<MPLookupProps> = ({
     >
       {/* Subtle Background Pattern */}
       <div className="absolute top-0 right-0 p-4 opacity-[0.05] pointer-events-none transition-transform group-hover:scale-110">
-         <User size={64} />
+        <User size={64} />
       </div>
 
       <div className="flex items-center justify-between relative z-10">
@@ -53,7 +53,7 @@ export const MPLookup: React.FC<MPLookupProps> = ({
             <p className={cn(
               "text-[10px] font-black uppercase tracking-widest transition-colors",
               isSelected ? "text-white/60" : "text-slate-400"
-            )}>Local Representative</p>
+            )}>This is Your MP</p>
             <h4 className="text-sm font-black italic tracking-tight">{mp.name}</h4>
             <div className="flex items-center gap-2">
               <span className={cn(
@@ -63,15 +63,15 @@ export const MPLookup: React.FC<MPLookupProps> = ({
                 {mp.constituency}
               </span>
               <span className={cn(
-                 "text-[9px] font-medium opacity-60 flex items-center gap-1",
-                 isSelected ? "text-white" : "text-slate-400"
+                "text-[9px] font-medium opacity-60 flex items-center gap-1",
+                isSelected ? "text-white" : "text-slate-400"
               )}>
                 <Mail size={8} /> {mp.email}
               </span>
             </div>
           </div>
         </div>
-        <Checkbox 
+        <Checkbox
           checked={isSelected}
           onCheckedChange={(checked) => onSelect(checked as boolean)}
           className={cn(
