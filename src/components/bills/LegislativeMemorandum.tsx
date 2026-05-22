@@ -338,29 +338,46 @@ export const LegislativeMemorandum: React.FC<LegislativeMemorandumProps> = ({
   const [successState, setSuccessState] = useState<SuccessState>('editing');
   const [isPetitionStyleOpen, setIsPetitionStyleOpen] = useState(false);
   const [selectedFinanceClauses, setSelectedFinanceClauses] = useState<Map<string, PositionId>>(new Map());
+  const [clauseAmendments, setClauseAmendments] = useState<Map<string, string>>(new Map());
+  const [expandedAMENDId, setExpandedAMENDId] = useState<string | null>(null);
   const isFinanceBill = (billTitle.toLowerCase().includes('finance') && (billTitle.includes('2024') || billTitle.includes('2025') || billTitle.includes('2026'))) || 
                         billNo?.toLowerCase().includes('finance') ||
                         billTitle.toLowerCase().includes('sovereign petition');
 
-  // Trigger color inheritance: when overall userPosition changes, sync all selected clauses to it
+  // Trigger bulk selection: when overall userPosition changes, FORCE all technical clauses to it
   useEffect(() => {
-    if (isFinanceBill && selectedFinanceClauses.size > 0) {
-      const nextMap = new Map(selectedFinanceClauses);
-      Array.from(nextMap.keys()).forEach(key => {
-        nextMap.set(key, userPosition);
+    if (isFinanceBill) {
+      const nextMap = new Map();
+      FINANCE_BILL_2026_CLAUSES.forEach(c => {
+        nextMap.set(c.id, userPosition);
       });
       setSelectedFinanceClauses(nextMap);
+      // Close all amendment inputs on bulk change to avoid layout explosion
+      setExpandedAMENDId(null);
     }
   }, [userPosition]);
 
   const setFinanceClausePosition = (id: string, position: PositionId) => {
     const nextMap = new Map(selectedFinanceClauses);
     if (nextMap.get(id) === position) {
-      nextMap.delete(id); // Deselect if same button clicked
+      nextMap.delete(id); // Toggle off if same clicked
+      if (position === 'AMEND') setExpandedAMENDId(null);
     } else {
       nextMap.set(id, position);
+      // Only expand the amendment input if clicking the individual Amend button
+      if (position === 'AMEND') {
+        setExpandedAMENDId(id);
+      } else {
+        setExpandedAMENDId(null);
+      }
     }
     setSelectedFinanceClauses(nextMap);
+  };
+
+  const updateClauseAmendment = (id: string, text: string) => {
+    const nextMap = new Map(clauseAmendments);
+    nextMap.set(id, text);
+    setClauseAmendments(nextMap);
   };
 
   // Location autocomplete state
@@ -635,8 +652,9 @@ Mwananchi wa Jamhuri ya Kenya`;
       
       const conn = i === 0 ? "To begin with my technical objections," : connectors[i % connectors.length];
       
+      const customAmendment = clauseAmendments.get(c.id);
       const justification = pos === 'AMEND' 
-        ? "While the intent is understood, a strategic amendment is required to mitigate unintended secondary impacts."
+        ? (customAmendment ? `Proposed Amendment: ${customAmendment}` : "While the intent is understood, a strategic amendment is required to mitigate unintended secondary impacts.")
         : pos === 'SUPPORT'
         ? "The legislative intent is sound and aligns with progressive policy goals."
         : "The proposed measure introduces significant friction and requires total reconsideration.";
@@ -1206,6 +1224,25 @@ Mwananchi wa Jamhuri ya Kenya`;
                           <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 font-medium leading-relaxed italic">
                             "{c.concern}"
                           </p>
+
+                          {activePos === 'AMEND' && expandedAMENDId === c.id && (
+                            <motion.div
+                              initial={{ opacity: 0, height: 0 }}
+                              animate={{ opacity: 1, height: 'auto' }}
+                              className="mt-4 p-4 rounded-2xl bg-amber-500/5 border border-amber-500/10 space-y-2 overflow-hidden"
+                            >
+                              <div className="flex items-center justify-between">
+                                <p className="text-[9px] font-black uppercase tracking-widest text-amber-600">Proposed Amendment Strategy (Optional)</p>
+                                <Badge variant="outline" className="text-[7px] font-bold border-amber-500/20 text-amber-600 uppercase tracking-tighter px-1.5">User Input</Badge>
+                              </div>
+                              <Textarea
+                                value={clauseAmendments.get(c.id) || ''}
+                                onChange={(e) => updateClauseAmendment(c.id, e.target.value)}
+                                placeholder="E.g., Shift charge from consumer to manufacturer, or introduce a 12-month grace period... (Skip to use professional defaults)"
+                                className="bg-white/50 dark:bg-black/20 border-none text-xs font-medium placeholder:text-slate-400 focus-visible:ring-amber-500/30 rounded-xl min-h-[80px]"
+                              />
+                            </motion.div>
+                          )}
                         </div>
 
                         {/* 20% Action Partition */}
