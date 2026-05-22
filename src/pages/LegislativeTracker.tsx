@@ -369,7 +369,7 @@ const LegislativeTracker = () => {
                 Civic Education Kenya (CEKA) presents
               </Badge>
               <h1 className="text-5xl md:text-8xl font-[1000] tracking-tight leading-[0.9] mb-8 dark:text-white">
-                Kenya <span className="text-transparent bg-clip-text bg-gradient-to-r from-kenya-green to-primary">Bills Tracker</span>.
+                The <span className="text-transparent bg-clip-text bg-gradient-to-r from-kenya-green to-primary">Bill</span>Line.
               </h1>
               <p className="text-xl md:text-2xl text-muted-foreground font-medium leading-relaxed max-w-2xl">
                 The most advanced legislative tracker in Kenya. Real-time updates from
@@ -535,23 +535,23 @@ const LegislativeTracker = () => {
                       onChange={(e) => setSearchTerm(e.target.value)}
                     />
                     <div className="flex items-center justify-between px-2 pt-2">
-                       <div className="flex flex-col">
-                         <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-                           {deepSearch ? 'Deep Intelligence' : 'Standard Search'}
-                         </span>
-                         <span className="text-[9px] text-slate-400/60 font-medium">
-                           {deepSearch ? 'Scanning PDF content...' : 'Indexing metadata only'}
-                         </span>
-                       </div>
-                       <label className="relative inline-flex items-center cursor-pointer group">
-                         <input
-                           type="checkbox"
-                           className="sr-only peer"
-                           checked={deepSearch}
-                           onChange={() => setDeepSearch(!deepSearch)}
-                         />
-                         <div className="w-12 h-6 bg-slate-200 dark:bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-kenya-green shadow-inner"></div>
-                       </label>
+                      <div className="flex flex-col">
+                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                          {deepSearch ? 'Deep Intelligence' : 'Standard Search'}
+                        </span>
+                        <span className="text-[9px] text-slate-400/60 font-medium">
+                          {deepSearch ? 'Scanning PDF content...' : 'Indexing metadata only'}
+                        </span>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer group">
+                        <input
+                          type="checkbox"
+                          className="sr-only peer"
+                          checked={deepSearch}
+                          onChange={() => setDeepSearch(!deepSearch)}
+                        />
+                        <div className="w-12 h-6 bg-slate-200 dark:bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-kenya-green shadow-inner"></div>
+                      </label>
                     </div>
                   </div>
                 </div>
