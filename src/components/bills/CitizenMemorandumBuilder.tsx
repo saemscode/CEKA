@@ -80,34 +80,74 @@ export const CitizenMemorandumBuilder: React.FC<BuilderProps> = ({ billTitle, on
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
       {/* Header */}
       <div className="flex flex-col items-center text-center space-y-4">
-        <h2 className="text-4xl sm:text-6xl font-[1000] uppercase tracking-tighter text-slate-900 dark:text-white leading-tight">
+        <div className="flex flex-col items-center">
+          <div className="w-12 h-12 sm:w-16 sm:h-16 flex-shrink-0 animate-pulse-gentle">
+            <img src="/context/icons 3/mail-bulk-svgrepo-com.svg" alt="Petition" className="w-full h-full text-kenya-green" style={{ filter: 'invert(27%) sepia(91%) saturate(2352%) hue-rotate(105deg) brightness(95%) contrast(105%)' }} />
+          </div>
+          <span className="text-[10px] font-black uppercase tracking-widest text-kenya-green mt-1">Sovereign Petition</span>
+        </div>
+        <h2 className="text-3xl sm:text-5xl font-[1000] uppercase tracking-tighter text-slate-900 dark:text-white leading-tight">
           Citizen <span className="text-kenya-green">Memorandum</span> Builder
         </h2>
-        <p className="text-sm font-bold text-slate-500 uppercase tracking-widest bg-slate-100 dark:bg-white/5 px-4 py-2 rounded-full">
-          Finance Bill 2026 Participation Tool
+        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] bg-slate-50 dark:bg-white/5 px-6 py-2 rounded-full border border-black/5 dark:border-white/5">
+          Finance Bill 2026 • Policy Participation Engine
         </p>
       </div>
 
-      {/* Tabs */}
-      <div className="flex items-center justify-center p-1.5 bg-slate-100/50 dark:bg-white/5 rounded-3xl backdrop-blur-xl border border-black/5 max-w-sm mx-auto">
-        {(['DELETE', 'AMEND', 'ACCEPT'] as const).map((tab) => (
-          <button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            className={cn(
-              "flex-1 px-4 py-3 rounded-2xl text-[10px] font-black uppercase tracking-wider transition-all",
-              activeTab === tab 
-                ? tab === 'DELETE' ? "bg-kenya-red text-white shadow-lg" : tab === 'AMEND' ? "bg-amber-500 text-white shadow-lg" : "bg-kenya-green text-white shadow-lg"
-                : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
-            )}
+      {/* Tabs & Bulk Action */}
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 max-w-4xl mx-auto">
+        <div className="flex items-center p-1.5 bg-slate-100/50 dark:bg-white/5 rounded-3xl backdrop-blur-xl border border-black/5">
+          {(['DELETE', 'AMEND', 'ACCEPT'] as const).map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={cn(
+                "px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-wider transition-all",
+                activeTab === tab 
+                  ? tab === 'DELETE' ? "bg-kenya-red text-white shadow-lg" : tab === 'AMEND' ? "bg-amber-500 text-white shadow-lg" : "bg-kenya-green text-white shadow-lg"
+                  : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+              )}
+            >
+              {tab}
+            </button>
+          ))}
+        </div>
+
+        {activeTab === 'DELETE' && (
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => {
+              const allDeleteIds = FINANCE_BILL_2026_CLAUSES.filter(c => c.category === 'DELETE').map(c => c.id);
+              setSelectedClauses(new Set([...selectedClauses, ...allDeleteIds]));
+              toast({ title: "Objections Listed", description: "Successfully added all critical concerns to your memorandum." });
+            }}
+            className="h-12 px-6 rounded-2xl border-kenya-red/20 text-kenya-red font-black text-[9px] uppercase tracking-widest hover:bg-kenya-red/5"
           >
-            {tab}
-          </button>
-        ))}
+            Select All Objections
+          </Button>
+        )}
+
+        {activeTab === 'ACCEPT' && (
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => {
+              const allAcceptIds = FINANCE_BILL_2026_CLAUSES.filter(c => c.category === 'ACCEPT').map(c => c.id);
+              setSelectedClauses(new Set([...selectedClauses, ...allAcceptIds]));
+              toast({ title: "Supports Listed", description: "All positive legislative measures have been added to your draft." });
+            }}
+            className="h-12 px-6 rounded-2xl border-kenya-green/20 text-kenya-green font-black text-[9px] uppercase tracking-widest hover:bg-kenya-green/5"
+          >
+            Select All Supports
+          </Button>
+        )}
       </div>
 
-      {/* Selector Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="relative">
+        <div className="absolute inset-x-0 top-0 h-8 bg-gradient-to-b from-white dark:from-black to-transparent z-10 pointer-events-none" />
+        {/* Selector Grid - With capped height for large lists */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[600px] overflow-y-auto p-4 custom-scrollbar">
         <AnimatePresence mode="wait">
           {FINANCE_BILL_2026_CLAUSES.filter(c => c.category === activeTab).map((c) => (
             <motion.div
@@ -148,6 +188,7 @@ export const CitizenMemorandumBuilder: React.FC<BuilderProps> = ({ billTitle, on
           ))}
         </AnimatePresence>
       </div>
+    </div>
 
       {/* User Inputs & Preview Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">

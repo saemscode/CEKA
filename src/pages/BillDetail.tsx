@@ -349,6 +349,9 @@ const BillDetail = () => {
   })();
   const stages = buildTimeline(bill.status, dbStages, bill.date || bill.created_at);
 
+  const isFinanceBill = bill.title.toLowerCase().includes('finance bill 2026') || 
+                       bill.id === '74961912-8ba7-47f2-bf61-9ae3abafe2e1'; // Dev fallback
+
   // Description: determine if long enough to warrant a Read More
   const descriptionText = bill.description || '';
   const descriptionIsLong = descriptionText.length > DESCRIPTION_COLLAPSE_THRESHOLD;
@@ -628,13 +631,22 @@ const BillDetail = () => {
 
                   <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 items-start">
                     {/* FORMAL MEMORANDUM GENERATOR */}
-                    <div id="memoranda" ref={memorandaRef} className="order-2 xl:order-1 scroll-mt-24">
-                      {bill.title.includes("Finance Bill 2026") ? (
+                    <div id="memoranda" ref={memorandaRef} className={cn("scroll-mt-24", isFinanceBill ? "col-span-full" : "order-2 xl:order-1")}>
+                      {isFinanceBill ? (
                         <CitizenMemorandumBuilder 
                           billTitle={bill.title} 
                           onDispatch={(memo) => {
-                            // Integrate with existing submission logic if needed
-                            toast({ title: "Finance Bill Memo Generated", description: "Dispatching your selection to Parliament." });
+                            const recipients = ["cna@parliament.go.ke", "financecommitteena@parliament.go.ke"].join(',');
+                            const subject = encodeURIComponent(`RE: FORMAL MEMORANDUM ON ${bill.title.toUpperCase()}`);
+                            const body = encodeURIComponent(memo);
+                            const isDesktop = !/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+                            
+                            if (isDesktop) {
+                              window.open(`https://mail.google.com/mail/?view=cm&fs=1&to=${recipients}&su=${subject}&body=${body}`, '_blank');
+                            } else {
+                              window.location.href = `mailto:${recipients}?subject=${subject}&body=${body}`;
+                            }
+                            toast({ title: "Memorandum Dispatched", description: "Your formal submission has been prepared in your mail client." });
                           }}
                         />
                       ) : (
@@ -659,15 +671,17 @@ const BillDetail = () => {
                       )}
                     </div>
 
-                    {/* QUICK CIVIC RESPONSE — with prefill from concern tap */}
-                    <div className="order-1 xl:order-2" ref={responseFormRef}>
-                      <BillResponseForm
-                        billId={bill.id}
-                        billTitle={bill.title}
-                        onSubmitSuccess={(text) => setUserResponse(text)}
-                        prefillQuery={prefillQuery}
-                      />
-                    </div>
+                    {/* QUICK CIVIC RESPONSE — only show for non-Finance bills to avoid extra steps */}
+                    {!isFinanceBill && (
+                      <div className="order-1 xl:order-2" ref={responseFormRef}>
+                        <BillResponseForm
+                          billId={bill.id}
+                          billTitle={bill.title}
+                          onSubmitSuccess={(text) => setUserResponse(text)}
+                          prefillQuery={prefillQuery}
+                        />
+                      </div>
+                    )}
                   </div>
 
                   <SocialShareDrawer

@@ -711,10 +711,13 @@ Mwananchi wa Jamhuri ya Kenya`;
           {/* Status Header */}
           <div className="px-5 sm:px-8 py-4 sm:py-5 flex items-center justify-between bg-slate-50/50 dark:bg-white/5 border-b border-black/5 dark:border-white/5 gap-3 flex-wrap">
             <div className="flex items-center gap-6 min-w-0">
-              <div className="w-16 h-16 sm:w-20 sm:h-20 flex-shrink-0 animate-pulse-gentle">
-                <img src="/context/icons 3/mail-bulk-svgrepo-com.svg" alt="Petition" className="w-full h-full text-kenya-green" style={{ filter: 'invert(27%) sepia(91%) saturate(2352%) hue-rotate(105deg) brightness(95%) contrast(105%)' }} />
+              <div className="flex flex-col items-center">
+                <div className="w-12 h-12 sm:w-16 sm:h-16 flex-shrink-0 animate-pulse-gentle">
+                  <img src="/context/icons 3/mail-bulk-svgrepo-com.svg" alt="Petition" className="w-full h-full text-kenya-green" style={{ filter: 'invert(27%) sepia(91%) saturate(2352%) hue-rotate(105deg) brightness(95%) contrast(105%)' }} />
+                </div>
+                <span className="text-[10px] font-black uppercase tracking-widest text-kenya-green mt-1">Petition</span>
               </div>
-              <h1 className="text-4xl sm:text-7xl font-[1000] uppercase tracking-[-0.04em] text-slate-900 dark:text-white leading-[0.9]">Submit <span className="text-kenya-green">Email</span> here</h1>
+              <h1 className="text-2xl sm:text-4xl font-[1000] uppercase tracking-[-0.04em] text-slate-900 dark:text-white leading-none">Submit <span className="text-kenya-green">Email</span> here</h1>
             </div>
             <div className="flex items-center gap-3 flex-shrink-0">
               <SignatureCounter current={signatureCount} goal={signatureGoal} variant="compact" className="w-[90px]" />
