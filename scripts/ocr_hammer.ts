@@ -29,87 +29,87 @@ interface Bill {
 }
 
 async function hammerOCR() {
-  console.log("--- CEKA LEGISLATIVE RECOVERY: THE HAMMER v1.7 ---");
-
-  // 1. Find bills needing OCR
-  const { data: bills, error: fetchError } = await supabase
-    .from('bills')
-    .select('id, title, pdf_url')
-    .eq('sponsor', 'OCR_REQUIRED')
-    .limit(50); // Increased batch size for production recovery
-
-  if (fetchError || !bills) {
-    console.error("[FATAL] Could not fetch OCR backlog:", fetchError);
-    return;
-  }
-
-  console.log(`Identified ${bills.length} bills for processing.`);
+  console.log("--- CEKA LEGISLATIVE RECOVERY: THE HAMMER v1.8 (VANGUARD MODE) ---");
 
   const browser = await chromium.launch();
   const page = await browser.newPage();
 
-  for (const bill of bills) {
-    try {
-      console.log(`\n[PROCESSING] ${bill.title}`);
-      
-      let ocrBuffer: Buffer | null = null;
+  let hasMore = true;
+  while (hasMore) {
+    // 1. Find bills needing OCR
+    const { data: bills, error: fetchError } = await supabase
+      .from('bills')
+      .select('id, title, pdf_url')
+      .eq('sponsor', 'OCR_REQUIRED')
+      .limit(20); // Process in chunks of 20 for stability
 
+    if (fetchError || !bills || bills.length === 0) {
+      console.log("No more bills in backlog. Shutting down.");
+      hasMore = false;
+      break;
+    }
+
+    console.log(`\n--- STARTING NEW BATCH: ${bills.length} bills ---`);
+
+    for (const bill of bills) {
       try {
-        // Method A: Direct Axios Download (Bypass Playwriter viewer issues)
-        console.log(`  - Downloading binary via Axios...`);
-        const response = await axios.get(bill.pdf_url, { 
-          responseType: 'arraybuffer',
-          timeout: 15000,
-          headers: { 'User-Agent': 'Mozilla/5.0' }
-        });
-        ocrBuffer = Buffer.from(response.data);
-      } catch (err) {
-        console.warn(`  - Axios failed, trying Playwright...`);
-        await page.goto(bill.pdf_url, { waitUntil: 'networkidle', timeout: 30000 }).catch(() => {});
-        ocrBuffer = await page.screenshot({ fullPage: false }); // Fallback to screenshot if all else fails
-      }
-
-      if (!ocrBuffer) throw new Error("Could not retrieve document");
-
-      // Use Tesseract on the first few pages (simplified to just use the screenshot for now if buffer is binary)
-      // For binary PDFs without Poppler, we rely on Playwright rendering or a Canvas approach
-      // Since building a full Canvas renderer in a script is complex, we use Playwright view + screenshot as the primary rasterizer
-      
-      await page.goto(`data:application/pdf;base64,${ocrBuffer.toString('base64')}`, { waitUntil: 'networkidle' }).catch(() => {});
-      await page.waitForTimeout(3000);
-
-      let fullOCRText = "";
-      for (let i = 0; i < 3; i++) {
-        console.log(`  - OCR Page ${i+1}...`);
-        const screenshot = await page.screenshot({ fullPage: false });
+        console.log(`\n[PROCESSING] ${bill.title}`);
         
-        const { data: { text } } = await Tesseract.recognize(screenshot, 'eng');
-        fullOCRText += `\n--- OCR PAGE ${i+1} ---\n${text}`;
-        
-        await page.mouse.wheel(0, 1000); 
-        await page.waitForTimeout(1000);
+        let ocrBuffer: Buffer | null = null;
+
+        try {
+          // Method A: Direct Axios Download (Bypass Playwriter viewer issues)
+          console.log(`  - Downloading binary via Axios...`);
+          const response = await axios.get(bill.pdf_url, { 
+            responseType: 'arraybuffer',
+            timeout: 15000,
+            headers: { 'User-Agent': 'Mozilla/5.0' }
+          });
+          ocrBuffer = Buffer.from(response.data);
+        } catch (err) {
+          console.warn(`  - Axios failed, trying Playwright...`);
+          await page.goto(bill.pdf_url, { waitUntil: 'networkidle', timeout: 30000 }).catch(() => {});
+          ocrBuffer = await page.screenshot({ fullPage: false }); // Fallback to screenshot if all else fails
+        }
+
+        if (!ocrBuffer) throw new Error("Could not retrieve document");
+
+        await page.goto(`data:application/pdf;base64,${ocrBuffer.toString('base64')}`, { waitUntil: 'networkidle' }).catch(() => {});
+        await page.waitForTimeout(3000);
+
+        let fullOCRText = "";
+        for (let i = 0; i < 3; i++) {
+          console.log(`  - OCR Page ${i+1}...`);
+          const screenshot = await page.screenshot({ fullPage: false });
+          
+          const { data: { text } } = await Tesseract.recognize(screenshot, 'eng');
+          fullOCRText += `\n--- OCR PAGE ${i+1} ---\n${text}`;
+          
+          await page.mouse.wheel(0, 1000); 
+          await page.waitForTimeout(1000);
+        }
+
+        // Update Supabase
+        console.log(`  [SYNC] Updating bill ${bill.id}...`);
+        const { error: updateError } = await supabase
+          .from('bills')
+          .update({ 
+            text_content: fullOCRText,
+            sponsor: "RECOVERED_VIA_HAMMER_V1.8"
+          })
+          .eq('id', bill.id);
+
+        if (updateError) console.error(`  [ERR] Update failed:`, updateError);
+        else console.log(`  [SUCCESS] Bill processed.`);
+
+      } catch (err: any) {
+        console.error(`  [FATAL] Error processing bill ${bill.id}:`, err.message);
       }
-
-      // Update Supabase
-      console.log(`  [SYNC] Updating bill ${bill.id}...`);
-      const { error: updateError } = await supabase
-        .from('bills')
-        .update({ 
-          text_content: fullOCRText,
-          sponsor: "RECOVERED_VIA_HAMMER_V1.8"
-        })
-        .eq('id', bill.id);
-
-      if (updateError) console.error(`  [ERR] Update failed:`, updateError);
-      else console.log(`  [SUCCESS] Bill processed.`);
-
-    } catch (err: any) {
-      console.error(`  [FATAL] Error processing bill ${bill.id}:`, err.message);
     }
   }
 
   await browser.close();
-  console.log("\n--- BATCH COMPLETE ---");
+  console.log("\n--- RECOVERY CYCLE COMPLETE ---");
 }
 
 hammerOCR().catch(console.error);
