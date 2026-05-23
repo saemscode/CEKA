@@ -1435,7 +1435,7 @@ Mwananchi wa Jamhuri ya Kenya`;
                           exit={{ opacity: 0, y: -10 }}
                           className="flex items-center gap-3"
                         >
-                          Submit Formal Petition <WriteIcon size={20} className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform duration-300" />
+                          Submit Your Petition <WriteIcon size={20} className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform duration-300" />
                         </motion.div>
                       )}
                     </AnimatePresence>
