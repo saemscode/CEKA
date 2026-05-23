@@ -721,12 +721,30 @@ Mwananchi wa Jamhuri ya Kenya`;
     const to = selectedEmails.join(',');
     const encodedSubject = encodeURIComponent(subject);
     const personalizedMessage = getProcessedBody();
+
+    // -- Hardened Clipboard Fallback --
+    try {
+      await navigator.clipboard.writeText(personalizedMessage);
+    } catch (err) {
+      console.error('Clipboard copy failed:', err);
+    }
+
+    const isMobile = !/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     const encodedBody = encodeURIComponent(personalizedMessage);
+    
+    // -- 2000 Char Limit Mitigation --
+    // If the body is too long for Instagram/Mobile browsers, we use a shortened version 
+    // since we already copied the full text to the clipboard.
+    const useShortBody = encodedBody.length > 1800;
+    const fallbackBody = encodeURIComponent(`I've copied my full memorandum to my clipboard. \n\n[PASTE MEMORANDUM HERE - CTRL+V / TAP & PASTE]\n\nRegards,\n${identity.name}`);
+    
+    const finalBody = useShortBody ? fallbackBody : encodedBody;
+
     if (isDesktop()) {
-      const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(to)}&su=${encodedSubject}&body=${encodedBody}`;
+      const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(to)}&su=${encodedSubject}&body=${finalBody}`;
       window.open(gmailUrl, '_blank');
     } else {
-      window.location.href = `mailto:${to}?subject=${encodedSubject}&body=${encodedBody}`;
+      window.location.href = `mailto:${to}?subject=${encodedSubject}&body=${finalBody}`;
     }
     setSuccessState('submitted');
   };
