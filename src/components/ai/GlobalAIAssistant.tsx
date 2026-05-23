@@ -645,40 +645,35 @@ const GlobalAIAssistant: React.FC<GlobalAIAssistantProps> = ({ isHidden, onHide 
                                 setShowPulse(false);
                             }}
                         >
-                            <div className="relative w-48 h-12 flex items-center">
+                            <div className="relative w-14 h-14 flex items-center justify-center">
                                 <div
-                                    className={`absolute right-12 top-0 h-12 flex items-center transition-all duration-500 ease-out ${isHovering
+                                    className={`absolute right-16 top-1/2 -translate-y-1/2 flex items-center transition-all duration-500 ease-out ${isHovering
                                         ? 'opacity-100 translate-x-0'
                                         : 'opacity-0 translate-x-4 pointer-events-none'
                                         }`}
                                 >
-                                    <div
-                                        className={`absolute inset-0 rounded-full transition-all duration-500 ease-out ${isHovering
-                                            ? 'bg-black/20 backdrop-blur-sm scale-100'
-                                            : 'bg-black/0 backdrop-blur-none scale-75'
-                                            }`}
-                                    />
-                                    <span
-                                        className={`relative px-4 py-2 text-white font-semibold text-sm whitespace-nowrap transition-all duration-500 ease-out drop-shadow-lg ${isHovering
-                                            ? 'opacity-100 scale-100'
-                                            : 'opacity-0 scale-90'
-                                            }`}
-                                    >
-                                        Ask CEKA AI
-                                    </span>
+                                    <div className="bg-black/80 backdrop-blur-md px-4 py-2 rounded-full whitespace-nowrap shadow-2xl border border-white/10">
+                                        <span className="text-white font-black text-[10px] uppercase tracking-widest">
+                                            Ask CEKA AI
+                                        </span>
+                                    </div>
                                 </div>
                                 <div
-                                    className={`absolute right-0 w-12 h-12 rounded-full flex items-center justify-center transition-all duration-500 ease-out shadow-2xl ${isHovering || showPulse
-                                        ? 'bg-gradient-to-br from-kenya-green via-primary to-kenya-green shadow-kenya-green/50 scale-110'
-                                        : 'bg-gradient-to-br from-kenya-green to-primary shadow-kenya-green/40 scale-100'
-                                        }`}
+                                    className={cn(
+                                        "w-14 h-14 rounded-full flex items-center justify-center transition-all duration-500 ease-out shadow-2xl relative overflow-hidden",
+                                        isHovering || showPulse
+                                            ? 'bg-gradient-to-br from-kenya-green via-primary to-kenya-green shadow-kenya-green/50 scale-110'
+                                            : 'bg-gradient-to-br from-kenya-green to-primary shadow-kenya-green/40 scale-100'
+                                    )}
                                 >
+                                    <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10" />
                                     <div className="absolute inset-1 rounded-full bg-gradient-to-br from-white/20 to-transparent" />
-                                    <HelpCircle
-                                        className={`relative z-10 transition-all duration-300 ease-out ${isHovering
-                                            ? 'h-6 w-6 text-white drop-shadow-lg'
-                                            : 'h-5 w-5 text-white/90'
-                                            }`}
+                                    <ChatRoundIcon
+                                        size={24}
+                                        className={cn(
+                                            "relative z-10 transition-all duration-300 ease-out",
+                                            isHovering ? 'text-white scale-110 drop-shadow-lg' : 'text-white/90'
+                                        )}
                                     />
                                     {showPulse && !isHovering && (
                                         <div className="absolute inset-0 rounded-full bg-kenya-green animate-ping opacity-20" />

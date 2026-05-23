@@ -235,6 +235,13 @@ class SovereignCorroborator:
         context = self.get_rich_context(bill_id)
         if not context: return False
 
+        # ── Status Lock Guard: Skip processing if bill is locked ──
+        # Fetch fresh record to check lock
+        bill_record = (self.db.select("bills", "status_lock", eq="id", eq_val=bill_id) or [None])[0]
+        if bill_record and bill_record.get("status_lock"):
+            logger.info(f"🔒 LOCKED: Skipping corroboration for '{context['title']}' ({bill_id})")
+            return True # Success in the sense that we handled it by skipping
+
         logger.info(f"🧠 Corroborating: {context['title']}...")
 
         prompt = f"Analyze the following Rich Context Object and produce the CEKA Intelligence Report:\n\n{json.dumps(context, indent=2)}"

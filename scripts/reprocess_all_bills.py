@@ -278,6 +278,13 @@ class BatchIntelligenceUpgrader:
     def reprocess_bill(self, bill: Dict[str, Any]):
         bill_id = bill["id"]
         title = bill.get("title", "Untitled")
+
+        # ── Status Lock Guard: Skip all processing if bill is locked ──
+        if bill.get("status_lock"):
+            logger.info(("-" * 60))
+            logger.info(f"🔒 LOCKED: Skipping {title} ({bill_id})")
+            return
+            
         logger.info("-" * 60)
         logger.info(f"UPGRADING: {title} ({bill_id})")
 

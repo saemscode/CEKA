@@ -229,13 +229,12 @@ const DonationWidget: React.FC<DonationWidgetProps> = ({ onTimedOut, isHidden, o
             )}
           </AnimatePresence>
           {!isExpanded ? (
-            // Collapsed state (floating button)
+            // Collapsed state (floating button) - RED CIRCLE WITH WHITE HEART
             <motion.button
-              className={`flex items-center justify-center p-3 rounded-lg relative overflow-hidden group
-                ${darkMode ? 'bg-gray-800' : 'bg-white'} shadow-md`}
+              className="flex items-center justify-center w-14 h-14 rounded-full relative overflow-hidden group bg-kenya-red shadow-[0_8px_25px_rgba(200,16,46,0.4)] border border-white/20"
               onClick={() => setIsExpanded(true)}
-              whileHover={{ scale: 1.05, opacity: 1 }}
-              whileTap={{ scale: 0.95 }}
+              whileHover={{ scale: 1.1, rotate: 5 }}
+              whileTap={{ scale: 0.9 }}
               animate={pulseAnimation}
               onMouseEnter={() => {
                 setIsHovering(true);
@@ -243,15 +242,10 @@ const DonationWidget: React.FC<DonationWidgetProps> = ({ onTimedOut, isHidden, o
               }}
               onMouseLeave={() => {
                 setIsHovering(false);
-                // Don't immediately set idle - let the timer handle it
               }}
             >
-              <motion.div
-                className="absolute -top-1 -right-1 w-3 h-3 bg-kenya-red rounded-full"
-                animate={dotPulseAnimation}
-              />
               <div className="relative">
-                <Heart className="h-6 w-6 text-kenya-red mr-2" />
+                <Heart className="h-7 w-7 text-white fill-white drop-shadow-md" />
                 
                 {/* Floating hearts animation */}
                 <AnimatePresence>
@@ -259,29 +253,29 @@ const DonationWidget: React.FC<DonationWidgetProps> = ({ onTimedOut, isHidden, o
                     <motion.div
                       key={i}
                       className="absolute pointer-events-none"
-                      initial={{ opacity: 0, scale: 0 }}
+                      initial={{ opacity: 0, x: 0, y: 0, scale: 0 }}
                       animate={{ 
                         opacity: [0, 1, 0],
                         scale: [0.3, 1],
-                        y: [0, -40],
-                        x: i === 0 ? -10 : i === 2 ? 10 : 0
+                        y: [0, -50],
+                        x: i === 0 ? -15 : i === 2 ? 15 : 0
                       }}
                       transition={{
-                        duration: 2,
+                        duration: 2.5,
                         delay: i * 0.8,
                         repeat: Infinity,
-                        repeatDelay: 3
+                        repeatDelay: 2
                       }}
+                      style={{ top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}
                     >
-                      <Heart className="h-4 w-4 text-kenya-red fill-kenya-red" />
+                      <Heart className="h-5 w-5 text-white/40 fill-white/20" />
                     </motion.div>
                   ))}
                 </AnimatePresence>
               </div>
-              <span className="text-sm font-medium">{translate('Support Us', language)}</span>
               
               {/* Glass shine effect */}
-              <div className="absolute inset-0 bg-gradient-to-tr from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div className="absolute inset-0 bg-gradient-to-tr from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
             </motion.button>
           ) : (
             // Expanded state (donation options)

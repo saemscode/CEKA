@@ -41,7 +41,7 @@ const Layout = ({ children, hideBottomNav, hideBackButton }: LayoutProps) => {
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: 20 }}
-            className="fixed right-4 top-1/2 -translate-y-1/2 z-[60]"
+            className="fixed right-0 top-1/2 -translate-y-1/2 z-[9999]"
           >
             <motion.button
               drag="x"
@@ -56,7 +56,7 @@ const Layout = ({ children, hideBottomNav, hideBackButton }: LayoutProps) => {
                 setIsAIHidden(false);
                 setIsDonationHidden(false);
               }}
-              className="w-2.5 h-20 bg-kenya-green shadow-[0_0_15px_rgba(22,163,74,0.5)] hover:bg-kenya-green/80 rounded-full backdrop-blur-md transition-all cursor-pointer group relative z-[70]"
+              className="w-3 h-24 bg-kenya-green shadow-[0_0_20px_rgba(22,163,74,0.6)] hover:bg-kenya-green/90 rounded-l-full backdrop-blur-md transition-all cursor-pointer group relative"
               title="Pull left to restore action buttons"
             >
               <div className="absolute inset-y-0 -left-4 -right-4 bg-transparent" /> {/* Larger Hitbox */}
