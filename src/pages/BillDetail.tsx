@@ -174,6 +174,17 @@ const BillDetail = () => {
   // Analytics State
   const [engagementInsights, setEngagementInsights] = useState<any>(null);
 
+  // --- STICKY DYNAMIC GOAL LOGIC ---
+  const calculateDynamicGoal = (current: number, baseGoal: number | null) => {
+    const defaultGoal = baseGoal || 1000;
+    const milestones = [1000, 2500, 5000, 10000, 25000, 50000, 100000, 250000, 500000, 1000000];
+    
+    // Find the first milestone that is at least 15% ahead of the current count
+    // This ensures there's always a "stretch" goal.
+    const activeMilestone = milestones.find(m => m > current * 1.15) || Math.ceil((current * 1.5) / 1000) * 1000;
+    return Math.max(defaultGoal, activeMilestone);
+  };
+
   // Hash-based deep-link scroll — fires once after bill is loaded
   useEffect(() => {
     if (!loading && bill && location.hash === '#memoranda' && memorandaRef.current) {
@@ -206,8 +217,12 @@ const BillDetail = () => {
         },
         (payload) => {
           console.log("[SovereignRealtime] New signature detected:", payload.new.id);
-          // Only increment if verified or for momentum effect (we'll count raw inserts for now)
-          setSignatureCount(prev => prev + 1);
+          setSignatureCount(prev => {
+            const newCount = prev + 1;
+            // Recalculate goal in real-time to keep momentum bar active
+            setSignatureGoal(calculateDynamicGoal(newCount, bill?.signature_goal || 1000));
+            return newCount;
+          });
         }
       )
       .subscribe();
@@ -260,8 +275,9 @@ const BillDetail = () => {
       // Load signature stats
       const count = await billService.getSignatureCount(billData.id);
       setSignatureCount(count);
-      // @ts-ignore - signature_goal might be in the billData from Supabase
-      if (billData.signature_goal) setSignatureGoal(billData.signature_goal);
+      
+      const baseGoal = billData.signature_goal || 1000;
+      setSignatureGoal(calculateDynamicGoal(count, baseGoal));
 
       // Load news mentions
       const newsData = await billService.getBillNewsMentions(billData.id);
