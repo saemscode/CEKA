@@ -308,6 +308,7 @@ const GlobalAIAssistant: React.FC<GlobalAIAssistantProps> = ({ isHidden, onHide 
     const [showPulse, setShowPulse] = useState(false);
     const [isHovering, setIsHovering] = useState(false);
     const [dailyQuestions, setDailyQuestions] = useState<DailyQuestion[]>([]);
+    const [showSwipeHint, setShowSwipeHint] = useState(false);
 
     const queryRef = React.useRef(query);
     const usageRef = React.useRef(usage);
@@ -356,6 +357,9 @@ const GlobalAIAssistant: React.FC<GlobalAIAssistantProps> = ({ isHidden, onHide 
 
         const visibilityTimer = setTimeout(() => {
             setIsVisible(true);
+            // Show swipe hint briefly after revealing
+            setTimeout(() => setShowSwipeHint(true), 2500);
+            setTimeout(() => setShowSwipeHint(false), 8000);
         }, 5000);
 
         window.addEventListener('ceka-ai-trigger', handleTrigger);
@@ -485,6 +489,20 @@ const GlobalAIAssistant: React.FC<GlobalAIAssistantProps> = ({ isHidden, onHide 
                         } : {})
                     }}
                 >
+                    {/* Swipe Hint Message */}
+                    <AnimatePresence>
+                        {!isOpen && showSwipeHint && !isHidden && (
+                            <motion.div
+                                initial={{ opacity: 0, y: 10, scale: 0.8 }}
+                                animate={{ opacity: 1, y: 0, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.8 }}
+                                className="absolute -top-12 right-0 bg-black/80 backdrop-blur-sm text-white text-[10px] font-bold px-3 py-1.5 rounded-full whitespace-nowrap shadow-xl border border-white/10 flex items-center gap-2"
+                            >
+                                <div className="w-1.5 h-1.5 rounded-full bg-kenya-green animate-pulse" />
+                                Swipe right to hide
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
                     <AnimatePresence>
                         {isOpen && (
                             <motion.div

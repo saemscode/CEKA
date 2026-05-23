@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Heart, X, ArrowRight, Gift, Copy, ExternalLink } from 'lucide-react';
+import { Heart, X, ArrowRight, Gift, Copy, ExternalLink, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { translate } from '@/lib/utils';
@@ -33,13 +33,20 @@ const DONATION_OPTIONS = [
 // Maximum time to show the donation widget in milliseconds (5 minutes)
 const MAX_WIDGET_DISPLAY_TIME = 5 * 60 * 1000;
 
-const DonationWidget = ({ onTimedOut }: { onTimedOut?: () => void }) => {
+interface DonationWidgetProps {
+  onTimedOut?: () => void;
+  isHidden?: boolean;
+  onHide?: () => void;
+}
+
+const DonationWidget: React.FC<DonationWidgetProps> = ({ onTimedOut, isHidden, onHide }) => {
   const [isVisible, setIsVisible] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [showPulse, setShowPulse] = useState(false);
   const [isIdle, setIsIdle] = useState(false);
   const [isHovering, setIsHovering] = useState(false);
   const [hasTimedOut, setHasTimedOut] = useState(false);
+  const [showSwipeHint, setShowSwipeHint] = useState(false);
   const widgetMountTimeRef = useRef<number>(Date.now());
   const { language } = useLanguage();
   const { theme } = useTheme();
@@ -50,6 +57,9 @@ const DonationWidget = ({ onTimedOut }: { onTimedOut?: () => void }) => {
   useEffect(() => {
     const visibilityTimer = setTimeout(() => {
       setIsVisible(true);
+      // Show swipe hint briefly after revealing
+      setTimeout(() => setShowSwipeHint(true), 1500);
+      setTimeout(() => setShowSwipeHint(false), 6000);
     }, 5000); // 5 seconds
     
     // Start pulse animation after additional delay
@@ -86,6 +96,7 @@ const DonationWidget = ({ onTimedOut }: { onTimedOut?: () => void }) => {
     if (isExpanded) {
       setShowPulse(false);
       setIsIdle(false);
+      setShowSwipeHint(false);
     }
     
     if (isHovering) {
@@ -134,7 +145,7 @@ const DonationWidget = ({ onTimedOut }: { onTimedOut?: () => void }) => {
     visible: (expanded: boolean) => ({ 
       opacity: expanded ? 1 : isIdle ? 0.7 : 1, 
       scale: 1,
-      bottom: expanded ? "50%" : isMobile ? "80px" : "30%", // Positioned at 30% from bottom on desktop
+      bottom: expanded ? "50%" : isMobile ? "80px" : "120px", // Positioned relative to bottom
       right: expanded ? "50%" : "20px",
       x: expanded ? "50%" : 0,
       y: expanded ? "50%" : 0,
@@ -176,26 +187,51 @@ const DonationWidget = ({ onTimedOut }: { onTimedOut?: () => void }) => {
     }
   };
 
-  // Don't render if timed out
-  if (hasTimedOut) return null;
+  // Don't render if timed out or hidden via layout
+  if (hasTimedOut || isHidden) return null;
 
   return (
     <AnimatePresence>
       {isVisible && (
         <motion.div
+          drag={!isExpanded ? "x" : false}
+          dragConstraints={{ left: 0, right: 300 }}
+          dragElastic={0.1}
+          onDragEnd={(_, info) => {
+            if (!isExpanded && info.offset.x > 80) {
+              onHide?.();
+            }
+          }}
           variants={containerVariants}
           initial="hidden"
           animate="visible"
           exit="exit"
           custom={isExpanded}
           className={`fixed z-50 shadow-lg rounded-lg
-            ${darkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'}`}
-          style={{ zIndex: 999 }} // Ensure it's above everything else
+            ${darkMode ? 'bg-gray-800/80 border border-gray-700' : 'bg-white/80 border border-gray-200'} backdrop-blur-md`}
+          style={{ 
+            zIndex: isExpanded ? 1000 : 999,
+            touchAction: 'none'
+          }}
         >
+          {/* Swipe Hint Message */}
+          <AnimatePresence>
+            {!isExpanded && showSwipeHint && !isHidden && (
+              <motion.div
+                initial={{ opacity: 0, y: 10, scale: 0.8 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.8 }}
+                className="absolute -top-12 right-0 bg-black/80 backdrop-blur-sm text-white text-[10px] font-bold px-3 py-1.5 rounded-full whitespace-nowrap shadow-xl border border-white/10 flex items-center gap-2"
+              >
+                <div className="w-1.5 h-1.5 rounded-full bg-kenya-red animate-pulse" />
+                Swipe right to hide
+              </motion.div>
+            )}
+          </AnimatePresence>
           {!isExpanded ? (
             // Collapsed state (floating button)
             <motion.button
-              className={`flex items-center justify-center p-3 rounded-lg relative
+              className={`flex items-center justify-center p-3 rounded-lg relative overflow-hidden group
                 ${darkMode ? 'bg-gray-800' : 'bg-white'} shadow-md`}
               onClick={() => setIsExpanded(true)}
               whileHover={{ scale: 1.05, opacity: 1 }}
@@ -243,6 +279,9 @@ const DonationWidget = ({ onTimedOut }: { onTimedOut?: () => void }) => {
                 </AnimatePresence>
               </div>
               <span className="text-sm font-medium">{translate('Support Us', language)}</span>
+              
+              {/* Glass shine effect */}
+              <div className="absolute inset-0 bg-gradient-to-tr from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
             </motion.button>
           ) : (
             // Expanded state (donation options)

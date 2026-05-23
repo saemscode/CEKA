@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import Navbar from './Navbar';
 import Footer from './Footer';
 import BottomNavbar from './BottomNavbar';
-import DonationWidget from '@/components/DonationWidget';
+import DonationWidget from '@/components/donation/DonationWidget';
 import GlobalAIAssistant from '@/components/ai/GlobalAIAssistant';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -56,7 +56,7 @@ const Layout = ({ children, hideBottomNav, hideBackButton }: LayoutProps) => {
                 setIsAIHidden(false);
                 setIsDonationHidden(false);
               }}
-              className="w-1.5 h-20 bg-kenya-green/30 hover:bg-kenya-green/60 rounded-full backdrop-blur-sm transition-colors cursor-pointer group relative shadow-lg"
+              className="w-2.5 h-20 bg-kenya-green shadow-[0_0_15px_rgba(22,163,74,0.5)] hover:bg-kenya-green/80 rounded-full backdrop-blur-md transition-all cursor-pointer group relative z-[70]"
               title="Pull left to restore action buttons"
             >
               <div className="absolute inset-y-0 -left-4 -right-4 bg-transparent" /> {/* Larger Hitbox */}
