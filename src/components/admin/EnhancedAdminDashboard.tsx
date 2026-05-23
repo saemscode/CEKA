@@ -11,7 +11,7 @@ import {
     Menu, X, ChevronDown, Bell, User, MoreVertical, Globe, Settings, Shield, Search, ChevronRight,
     FileText, PenTool, MessageSquare, Calendar, Heart, LayoutGrid, Radio, Users, Home, BookOpen,
     PlusCircle, Edit3, Activity, TrendingUp, Eye, UserCheck, Clock, AlertTriangle, Download,
-    RefreshCw, Plus, Sparkles, Zap, PieChart as LucidePieChart
+    RefreshCw, Plus, Sparkles, Zap, PieChart as LucidePieChart, Send
 } from 'lucide-react';
 import { adminService, AdminDashboardStats, UserActivityStats, ModerationQueueItem } from '@/services/adminService';
 import { roleService, PERMISSION_KEYS } from '@/services/roleService';
@@ -25,6 +25,7 @@ import EventManager from './EventManager';
 import LegislativeIntelligence from './LegislativeIntelligence';
 import BentoAnalyticsDashboard from './BentoAnalyticsDashboard';
 import PollManager from './PollManager';
+import { BroadcastCenter } from './broadcast/BroadcastCenter';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -348,6 +349,10 @@ const EnhancedAdminDashboard = () => {
                               Audit
                           </TabsTrigger>
                         )}
+                        <TabsTrigger value="broadcast" className="rounded-xl px-4 py-3 font-medium data-[state=active]:shadow-lg bg-primary/5 text-primary">
+                            <Send className="h-4 w-4 mr-2" />
+                            Broadcast
+                        </TabsTrigger>
                     </TabsList>
                 </div>
 
@@ -558,8 +563,8 @@ const EnhancedAdminDashboard = () => {
                     <BulkUploadManager />
                 </TabsContent>
 
-                <TabsContent value="changes">
-                    <AppChangeLogger />
+                <TabsContent value="broadcast">
+                    <BroadcastCenter />
                 </TabsContent>
             </Tabs>
         </div>
