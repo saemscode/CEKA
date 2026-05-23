@@ -1,7 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Heart, X, Gift, Copy, ExternalLink } from 'lucide-react';
+import { Heart, X, Gift, Copy, ExternalLink, CreditCard } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { motion, AnimatePresence } from 'framer-motion';
+
+declare global {
+  interface Window {
+    PaystackPop: any;
+  }
+}
 
 const DONATION_OPTIONS = [
   {
@@ -19,7 +25,7 @@ const DONATION_OPTIONS = [
   {
     name: 'M-Pesa',
     number: '+254798903373',
-    description: 'Send to M-Pesa',
+    description: 'Direct Mobile Transfer',
     icon: '📱'
   }
 ];
@@ -49,6 +55,11 @@ const DonationWidget: React.FC<DonationWidgetProps> = ({
   const [isHovering, setIsHovering] = useState(false);
   const [hasTimedOut, setHasTimedOut] = useState(false);
   const [opacity, setOpacity] = useState(1);
+  
+  // Paystack & Tiered State
+  const [amount, setAmount] = useState<number | string>(500);
+  const [isCustom, setIsCustom] = useState(false);
+  const [isPaying, setIsPaying] = useState(false);
   
   const widgetMountTimeRef = useRef<number>(Date.now());
   const visibilityTimerRef = useRef<any>(null);
@@ -139,6 +150,65 @@ const DonationWidget: React.FC<DonationWidgetProps> = ({
     });
   };
 
+  const handlePaystackDonate = () => {
+    const finalAmount = Number(amount);
+    if (!finalAmount || finalAmount <= 0) {
+      toast({
+        title: "Invalid Amount",
+        description: "Please enter a valid donation amount.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const publicKey = (import.meta.env.VITE_PAYSTACK_PUBLIC_KEY || '').trim().replace(/^["']|["']$/g, '');
+    
+    if (!publicKey) {
+      console.error('PAYSTACK_PUBLIC_KEY is not defined in the environment.');
+      toast({
+        title: "Configuration Error",
+        description: "Payment system is not configured. Please try M-Pesa instead.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsPaying(true);
+    try {
+      const handler = window.PaystackPop.setup({
+        key: publicKey,
+        email: 'support@civiceducationkenya.com',
+        amount: Math.round(finalAmount * 100), 
+        currency: 'KES',
+        ref: 'WIDGET-' + Math.floor((Math.random() * 1000000000) + 1),
+        metadata: {
+          custom_fields: [
+            {
+              display_name: "Support Tier",
+              variable_name: "support_tier",
+              value: isCustom ? `Custom Widget (${amount})` : `Widget Tier: KES ${amount}`
+            }
+          ]
+        },
+        callback: function (response: any) {
+          setIsPaying(false);
+          toast({
+            title: "Support Confirmed",
+            description: "Thank you for your generous contribution to the mission!",
+          });
+          handleCollapse();
+        },
+        onClose: function () {
+          setIsPaying(false);
+        }
+      });
+      handler.openIframe();
+    } catch (error) {
+      console.error('Paystack error:', error);
+      setIsPaying(false);
+    }
+  };
+
   if (hasTimedOut || !isVisible || isHidden) return null;
 
   return (
@@ -153,7 +223,7 @@ const DonationWidget: React.FC<DonationWidgetProps> = ({
           }
         }}
         data-donation-trigger
-        className="fixed z-[60]"
+        className="fixed z-[100]"
         style={{
           zIndex: isExpanded ? 100 : 30,
           opacity,
@@ -222,79 +292,119 @@ const DonationWidget: React.FC<DonationWidgetProps> = ({
                   />
                 </div>
               </div>
-              {isHovering && (
-                <>
-                  <div className="absolute top-2 right-2 w-1 h-1 bg-red-300 rounded-full animate-bounce opacity-60" style={{ animationDelay: '0s' }} />
-                  <div className="absolute top-4 right-6 w-0.5 h-0.5 bg-red-200 rounded-full animate-bounce opacity-40" style={{ animationDelay: '0.2s' }} />
-                  <div className="absolute top-6 right-3 w-1 h-1 bg-red-400 rounded-full animate-bounce opacity-50" style={{ animationDelay: '0.4s' }} />
-                </>
-              )}
             </div>
           ) : (
-            <div className="w-80 max-h-[90vh] flex flex-col bg-white/10 dark:bg-gray-900/10 backdrop-blur-xl border border-white/20 dark:border-gray-700/20 rounded-2xl shadow-2xl overflow-hidden">
-              <div className="bg-gradient-to-r from-green-500/10 to-green-600/10 dark:from-green-400/10 dark:to-green-500/10 p-4 border-b border-white/10 dark:border-gray-700/10">
+            <div className="w-80 max-h-[90vh] flex flex-col bg-white/10 dark:bg-gray-900/10 backdrop-blur-xl border border-white/20 dark:border-gray-700/20 rounded-2xl shadow-2xl overflow-hidden glass-card">
+              <div className="bg-gradient-to-r from-kenya-green/20 to-kenya-green/10 p-4 border-b border-white/10 dark:border-gray-700/10">
                 <div className="flex justify-between items-center">
-                  <h3 className="font-bold text-lg flex items-center text-gray-900 dark:text-white">
+                  <h3 className="font-bold text-lg flex items-center text-gray-900 dark:text-white tracking-tight">
                     <div className="relative mr-3">
-                      <Gift className="h-6 w-6 text-green-500 dark:text-green-400 drop-shadow-sm" />
-                      <div className="absolute inset-0 bg-green-400 blur-sm opacity-30 rounded-full" />
+                      <Gift className="h-6 w-6 text-kenya-green drop-shadow-sm" />
+                      <div className="absolute inset-0 bg-kenya-green/30 blur-sm rounded-full" />
                     </div>
-                    Support Our Work
+                    Support Mission
                   </h3>
                   <button
                     className="relative group rounded-full p-2 hover:bg-white/10 dark:hover:bg-gray-800/10 transition-all duration-300 backdrop-blur-sm"
                     onClick={handleCollapse}
                   >
-                    <X className="h-4 w-4 text-gray-500 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-200 transition-colors" />
-                    <div className="absolute inset-0 rounded-full bg-white/5 scale-0 group-hover:scale-100 transition-transform duration-300" />
+                    <X className="h-4 w-4 text-gray-500 dark:text-gray-400 group-hover:text-kenya-red transition-colors" />
                   </button>
                 </div>
               </div>
-              <div className="p-4 overflow-y-auto">
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-4 leading-relaxed">
-                  Your support helps us continue our mission of civic education in Kenya.
-                </p>
+
+              <div className="p-4 overflow-y-auto space-y-4">
+                <div className="space-y-4">
+                   <div className="flex items-center gap-3 px-3 py-2 bg-kenya-green/5 border border-kenya-green/10 rounded-xl">
+                      <img src="/icons/check-box-svgrepo-com.svg" className="w-4 h-4 invert dark:invert-0 opacity-50" alt="" />
+                      <span className="text-[10px] font-bold uppercase tracking-widest opacity-60">100% Secure via Paystack</span>
+                   </div>
+
+                   <div className="grid grid-cols-2 gap-3">
+                      {[100, 200, 500, 1000].map(val => (
+                        <button
+                          key={val}
+                          onClick={() => { setAmount(val); setIsCustom(false); }}
+                          className={`h-16 rounded-xl border relative overflow-hidden transition-all duration-300 group ${amount === val && !isCustom ? 'border-kenya-green bg-kenya-green/10 shadow-lg' : 'border-white/10 bg-white/5 hover:border-kenya-green/30'}`}
+                        >
+                          <div className="flex flex-col items-center justify-center h-full text-center">
+                            <span className={`text-xs font-black transition-all ${amount === val && !isCustom ? 'text-kenya-green' : 'text-slate-500 opacity-60 group-hover:opacity-100'}`}>
+                              KES {val}
+                            </span>
+                            <span className="text-[8px] font-bold uppercase tracking-tighter opacity-40">Support Tier</span>
+                          </div>
+                        </button>
+                      ))}
+                   </div>
+
+                   <button
+                      onClick={() => setIsCustom(!isCustom)}
+                      className={`w-full py-3 rounded-xl border font-bold text-[10px] uppercase tracking-widest transition-all ${isCustom ? 'border-kenya-green bg-kenya-green/10 text-kenya-green' : 'border-white/10 bg-white/5 text-slate-500'}`}
+                   >
+                      {isCustom ? 'Use Fixed Amounts' : 'Custom Support Amount'}
+                   </button>
+
+                   {isCustom && (
+                      <motion.div 
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="relative group "
+                      >
+                        <input
+                          type="number"
+                          value={amount}
+                          onChange={e => setAmount(e.target.value)}
+                          className="w-full h-14 px-4 bg-white/5 border border-kenya-green/20 focus:border-kenya-green outline-none rounded-xl text-2xl font-black text-center text-kenya-green transition-all"
+                          placeholder="0"
+                          autoFocus
+                        />
+                        <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-black uppercase tracking-widest opacity-20">KES</div>
+                      </motion.div>
+                   )}
+
+                   <button
+                    onClick={handlePaystackDonate}
+                    disabled={isPaying}
+                    className="w-full py-4 rounded-xl font-black uppercase text-xs tracking-[0.2em] bg-kenya-green hover:bg-[#30D158] text-white transition-all shadow-xl shadow-kenya-green/20 flex items-center justify-center gap-3 active:scale-95 disabled:opacity-50"
+                  >
+                    <img src="/icons/wallet-money-svgrepo-com.svg" className="w-5 h-5 invert" alt="" />
+                    {isPaying ? 'Processing...' : `Donate KES ${amount}`}
+                  </button>
+                </div>
+
+                <div className="relative py-4 flex items-center gap-4">
+                  <div className="flex-1 h-px bg-white/10" />
+                  <span className="text-[8px] font-black uppercase tracking-widest opacity-30 whitespace-nowrap">Or Direct Transfer</span>
+                  <div className="flex-1 h-px bg-white/10" />
+                </div>
+
                 <div className="space-y-3">
-                  {DONATION_OPTIONS.map((option, index) => (
+                  {DONATION_OPTIONS.filter(o => o.name === 'M-Pesa').map((option) => (
                     <div 
                       key={option.name}
-                      className="group relative p-4 rounded-xl flex items-center justify-between hover:bg-white/10 dark:hover:bg-gray-800/10 transition-all duration-300 border border-white/10 dark:border-gray-700/10 backdrop-blur-sm"
-                      style={{ animationDelay: `${index * 100}ms` }}
+                      className="group relative p-4 rounded-xl flex items-center justify-between hover:bg-white/10 transition-all duration-300 border border-white/10 backdrop-blur-sm cursor-pointer"
+                      onClick={handleMpesa}
                     >
-                      <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-transparent via-white/5 dark:via-gray-700/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                       <div className="flex items-center relative z-10">
                         <div className="text-2xl mr-4 transition-transform duration-300 group-hover:scale-110">
                           {option.icon}
                         </div>
                         <div>
-                          <p className="font-semibold text-sm text-gray-900 dark:text-white mb-1">{option.name}</p>
-                          <p className="text-xs text-gray-500 dark:text-gray-400">{option.description}</p>
+                          <p className="font-bold text-xs text-gray-900 dark:text-white mb-0.5">{option.name} Manual</p>
+                          <p className="text-[10px] text-gray-500 dark:text-gray-400 font-medium">{option.description}</p>
                         </div>
                       </div>
-                      {option.name === 'M-Pesa' ? (
-                        <button
-                          onClick={handleMpesa}
-                          className="relative z-10 px-4 py-2 text-sm rounded-lg flex items-center bg-white/10 dark:bg-gray-800/10 hover:bg-white/20 dark:hover:bg-gray-700/20 backdrop-blur-sm transition-all duration-300 text-gray-700 dark:text-gray-300 hover:scale-105 shadow-lg"
-                        >
-                          <span className="mr-2">Copy</span>
-                          <Copy className="h-3 w-3" />
-                        </button>
-                      ) : (
-                        <a
-                          href={option.url}
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="relative z-10 px-4 py-2 text-sm rounded-lg flex items-center bg-white/10 dark:bg-gray-800/10 hover:bg-white/20 dark:hover:bg-gray-700/20 backdrop-blur-sm transition-all duration-300 text-gray-700 dark:text-gray-300 hover:scale-105 shadow-lg"
-                        >
-                          <span className="mr-2">Visit</span>
-                          <ExternalLink className="h-3 w-3" />
-                        </a>
-                      )}
+                      <button
+                        className="relative z-10 px-3 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg bg-white/10 hover:bg-white/20 transition-all text-gray-700 dark:text-gray-300"
+                      >
+                        Copy
+                      </button>
                     </div>
                   ))}
                 </div>
+
                 <button
-                  className="w-full mt-6 py-3 rounded-xl font-semibold bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 dark:from-green-600 dark:to-green-700 dark:hover:from-green-700 dark:hover:to-green-800 text-white transition-all duration-300 shadow-lg hover:shadow-green-500/25 hover:scale-[1.02] backdrop-blur-sm"
+                  className="w-full py-3 rounded-xl font-bold text-[10px] uppercase tracking-widest text-slate-500 hover:text-slate-800 dark:hover:text-white transition-all"
                   onClick={handleCollapse}
                 >
                   Maybe Later

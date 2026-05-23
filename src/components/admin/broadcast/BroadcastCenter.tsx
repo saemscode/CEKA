@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { 
     Send, Sparkles, Layout, Eye, Hash, Users, MapPin, 
-    Heart, ChevronRight, Info, AlertCircle, CheckCircle2 
+    Heart, ChevronRight, Info, AlertCircle, CheckCircle2, History
 } from 'lucide-react';
 import { MailingMeshStatus } from './MailingMeshStatus';
 import { MarkdownPreview } from './MarkdownPreview';
@@ -28,7 +28,21 @@ export const BroadcastCenter = () => {
     const [content, setContent] = useState('');
     const [targetList, setTargetList] = useState<'profiles' | 'community' | 'both'>('community');
     const [sending, setSending] = useState(false);
+    const [history, setHistory] = useState<any[]>([]);
     const { toast } = useToast();
+
+    React.useEffect(() => {
+        fetchHistory();
+    }, []);
+
+    const fetchHistory = async () => {
+        const { data } = await supabase
+            .from('broadcast_history')
+            .select('*')
+            .order('created_at', { ascending: false })
+            .limit(5);
+        if (data) setHistory(data);
+    };
 
     const insertTag = (tag: string) => {
         setContent(prev => prev + ' ' + tag);
@@ -46,30 +60,32 @@ export const BroadcastCenter = () => {
 
         setSending(true);
         try {
+            const { data: { user } } = await supabase.auth.getUser();
+            
             const { data, error } = await supabase.functions.invoke('send-broadcast-email', {
                 body: {
                     subject,
-                    html_content: content,
-                    target_list: targetList,
-                    audience_filter: 'all'
+                    content,
+                    target: targetList,
+                    userId: user?.id
                 }
             });
 
             if (error) throw error;
 
             toast({
-                title: "Broadcast Initiated",
-                description: `Successfully sent to ${data.sent} recipients. ${data.failed} failed.`,
+                title: "Broadcast Queued",
+                description: data.message,
             });
             
-            // Clear if successful
             setSubject('');
             setContent('');
+            fetchHistory();
         } catch (error: any) {
             console.error('Broadcast failed:', error);
             toast({
-                title: "Broadcast Failed",
-                description: error.message || "An error occurred during delivery.",
+                title: "Dispatch Failure",
+                description: error.message || "An error occurred during queueing.",
                 variant: "destructive"
             });
         } finally {
@@ -169,6 +185,37 @@ export const BroadcastCenter = () => {
                                 </>
                             )}
                         </Button>
+                    </div>
+
+                    {/* History Section */}
+                    <div className="space-y-4">
+                        <div className="flex items-center gap-2 mb-2">
+                            <History className="h-4 w-4 text-primary" />
+                            <h3 className="text-xs font-bold uppercase tracking-widest opacity-40">Recent History</h3>
+                        </div>
+                        
+                        <div className="space-y-3">
+                            {history.length > 0 ? history.map((item) => (
+                                <div key={item.id} className="p-4 glass-card rounded-2xl border-0 shadow-ios flex items-center justify-between group hover:bg-white/5 transition-all">
+                                    <div className="flex items-center gap-4">
+                                        <div className={`w-2 h-2 rounded-full ${item.status === 'completed' ? 'bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]' : 'bg-amber-500 animate-pulse'}`} />
+                                        <div>
+                                            <p className="font-bold text-[10px] truncate max-w-[200px] uppercase tracking-wider">{item.subject}</p>
+                                            <p className="text-[10px] opacity-40">{new Date(item.created_at).toLocaleDateString()} • {item.total_recipients} Recipient(s)</p>
+                                        </div>
+                                    </div>
+                                    <div className="text-right">
+                                        <Badge variant="outline" className={`text-[8px] font-black uppercase px-2 py-0.5 rounded-full border-none ${item.status === 'completed' ? 'bg-green-500/10 text-green-500' : 'bg-primary/10 text-primary'}`}>
+                                            {item.status}
+                                        </Badge>
+                                    </div>
+                                </div>
+                            )) : (
+                                <div className="p-12 text-center bg-white/5 rounded-2xl border border-dashed border-white/10">
+                                    <p className="text-[10px] uppercase tracking-widest opacity-20">No history found</p>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
 
