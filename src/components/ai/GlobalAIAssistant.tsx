@@ -349,28 +349,33 @@ const GlobalAIAssistant: React.FC<GlobalAIAssistantProps> = ({ isHidden, onHide 
                     }
                 }}
                 className={cn(
-                    "fixed",
+                    "fixed pointer-events-auto",
+                    isOpen ? "inset-0 flex items-center justify-center z-[9999]" : "z-[999]",
                     !isVisible && !isOpen && "opacity-0 translate-y-20 pointer-events-none"
                 )}
                 style={{
-                    zIndex: isOpen ? 100 : 50,
                     touchAction: 'none',
-                    position: 'fixed' as const,
-                    top: isOpen ? '50%' : 'auto',
-                    left: isOpen ? '50%' : 'auto',
                     bottom: isOpen ? 'auto' : '204px',
                     right: isOpen ? 'auto' : '2rem',
-                    transform: isOpen ? 'translate(-50%, -50%)' : 'none'
                 }}
             >
                 <AnimatePresence>
                     {isOpen && (
-                        <motion.div
-                            initial={{ opacity: 0, scale: 0.9 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            exit={{ opacity: 0, scale: 0.9 }}
-                            className="w-80 max-h-[90vh] bg-white/10 dark:bg-gray-900/10 backdrop-blur-xl border border-white/20 dark:border-gray-700/20 rounded-2xl shadow-2xl overflow-hidden flex flex-col"
-                        >
+                        <>
+                            {/* Dimming Backdrop */}
+                            <motion.div 
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                onClick={() => setIsOpen(false)}
+                                className="absolute inset-0 bg-black/40 backdrop-blur-sm z-[-1]"
+                            />
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.9 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.9 }}
+                                className="w-80 max-h-[90vh] bg-white/10 dark:bg-gray-900/10 backdrop-blur-xl border border-white/20 dark:border-gray-700/20 rounded-2xl shadow-2xl overflow-hidden flex flex-col"
+                            >
                             {/* Header */}
                             <div className="bg-gradient-to-r from-kenya-green/10 to-primary/10 p-4 border-b border-white/10 dark:border-gray-700/10">
                                 <div className="flex justify-between items-center">
@@ -489,6 +494,7 @@ const GlobalAIAssistant: React.FC<GlobalAIAssistantProps> = ({ isHidden, onHide 
                                 </div>
                             </div>
                         </motion.div>
+                        </>
                     )}
                 </AnimatePresence>
 

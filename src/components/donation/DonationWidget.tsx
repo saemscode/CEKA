@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Heart, X, Gift, Copy, ExternalLink, CreditCard } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { motion, AnimatePresence } from 'framer-motion';
+import { cn } from '@/lib/utils';
 
 declare global {
   interface Window {
@@ -223,17 +224,15 @@ const DonationWidget: React.FC<DonationWidgetProps> = ({
           }
         }}
         data-donation-trigger
-        className="fixed z-[100]"
+        className={cn(
+          "fixed pointer-events-auto",
+          isExpanded ? "inset-0 flex items-center justify-center z-[9999]" : "z-[999]"
+        )}
         style={{
-          zIndex: isExpanded ? 100 : 30,
           opacity,
           touchAction: 'none',
-          position: 'fixed' as const,
-          top: isExpanded ? '50%' : 'auto',
-          left: isExpanded ? '50%' : 'auto',
           bottom: isExpanded ? 'auto' : `${offsetY}px`,
           right: isExpanded ? 'auto' : '2rem',
-          transform: isExpanded ? 'translate(-50%, -50%)' : 'none'
         }}
       >
           {!isExpanded ? (
@@ -294,7 +293,16 @@ const DonationWidget: React.FC<DonationWidgetProps> = ({
               </div>
             </div>
           ) : (
-            <div className="w-80 max-h-[90vh] flex flex-col bg-white/10 dark:bg-gray-900/10 backdrop-blur-xl border border-white/20 dark:border-gray-700/20 rounded-2xl shadow-2xl overflow-hidden glass-card">
+            <>
+              {/* Dimming Backdrop */}
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={handleCollapse}
+                className="absolute inset-0 bg-black/40 backdrop-blur-sm z-[-1]"
+              />
+              <div className="w-80 max-h-[90vh] flex flex-col bg-white/10 dark:bg-gray-900/10 backdrop-blur-xl border border-white/20 dark:border-gray-700/20 rounded-2xl shadow-2xl overflow-hidden glass-card">
               <div className="bg-gradient-to-r from-kenya-green/20 to-kenya-green/10 p-4 border-b border-white/10 dark:border-gray-700/10">
                 <div className="flex justify-between items-center">
                   <h3 className="font-bold text-lg flex items-center text-gray-900 dark:text-white tracking-tight">
@@ -411,7 +419,8 @@ const DonationWidget: React.FC<DonationWidgetProps> = ({
                 </button>
               </div>
             </div>
-          )}
+          </>
+        )}
       </motion.div>
     </AnimatePresence>
   );
