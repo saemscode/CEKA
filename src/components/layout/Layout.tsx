@@ -36,20 +36,21 @@ const Layout = ({ children, hideBottomNav, hideBackButton }: LayoutProps) => {
       <Footer />
       {!hideBottomNav && <BottomNavbar />}
 
-      {/* Restore Handle - Vertical bar 1rem off the right border */}
+      {/* Restore Handle - Minimalist iOS-inspired bar 2rem off the right border */}
       <AnimatePresence>
         {(isAIHidden || isDonationHidden) && (
           <motion.div
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: 20 }}
-            className="fixed right-0 top-1/2 -translate-y-1/2 z-[9999]"
+            className="fixed right-8 top-1/2 -translate-y-1/2 z-[3000]"
           >
             <motion.button
               drag="x"
               dragConstraints={{ left: -100, right: 0 }}
               onDragEnd={(_, info) => {
-                if (info.offset.x < -30) {
+                // Swipe left restores both
+                if (info.offset.x < -20) {
                   setIsAIHidden(false);
                   setIsDonationHidden(false);
                 }
@@ -58,19 +59,18 @@ const Layout = ({ children, hideBottomNav, hideBackButton }: LayoutProps) => {
                 setIsAIHidden(false);
                 setIsDonationHidden(false);
               }}
-              className="w-4 h-32 bg-kenya-green shadow-[0_0_30px_rgba(22,163,74,0.8)] hover:bg-kenya-green/90 rounded-l-full backdrop-blur-md transition-all cursor-pointer group relative border-l border-y border-white/20"
-              title="Pull left or Click to restore assistants"
+              className="w-1.5 h-24 bg-black/20 dark:bg-white/20 backdrop-blur-3xl rounded-full transition-all cursor-pointer group relative border border-white/10 dark:border-white/5"
+              title="Swipe left to restore"
             >
-              <div className="absolute inset-y-0 -left-6 -right-2 bg-transparent" /> {/* Larger Hitbox */}
-              <div className="absolute inset-y-4 left-1.5 w-[2px] bg-white/30 rounded-full group-hover:bg-white/50 transition-colors" /> {/* Inner bar detail */}
+              <div className="absolute inset-y-0 -left-6 -right-6 bg-transparent" /> {/* Hitbox */}
+              
+              {/* Subtle Indicator */}
               <motion.div 
-                animate={{ x: [-3, 0, -3] }}
-                transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
-                className="absolute -left-6 top-1/2 -translate-y-1/2 flex flex-col items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                animate={{ x: [-2, 0, -2] }}
+                transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
+                className="absolute -left-4 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity"
               >
-                 <div className="w-1.5 h-1.5 rounded-full bg-kenya-green shadow-[0_0_8px_rgba(22,163,74,0.5)]" />
-                 <div className="w-2 h-2 rounded-full bg-kenya-green shadow-[0_0_8px_rgba(22,163,74,0.5)]" />
-                 <div className="w-1.5 h-1.5 rounded-full bg-kenya-green shadow-[0_0_8px_rgba(22,163,74,0.5)]" />
+                <div className="w-1 h-3 bg-black/20 dark:bg-white/20 rounded-full" />
               </motion.div>
             </motion.button>
           </motion.div>
