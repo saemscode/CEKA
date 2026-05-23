@@ -96,4 +96,3 @@ const Layout = ({ children, hideBottomNav, hideBackButton }: LayoutProps) => {
 };
 
 export default Layout;
-

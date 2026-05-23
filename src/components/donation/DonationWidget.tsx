@@ -155,17 +155,23 @@ const DonationWidget: React.FC<DonationWidgetProps> = ({
         data-donation-trigger
         className="fixed z-30 transition-all duration-500 ease-out"
         style={{
-          zIndex: 30,
+          zIndex: isExpanded ? 50 : 30,
           opacity,
-          bottom: `${offsetY}px`,
           touchAction: 'none',
           ...(isExpanded ? {
+            position: 'fixed' as const,
             top: '50%',
-            bottom: 'auto',
             left: '50%',
-            transform: 'translate(-50%, -50%)'
+            right: 'auto',
+            bottom: 'auto',
+            transform: 'translate(-50%, -50%)',
           } : {
+            position: 'fixed' as const,
+            bottom: `${offsetY}px`,
             right: '2rem',
+            left: 'auto',
+            top: 'auto',
+            transform: 'none'
           })
         }}
       >

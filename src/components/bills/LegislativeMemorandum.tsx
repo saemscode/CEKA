@@ -109,7 +109,7 @@ const SuccessStep = ({ billTitle, onReset }: { billTitle: string; onReset: () =>
           className="space-y-4"
         >
           <h3 className="text-3xl sm:text-5xl font-[1000] tracking-tighter text-slate-900 dark:text-white uppercase leading-none">
-            Voice <span className="text-kenya-green">Submitted.</span>
+            Email <span className="text-kenya-green">Submitted.</span>
           </h3>
           <p className="text-sm font-medium text-slate-500 dark:text-slate-400 max-w-sm mx-auto leading-relaxed">
             Your email has been sent to Parliament. Great job - but the fire must keep burning.
@@ -139,7 +139,7 @@ const SuccessStep = ({ billTitle, onReset }: { billTitle: string; onReset: () =>
           className="w-full grid grid-cols-1 sm:grid-cols-3 gap-3 mt-8"
         >
           <button
-            onClick={() => window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(`I just formally objected to the ${billTitle} on @CEKAKenya. Your voice matters too — add yours: `)} ${encodeURIComponent(window.location.href)}`, '_blank')}
+            onClick={() => window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(`I just formally objected to the ${billTitle} on @CEKAKenya. Your voice matters too - add yours: `)} ${encodeURIComponent(window.location.href)}`, '_blank')}
             className="flex items-center justify-center gap-2 h-14 rounded-2xl bg-black text-white border border-white/10 text-[10px] font-black uppercase tracking-widest hover:bg-slate-900 transition-all duration-300"
           >
             <TwitterColorIcon size={18} /> Share on X
