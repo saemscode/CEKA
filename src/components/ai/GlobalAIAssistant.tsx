@@ -349,26 +349,18 @@ const GlobalAIAssistant: React.FC<GlobalAIAssistantProps> = ({ isHidden, onHide 
                     }
                 }}
                 className={cn(
-                    "fixed z-50 transition-all duration-1000 ease-out",
+                    "fixed",
                     !isVisible && !isOpen && "opacity-0 translate-y-20 pointer-events-none"
                 )}
                 style={{
-                    zIndex: 50,
+                    zIndex: isOpen ? 100 : 50,
                     touchAction: 'none',
                     position: 'fixed' as const,
-                    ...(isOpen ? {
-                        top: '50%',
-                        left: '50%',
-                        right: 'auto',
-                        bottom: 'auto',
-                        transform: 'translate(-50%, -50%)'
-                    } : {
-                        bottom: '204px',
-                        right: '2rem',
-                        top: 'auto',
-                        left: 'auto',
-                        transform: 'none'
-                    })
+                    top: isOpen ? '50%' : 'auto',
+                    left: isOpen ? '50%' : 'auto',
+                    bottom: isOpen ? 'auto' : '204px',
+                    right: isOpen ? 'auto' : '2rem',
+                    transform: isOpen ? 'translate(-50%, -50%)' : 'none'
                 }}
             >
                 <AnimatePresence>
@@ -377,7 +369,7 @@ const GlobalAIAssistant: React.FC<GlobalAIAssistantProps> = ({ isHidden, onHide 
                             initial={{ opacity: 0, scale: 0.9 }}
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 0.9 }}
-                            className="w-80 bg-white/10 dark:bg-gray-900/10 backdrop-blur-xl border border-white/20 dark:border-gray-700/20 rounded-2xl shadow-2xl overflow-hidden flex flex-col h-[520px]"
+                            className="w-80 max-h-[90vh] bg-white/10 dark:bg-gray-900/10 backdrop-blur-xl border border-white/20 dark:border-gray-700/20 rounded-2xl shadow-2xl overflow-hidden flex flex-col"
                         >
                             {/* Header */}
                             <div className="bg-gradient-to-r from-kenya-green/10 to-primary/10 p-4 border-b border-white/10 dark:border-gray-700/10">

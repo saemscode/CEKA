@@ -153,26 +153,17 @@ const DonationWidget: React.FC<DonationWidgetProps> = ({
           }
         }}
         data-donation-trigger
-        className="fixed z-30 transition-all duration-500 ease-out"
+        className="fixed z-[60]"
         style={{
-          zIndex: isExpanded ? 50 : 30,
+          zIndex: isExpanded ? 100 : 30,
           opacity,
           touchAction: 'none',
-          ...(isExpanded ? {
-            position: 'fixed' as const,
-            top: '50%',
-            left: '50%',
-            right: 'auto',
-            bottom: 'auto',
-            transform: 'translate(-50%, -50%)',
-          } : {
-            position: 'fixed' as const,
-            bottom: `${offsetY}px`,
-            right: '2rem',
-            left: 'auto',
-            top: 'auto',
-            transform: 'none'
-          })
+          position: 'fixed' as const,
+          top: isExpanded ? '50%' : 'auto',
+          left: isExpanded ? '50%' : 'auto',
+          bottom: isExpanded ? 'auto' : `${offsetY}px`,
+          right: isExpanded ? 'auto' : '2rem',
+          transform: isExpanded ? 'translate(-50%, -50%)' : 'none'
         }}
       >
           {!isExpanded ? (
@@ -240,7 +231,7 @@ const DonationWidget: React.FC<DonationWidgetProps> = ({
               )}
             </div>
           ) : (
-            <div className="w-80 bg-white/10 dark:bg-gray-900/10 backdrop-blur-xl border border-white/20 dark:border-gray-700/20 rounded-2xl shadow-2xl overflow-hidden">
+            <div className="w-80 max-h-[90vh] flex flex-col bg-white/10 dark:bg-gray-900/10 backdrop-blur-xl border border-white/20 dark:border-gray-700/20 rounded-2xl shadow-2xl overflow-hidden">
               <div className="bg-gradient-to-r from-green-500/10 to-green-600/10 dark:from-green-400/10 dark:to-green-500/10 p-4 border-b border-white/10 dark:border-gray-700/10">
                 <div className="flex justify-between items-center">
                   <h3 className="font-bold text-lg flex items-center text-gray-900 dark:text-white">
@@ -259,7 +250,7 @@ const DonationWidget: React.FC<DonationWidgetProps> = ({
                   </button>
                 </div>
               </div>
-              <div className="p-4">
+              <div className="p-4 overflow-y-auto">
                 <p className="text-sm text-gray-600 dark:text-gray-400 mb-4 leading-relaxed">
                   Your support helps us continue our mission of civic education in Kenya.
                 </p>
