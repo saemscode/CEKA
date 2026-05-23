@@ -1,5 +1,6 @@
 // @ts-nocheck
 
+
 import { serve } from "https://deno.land/std@0.208.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 
@@ -46,7 +47,7 @@ serve(async (req) => {
         Object.entries(tagsMapping).forEach(([key, value]) => {
             // Standard lowercase replacement: {{first_name}} -> "fellow citizen"
             htmlContent = htmlContent.replaceAll(`{{${key}}}`, value);
-            
+
             // Smart Sentence-Case replacement: {{First_name}} -> "Fellow citizen"
             const capitalizedKey = key.charAt(0).toUpperCase() + key.slice(1);
             const capitalizedValue = value.charAt(0).toUpperCase() + value.slice(1);
