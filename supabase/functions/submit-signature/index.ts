@@ -1,3 +1,6 @@
+// @ts-nocheck
+
+
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { sendEmail } from "../_shared/mailing.ts";
@@ -7,7 +10,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-serve(async (req) => {
+serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
 
   try {
@@ -47,7 +50,7 @@ serve(async (req) => {
           .eq('bill_id', bill_id)
           .eq('email', email.toLowerCase().trim())
           .single();
-        
+
         if (existing) signature = existing;
       } else {
         throw sigError;
@@ -76,22 +79,22 @@ serve(async (req) => {
         html: emailHtml,
         provider: 'auto'
       });
-    } catch (mailError) {
+    } catch (mailError: any) {
       // Log the error but do NOT throw. We want the user to proceed to handleFinalDispatch
       // even if the verification email is currently unavailable.
       console.warn('[submit-signature] Mailing Mesh exhausted or failed. Proceeding via bypass.', mailError.message);
     }
 
-    return new Response(JSON.stringify({ 
-      success: true, 
+    return new Response(JSON.stringify({
+      success: true,
       id: signature.id,
-      meta: { mailing: 'bypassed_on_failure' } 
+      meta: { mailing: 'bypassed_on_failure' }
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Signature process error:', error);
     return new Response(JSON.stringify({ error: error.message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

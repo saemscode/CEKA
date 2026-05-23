@@ -128,6 +128,7 @@ export const useTemplateSubmission = (billId: string, templateId: string | null)
     amplifyWhatsApp,
     isSubmitting,
     needsVerification,
+    setNeedsVerification,
     submissionId
   };
 };

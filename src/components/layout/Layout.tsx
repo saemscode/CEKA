@@ -58,18 +58,19 @@ const Layout = ({ children, hideBottomNav, hideBackButton }: LayoutProps) => {
                 setIsAIHidden(false);
                 setIsDonationHidden(false);
               }}
-              className="w-3 h-24 bg-kenya-green shadow-[0_0_20px_rgba(22,163,74,0.6)] hover:bg-kenya-green/90 rounded-l-full backdrop-blur-md transition-all cursor-pointer group relative"
-              title="Pull left to restore action buttons"
+              className="w-4 h-32 bg-kenya-green shadow-[0_0_30px_rgba(22,163,74,0.8)] hover:bg-kenya-green/90 rounded-l-full backdrop-blur-md transition-all cursor-pointer group relative border-l border-y border-white/20"
+              title="Pull left or Click to restore assistants"
             >
-              <div className="absolute inset-y-0 -left-4 -right-4 bg-transparent" /> {/* Larger Hitbox */}
+              <div className="absolute inset-y-0 -left-6 -right-2 bg-transparent" /> {/* Larger Hitbox */}
+              <div className="absolute inset-y-4 left-1.5 w-[2px] bg-white/30 rounded-full group-hover:bg-white/50 transition-colors" /> {/* Inner bar detail */}
               <motion.div 
-                animate={{ x: [-2, 2, -2] }}
-                transition={{ repeat: Infinity, duration: 2 }}
-                className="absolute -left-5 top-1/2 -translate-y-1/2 flex flex-col items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                animate={{ x: [-3, 0, -3] }}
+                transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
+                className="absolute -left-6 top-1/2 -translate-y-1/2 flex flex-col items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity"
               >
-                 <div className="w-1 h-1 rounded-full bg-kenya-green" />
-                 <div className="w-1.5 h-1.5 rounded-full bg-kenya-green" />
-                 <div className="w-1 h-1 rounded-full bg-kenya-green" />
+                 <div className="w-1.5 h-1.5 rounded-full bg-kenya-green shadow-[0_0_8px_rgba(22,163,74,0.5)]" />
+                 <div className="w-2 h-2 rounded-full bg-kenya-green shadow-[0_0_8px_rgba(22,163,74,0.5)]" />
+                 <div className="w-1.5 h-1.5 rounded-full bg-kenya-green shadow-[0_0_8px_rgba(22,163,74,0.5)]" />
               </motion.div>
             </motion.button>
           </motion.div>
