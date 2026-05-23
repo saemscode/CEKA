@@ -737,7 +737,7 @@ Mwananchi wa Jamhuri ya Kenya`;
     // If the body is too long for Instagram/Mobile browsers, we use a shortened version 
     // since we already copied the full text to the clipboard.
     const useShortBody = encodedBody.length > 1800;
-    const fallbackBody = encodeURIComponent(`I've copied my full memorandum to my clipboard. \n\n[PASTE MEMORANDUM HERE - CTRL+V / TAP & PASTE]\n\nRegards,\n${identity.name}`);
+    const fallbackBody = encodeURIComponent(`Hey! Great job reaching here!\n\nWe've copied everything onto your device\n\nSelect all and replace everything here by tapping "Paste"\n\nSelect All -> Tap 'Paste'`);
 
     const finalBody = useShortBody ? fallbackBody : encodedBody;
 
