@@ -717,6 +717,9 @@ Mwananchi wa Jamhuri ya Kenya`;
   };
 
   const handleFinalDispatch = async () => {
+    // Commit success state IMMEDIATELY to anchor the UI for mobile app-switching
+    setSuccessState('submitted');
+
     const selectedEmails = getRecipientEmails();
     if (selectedEmails.length === 0) return;
     const to = selectedEmails.join(',');
@@ -747,7 +750,6 @@ Mwananchi wa Jamhuri ya Kenya`;
     } else {
       window.location.href = `mailto:${to}?subject=${encodedSubject}&body=${finalBody}`;
     }
-    setSuccessState('submitted');
   };
 
   const handleAmplify = () => { amplifyWhatsApp(billTitle); };
@@ -1501,6 +1503,7 @@ Mwananchi wa Jamhuri ya Kenya`;
           onVerify={async (code) => {
             const res = await verifyOTP(code);
             if (res) {
+              setSuccessState('submitted'); // Commit state before app switch
               handleFinalDispatch();
               return true;
             }

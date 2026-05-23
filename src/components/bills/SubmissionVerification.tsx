@@ -42,19 +42,40 @@ export const SubmissionVerification: React.FC<SubmissionVerificationProps> = ({
   };
 
   useEffect(() => {
+    // Prevent background scrolling while OTP is open (Universal Best Practice)
+    document.body.style.overflow = 'hidden';
+    
+    // Auto-focus first input
+    if (inputs.current[0]) {
+      inputs.current[0].focus();
+    }
+
+    return () => {
+      // Restore scrolling on cleanup
+      document.body.style.overflow = 'unset';
+    };
+  }, []);
+
+  useEffect(() => {
     if (code.every(c => c !== '')) {
       handleVerify();
     }
   }, [code]);
 
   const handleVerify = async () => {
+    // Force keyboard dismissal before switch (Crucial for iOS stability)
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
+
     setIsVerifying(true);
     setError(false);
     const success = await onVerify(code.join(''));
     if (!success) {
       setError(true);
+      // Reset code on failure to allow retry
       setCode(['', '', '', '', '', '']);
-      inputs.current[0]?.focus();
+      if (inputs.current[0]) inputs.current[0].focus();
     }
     setIsVerifying(false);
   };
