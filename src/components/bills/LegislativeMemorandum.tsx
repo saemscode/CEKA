@@ -112,7 +112,7 @@ const SuccessStep = ({ billTitle, onReset }: { billTitle: string; onReset: () =>
             Voice <span className="text-kenya-green">Submitted.</span>
           </h3>
           <p className="text-sm font-medium text-slate-500 dark:text-slate-400 max-w-sm mx-auto leading-relaxed">
-            Your memorandum has been dispatched to Parliament. Your civic action matters — keep the fire burning.
+            Your email has been sent to Parliament. Great job - but the fire must keep burning.
           </p>
         </motion.div>
 
@@ -127,7 +127,7 @@ const SuccessStep = ({ billTitle, onReset }: { billTitle: string; onReset: () =>
             <LottieViewer path="/assets/lottie/Fire.json" />
           </div>
           <p className="text-[10px] font-black text-kenya-green uppercase tracking-[0.1em] text-left leading-relaxed">
-            Don't let the flame die down — share this and keep building pressure on Parliament.
+            Feeling excited? You deserve it anyway - now help us share this to keep the fire burning & make our voices heart.
           </p>
         </motion.div>
 
@@ -148,13 +148,13 @@ const SuccessStep = ({ billTitle, onReset }: { billTitle: string; onReset: () =>
             onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent(`I formally objected to the ${billTitle} on CEKA. Add your voice: ${window.location.href}`)}`, '_blank')}
             className="flex items-center justify-center gap-2 h-14 rounded-2xl bg-[#25D366] text-white border border-[#25D366]/20 text-[10px] font-black uppercase tracking-widest hover:bg-[#20bd5a] transition-all duration-300"
           >
-            <Share2Icon size={18} className="text-white" /> Amplify WhatsApp
+            <Share2Icon size={18} className="text-white" /> Share on WhatsApp
           </button>
           <button
             onClick={() => window.open('https://civiceducationkenya.com', '_blank')}
             className="flex items-center justify-center gap-2 h-14 rounded-2xl bg-kenya-green text-white border border-kenya-green/20 text-[10px] font-black uppercase tracking-widest hover:bg-[#004d00] transition-all duration-300"
           >
-            <MailSendIcon size={18} className="text-white" /> Follow CEKA
+            <MailSendIcon size={18} className="text-white" /> Join the CEKA Community
           </button>
         </motion.div>
 
@@ -732,13 +732,13 @@ Mwananchi wa Jamhuri ya Kenya`;
 
     const isMobile = !/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     const encodedBody = encodeURIComponent(personalizedMessage);
-    
+
     // -- 2000 Char Limit Mitigation --
     // If the body is too long for Instagram/Mobile browsers, we use a shortened version 
     // since we already copied the full text to the clipboard.
     const useShortBody = encodedBody.length > 1800;
     const fallbackBody = encodeURIComponent(`I've copied my full memorandum to my clipboard. \n\n[PASTE MEMORANDUM HERE - CTRL+V / TAP & PASTE]\n\nRegards,\n${identity.name}`);
-    
+
     const finalBody = useShortBody ? fallbackBody : encodedBody;
 
     if (isDesktop()) {
@@ -811,7 +811,7 @@ Mwananchi wa Jamhuri ya Kenya`;
           <div className="px-5 sm:px-8 py-4 sm:py-5 flex items-center justify-between bg-slate-50/50 dark:bg-white/5 border-b border-black/5 dark:border-white/5 gap-3 flex-wrap">
             <div className="flex items-center gap-6 min-w-0">
               <div className="flex flex-col items-center">
-                 <div className="w-12 h-12 sm:w-16 sm:h-16 flex-shrink-0">
+                <div className="w-12 h-12 sm:w-16 sm:h-16 flex-shrink-0">
                   <MailBulkIcon className="w-full h-full text-kenya-green animate-pulse-gentle" />
                 </div>
                 <span className="text-[10px] font-black uppercase tracking-widest text-kenya-green mt-1">Petition</span>
@@ -1425,7 +1425,7 @@ Mwananchi wa Jamhuri ya Kenya`;
                           className="flex items-center gap-3"
                         >
                           <IOSLoadingIcon className="h-5 w-5 animate-spin" />
-                          Dispatching...
+                          Sending...
                         </motion.div>
                       ) : (
                         <motion.div
@@ -1505,7 +1505,7 @@ Mwananchi wa Jamhuri ya Kenya`;
               handleFinalDispatch();
               return true;
             }
-            
+
             const res = await verifyOTP(code);
             if (res) {
               handleFinalDispatch();

@@ -60,15 +60,15 @@ export const SubmissionVerification: React.FC<SubmissionVerificationProps> = ({
 
   return (
     <div className="fixed inset-0 z-[3005] flex items-center justify-center p-4">
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         className="absolute inset-0 bg-black/60 backdrop-blur-3xl"
         onClick={onCancel}
       />
-      
-      <motion.div 
+
+      <motion.div
         initial={{ opacity: 0, scale: 0.9, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         className="relative w-full max-w-md bg-white/10 dark:bg-black/40 backdrop-blur-3xl rounded-[40px] border border-white/20 shadow-ios-high overflow-hidden"
@@ -78,7 +78,7 @@ export const SubmissionVerification: React.FC<SubmissionVerificationProps> = ({
             <div className="h-14 w-14 rounded-2xl bg-kenya-green flex items-center justify-center shadow-xl shadow-kenya-green/30">
               <ShieldCheck className="text-white" size={28} />
             </div>
-            <button 
+            <button
               onClick={onCancel}
               className="h-10 w-10 rounded-full flex items-center justify-center bg-white/5 hover:bg-white/10 transition-colors"
             >
@@ -114,7 +114,7 @@ export const SubmissionVerification: React.FC<SubmissionVerificationProps> = ({
           </div>
 
           <div className="space-y-4">
-            <Button 
+            <Button
               onClick={() => onVerify('000000')} // AUTO-PROCEED IN MAINTENANCE MODE
               disabled={isVerifying}
               className="w-full h-14 rounded-2xl bg-white text-black font-black text-sm uppercase tracking-widest hover:bg-white/90 active:scale-[0.98] transition-all"
@@ -122,18 +122,18 @@ export const SubmissionVerification: React.FC<SubmissionVerificationProps> = ({
               {isVerifying ? (
                 <Loader2 className="animate-spin" />
               ) : (
-                <>Dispatch Memorandum <ArrowRight className="ml-2" size={16} /></>
+                <>Send Anyway <ArrowRight className="ml-2" size={16} /></>
               )}
             </Button>
 
             <div className="flex flex-col items-center gap-4 mt-2">
-              <button 
+              <button
                 onClick={onResend}
                 className="text-[10px] font-black uppercase tracking-[0.2em] text-white/60 hover:text-white transition-colors py-2"
               >
                 Resend Code
               </button>
-              
+
               <div className="bg-white/5 border border-white/10 p-4 rounded-3xl w-full text-center">
                 <p className="text-[9px] uppercase tracking-widest text-white/50 leading-relaxed font-bold">
                   Check <span className="text-white/80">Spam or Junk</span> if missing.<br />
