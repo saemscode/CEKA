@@ -2,7 +2,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ShieldCheck, Mail, ArrowRight, Loader2, X } from "lucide-react";
+import { ShieldCheck, Mail, ArrowRight, X } from "lucide-react";
+import { IOSLoadingIcon } from "../ui/CustomIcons";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface SubmissionVerificationProps {
@@ -105,8 +106,8 @@ export const SubmissionVerification: React.FC<SubmissionVerificationProps> = ({
                 onChange={e => handleChange(i, e.target.value)}
                 onKeyDown={e => handleKeyDown(i, e)}
                 className={cn(
-                  "w-12 h-16 rounded-2xl bg-white/5 border-2 text-center text-2xl font-black text-white focus:outline-none transition-all",
-                  error ? "border-red-500 animate-shake" : "border-white/10 focus:border-kenya-green focus:bg-white/10"
+                  "w-12 h-16 rounded-2xl bg-slate-100 dark:bg-white/5 border-2 text-center text-2xl font-black text-slate-900 dark:text-white focus:outline-none transition-all",
+                  error ? "border-red-500 animate-shake" : "border-slate-200 dark:border-white/10 focus:border-kenya-green focus:bg-white/10"
                 )}
                 placeholder="-"
               />
@@ -117,10 +118,10 @@ export const SubmissionVerification: React.FC<SubmissionVerificationProps> = ({
             <Button
               onClick={handleVerify}
               disabled={isVerifying || code.some(c => c === '')}
-              className="w-full h-14 rounded-2xl bg-white text-black font-black text-sm uppercase tracking-widest hover:bg-white/90 active:scale-[0.98] transition-all"
+              className="w-full h-14 rounded-2xl bg-slate-900 dark:bg-white text-white dark:text-black font-black text-sm uppercase tracking-widest hover:opacity-90 active:scale-[0.98] transition-all"
             >
               {isVerifying ? (
-                <Loader2 className="animate-spin text-black" />
+                <IOSLoadingIcon className="animate-spin" size={24} />
               ) : (
                 <>Verify & Confirm <ArrowRight className="ml-2" size={16} /></>
               )}
