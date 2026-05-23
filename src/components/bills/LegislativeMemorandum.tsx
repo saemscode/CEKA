@@ -1499,13 +1499,6 @@ Mwananchi wa Jamhuri ya Kenya`;
         <SubmissionVerification
           email={identity.email}
           onVerify={async (code) => {
-            // Maintenance Mode Bypass
-            if (code === '000000') {
-              setNeedsVerification(false);
-              handleFinalDispatch();
-              return true;
-            }
-
             const res = await verifyOTP(code);
             if (res) {
               handleFinalDispatch();

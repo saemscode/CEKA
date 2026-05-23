@@ -99,13 +99,13 @@ export const SubmissionVerification: React.FC<SubmissionVerificationProps> = ({
                 key={i}
                 ref={el => inputs.current[i] = el}
                 type="text"
-                disabled={true} // GREYED OUT DUE TO SERVICE EXHAUSTION
+                autoComplete="one-time-code"
                 inputMode="numeric"
                 value={digit}
                 onChange={e => handleChange(i, e.target.value)}
                 onKeyDown={e => handleKeyDown(i, e)}
                 className={cn(
-                  "w-12 h-16 rounded-2xl bg-white/5 border-2 text-center text-2xl font-black text-white focus:outline-none transition-all opacity-40 cursor-not-allowed",
+                  "w-12 h-16 rounded-2xl bg-white/5 border-2 text-center text-2xl font-black text-white focus:outline-none transition-all",
                   error ? "border-red-500 animate-shake" : "border-white/10 focus:border-kenya-green focus:bg-white/10"
                 )}
                 placeholder="-"
@@ -115,14 +115,14 @@ export const SubmissionVerification: React.FC<SubmissionVerificationProps> = ({
 
           <div className="space-y-4">
             <Button
-              onClick={() => onVerify('000000')} // AUTO-PROCEED IN MAINTENANCE MODE
-              disabled={isVerifying}
+              onClick={handleVerify}
+              disabled={isVerifying || code.some(c => c === '')}
               className="w-full h-14 rounded-2xl bg-white text-black font-black text-sm uppercase tracking-widest hover:bg-white/90 active:scale-[0.98] transition-all"
             >
               {isVerifying ? (
-                <Loader2 className="animate-spin" />
+                <Loader2 className="animate-spin text-black" />
               ) : (
-                <>Send Anyway <ArrowRight className="ml-2" size={16} /></>
+                <>Verify & Confirm <ArrowRight className="ml-2" size={16} /></>
               )}
             </Button>
 
