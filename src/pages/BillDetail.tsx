@@ -25,6 +25,7 @@ import { BillFollowButton } from '@/components/legislative/BillFollowButton';
 import { SignatureCounter } from '@/components/bills/SignatureCounter';
 import { analyticsService } from '@/services/analyticsService';
 import { useToast } from "@/hooks/use-toast";
+import ReactMarkdown from 'react-markdown';
 
 // Delegated to shared billStages utility — kept as thin alias
 const getStatusColor = (status: string) => getStageColor(status);
@@ -107,45 +108,10 @@ const LegislativeTimeline = ({ stages, language }: { stages: ReturnType<typeof b
 };
 
 // ── Markdown-aware prose renderer for the enriched description ──
-// Parses **bold** section headers and - bullet lists into proper HTML elements
 const ProseRenderer = ({ content }: { content: string }) => {
-  const lines = content.split('\n');
-
   return (
-    <div className="space-y-4 text-lg text-slate-600 dark:text-slate-300 leading-relaxed font-medium">
-      {lines.map((line, idx) => {
-        const trimmed = line.trim();
-        if (!trimmed) return <div key={idx} className="h-2" />;
-
-        // **Section Header** bold lines
-        const boldHeaderMatch = trimmed.match(/^\*\*(.+?)\*\*:?\s*$/);
-        if (boldHeaderMatch) {
-          return (
-            <h4 key={idx} className="text-sm font-black uppercase tracking-widest text-kenya-green mt-6 mb-2 first:mt-0">
-              {boldHeaderMatch[1].replace(/:$/, '')}
-            </h4>
-          );
-        }
-
-        // - Bullet list items
-        if (trimmed.startsWith('- ')) {
-          return (
-            <div key={idx} className="flex gap-3 items-start pl-2">
-              <span className="text-kenya-green font-black text-base leading-none mt-1 shrink-0">—</span>
-              <p className="text-base text-slate-600 dark:text-slate-300 leading-relaxed">
-                {trimmed.slice(2)}
-              </p>
-            </div>
-          );
-        }
-
-        // Regular paragraph
-        return (
-          <p key={idx} className="text-base md:text-lg text-slate-600 dark:text-slate-300 leading-relaxed">
-            {trimmed}
-          </p>
-        );
-      })}
+    <div className="prose prose-slate dark:prose-invert max-w-none prose-p:leading-relaxed prose-p:text-slate-600 dark:prose-p:text-slate-300 prose-headings:text-kenya-green prose-headings:uppercase prose-headings:tracking-widest prose-headings:text-sm prose-li:text-slate-600 dark:prose-li:text-slate-300">
+      <ReactMarkdown>{content}</ReactMarkdown>
     </div>
   );
 };
@@ -314,15 +280,24 @@ const BillDetail = () => {
 
   const safeStages = getSafeStages();
 
+  const isFinanceBill = !!bill && ((bill.title?.toLowerCase().includes('finance') && (bill.title?.includes('2024') || bill.title?.includes('2025') || bill.title?.includes('2026'))) || 
+                        bill.bill_no?.toLowerCase().includes('finance') ||
+                        bill.id === '74961912-8ba7-47f2-bf61-9ae3abafe2e1' ||
+                        bill.title?.toLowerCase().includes('sovereign petition'));
+
   // Concern tap handler: prefill response form & smooth-scroll to it
   const handleConcernTap = useCallback((concern: string) => {
     setPrefillQuery(`What's your thought on "${concern}"?`);
-    if (responseFormRef.current) {
+    
+    // Determine which section to scroll to
+    const targetRef = isFinanceBill ? memorandaRef : responseFormRef;
+    
+    if (targetRef.current) {
       setTimeout(() => {
-        responseFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }, 80);
+        targetRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
     }
-  }, []);
+  }, [isFinanceBill]);
 
   if (loading) {
     return (
@@ -370,11 +345,6 @@ const BillDetail = () => {
   })();
   const stages = buildTimeline(bill.status, dbStages, bill.date || bill.created_at);
 
-  const isFinanceBill = (bill.title.toLowerCase().includes('finance') && (bill.title.includes('2024') || bill.title.includes('2025') || bill.title.includes('2026'))) || 
-                        bill.bill_no?.toLowerCase().includes('finance') ||
-                        bill.id === '74961912-8ba7-47f2-bf61-9ae3abafe2e1' ||
-                        bill.title.toLowerCase().includes('sovereign petition');
-
   // Description: determine if long enough to warrant a Read More
   const descriptionText = bill.description || '';
   const descriptionIsLong = descriptionText.length > DESCRIPTION_COLLAPSE_THRESHOLD;
@@ -416,9 +386,9 @@ const BillDetail = () => {
                 {bill.title}
               </h1>
 
-              <p className="text-xl md:text-2xl text-slate-500 dark:text-slate-400 font-medium leading-relaxed max-w-4xl">
-                {bill.summary}
-              </p>
+              <div className="text-xl md:text-2xl text-slate-500 dark:text-slate-400 font-medium leading-relaxed max-w-4xl prose prose-slate dark:prose-invert prose-p:my-0">
+                <ReactMarkdown>{bill.summary}</ReactMarkdown>
+              </div>
 
               {/* MOMENTUM BAR - Quick View */}
               <div className="mt-8 max-w-xl">

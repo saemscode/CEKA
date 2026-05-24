@@ -355,8 +355,15 @@ const GlobalAIAssistant: React.FC<GlobalAIAssistantProps> = ({ isHidden, onHide 
                 )}
                 style={{
                     touchAction: 'none',
-                    bottom: isOpen ? 'auto' : '204px',
-                    right: isOpen ? 'auto' : '2rem',
+                    ...(isOpen ? {
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0
+                    } : {
+                        bottom: '204px',
+                        right: '2rem'
+                    })
                 }}
             >
                 <AnimatePresence>

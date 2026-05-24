@@ -231,8 +231,15 @@ const DonationWidget: React.FC<DonationWidgetProps> = ({
         style={{
           opacity,
           touchAction: 'none',
-          bottom: isExpanded ? 'auto' : `${offsetY}px`,
-          right: isExpanded ? 'auto' : '2rem',
+          ...(isExpanded ? {
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0
+          } : {
+            bottom: `${offsetY}px`,
+            right: '2rem'
+          })
         }}
       >
           {!isExpanded ? (
