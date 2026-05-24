@@ -120,18 +120,21 @@ async function sendWithResend(options: EmailOptions) {
 
       const resultText = await response.text();
       if (!response.ok) {
-        // If quota hit, log warning and try NEXT key in fleet
+        console.error(`[MailingMesh] Resend Key ${key.substring(0, 8)}... FAILED (${response.status}): ${resultText}`);
+        
+        // If quota hit or forbidden, log warning and try NEXT key in fleet
         if (response.status === 429 || response.status === 403 || resultText.toLowerCase().includes("limit")) {
-          console.warn(`[MailingMesh] Resend Key ${key.substring(0, 8)}... exhausted/forbidden. Rotating...`);
+          console.warn(`[MailingMesh] Resend Key ${key.substring(0, 8)}... rotating due to status/text.`);
           continue;
         }
         throw new Error(`Resend API Error (${response.status}): ${resultText}`);
       }
 
+      console.log(`[MailingMesh] Resend success with key ${key.substring(0, 8)}...`);
       return JSON.parse(resultText);
     } catch (err: any) {
       lastError = err;
-      console.error(`[MailingMesh] Resend fleet member error:`, err.message);
+      console.error(`[MailingMesh] Resend fleet member critical error:`, err.message);
     }
   }
   throw lastError || new Error("All Resend keys in fleet exhausted");
@@ -144,10 +147,11 @@ async function sendWithBrevo(options: EmailOptions) {
   if (BREVO_KEYS.length === 0) throw new Error("BREVO_API_KEY fleet is empty");
 
   const recipients = Array.isArray(options.to) ? options.to : [options.to];
-
+  
   let lastError: any;
   for (const key of BREVO_KEYS) {
     try {
+      console.log(`[MailingMesh] Attempting Brevo with key ${key.substring(0, 8)}...`);
       const response = await fetch('https://api.brevo.com/v3/smtp/email', {
         method: 'POST',
         headers: {
@@ -169,18 +173,25 @@ async function sendWithBrevo(options: EmailOptions) {
 
       const resultText = await response.text();
       if (!response.ok) {
-        // If quota hit, log warning and try NEXT key in fleet
+        console.error(`[MailingMesh] Brevo Key ${key.substring(0, 8)}... FAILED (${response.status}): ${resultText}`);
+        
+        // Specific hint for Brevo sender problems
+        if (response.status === 401 || response.status === 403) {
+          console.error("[MailingMesh] BREVO ALERT: Your sender address or domain is likely NOT VERIFIED in the Brevo dashboard.");
+        }
+
         if (response.status === 429 || resultText.toLowerCase().includes("quota") || resultText.toLowerCase().includes("limit")) {
-          console.warn(`[MailingMesh] Brevo Key ${key.substring(0, 8)}... exhausted/forbidden. Rotating...`);
+          console.warn(`[MailingMesh] Brevo Key ${key.substring(0, 8)}... rotating due to quota.`);
           continue;
         }
         throw new Error(`Brevo API Error (${response.status}): ${resultText}`);
       }
 
+      console.log(`[MailingMesh] Brevo success with key ${key.substring(0, 8)}...`);
       return JSON.parse(resultText);
     } catch (err: any) {
       lastError = err;
-      console.error(`[MailingMesh] Brevo fleet member error:`, err.message);
+      console.error(`[MailingMesh] Brevo fleet member critical error:`, err.message);
     }
   }
   throw lastError || new Error("All Brevo keys in fleet exhausted");
