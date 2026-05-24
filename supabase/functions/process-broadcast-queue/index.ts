@@ -2,9 +2,8 @@
 import { serve } from "https://deno.land/std@0.208.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 import { marked } from "https://esm.sh/marked@12.0.0"
+import { sendEmail } from "../_shared/mailing.ts";
 
-const RESEND_API_KEY = Deno.env.get('VITE_RESEND_API_KEY');
-const BREVO_API_KEY = Deno.env.get('BREVO_API_KEY');
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
@@ -125,76 +124,54 @@ serve(async (req) => {
             </html>
         `;
 
-        // 6. Mailing Mesh Logic (Resend -> Brevo)
-        let provider = 'resend';
+        // 6. Unified Mailing Mesh Delivery [STRICT MODE]
         let sent = false;
         let errorMsg = '';
-
-        const { data: mesh } = await supabase.rpc('get_mailing_mesh_status');
-        if (mesh && mesh.resend_today >= mesh.resend_limit) {
-            provider = 'brevo';
-        }
+        let meshMetadata: any = {};
 
         try {
-            if (provider === 'resend' && RESEND_API_KEY) {
-                const res = await fetch('https://api.resend.com/emails', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${RESEND_API_KEY}` },
-                    body: JSON.stringify({
-                        from: 'CEKA <admin@civiceducationkenya.com>',
-                        to: [recipient_email],
-                        subject: personalizedSubject,
-                        html: finalHtml,
-                    }),
-                });
-                if (!res.ok) throw new Error(await res.text());
-                sent = true;
-            } else if (BREVO_API_KEY) {
-                provider = 'brevo';
-                const res = await fetch('https://api.brevo.com/v3/smtp/email', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'api-key': BREVO_API_KEY },
-                    body: JSON.stringify({
-                        sender: { name: 'CEKA', email: 'admin@civiceducationkenya.com' },
-                        to: [{ email: recipient_email }],
-                        subject: personalizedSubject,
-                        htmlContent: finalHtml,
-                    }),
-                });
-                if (!res.ok) throw new Error(await res.text());
-                sent = true;
-            }
+            const result = await sendEmail({
+                to: recipient_email,
+                subject: personalizedSubject,
+                html: finalHtml,
+                from: { name: 'CEKA', email: 'admin@civiceducationkenya.com' },
+                provider: 'auto'
+            });
+            sent = true;
+            meshMetadata = result;
         } catch (mailError: any) {
             errorMsg = mailError.message;
-            if (provider === 'resend' && BREVO_API_KEY) {
-                provider = 'brevo';
-                const res = await fetch('https://api.brevo.com/v3/smtp/email', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'api-key': BREVO_API_KEY },
-                    body: JSON.stringify({
-                        sender: { name: 'CEKA', email: 'admin@civiceducationkenya.com' },
-                        to: [{ email: recipient_email }],
-                        subject: personalizedSubject,
-                        htmlContent: finalHtml,
-                    }),
-                });
-                if (res.ok) {
-                    sent = true;
-                    errorMsg = '';
-                }
-            }
+            console.error(`[MailingMesh] Delivery FAILED for ${recipient_email}:`, errorMsg);
         }
 
+        // 7. Update Queue Status with Mesh Performance Data
         await supabase.from('broadcast_queue').update({
             status: sent ? 'sent' : 'failed',
             error_message: errorMsg,
-            provider_used: provider,
+            provider_used: meshMetadata.bypassed ? 'emergency_bypass' : (meshMetadata.id ? 'fleet_member' : 'unknown'),
             sent_at: sent ? new Date().toISOString() : null
         }).eq('id', id);
 
-        return new Response(JSON.stringify({ success: sent }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        // 8. High-Fidelity Audit Log Entry
+        await supabase.from('admin_audit_log').insert({
+            action: sent ? 'broadcast_sent_success' : 'broadcast_sent_failure',
+            resource_type: 'broadcast',
+            resource_id: broadcast_id,
+            details: { 
+                recipient: recipient_email, 
+                error: errorMsg,
+                mesh_status: sent ? 'delivered' : 'failed',
+                bypassed: !!meshMetadata.bypassed,
+                timestamp: new Date().toISOString()
+            }
+        });
+
+        return new Response(JSON.stringify({ success: sent, bypassed: !!meshMetadata.bypassed }), { 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        });
 
     } catch (error: any) {
+        console.error('[ProcessQueue Critical Error]', error.message);
         return new Response(JSON.stringify({ error: error.message }), {
             status: 400,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
