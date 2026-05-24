@@ -226,26 +226,26 @@ export async function sendEmail(options: EmailOptions) {
     throw new Error("Mailing Mesh TOTAL BLACKOUT: No keys found in either Resend or Brevo fleets.");
   }
 
-  // Priority: Resend Fleet -> Brevo Fleet (Chain across all discovered keys)
-  if (canUseResend) {
+  // UPDATED PRIORITY (Step 259): Brevo Fleet (Primary/Paid) -> Resend Fleet (Fallback/Limited)
+  if (canUseBrevo) {
     try {
-      console.log(`[MailingMesh] Strategy: Fleet Primary (Resend, keys: ${RESEND_KEYS.length})`);
-      return await withRetry(() => sendWithResend(options));
-    } catch (resendError: any) {
-      console.error("[MailingMesh] Resend fleet TOTAL exhaustion. Pivoting to secondary fleet...");
+      console.log(`[MailingMesh] Strategy: Fleet Primary (Brevo, keys: ${BREVO_KEYS.length})`);
+      return await withRetry(() => sendWithBrevo(options));
+    } catch (brevoError: any) {
+      console.error("[MailingMesh] Brevo fleet TOTAL exhaustion. Pivoting to fallback fleet...");
 
-      if (!canUseBrevo) throw resendError;
+      if (!canUseResend) throw brevoError;
 
       try {
-        console.log(`[MailingMesh] Strategy: Fleet Fallback (Brevo, keys: ${BREVO_KEYS.length})`);
-        return await withRetry(() => sendWithBrevo(options));
-      } catch (brevoError: any) {
-        throw new Error(`Mailing Mesh TOTAL Blackout. Resend Fleet: ${resendError.message} | Brevo Fleet: ${brevoError.message}`);
+        console.log(`[MailingMesh] Strategy: Fleet Fallback (Resend, keys: ${RESEND_KEYS.length})`);
+        return await withRetry(() => sendWithResend(options));
+      } catch (resendError: any) {
+        throw new Error(`Mailing Mesh TOTAL Blackout. Brevo Fleet: ${brevoError.message} | Resend Fleet: ${resendError.message}`);
       }
     }
   }
 
-  // If only Brevo is provisioned
-  console.log(`[MailingMesh] Strategy: Secondary Fleet Only (Brevo, keys: ${BREVO_KEYS.length})`);
-  return withRetry(() => sendWithBrevo(options));
+  // If only Resend is provisioned
+  console.log(`[MailingMesh] Strategy: Standalone Fleet (Resend, keys: ${RESEND_KEYS.length})`);
+  return withRetry(() => sendWithResend(options));
 }
