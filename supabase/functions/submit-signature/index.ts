@@ -24,10 +24,10 @@ serve(async (req: Request) => {
     // 1. Generate 6-digit OTP
     const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
 
-    // 2. Insert into signatures table with the OTP
-    let { data: signature, error: sigError } = await supabase
+    // 2. Atomic Upsert: Insert new or Update existing with New OTP
+    const { data: signature, error: sigError } = await supabase
       .from('signatures')
-      .insert({
+      .upsert({
         bill_id,
         template_id: template_id || null,
         full_name: name,
@@ -36,25 +36,16 @@ serve(async (req: Request) => {
         constituency,
         comments,
         otp_code: otpCode,
-        is_verified: false
+        is_verified: false // Reset verification status to allow new attempt
+      }, {
+        onConflict: 'bill_id,email'
       })
       .select('id')
       .single();
 
     if (sigError) {
-      if (sigError.code === '23505') {
-        // Already signed - Fetch existing ID to allow progression
-        const { data: existing } = await supabase
-          .from('signatures')
-          .select('id')
-          .eq('bill_id', bill_id)
-          .eq('email', email.toLowerCase().trim())
-          .single();
-
-        if (existing) signature = existing;
-      } else {
-        throw sigError;
-      }
+      console.error('[submit-signature] Critical DB Error:', sigError);
+      throw sigError;
     }
 
     // 3. Send Verification Email via Mailing Mesh (Non-blocking fallback)

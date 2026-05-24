@@ -1,0 +1,174 @@
+event_message,event_type,execution_id,function_id,id,level,timestamp
+"Listening on http://localhost:9999/
+",Log,98684097-f902-4b11-bebf-5f5dd0ca69bd,17f890c5-a51d-4b47-b340-bed8b84d39bc,a5a55fb7-0ced-4d5a-a60a-f71314288e55,info,1779638361964000
+booted (time: 23ms),Boot,98684097-f902-4b11-bebf-5f5dd0ca69bd,17f890c5-a51d-4b47-b340-bed8b84d39bc,ca5abde3-4398-40cd-8bdf-8c022f3a39bb,log,1779638361963000
+shutdown,Shutdown,7756d59d-71e1-4c71-bbca-b301a98a3c17,17f890c5-a51d-4b47-b340-bed8b84d39bc,7d24962c-dd50-4f3f-968d-566343728d42,log,1779638361349000
+shutdown,Shutdown,9c68a24d-0316-4b78-9c50-74eedee18036,17f890c5-a51d-4b47-b340-bed8b84d39bc,9fe9a3be-e335-4d09-8119-615ee2e247f9,log,1779638360369000
+"[MailingMesh] Brevo Key xkeysib-... FAILED (400): {""code"":""invalid_parameter"",""message"":""email is not valid in to""}
+
+",Log,5b89ca1b-f817-4f48-b87e-4a90f2ad1fb4,17f890c5-a51d-4b47-b340-bed8b84d39bc,8c539eef-ff74-43b5-9230-11a8ca96d05b,error,1779638360312000
+"[MailingMesh] Brevo fleet member encounter: Brevo API Error (400): {""code"":""invalid_parameter"",""message"":""email is not valid in to""}
+
+",Log,5b89ca1b-f817-4f48-b87e-4a90f2ad1fb4,17f890c5-a51d-4b47-b340-bed8b84d39bc,22fd3653-e7e3-4ef9-9843-a0c983c4fa87,error,1779638360312000
+"[MailingMesh] Attempt 1 failed. Retrying in 1000ms...
+",Log,5b89ca1b-f817-4f48-b87e-4a90f2ad1fb4,17f890c5-a51d-4b47-b340-bed8b84d39bc,29a37e36-21f6-43a8-97c1-96f2cafb7f32,warning,1779638360312000
+"[MailingMesh] Brevo fleet member encounter: Brevo API Error (400): {""code"":""invalid_parameter"",""message"":""email is not valid in to""}
+
+",Log,5b89ca1b-f817-4f48-b87e-4a90f2ad1fb4,17f890c5-a51d-4b47-b340-bed8b84d39bc,d3ce81ba-2d23-411b-994f-c7e13557753e,error,1779638360228000
+"[MailingMesh] Brevo Key xkeysib-... FAILED (400): {""code"":""invalid_parameter"",""message"":""email is not valid in to""}
+
+",Log,5b89ca1b-f817-4f48-b87e-4a90f2ad1fb4,17f890c5-a51d-4b47-b340-bed8b84d39bc,0af00a01-f595-4386-8acc-f93e33d4a747,error,1779638360228000
+"[MailingMesh] Attempting Brevo with key xkeysib-...
+",Log,5b89ca1b-f817-4f48-b87e-4a90f2ad1fb4,17f890c5-a51d-4b47-b340-bed8b84d39bc,de0a38c9-398c-465f-91f5-75a213fa3ac3,info,1779638360228000
+"[MailingMesh] Brevo fleet member encounter: Brevo API Error (400): {""code"":""invalid_parameter"",""message"":""email is not valid in to""}
+
+",Log,5b89ca1b-f817-4f48-b87e-4a90f2ad1fb4,17f890c5-a51d-4b47-b340-bed8b84d39bc,5e7d11d7-1665-4dff-87a7-e553b279513e,error,1779638360147000
+"[MailingMesh] Brevo Key xkeysib-... FAILED (400): {""code"":""invalid_parameter"",""message"":""email is not valid in to""}
+
+",Log,5b89ca1b-f817-4f48-b87e-4a90f2ad1fb4,17f890c5-a51d-4b47-b340-bed8b84d39bc,118999b6-ac31-4367-9980-5beb6c09f24f,error,1779638360147000
+"[MailingMesh] Attempting Brevo with key xkeysib-...
+",Log,5b89ca1b-f817-4f48-b87e-4a90f2ad1fb4,17f890c5-a51d-4b47-b340-bed8b84d39bc,a36f1828-130f-4a12-85c8-51157069a98f,info,1779638360147000
+"[MailingMesh] Strategy: Fleet Primary (Brevo, keys: 3)
+",Log,5b89ca1b-f817-4f48-b87e-4a90f2ad1fb4,17f890c5-a51d-4b47-b340-bed8b84d39bc,c9594771-6eb8-49ef-851b-e7f25a1360ea,info,1779638360005000
+"[MailingMesh] Attempting Brevo with key xkeysib-...
+",Log,5b89ca1b-f817-4f48-b87e-4a90f2ad1fb4,17f890c5-a51d-4b47-b340-bed8b84d39bc,af1dc42b-1f1b-426e-93e7-81be540d4d3a,info,1779638360005000
+"[MailingMesh] Dispatching email to: Cynthiakoech2001@gmail | Subject: CEKA: Verification Code
+",Log,5b89ca1b-f817-4f48-b87e-4a90f2ad1fb4,17f890c5-a51d-4b47-b340-bed8b84d39bc,93d9f235-3dd9-4902-858e-53716a493ecd,info,1779638360005000
+"Listening on http://localhost:9999/
+",Log,5b89ca1b-f817-4f48-b87e-4a90f2ad1fb4,17f890c5-a51d-4b47-b340-bed8b84d39bc,89c8094e-8ef5-479c-8b6d-b3c294752e7a,info,1779638359887000
+booted (time: 29ms),Boot,5b89ca1b-f817-4f48-b87e-4a90f2ad1fb4,17f890c5-a51d-4b47-b340-bed8b84d39bc,34565445-0d99-42d6-adc8-29021faa910e,log,1779638359885000
+shutdown,Shutdown,1e3875c9-a2f8-46f2-904e-321f69271721,17f890c5-a51d-4b47-b340-bed8b84d39bc,d8984eb5-3116-4fee-9ff9-4d73433b4e12,log,1779638358626000
+"[MailingMesh] Brevo success with current fleet member. Sent to: lordekriss@gmail.com
+",Log,7e2eb302-0eff-4056-82b9-39e85f83d10f,17f890c5-a51d-4b47-b340-bed8b84d39bc,7df994a5-0db1-478a-b16b-9940c4f1d77b,info,1779638358145000
+"[MailingMesh] Dispatching email to: lordekriss@gmail.com | Subject: CEKA: Verification Code
+",Log,7e2eb302-0eff-4056-82b9-39e85f83d10f,17f890c5-a51d-4b47-b340-bed8b84d39bc,45067ac9-7dd9-4220-9046-2af22bf6362e,info,1779638358073000
+"[MailingMesh] Strategy: Fleet Primary (Brevo, keys: 3)
+",Log,7e2eb302-0eff-4056-82b9-39e85f83d10f,17f890c5-a51d-4b47-b340-bed8b84d39bc,3a997c7c-ee69-4ad8-a4cc-1ca3f6c359c7,info,1779638358073000
+"[MailingMesh] Attempting Brevo with key xkeysib-...
+",Log,7e2eb302-0eff-4056-82b9-39e85f83d10f,17f890c5-a51d-4b47-b340-bed8b84d39bc,1476d02e-f3b0-4563-bbeb-e03469729a7c,info,1779638358073000
+"Listening on http://localhost:9999/
+",Log,7e2eb302-0eff-4056-82b9-39e85f83d10f,17f890c5-a51d-4b47-b340-bed8b84d39bc,6527ed48-d5f3-4995-8daf-50ca21c15964,info,1779638357948000
+booted (time: 29ms),Boot,7e2eb302-0eff-4056-82b9-39e85f83d10f,17f890c5-a51d-4b47-b340-bed8b84d39bc,60646c72-6c8f-4d69-badb-07c64ccb1331,log,1779638357945000
+"[MailingMesh] Brevo success with current fleet member. Sent to: lkaranja2006@gmail.com
+",Log,dd17bfb9-deb0-480c-acf1-ab563695e3c5,17f890c5-a51d-4b47-b340-bed8b84d39bc,019c592b-d13e-43be-9d8a-475ab2a1acd0,info,1779638357872000
+"[MailingMesh] Dispatching email to: lkaranja2006@gmail.com | Subject: CEKA: Verification Code
+",Log,dd17bfb9-deb0-480c-acf1-ab563695e3c5,17f890c5-a51d-4b47-b340-bed8b84d39bc,4c282c90-0f69-4444-9180-df6e6fc06f34,info,1779638357798000
+"[MailingMesh] Attempting Brevo with key xkeysib-...
+",Log,dd17bfb9-deb0-480c-acf1-ab563695e3c5,17f890c5-a51d-4b47-b340-bed8b84d39bc,ebce8aa2-2ed1-4b56-b743-e2bd6eadb1d3,info,1779638357798000
+"[MailingMesh] Strategy: Fleet Primary (Brevo, keys: 3)
+",Log,dd17bfb9-deb0-480c-acf1-ab563695e3c5,17f890c5-a51d-4b47-b340-bed8b84d39bc,096ab11e-b32b-4505-b382-07b3afebb65f,info,1779638357798000
+shutdown,Shutdown,4bf7ef3a-dcac-4061-b847-8a0e96349e29,17f890c5-a51d-4b47-b340-bed8b84d39bc,d29f3295-2e26-4ce9-b239-c1173ad85756,log,1779638357779000
+"Listening on http://localhost:9999/
+",Log,dd17bfb9-deb0-480c-acf1-ab563695e3c5,17f890c5-a51d-4b47-b340-bed8b84d39bc,4b0771ca-4021-40c7-8882-6273d5f01aa1,info,1779638357730000
+booted (time: 29ms),Boot,dd17bfb9-deb0-480c-acf1-ab563695e3c5,17f890c5-a51d-4b47-b340-bed8b84d39bc,4288b897-f5ba-4250-97a7-16ba3f4eaf5f,log,1779638357728000
+shutdown,Shutdown,bfa83291-235f-449d-a272-77abe310f3d9,17f890c5-a51d-4b47-b340-bed8b84d39bc,2edea17a-bea6-41bd-bcad-958e23301731,log,1779638357546000
+shutdown,Shutdown,7cc66a26-bce6-465c-9448-9412f49c4f25,17f890c5-a51d-4b47-b340-bed8b84d39bc,8fb3f886-52eb-4163-8a80-94183a6eb39a,log,1779638357530000
+shutdown,Shutdown,36c9ec44-add2-4220-8120-4753efcfecfa,17f890c5-a51d-4b47-b340-bed8b84d39bc,6503e219-f2dd-46e2-8934-d2d68b552a01,log,1779638357294000
+"[MailingMesh] Brevo success with current fleet member. Sent to: namaembajoselyn20@gmail.com
+",Log,54c083db-cdf2-48e0-b5fd-8ddcaf4e64cb,17f890c5-a51d-4b47-b340-bed8b84d39bc,34ec900f-32d1-499b-93f3-6378ae61234e,info,1779638356899000
+"[MailingMesh] Brevo success with current fleet member. Sent to: lordekriss@gmail.com
+",Log,bb1f2e75-98b5-4c05-bbcf-3cb04dc156c9,17f890c5-a51d-4b47-b340-bed8b84d39bc,5e62ff4c-5f92-4b9c-8df2-f5fea9b5309a,info,1779638356894000
+"[MailingMesh] Strategy: Fleet Primary (Brevo, keys: 3)
+",Log,54c083db-cdf2-48e0-b5fd-8ddcaf4e64cb,17f890c5-a51d-4b47-b340-bed8b84d39bc,9c7b6489-a4ca-44cc-9cfd-3c7802267b41,info,1779638356819000
+"[MailingMesh] Attempting Brevo with key xkeysib-...
+",Log,54c083db-cdf2-48e0-b5fd-8ddcaf4e64cb,17f890c5-a51d-4b47-b340-bed8b84d39bc,fffdddee-c102-449b-a2a0-09671f98ce89,info,1779638356819000
+"[MailingMesh] Dispatching email to: namaembajoselyn20@gmail.com | Subject: CEKA: Verification Code
+",Log,54c083db-cdf2-48e0-b5fd-8ddcaf4e64cb,17f890c5-a51d-4b47-b340-bed8b84d39bc,d40e8f4d-8e45-4b61-b98c-13f66cb46d39,info,1779638356819000
+"[MailingMesh] Attempting Brevo with key xkeysib-...
+",Log,bb1f2e75-98b5-4c05-bbcf-3cb04dc156c9,17f890c5-a51d-4b47-b340-bed8b84d39bc,bbae8175-8b3f-4591-b316-9293cea2e721,info,1779638356741000
+"[MailingMesh] Strategy: Fleet Primary (Brevo, keys: 3)
+",Log,bb1f2e75-98b5-4c05-bbcf-3cb04dc156c9,17f890c5-a51d-4b47-b340-bed8b84d39bc,8edded2d-22b2-480f-81d8-52c232c872c2,info,1779638356741000
+"[MailingMesh] Dispatching email to: lordekriss@gmail.com | Subject: CEKA: Verification Code
+",Log,bb1f2e75-98b5-4c05-bbcf-3cb04dc156c9,17f890c5-a51d-4b47-b340-bed8b84d39bc,dc534da8-6a66-4273-a8af-1e0fa89d598e,info,1779638356741000
+"Listening on http://localhost:9999/
+",Log,bb1f2e75-98b5-4c05-bbcf-3cb04dc156c9,17f890c5-a51d-4b47-b340-bed8b84d39bc,cfcd6a15-dee1-4c77-bfc5-aaed3cd8ef85,info,1779638356319000
+booted (time: 23ms),Boot,bb1f2e75-98b5-4c05-bbcf-3cb04dc156c9,17f890c5-a51d-4b47-b340-bed8b84d39bc,28e06608-3fa9-4165-adc3-774632bc9591,log,1779638356317000
+"Listening on http://localhost:9999/
+",Log,9f70598d-3cc1-4630-bc3a-ec20b9b1234b,17f890c5-a51d-4b47-b340-bed8b84d39bc,1c34b571-5026-4eba-8390-091375ee24c0,info,1779638356081000
+booted (time: 23ms),Boot,9f70598d-3cc1-4630-bc3a-ec20b9b1234b,17f890c5-a51d-4b47-b340-bed8b84d39bc,0af69d6c-d288-441b-a0d1-2d23eb0dadf1,log,1779638356079000
+"Listening on http://localhost:9999/
+",Log,22833f1f-0d91-4410-9aba-7f1b6c2b9b9d,17f890c5-a51d-4b47-b340-bed8b84d39bc,c5131007-b90e-4246-ac1b-5c406189ad77,info,1779638355741000
+booted (time: 23ms),Boot,22833f1f-0d91-4410-9aba-7f1b6c2b9b9d,17f890c5-a51d-4b47-b340-bed8b84d39bc,aa3b76ce-9866-4c81-bca3-81e048027857,log,1779638355740000
+"[MailingMesh] Brevo success with current fleet member. Sent to: davidaywaki@gmail.com
+",Log,ceb4207e-fb6d-4733-94e8-e8fe6b4af0de,17f890c5-a51d-4b47-b340-bed8b84d39bc,b0a92460-dda1-4cf1-81c2-a610073d1122,info,1779638355606000
+"[MailingMesh] Strategy: Fleet Primary (Brevo, keys: 3)
+",Log,ceb4207e-fb6d-4733-94e8-e8fe6b4af0de,17f890c5-a51d-4b47-b340-bed8b84d39bc,3e6f569c-d056-4117-b177-0b1ef1f4cdab,info,1779638355521000
+"[MailingMesh] Dispatching email to: davidaywaki@gmail.com | Subject: CEKA: Verification Code
+",Log,ceb4207e-fb6d-4733-94e8-e8fe6b4af0de,17f890c5-a51d-4b47-b340-bed8b84d39bc,c9dd671d-19d2-4776-a086-1d105cf8ce0a,info,1779638355521000
+"[MailingMesh] Attempting Brevo with key xkeysib-...
+",Log,ceb4207e-fb6d-4733-94e8-e8fe6b4af0de,17f890c5-a51d-4b47-b340-bed8b84d39bc,dc484a2b-a123-4be1-a796-745095bebe81,info,1779638355521000
+"[MailingMesh] Brevo success with current fleet member. Sent to: lkaranja2006@gmail.com
+",Log,fea1f427-3c32-401e-8c37-1e481e3cb44a,17f890c5-a51d-4b47-b340-bed8b84d39bc,7fef0abb-6614-499f-ab9e-2e92d70f200f,info,1779638355502000
+"[MailingMesh] Strategy: Fleet Primary (Brevo, keys: 3)
+",Log,fea1f427-3c32-401e-8c37-1e481e3cb44a,17f890c5-a51d-4b47-b340-bed8b84d39bc,5a0edafb-593a-4f7f-972b-93bf90db488a,info,1779638355435000
+"[MailingMesh] Dispatching email to: lkaranja2006@gmail.com | Subject: CEKA: Verification Code
+",Log,fea1f427-3c32-401e-8c37-1e481e3cb44a,17f890c5-a51d-4b47-b340-bed8b84d39bc,243f496e-3c7a-4099-9b48-98038d97e989,info,1779638355435000
+"[MailingMesh] Attempting Brevo with key xkeysib-...
+",Log,fea1f427-3c32-401e-8c37-1e481e3cb44a,17f890c5-a51d-4b47-b340-bed8b84d39bc,9171455f-4235-46cb-bfac-0a1131e2651f,info,1779638355435000
+"Listening on http://localhost:9999/
+",Log,ceb4207e-fb6d-4733-94e8-e8fe6b4af0de,17f890c5-a51d-4b47-b340-bed8b84d39bc,98f6d3df-da7c-47c2-b005-c615994019a3,info,1779638355408000
+booted (time: 29ms),Boot,ceb4207e-fb6d-4733-94e8-e8fe6b4af0de,17f890c5-a51d-4b47-b340-bed8b84d39bc,9f8b15a0-c835-4f87-858a-bfe23746513f,log,1779638355406000
+"Listening on http://localhost:9999/
+",Log,fea1f427-3c32-401e-8c37-1e481e3cb44a,17f890c5-a51d-4b47-b340-bed8b84d39bc,7fd814da-4e9c-4986-b39c-cf78026f2d98,info,1779638355321000
+booted (time: 24ms),Boot,fea1f427-3c32-401e-8c37-1e481e3cb44a,17f890c5-a51d-4b47-b340-bed8b84d39bc,5559ce15-7e08-4354-a5da-8e0f68dce420,log,1779638355319000
+"Listening on http://localhost:9999/
+",Log,109258e5-946a-4d63-b680-f55122fffaff,17f890c5-a51d-4b47-b340-bed8b84d39bc,9abb87ce-a9f5-459c-96d2-95ba76ae4dc5,info,1779638355048000
+booted (time: 23ms),Boot,109258e5-946a-4d63-b680-f55122fffaff,17f890c5-a51d-4b47-b340-bed8b84d39bc,7870486c-84d8-4f37-89c0-9830558d5413,log,1779638355047000
+"Listening on http://localhost:9999/
+",Log,851aeaa9-d822-4c5b-8544-b36bc1621d83,17f890c5-a51d-4b47-b340-bed8b84d39bc,dd6ec3e8-b927-453c-9722-9ce6efa0cb68,info,1779638354897000
+booted (time: 23ms),Boot,851aeaa9-d822-4c5b-8544-b36bc1621d83,17f890c5-a51d-4b47-b340-bed8b84d39bc,f17cc302-7b08-4493-a503-b34c9b2b7d37,log,1779638354895000
+shutdown,Shutdown,9655b84f-81d9-4bef-b6f2-68a6e53cca89,17f890c5-a51d-4b47-b340-bed8b84d39bc,6109a440-faa1-4c2e-9805-03cbf423c9de,log,1779638353475000
+shutdown,Shutdown,4841b5a7-d5ca-4a2d-bfe6-5f611049bdc2,17f890c5-a51d-4b47-b340-bed8b84d39bc,a422098d-79fd-4c4b-965a-99976bb209f3,log,1779638352978000
+shutdown,Shutdown,d31f2dcc-66fe-4462-9a4e-11d6d53be137,17f890c5-a51d-4b47-b340-bed8b84d39bc,bc638742-0ca4-43aa-a293-08105aab8580,log,1779638352923000
+shutdown,Shutdown,2ee3485a-5bc9-47bc-a680-976e80c30db2,17f890c5-a51d-4b47-b340-bed8b84d39bc,42df9ae2-870f-4bf5-b0ea-d3c6a2d90936,log,1779638352737000
+"[MailingMesh] Brevo success with current fleet member. Sent to: Brianwambua50@gmail.com
+",Log,e4de1cd9-b4e1-4da3-b115-ace2174404a5,17f890c5-a51d-4b47-b340-bed8b84d39bc,6545f7f0-1da7-4478-b574-012ebcd17f93,info,1779638350587000
+"[MailingMesh] Dispatching email to: Brianwambua50@gmail.com | Subject: CEKA: Verification Code
+",Log,e4de1cd9-b4e1-4da3-b115-ace2174404a5,17f890c5-a51d-4b47-b340-bed8b84d39bc,19a1cfa8-31c7-4675-a9bc-05c341e1e112,info,1779638350509000
+"[MailingMesh] Strategy: Fleet Primary (Brevo, keys: 3)
+",Log,e4de1cd9-b4e1-4da3-b115-ace2174404a5,17f890c5-a51d-4b47-b340-bed8b84d39bc,9815b83b-8683-4d3e-925e-d35480970c8c,info,1779638350509000
+"[MailingMesh] Attempting Brevo with key xkeysib-...
+",Log,e4de1cd9-b4e1-4da3-b115-ace2174404a5,17f890c5-a51d-4b47-b340-bed8b84d39bc,82783834-8d03-492c-b70a-66f54f8293f6,info,1779638350509000
+"Listening on http://localhost:9999/
+",Log,e4de1cd9-b4e1-4da3-b115-ace2174404a5,17f890c5-a51d-4b47-b340-bed8b84d39bc,0edd1618-c99a-46db-851e-cf07e3da80cb,info,1779638350245000
+booted (time: 44ms),Boot,e4de1cd9-b4e1-4da3-b115-ace2174404a5,17f890c5-a51d-4b47-b340-bed8b84d39bc,e42de914-3051-47e5-8950-35ce26afcd97,log,1779638350241000
+shutdown,Shutdown,850e52e5-b688-46da-a4f1-344e186315de,17f890c5-a51d-4b47-b340-bed8b84d39bc,c6a2dd75-77be-4017-b051-8564c030406a,log,1779638349928000
+"Listening on http://localhost:9999/
+",Log,3bba60ca-109c-4ef5-ae0f-75c35621f5f6,17f890c5-a51d-4b47-b340-bed8b84d39bc,04923cbf-df05-43b9-9a92-a2b526e45972,info,1779638349891000
+booted (time: 40ms),Boot,3bba60ca-109c-4ef5-ae0f-75c35621f5f6,17f890c5-a51d-4b47-b340-bed8b84d39bc,aa4dac7f-4052-47cf-a0ff-49947ba6c738,log,1779638349888000
+shutdown,Shutdown,ffc9d6be-f6b5-476e-8b2d-5a51722cbe99,17f890c5-a51d-4b47-b340-bed8b84d39bc,08a1e42f-4288-49f4-acf2-382393f99df3,log,1779638349629000
+shutdown,Shutdown,dab3168f-40bf-4c28-8746-4e1a87912396,17f890c5-a51d-4b47-b340-bed8b84d39bc,76a9db9d-bbfb-46d2-8912-5138c03935ab,log,1779638349400000
+shutdown,Shutdown,7c604b2f-ab86-4259-bfb3-3789897bceb9,17f890c5-a51d-4b47-b340-bed8b84d39bc,3f7b24a1-a1ac-4496-b9ec-fe61f894a02d,log,1779638349125000
+shutdown,Shutdown,4ae8b8d5-1142-44e1-a222-fc722c17b7f1,17f890c5-a51d-4b47-b340-bed8b84d39bc,fd036eee-20bc-49b0-b994-75153834238a,log,1779638349124000
+shutdown,Shutdown,823b1308-bf7b-4a67-93b8-a89fde29d8f6,17f890c5-a51d-4b47-b340-bed8b84d39bc,bfaa1099-ae7e-46d2-8a50-86ef002090b5,log,1779638349121000
+shutdown,Shutdown,c52485ed-2b86-44d0-b112-c3d6e3f1a47c,17f890c5-a51d-4b47-b340-bed8b84d39bc,850745f9-d6ac-4a0b-b856-3d9665534fc8,log,1779638348807000
+"[MailingMesh] Brevo success with current fleet member. Sent to: lordekriss@gmail.com
+",Log,39a0a04f-8230-44db-b334-7bbd5ce67a9a,17f890c5-a51d-4b47-b340-bed8b84d39bc,a9147dd4-1858-4ce2-95a2-1ebdf526295e,info,1779638345532000
+"[MailingMesh] Dispatching email to: lordekriss@gmail.com | Subject: CEKA: Verification Code
+",Log,39a0a04f-8230-44db-b334-7bbd5ce67a9a,17f890c5-a51d-4b47-b340-bed8b84d39bc,abf28bf3-29d2-4113-9a31-596419b8e4c1,info,1779638345395000
+"[MailingMesh] Attempting Brevo with key xkeysib-...
+",Log,39a0a04f-8230-44db-b334-7bbd5ce67a9a,17f890c5-a51d-4b47-b340-bed8b84d39bc,500e2700-f8b7-451c-a765-18bb5e28cf7b,info,1779638345395000
+"[MailingMesh] Strategy: Fleet Primary (Brevo, keys: 3)
+",Log,39a0a04f-8230-44db-b334-7bbd5ce67a9a,17f890c5-a51d-4b47-b340-bed8b84d39bc,10d99e53-4185-4870-84df-0462494b3489,info,1779638345395000
+"Listening on http://localhost:9999/
+",Log,39a0a04f-8230-44db-b334-7bbd5ce67a9a,17f890c5-a51d-4b47-b340-bed8b84d39bc,54fc643e-43f2-4e84-8c14-bbf625da7be2,info,1779638345310000
+booted (time: 24ms),Boot,39a0a04f-8230-44db-b334-7bbd5ce67a9a,17f890c5-a51d-4b47-b340-bed8b84d39bc,f021a99e-0ff4-416e-bd70-64bc15165ad9,log,1779638345308000
+"[MailingMesh] Brevo success with current fleet member. Sent to: lordekriss@gmail.com
+",Log,8b1999cf-4679-4c7b-9c0d-e3f04498eac4,17f890c5-a51d-4b47-b340-bed8b84d39bc,54068eaf-a484-428b-b214-38410ec7149d,info,1779638345217000
+"[MailingMesh] Strategy: Fleet Primary (Brevo, keys: 3)
+",Log,8b1999cf-4679-4c7b-9c0d-e3f04498eac4,17f890c5-a51d-4b47-b340-bed8b84d39bc,57ac1210-205c-4db4-8d3d-817a76de7fce,info,1779638345081000
+"[MailingMesh] Attempting Brevo with key xkeysib-...
+",Log,8b1999cf-4679-4c7b-9c0d-e3f04498eac4,17f890c5-a51d-4b47-b340-bed8b84d39bc,90af49b4-c074-4adc-8ec2-48c94727b46c,info,1779638345081000
+"[MailingMesh] Dispatching email to: lordekriss@gmail.com | Subject: CEKA: Verification Code
+",Log,8b1999cf-4679-4c7b-9c0d-e3f04498eac4,17f890c5-a51d-4b47-b340-bed8b84d39bc,f1750b16-f820-4b1f-b9d9-dd47fdd83535,info,1779638345081000
+"Listening on http://localhost:9999/
+",Log,8b1999cf-4679-4c7b-9c0d-e3f04498eac4,17f890c5-a51d-4b47-b340-bed8b84d39bc,e3de920a-d6a8-41c7-bb39-01d7870ee766,info,1779638345001000
+booted (time: 29ms),Boot,8b1999cf-4679-4c7b-9c0d-e3f04498eac4,17f890c5-a51d-4b47-b340-bed8b84d39bc,7bff3669-ce04-415e-80da-21e018eb40de,log,1779638344996000
+"[MailingMesh] Brevo success with current fleet member. Sent to: lordekriss@gmail.com
+",Log,1a8ee322-b9fb-478e-8b9e-6baae65172c2,17f890c5-a51d-4b47-b340-bed8b84d39bc,86300a49-e975-4df4-988a-092a7b4a78e2,info,1779638344858000
+"[MailingMesh] Strategy: Fleet Primary (Brevo, keys: 3)
+",Log,1a8ee322-b9fb-478e-8b9e-6baae65172c2,17f890c5-a51d-4b47-b340-bed8b84d39bc,da72f95f-b6a5-4035-a3fb-458012c2b680,info,1779638344625000
+"[MailingMesh] Dispatching email to: lordekriss@gmail.com | Subject: CEKA: Verification Code
+",Log,1a8ee322-b9fb-478e-8b9e-6baae65172c2,17f890c5-a51d-4b47-b340-bed8b84d39bc,8846cd74-7820-443b-94c6-e10c058b4e55,info,1779638344625000
+"[MailingMesh] Attempting Brevo with key xkeysib-...
+",Log,1a8ee322-b9fb-478e-8b9e-6baae65172c2,17f890c5-a51d-4b47-b340-bed8b84d39bc,ba532744-b408-433d-b3e6-9cef6b0c3244,info,1779638344625000
