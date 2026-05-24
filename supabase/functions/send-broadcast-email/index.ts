@@ -1,5 +1,4 @@
 // @ts-nocheck
-
 import { serve } from "https://deno.land/std@0.208.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 
@@ -17,7 +16,14 @@ serve(async (req) => {
     if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
 
     try {
-        const { target, subject, content, userId } = await req.json();
+        const body = await req.json();
+        const { target, subject, content, userId } = body;
+
+        if (!target || !subject || !content) {
+            throw new Error(`Missing required fields: ${!target ? 'target' : ''} ${!subject ? 'subject' : ''} ${!content ? 'content' : ''}`);
+        }
+
+        console.log(`[Broadcast] Initiating for target: ${target}`);
 
         // 1. Fetch Recipients based on Target
         let recipients: any[] = [];
@@ -26,17 +32,18 @@ serve(async (req) => {
             const { data: profiles, error: pError } = await supabase
                 .from('profiles')
                 .select('email, full_name, county, interests');
-
+            
             if (pError) console.error('Profiles fetch error:', pError);
             if (profiles) {
-                recipients.push(...profiles.map(p => ({
+                const mapped = profiles.map(p => ({
                     email: p.email,
                     first_name: p.full_name?.split(' ')[0] || '',
                     last_name: p.full_name?.split(' ').slice(1).join(' ') || '',
                     display_name: p.full_name || '',
                     county: p.county || '',
-                    interests: p.interests || ''
-                })));
+                    interests: p.interests ? (typeof p.interests === 'string' ? p.interests : JSON.stringify(p.interests)) : ''
+                }));
+                recipients.push(...mapped);
             }
         }
 
@@ -44,30 +51,35 @@ serve(async (req) => {
             const { data: members, error: mError } = await supabase
                 .from('community_members')
                 .select('email, first_name, last_name, county, interests');
-
+            
             if (mError) console.error('Community members fetch error:', mError);
             if (members) {
-                recipients.push(...members.map(m => ({
+                const mapped = members.map(m => ({
                     email: m.email,
                     first_name: m.first_name,
                     last_name: m.last_name,
                     display_name: `${m.first_name} ${m.last_name}`.trim(),
                     county: m.county || '',
                     interests: m.interests || ''
-                })));
+                }));
+                recipients.push(...mapped);
             }
         }
 
         // Deduplicate by email
         const uniqueRecipients = Array.from(new Map(recipients.filter(r => !!r.email).map(r => [r.email, r])).values());
 
-        if (uniqueRecipients.length === 0) throw new Error('No recipients found for this target list.');
+        console.log(`[Broadcast] Found ${uniqueRecipients.length} unique recipients`);
+
+        if (uniqueRecipients.length === 0) {
+            throw new Error('No recipients found for this target list.');
+        }
 
         // 2. Create Broadcast Master Record
         const { data: bcHistory, error: bcError } = await supabase
             .from('broadcast_history')
             .insert({
-                created_by: userId,
+                created_by: userId || null,
                 subject,
                 content_raw: content,
                 target_list: target,
@@ -77,7 +89,10 @@ serve(async (req) => {
             .select()
             .single();
 
-        if (bcError) throw bcError;
+        if (bcError) {
+            console.error('History insert error:', bcError);
+            throw new Error(`Failed to create broadcast history: ${bcError.message}`);
+        }
 
         // 3. Populate Queue in Batches
         const batchSize = 100;
@@ -96,12 +111,15 @@ serve(async (req) => {
             }));
 
             const { error: qError } = await supabase.from('broadcast_queue').insert(batch);
-            if (qError) console.error('Queue insertion error:', qError);
+            if (qError) console.error('Queue insertion error batch:', i, qError);
         }
 
-        // 4. Update Audit Log
+        // 4. Update Audit Log (Fixed: added mandatory resource_type)
         await supabase.from('admin_audit_log').insert({
+            user_id: userId || 'system',
             action: 'broadcast_initiated',
+            resource_type: 'broadcast',
+            resource_id: bcHistory.id,
             details: { target, total_recipients: uniqueRecipients.length, broadcast_id: bcHistory.id }
         });
 
@@ -114,10 +132,15 @@ serve(async (req) => {
         });
 
     } catch (error: any) {
-        return new Response(JSON.stringify({ error: error.message }), {
+        console.error('[Broadcast Error]', error.message);
+        return new Response(JSON.stringify({ 
+            error: error.message,
+            stack: error.stack 
+        }), {
             status: 400,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
     }
 });
+
 
