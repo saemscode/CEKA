@@ -187,7 +187,7 @@ async function sendWithBrevo(options: EmailOptions) {
         throw new Error(`Brevo API Error (${response.status}): ${resultText}`);
       }
 
-      console.log(`[MailingMesh] Brevo success with current fleet member.`);
+      console.log(`[MailingMesh] Brevo success with current fleet member. Sent to: ${recipients.join(', ')}`);
       return JSON.parse(resultText);
     } catch (err: any) {
       lastError = err;
@@ -206,6 +206,9 @@ export async function sendEmail(options: EmailOptions) {
     console.warn("[MailingMesh] [EMERGENCY] Bypass Protocol Active. Faking delivery success.");
     return { success: true, bypassed: true, timestamp: new Date().toISOString() };
   }
+
+  const recipients = Array.isArray(options.to) ? options.to : [options.to];
+  console.log(`[MailingMesh] Dispatching email to: ${recipients.join(', ')} | Subject: ${options.subject}`);
 
   const provider = options.provider || 'auto';
 
