@@ -1,3 +1,5 @@
+// @ts-nocheck
+
 import { serve } from "https://deno.land/std@0.208.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 
@@ -21,17 +23,43 @@ serve(async (req) => {
         let recipients: any[] = [];
 
         if (target === 'profiles' || target === 'both') {
-            const { data: profiles } = await supabase.from('profiles').select('email, first_name, last_name, display_name, county, interests');
-            if (profiles) recipients.push(...profiles);
+            const { data: profiles, error: pError } = await supabase
+                .from('profiles')
+                .select('email, full_name, county, interests');
+
+            if (pError) console.error('Profiles fetch error:', pError);
+            if (profiles) {
+                recipients.push(...profiles.map(p => ({
+                    email: p.email,
+                    first_name: p.full_name?.split(' ')[0] || '',
+                    last_name: p.full_name?.split(' ').slice(1).join(' ') || '',
+                    display_name: p.full_name || '',
+                    county: p.county || '',
+                    interests: p.interests || ''
+                })));
+            }
         }
 
         if (target === 'community' || target === 'both') {
-            const { data: members } = await supabase.from('community_members').select('email, first_name, last_name, county, interests');
-            if (members) recipients.push(...members);
+            const { data: members, error: mError } = await supabase
+                .from('community_members')
+                .select('email, first_name, last_name, county, interests');
+
+            if (mError) console.error('Community members fetch error:', mError);
+            if (members) {
+                recipients.push(...members.map(m => ({
+                    email: m.email,
+                    first_name: m.first_name,
+                    last_name: m.last_name,
+                    display_name: `${m.first_name} ${m.last_name}`.trim(),
+                    county: m.county || '',
+                    interests: m.interests || ''
+                })));
+            }
         }
 
         // Deduplicate by email
-        const uniqueRecipients = Array.from(new Map(recipients.map(r => [r.email, r])).values());
+        const uniqueRecipients = Array.from(new Map(recipients.filter(r => !!r.email).map(r => [r.email, r])).values());
 
         if (uniqueRecipients.length === 0) throw new Error('No recipients found for this target list.');
 
@@ -51,14 +79,15 @@ serve(async (req) => {
 
         if (bcError) throw bcError;
 
-        // 3. Populate Queue in Batches (to avoid memory blowouts)
+        // 3. Populate Queue in Batches
         const batchSize = 100;
         for (let i = 0; i < uniqueRecipients.length; i += batchSize) {
             const batch = uniqueRecipients.slice(i, i + batchSize).map(r => ({
                 broadcast_id: bcHistory.id,
                 recipient_email: r.email,
-                recipient_name: r.first_name || r.display_name || '',
+                recipient_name: r.first_name || r.display_name || 'Citizen',
                 personalization_data: {
+                    first_name: r.first_name || '',
                     last_name: r.last_name || '',
                     display_name: r.display_name || '',
                     county: r.county || '',
@@ -66,7 +95,8 @@ serve(async (req) => {
                 }
             }));
 
-            await supabase.from('broadcast_queue').insert(batch);
+            const { error: qError } = await supabase.from('broadcast_queue').insert(batch);
+            if (qError) console.error('Queue insertion error:', qError);
         }
 
         // 4. Update Audit Log
@@ -75,18 +105,19 @@ serve(async (req) => {
             details: { target, total_recipients: uniqueRecipients.length, broadcast_id: bcHistory.id }
         });
 
-        return new Response(JSON.stringify({ 
-            success: true, 
+        return new Response(JSON.stringify({
+            success: true,
             message: `Broadcasting initiated for ${uniqueRecipients.length} recipients.`,
             broadcast_id: bcHistory.id
-        }), { 
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
 
     } catch (error: any) {
-        return new Response(JSON.stringify({ error: error.message }), { 
-            status: 400, 
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        return new Response(JSON.stringify({ error: error.message }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
     }
 });
+
