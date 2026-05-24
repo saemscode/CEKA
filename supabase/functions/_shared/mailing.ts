@@ -175,23 +175,23 @@ async function sendWithBrevo(options: EmailOptions) {
       if (!response.ok) {
         console.error(`[MailingMesh] Brevo Key ${key.substring(0, 8)}... FAILED (${response.status}): ${resultText}`);
         
-        // Specific hint for Brevo sender problems
-        if (response.status === 401 || response.status === 403) {
-          console.error("[MailingMesh] BREVO ALERT: Your sender address or domain is likely NOT VERIFIED in the Brevo dashboard.");
-        }
-
-        if (response.status === 429 || resultText.toLowerCase().includes("quota") || resultText.toLowerCase().includes("limit")) {
-          console.warn(`[MailingMesh] Brevo Key ${key.substring(0, 8)}... rotating due to quota.`);
+        // If unverified (401/403) or quota hit (429), ROTATE to the next key in the fleet
+        if (response.status === 401 || response.status === 403 || response.status === 429 || resultText.toLowerCase().includes("quota") || resultText.toLowerCase().includes("limit")) {
+          if (response.status === 403 || response.status === 401) {
+            console.warn(`[MailingMesh] Brevo Key ${key.substring(0, 8)}... is UNVERIFIED or FORBIDDEN. Skipping to next fleet member...`);
+          } else {
+            console.warn(`[MailingMesh] Brevo Key ${key.substring(0, 8)}... hit quota/limit. Rotating...`);
+          }
           continue;
         }
         throw new Error(`Brevo API Error (${response.status}): ${resultText}`);
       }
 
-      console.log(`[MailingMesh] Brevo success with key ${key.substring(0, 8)}...`);
+      console.log(`[MailingMesh] Brevo success with current fleet member.`);
       return JSON.parse(resultText);
     } catch (err: any) {
       lastError = err;
-      console.error(`[MailingMesh] Brevo fleet member critical error:`, err.message);
+      console.error(`[MailingMesh] Brevo fleet member encounter:`, err.message);
     }
   }
   throw lastError || new Error("All Brevo keys in fleet exhausted");
