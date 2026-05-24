@@ -56,7 +56,7 @@ interface EmailOptions {
 
 const DEFAULT_FROM = {
   name: "Civic Education Kenya",
-  email: "admin@civiceducationkenya.com"
+  email: "verify@civiceducationkenya.com"
 };
 
 /**
