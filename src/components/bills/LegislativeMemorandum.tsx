@@ -78,14 +78,14 @@ const AddProfileIcon = ({ size = 24, className = "" }) => (
   </svg>
 );
 
-const SuccessStep = ({ billTitle, onReset }: { billTitle: string; onReset: () => void }) => {
+const SuccessStep = ({ billTitle, onReset, onDispatch }: { billTitle: string; onReset: () => void; onDispatch: () => void }) => {
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
       className="flex flex-col items-center text-center p-6 sm:p-12 space-y-10"
     >
-      <div className="relative flex flex-col items-center">
+      <div className="relative flex flex-col items-center w-full">
         {/* Animated Environment: Fire Dual-Orchids */}
         <div className="flex items-center justify-center gap-1 sm:gap-6">
           <div className="w-16 h-16 sm:w-20 sm:h-20 flex-shrink-0">
@@ -109,10 +109,11 @@ const SuccessStep = ({ billTitle, onReset }: { billTitle: string; onReset: () =>
           className="space-y-4"
         >
           <h3 className="text-3xl sm:text-5xl font-[1000] tracking-tighter text-slate-900 dark:text-white uppercase leading-none">
-            Email <span className="text-kenya-green">Submitted.</span>
+            Signature <span className="text-kenya-green">Recorded.</span>
           </h3>
           <p className="text-sm font-medium text-slate-500 dark:text-slate-400 max-w-sm mx-auto leading-relaxed">
-            Your email has been sent to Parliament. Great job - but the fire must keep burning.
+            Your signature is in the database and the memorandum is copied to your clipboard. 
+            <br/><span className="text-kenya-green font-black">Now, click below to send the actual email!</span>
           </p>
         </motion.div>
 
@@ -123,38 +124,53 @@ const SuccessStep = ({ billTitle, onReset }: { billTitle: string; onReset: () =>
           transition={{ delay: 0.7 }}
           className="w-full p-5 rounded-3xl bg-kenya-green/5 border border-kenya-green/10 flex items-center gap-4 mt-8"
         >
-          <div className="w-10 h-10 flex-shrink-0">
-            <LottieViewer path="/assets/lottie/Fire.json" />
+          <div className="w-10 h-10 flex-shrink-0 text-kenya-green">
+            <Send2Icon size={32} />
           </div>
-          <p className="text-[10px] font-black text-kenya-green uppercase tracking-[0.1em] text-left leading-relaxed">
-            Feeling excited? You deserve it anyway - now help us share this to keep the fire burning & make our voices heart.
-          </p>
+          <div className="text-left">
+            <p className="text-[10px] font-black text-kenya-green uppercase tracking-[0.1em] leading-tight">
+              Instant Action Required
+            </p>
+            <p className="text-[9px] text-slate-500 font-medium">
+              We've copied the text. Just paste it if the email app opens empty!
+            </p>
+          </div>
+        </motion.div>
+
+        {/* PRIMARY ACTION: DIRECT MAILTO */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.8 }}
+          className="w-full mt-6"
+        >
+          <button
+            onClick={onDispatch}
+            className="w-full h-20 rounded-[28px] bg-gradient-to-br from-kenya-green to-[#004d00] text-white font-black text-base uppercase tracking-widest hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 shadow-2xl shadow-kenya-green/30 flex items-center justify-center gap-4 group"
+          >
+            <MailSendIcon size={28} className="group-hover:translate-x-1 transition-transform" />
+            Open Email Client
+          </button>
         </motion.div>
 
         {/* Action Grid */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.8 }}
-          className="w-full grid grid-cols-1 sm:grid-cols-3 gap-3 mt-8"
+          transition={{ delay: 0.9 }}
+          className="w-full grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4"
         >
           <button
             onClick={() => window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(`I just formally objected to the ${billTitle} on @CEKAKenya. Your voice matters too - add yours: `)} ${encodeURIComponent(window.location.href)}`, '_blank')}
             className="flex items-center justify-center gap-2 h-14 rounded-2xl bg-black text-white border border-white/10 text-[10px] font-black uppercase tracking-widest hover:bg-slate-900 transition-all duration-300"
           >
-            <TwitterColorIcon size={18} /> Share on X
+            <TwitterColorIcon size={18} /> share
           </button>
           <button
             onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent(`I formally objected to the ${billTitle} on CEKA. Add your voice: ${window.location.href}`)}`, '_blank')}
             className="flex items-center justify-center gap-2 h-14 rounded-2xl bg-[#25D366] text-white border border-[#25D366]/20 text-[10px] font-black uppercase tracking-widest hover:bg-[#20bd5a] transition-all duration-300"
           >
-            <Share2Icon size={18} className="text-white" /> Share on WhatsApp
-          </button>
-          <button
-            onClick={() => window.open('https://civiceducationkenya.com', '_blank')}
-            className="flex items-center justify-center gap-2 h-14 rounded-2xl bg-kenya-green text-white border border-kenya-green/20 text-[10px] font-black uppercase tracking-widest hover:bg-[#004d00] transition-all duration-300"
-          >
-            <MailSendIcon size={18} className="text-white" /> Join the CEKA Community
+            <Share2Icon size={18} className="text-white" /> WhatsApp
           </button>
         </motion.div>
 
@@ -710,9 +726,23 @@ Mwananchi wa Jamhuri ya Kenya`;
       toast({ title: "Consent Required", description: "Please confirm that you authorize CEKA to submit this on your behalf.", variant: "destructive" });
       return;
     }
-    const res = await submitSignature(`Submitted via official email.`);
+    const res = await submitSignature(`Instant dispatch via citizen mailto.`);
     if (res) {
-      toast({ title: "Almost Done", description: "Sending verification code..." });
+      // 1. Success! auto-copy to clipboard
+      try {
+        await navigator.clipboard.writeText(getProcessedBody());
+        toast({ title: "Copied!", description: "Memorandum is on your clipboard." });
+      } catch (err) {
+        console.error('Clipboard fallback failed:', err);
+      }
+      
+      // 2. Jump straight to Success Step
+      setSuccessState('submitted');
+      
+      // 3. Optional: Trigger mailto immediately? 
+      // User requested: "Success screen pops up instantly" then "A 'Open Email Client' button appears".
+      // So we don't trigger mailto automatically to avoid popup blockers or confusing navigation.
+      // The SuccessStep will have the button.
     }
   };
 
@@ -797,6 +827,7 @@ Mwananchi wa Jamhuri ya Kenya`;
           <SuccessStep
             billTitle={billTitle}
             onReset={() => setSuccessState('editing')}
+            onDispatch={handleFinalDispatch}
           />
         </div>
       </div>
@@ -1406,11 +1437,6 @@ Mwananchi wa Jamhuri ya Kenya`;
               </div>
 
               <div className="flex flex-col gap-3">
-                <div className="bg-kenya-green/5 dark:bg-kenya-green/10 p-4 rounded-3xl border border-kenya-green/10 mb-1">
-                  <p className="text-[11px] font-medium text-slate-600 dark:text-slate-300 leading-relaxed">
-                    <strong className="text-kenya-green dark:text-kenya-green text-xs">Anti-Spam Verification:</strong> To protect the integrity of the petition, we'll send a <strong className="text-slate-900 dark:text-white">6-digit code</strong> to your email. You only verify once.
-                  </p>
-                </div>
                 <div className="flex flex-col sm:flex-row gap-3">
                   <Button
                     onClick={handleInitialSubmit}

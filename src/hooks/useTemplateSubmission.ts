@@ -64,7 +64,7 @@ export const useTemplateSubmission = (billId: string, templateId: string | null)
 
       if (data && data.success) {
         setSubmissionId(data.id);
-        setNeedsVerification(true);
+        setNeedsVerification(false); // No verification needed in the new instant flow
       }
       
       setIsSubmitting(false);
