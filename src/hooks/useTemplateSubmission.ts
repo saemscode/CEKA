@@ -64,7 +64,7 @@ export const useTemplateSubmission = (billId: string, templateId: string | null)
 
       if (data && data.success) {
         setSubmissionId(data.id);
-        setNeedsVerification(false); // Instant Success Protocol: No verification needed
+        setNeedsVerification(true);
       }
       
       setIsSubmitting(false);
