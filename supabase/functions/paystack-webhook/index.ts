@@ -10,15 +10,12 @@ const corsHeaders = {
 }
 
 /**
- * PAYSTACK WEBHOOK HANDLER (PHASE 3 - ISOLATED LEDGER)
+ * PAYSTACK WEBHOOK HANDLER (PHASE 3 - PUBLIC SCHEMA)
  * 
- * This function processes incoming Paystack events and routes them
- * to the new transactional database (ftswzvqwxdwgkvfbwfpx).
- * 
- * It ensures that financial data is isolated from the main app DB.
+ * This version uses the standard 'public' schema to bypass
+ * complex Supabase dashboard configuration.
  */
 serve(async (req) => {
-  // 1. Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
@@ -26,18 +23,13 @@ serve(async (req) => {
   try {
     const signature = req.headers.get('x-paystack-signature')
     if (!signature) {
-      console.error('[Paystack-Webhook] Missing signature')
       return new Response(JSON.stringify({ error: 'Missing signature' }), { status: 401 })
     }
 
     const bodyText = await req.text()
-
-    // 2. Verify Signature
-    // Note: PAYSTACK_WEBHOOK_SECRET should be set in Supabase project secrets
     const secret = Deno.env.get('PAYSTACK_WEBHOOK_SECRET') || Deno.env.get('PAYSTACK_SECRET_KEY')
-    if (!secret) {
-      throw new Error('PAYSTACK_WEBHOOK_SECRET not configured')
-    }
+
+    if (!secret) throw new Error('PAYSTACK_WEBHOOK_SECRET not configured')
 
     const hash = crypto
       .createHmac('sha512', secret)
@@ -45,7 +37,6 @@ serve(async (req) => {
       .digest('hex')
 
     if (hash !== signature) {
-      console.error('[Paystack-Webhook] Signature mismatch')
       return new Response(JSON.stringify({ error: 'Invalid signature' }), { status: 401 })
     }
 
@@ -55,30 +46,25 @@ serve(async (req) => {
 
     console.log(`[Paystack-Webhook] Received event: ${event}`)
 
-    // 3. Connect to the NEW Transactional Database
-    // These keys must be set in the Supabase Project Settings / Secrets
     const supabaseUrl = Deno.env.get('PROJECT_URL') || Deno.env.get('SUPABASE_URL')
     const supabaseServiceKey = Deno.env.get('SERVICE_ROLE_KEY') || Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 
     if (!supabaseUrl || !supabaseServiceKey) {
-      throw new Error('New Database credentials (PROJECT_URL/SERVICE_ROLE_KEY) not found in environment')
+      throw new Error('New Database credentials (PROJECT_URL/SERVICE_ROLE_KEY) not found')
     }
 
     const supabaseLedger = createClient(supabaseUrl, supabaseServiceKey)
 
-    // 4. Log Raw Payload to Audit Trail (Redundancy)
+    // Log Raw Payload (using public schema)
     await supabaseLedger
-      .schema('ledger')
       .from('audit_trail')
       .insert({
         event_type: event,
         raw_payload: payload
       })
 
-    // 5. Handle Specific Events
     if (event === 'charge.success') {
       const { error: txError } = await supabaseLedger
-        .schema('ledger')
         .from('transactions')
         .insert({
           paystack_id: data.id.toString(),
@@ -95,15 +81,11 @@ serve(async (req) => {
           paid_at: data.paid_at
         })
 
-      if (txError) {
-        console.error('[Paystack-Webhook] DB Error (Transaction):', txError)
-        // We don't return 500 here yet to acknowledge receipt to Paystack
-      }
+      if (txError) console.error('[Paystack-Webhook] DB Error (Transaction):', txError)
     }
 
     else if (event === 'subscription.create' || event === 'subscription.enable') {
       const { error: subError } = await supabaseLedger
-        .schema('ledger')
         .from('subscriptions')
         .upsert({
           external_customer_id: data.customer.customer_code,
@@ -115,12 +97,9 @@ serve(async (req) => {
           metadata: data.metadata || {}
         }, { onConflict: 'subscription_code' })
 
-      if (subError) {
-        console.error('[Paystack-Webhook] DB Error (Subscription):', subError)
-      }
+      if (subError) console.error('[Paystack-Webhook] DB Error (Subscription):', subError)
     }
 
-    // 6. Return 200 OK to Paystack
     return new Response(JSON.stringify({ status: 'success', received: true }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200
