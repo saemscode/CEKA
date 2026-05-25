@@ -26,6 +26,7 @@ import { SignatureCounter } from '@/components/bills/SignatureCounter';
 import { analyticsService } from '@/services/analyticsService';
 import { useToast } from "@/hooks/use-toast";
 import ReactMarkdown from 'react-markdown';
+import { Helmet } from 'react-helmet-async';
 
 // Delegated to shared billStages utility — kept as thin alias
 const getStatusColor = (status: string) => getStageColor(status);
@@ -354,6 +355,26 @@ const BillDetail = () => {
 
   return (
     <Layout>
+      <Helmet>
+        <title>{`${bill.title} | Legislative Tracker | CEKA`}</title>
+        <meta name="description" content={`${bill.summary.substring(0, 155)}... Track the status, download the PDF, and submit a memorandum to Parliament for ${bill.title}.`} />
+        <meta name="keywords" content={`${bill.title}, ${bill.category}, ${bill.bill_no || ''}, Kenya Memorandum Builder, Memorandum Builder Kenya, ${isFinanceBill ? 'Finance Bill 2026, Kenya Finance Bill 2026, Finance Bill memorandum builder, write a memorandum for Finance Bill,' : ''} yield public participation Kenya, submit memorandum Kenya, bill tracker Kenya, parliamentary process Kenya`} />
+        
+        {/* Open Graph / Facebook */}
+        <meta property="og:type" content="article" />
+        <meta property="og:url" content={window.location.href} />
+        <meta property="og:title" content={`${bill.title} | Legislative Tracker | CEKA`} />
+        <meta property="og:description" content={bill.summary.substring(0, 150)} />
+        <meta property="og:image" content="/icons/og-bill.png" />
+
+        {/* Twitter */}
+        <meta property="twitter:card" content="summary_large_image" />
+        <meta property="twitter:url" content={window.location.href} />
+        <meta property="twitter:title" content={`${bill.title} | Legislative Tracker | CEKA`} />
+        <meta property="twitter:description" content={bill.summary.substring(0, 150)} />
+        <meta property="twitter:image" content="/icons/og-bill.png" />
+      </Helmet>
+
       <div className="min-h-screen bg-slate-50/30 dark:bg-black">
         {/* HERO SECTION */}
         <section className="relative pt-24 pb-16 overflow-hidden">

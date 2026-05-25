@@ -31,6 +31,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { billService, getBillIdentifier } from '@/services/billService';
 import { cn } from '@/lib/utils';
 import { BILL_STAGES, STAGE_COUNT, getStageIndex, getStageColor } from '@/lib/billStages';
+import { Helmet } from 'react-helmet-async';
 
 // BILL_STAGES and getStageIndex imported from shared billStages.ts
 // BILL_STAGES = 8 ordered stages, STAGE_COUNT = 8
@@ -350,6 +351,26 @@ const LegislativeTracker = () => {
 
   return (
     <Layout>
+      <Helmet>
+        <title>Kenya Legislative Tracker | Bill Tracker & Public Participation | CEKA</title>
+        <meta name="description" content="Track ongoing bills in the Kenya National Assembly and Senate. Real-time updates on Finance Bill 2026, legislative progress, and public participation deadlines. Use CEKA to stay informed about Kenyan lawmaking." />
+        <meta name="keywords" content="Finance Bill Kenya, Finance Bill 2026, Kenya Finance Bill, Bill Tracker Kenya, Kenya Parliament bill tracker, real-time bill tracker, legislative tracker Kenya, track bills in Kenya, public participation Kenya, CEKA, Civic Education Kenya, Muswada wa Fedha 2026, maoni ya umma, bunge la Kenya" />
+        
+        {/* Open Graph / Facebook */}
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content={window.location.href} />
+        <meta property="og:title" content="Kenya Legislative Tracker | Bill Tracker & Public Participation | CEKA" />
+        <meta property="og:description" content="Track ongoing bills in the Kenya National Assembly and Senate. Real-time updates on Finance Bill 2026." />
+        <meta property="og:image" content="/icons/og-tracker.png" />
+
+        {/* Twitter */}
+        <meta property="twitter:card" content="summary_large_image" />
+        <meta property="twitter:url" content={window.location.href} />
+        <meta property="twitter:title" content="Kenya Legislative Tracker | Bill Tracker & Public Participation | CEKA" />
+        <meta property="twitter:description" content="Track ongoing bills in the Kenya National Assembly and Senate. Real-time updates on Finance Bill 2026." />
+        <meta property="twitter:image" content="/icons/og-tracker.png" />
+      </Helmet>
+
       <div className="min-h-screen bg-[#FDFDFD] dark:bg-background overflow-x-hidden">
         {/* EXECUTIVE HERO: Mobile Optimized */}
         <section className="relative px-4 pt-12 pb-20 md:pt-24 md:pb-32 overflow-hidden">
