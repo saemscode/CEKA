@@ -78,7 +78,7 @@ const AddProfileIcon = ({ size = 24, className = "" }) => (
   </svg>
 );
 
-const SuccessStep = ({ billTitle, onReset }: { billTitle: string; onReset: () => void }) => {
+const SuccessStep = ({ billTitle, onReset, onSendEmail }: { billTitle: string; onReset: () => void; onSendEmail: () => void }) => {
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
@@ -131,30 +131,41 @@ const SuccessStep = ({ billTitle, onReset }: { billTitle: string; onReset: () =>
           </p>
         </motion.div>
 
-        {/* Action Grid */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.8 }}
-          className="w-full grid grid-cols-1 sm:grid-cols-3 gap-3 mt-8"
+          className="w-full flex flex-col gap-3 mt-8"
         >
+          {/* PRIMARY ACTION: SEND EMAIL TO CLERK */}
           <button
-            onClick={() => window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(`I just formally objected to the ${billTitle} on @CEKAKenya. Your voice matters too - add yours: `)} ${encodeURIComponent(window.location.href)}`, '_blank')}
-            className="flex items-center justify-center gap-2 h-14 rounded-2xl bg-black text-white border border-white/10 text-[10px] font-black uppercase tracking-widest hover:bg-slate-900 transition-all duration-300"
+            onClick={onSendEmail}
+            className="flex items-center justify-center gap-3 h-20 rounded-3xl bg-gradient-to-br from-kenya-green to-[#004d00] text-white shadow-2xl shadow-kenya-green/30 border border-white/10 text-xs font-black uppercase tracking-[0.2em] hover:scale-[1.02] active:scale-[0.98] transition-all duration-300"
           >
-            <TwitterColorIcon size={18} /> Share on X
+            <MailSendIcon size={24} className="animate-bounce-slow" />
+            Send Memorandum to Clerk
           </button>
-          <button
-            onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent(`I formally objected to the ${billTitle} on CEKA. Add your voice: ${window.location.href}`)}`, '_blank')}
-            className="flex items-center justify-center gap-2 h-14 rounded-2xl bg-[#25D366] text-white border border-[#25D366]/20 text-[10px] font-black uppercase tracking-widest hover:bg-[#20bd5a] transition-all duration-300"
-          >
-            <Share2Icon size={18} className="text-white" /> Share on WhatsApp
-          </button>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <button
+              onClick={() => window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(`I just formally objected to the ${billTitle} on @CEKAKenya. Your voice matters too - add yours: `)} ${encodeURIComponent(window.location.href)}`, '_blank')}
+              className="flex items-center justify-center gap-2 h-14 rounded-2xl bg-black text-white border border-white/10 text-[10px] font-black uppercase tracking-widest hover:bg-slate-900 transition-all duration-300"
+            >
+              <TwitterColorIcon size={18} /> Share on X
+            </button>
+            <button
+              onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent(`I formally objected to the ${billTitle} on CEKA. Add your voice: ${window.location.href}`)}`, '_blank')}
+              className="flex items-center justify-center gap-2 h-14 rounded-2xl bg-[#25D366] text-white border border-[#25D366]/20 text-[10px] font-black uppercase tracking-widest hover:bg-[#20bd5a] transition-all duration-300"
+            >
+              <Share2Icon size={18} className="text-white" /> Share on WhatsApp
+            </button>
+          </div>
+
           <button
             onClick={() => window.open('https://civiceducationkenya.com', '_blank')}
-            className="flex items-center justify-center gap-2 h-14 rounded-2xl bg-kenya-green text-white border border-kenya-green/20 text-[10px] font-black uppercase tracking-widest hover:bg-[#004d00] transition-all duration-300"
+            className="flex items-center justify-center gap-2 h-14 rounded-2xl bg-slate-100 dark:bg-white/5 text-slate-900 dark:text-white border border-black/5 dark:border-white/10 text-[10px] font-black uppercase tracking-widest hover:bg-slate-200 transition-all duration-300"
           >
-            <MailSendIcon size={18} className="text-white" /> Join the CEKA Community
+            <MailSendIcon size={18} className="text-kenya-green" /> Join the CEKA Community
           </button>
         </motion.div>
 
@@ -712,7 +723,10 @@ Mwananchi wa Jamhuri ya Kenya`;
     }
     const res = await submitSignature(`Submitted via official email.`);
     if (res) {
-      toast({ title: "Almost Done", description: "Sending verification code..." });
+      // INSTANT SUCCESS PROTOCOL: No OTP gate
+      setSuccessState('submitted');
+      handleFinalDispatch(); 
+      toast({ title: "Signature Logged", description: "Your memorandum is ready to send." });
     }
   };
 
@@ -796,7 +810,11 @@ Mwananchi wa Jamhuri ya Kenya`;
         <div className="bg-white/95 dark:bg-slate-900/80 backdrop-blur-3xl rounded-[39px] overflow-hidden">
           <SuccessStep
             billTitle={billTitle}
-            onReset={() => setSuccessState('editing')}
+            onReset={() => {
+              setSuccessState('editing');
+              setNeedsVerification(false);
+            }}
+            onSendEmail={handleFinalDispatch}
           />
         </div>
       </div>
@@ -1408,7 +1426,7 @@ Mwananchi wa Jamhuri ya Kenya`;
               <div className="flex flex-col gap-3">
                 <div className="bg-kenya-green/5 dark:bg-kenya-green/10 p-4 rounded-3xl border border-kenya-green/10 mb-1">
                   <p className="text-[11px] font-medium text-slate-600 dark:text-slate-300 leading-relaxed">
-                    <strong className="text-kenya-green dark:text-kenya-green text-xs">Anti-Spam Verification:</strong> To protect the integrity of the petition, we'll send a <strong className="text-slate-900 dark:text-white">6-digit code</strong> to your email. You only verify once.
+                    <strong className="text-kenya-green dark:text-kenya-green text-xs">Direct Civic Action:</strong> Your memorandum will be prepared instantly. By clicking submit, you log your signature and CEKA will help you dispatch your objection to the Clerk.
                   </p>
                 </div>
                 <div className="flex flex-col sm:flex-row gap-3">
