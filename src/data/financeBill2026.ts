@@ -11,10 +11,18 @@ export const FINANCE_BILL_2026_CLAUSES: FinanceBillClause[] = [
   // --- HIGH IMPACT DELETIONS (TAX HIKES & COST OF LIVING) ---
   {
     id: 'clause-37-phones',
-    clauseId: 'Clause 37',
+    clauseId: 'Clause 36',
     title: '25% Tax on All Mobile Phones',
-    concern: "This bill raises the tax on mobile phones from 10% to 25%. This will make smartphones significantly more expensive for every Kenyan, making it harder for students, small traders, and rural families to access the internet and digital services.",
+    concern: "This bill raises the tax on mobile phones from 10% to 25%. This will make smartphones significantly more expensive for every Kenyan, making it harder for students, small traders, and rural families to access the internet and digital services (First Schedule Excise).",
     position: "I demand that the tax be kept at 10% to keep communication affordable.",
+    category: 'DELETE'
+  },
+  {
+    id: 'clause-34-phone-activation',
+    clauseId: 'Clause 34',
+    title: 'Excise Duty at Point of Mobile Activation',
+    concern: "Requires excise duty on mobile phones to be paid at the time of activation, not just at import. This creates a second taxable event that could trigger new charges for gifted or second-hand phones already in the country (Section 6(4A)).",
+    position: "I demand the deletion of Section 6(4A) to prevent unfair taxation at the point of hardware activation.",
     category: 'DELETE'
   },
   {
@@ -35,9 +43,9 @@ export const FINANCE_BILL_2026_CLAUSES: FinanceBillClause[] = [
   },
   {
     id: 'clause-bread-tax',
-    clauseId: 'Clause 28',
+    clauseId: 'Clause 31',
     title: 'Adding 16% Tax to Bread',
-    concern: "Moving bread from Tax-Free (Zero-rated) to 16% VAT is a direct attack on our breakfast table. In a cost-of-living crisis, families cannot afford to pay more for a basic staple food.",
+    concern: "Moving bread from Tax-Free (Zero-rated) to 16% VAT is a direct attack on our breakfast table. In a cost-of-living crisis, families cannot afford to pay more for a basic staple food (First Schedule VAT).",
     position: "I call for bread to remain Tax-Free (Zero-rated).",
     category: 'DELETE'
   },
@@ -61,7 +69,7 @@ export const FINANCE_BILL_2026_CLAUSES: FinanceBillClause[] = [
     id: 'clause-motor-vehicle-2.5',
     clauseId: 'Clause 12',
     title: '2.5% Annual Tax on Every Vehicle',
-    concern: "This acts as a wealth tax on a depreciating asset. It will lead to higher matatu fares for passengers and higher transport costs for items moved by truck, including food and construction materials.",
+    concern: "Amends Section 18D of the ITA to introduce a motor vehicle tax. This acts as a wealth tax on a depreciating asset and will lead to higher matatu fares and transport costs for food and materials.",
     position: "I call for the total removal of this yearly car tax.",
     category: 'DELETE'
   },
@@ -84,10 +92,18 @@ export const FINANCE_BILL_2026_CLAUSES: FinanceBillClause[] = [
 
   // --- LEGAL & CIVIL RIGHTS THREATS ---
   {
+    id: 'clause-29a-proactive-assessment',
+    clauseId: 'Section 29A',
+    title: 'KRA Proactive Assessment Powers',
+    concern: "Grants the Commissioner power to issue tax assessments based on 'proactively obtained' information even before a taxpayer has filed or defaulted. This allows for offensive harassment of citizens and businesses without due process.",
+    position: "I call for the total deletion of Section 29A to protect the right to self-assessment and due process.",
+    category: 'DELETE'
+  },
+  {
     id: 'clause-77-weekends',
-    clauseId: 'Clause 77',
+    clauseId: 'Clause 49',
     title: 'Stealing Time from Legal Justice (Weekends)',
-    concern: "This bill counts Saturdays and Sundays in the 30-day window to challenge tax errors. This effectively steals 8-10 days from citizens, making it almost impossible to prepare a proper legal defense against KRA.",
+    concern: "This bill counts Saturdays and Sundays in the challenge window by deleting subsection (2) of TPA Section 77. This effectively steals 8-10 days from citizens, making it almost impossible to prepare a proper legal defense against KRA.",
     position: "I demand that tax deadlines continue to count only 'Working Days'.",
     category: 'DELETE'
   },
@@ -95,7 +111,7 @@ export const FINANCE_BILL_2026_CLAUSES: FinanceBillClause[] = [
     id: 'clause-agency-notices',
     clauseId: 'S. 42(14)(e)',
     title: 'Freezing Bank Accounts during Court Cases',
-    concern: "KRA is being given the power to freeze funds even while a citizen is still appealing a case in court. This can kill a business before they have even had their day in court.",
+    concern: "KRA power grab targeting funds even while a citizen is still appealing a case in court. This can kill a business before they have even had their day in court.",
     position: "I call for the total deletion of this proposal to protect fair legal process.",
     category: 'DELETE'
   },
@@ -111,7 +127,7 @@ export const FINANCE_BILL_2026_CLAUSES: FinanceBillClause[] = [
     id: 'clause-small-trader-invoice',
     clauseId: 'VAT S.42',
     title: 'Forcing Small Traders into Complex Invoicing',
-    concern: "Requiring every person to issue a tax invoice, regardless of registration status, adds huge technical burdens on mama mbogas and small jua kali shops.",
+    concern: "Amends VAT Act Section 42 to replace 'registered person' with 'person', requiring every individual to issue a tax invoice regardless of status. This adds huge technical burdens on mama mbogas.",
     position: "I call for small traders to be exempt from formal invoicing requirements.",
     category: 'DELETE'
   },
@@ -128,16 +144,16 @@ export const FINANCE_BILL_2026_CLAUSES: FinanceBillClause[] = [
   {
     id: 'clause-digital-sep',
     clauseId: 'Clause 4',
-    title: '6% High Tax on Digital Services (SEP)',
-    concern: "This high 6% tax on digital companies will push up the cost of cloud storage, online tools, and software that Kenyan freelancers and startups rely on.",
-    position: "I call for this rate to be lowered to 1.5% to match regional levels.",
-    category: 'AMEND'
+    title: 'Non-Resident Rental Income Tax',
+    concern: "Inserts Section 6B to the ITA, taxing income derived from the use or occupation of property in Kenya by non-residents. This creates a new complex layer of rental taxation targeting cross-border property usage.",
+    position: "I demand the deletion of Clause 4 to maintain a clear rental tax framework.",
+    category: 'DELETE'
   },
   {
     id: 'clause-interchange-bank',
-    clauseId: 'Income Tax',
-    title: 'New Tax on Card Payment Fees',
-    concern: "Adding tax to bank interchange fees will make using cards at supermarkets and petrol stations more expensive for consumers.",
+    clauseId: 'Clause 2(b)',
+    title: 'Taxing Interchange and Merchant Fees',
+    concern: "Inserts interchange and merchant service fees into the definition of 'management fee' under ITA Section 2, making card payment fees significantly more expensive for consumers.",
     position: "I call for this to be deleted to support our digital economy.",
     category: 'DELETE'
   },
@@ -145,7 +161,7 @@ export const FINANCE_BILL_2026_CLAUSES: FinanceBillClause[] = [
     id: 'clause-deemed-60',
     clauseId: 'S. 24(1)',
     title: 'Forcing Businesses to Pay 60% of Earnings',
-    concern: "Forces companies to pay out 60% of profits instead of letting them save that money to build more factories or hire more Kenyans. This will slow down job growth.",
+    concern: "Amends Section 24 of the ITA (Clause 16). Forces companies to pay out 60% of profits instead of letting them reinvest to build more factories or hire more Kenyans.",
     position: "I call for businesses to have the freedom to reinvest their own earnings.",
     category: 'AMEND'
   },
@@ -161,7 +177,7 @@ export const FINANCE_BILL_2026_CLAUSES: FinanceBillClause[] = [
     id: 'clause-local-plastic-eda',
     clauseId: 'EDA Plastic',
     title: 'Tax on Locally Made Plastic Packaging',
-    concern: "Taxing local plastic will make milk, bread bags, and cleaning soap more expensive for every consumer. It also hurts our local factories.",
+    concern: "Taxing local plastic (Tariff 3923.30.00) will make milk, bread bags, and cleaning soap more expensive for every consumer. It also hurts our local factories.",
     position: "I call for no new taxes on locally produced packaging materials.",
     category: 'DELETE'
   },
@@ -169,7 +185,7 @@ export const FINANCE_BILL_2026_CLAUSES: FinanceBillClause[] = [
     id: 'clause-sugar-local-eda',
     clauseId: 'Tariff 17.04',
     title: 'Higher Price for Local Sweets and Biscuits',
-    concern: "Introducing an excise tax on local sugar products will increase the cost of common household items and hurt local confectionary manufacturers.",
+    concern: "Introducing an excise tax on imported sugar confectionary under Clause 36. This increases the cost of common household items.",
     position: "I call for this tax to be dropped.",
     category: 'DELETE'
   },
@@ -177,7 +193,7 @@ export const FINANCE_BILL_2026_CLAUSES: FinanceBillClause[] = [
     id: 'clause-coal-eda',
     clauseId: 'EDA Coal',
     title: 'New 5% Tax on Coal Energy',
-    concern: "Taxing coal increases the cost of energy for local factories, which will then raise the prices of the goods they sell to us.",
+    concern: "Under Clause 36, taxing coal increases the cost of energy for local factories, which will then raise the prices of the goods they sell to us.",
     position: "I call for the removal of this energy tax.",
     category: 'DELETE'
   },
@@ -193,7 +209,7 @@ export const FINANCE_BILL_2026_CLAUSES: FinanceBillClause[] = [
     id: 'clause-sugarcane-trans',
     clauseId: 'VAT Sugar',
     title: 'Taxing Sugarcane Transport',
-    concern: "Removing zero-rated status for sugarcane transport will reduce the earnings of our farmers and increase the price of sugar for consumers.",
+    concern: "Removing zero-rated status for sugarcane transport in the First Schedule will reduce the earnings of our farmers and increase the price of sugar.",
     position: "I call for sugarcane transport to remain Tax-Free.",
     category: 'DELETE'
   },
@@ -203,7 +219,7 @@ export const FINANCE_BILL_2026_CLAUSES: FinanceBillClause[] = [
     id: 'clause-aviation-narrow',
     clauseId: 'Chapter 88',
     title: 'Taxing Small and Commercial Aircraft',
-    concern: "Narrowing tax exemptions for aircraft will increase costs for local air transport and cargo, making Kenya a more expensive hub in the region.",
+    concern: "Narrowing tax exemptions for aircraft under Clauses 54/55 will increase costs for air cargo, making Kenya a more expensive hub.",
     position: "I demand that aircraft and spare parts remain Tax-Free.",
     category: 'DELETE'
   },
@@ -211,7 +227,7 @@ export const FINANCE_BILL_2026_CLAUSES: FinanceBillClause[] = [
     id: 'clause-national-carrier',
     clauseId: 'KQ Tech',
     title: 'New Tax on Aircraft Maintenance Services',
-    concern: "Removes tax exemptions for technical services for our national carrier. This will increase operational costs and Matatu-style price hikes in airline tickets.",
+    concern: "Removes tax exemptions for technical services for our national carrier. This will increase operational costs and airline ticket prices.",
     position: "I call for this exemption to be maintained to keep our skies competitive.",
     category: 'DELETE'
   },
@@ -219,15 +235,31 @@ export const FINANCE_BILL_2026_CLAUSES: FinanceBillClause[] = [
     id: 'clause-gratuity-3',
     clauseId: 'Gratuity',
     title: 'Limiting Tax-Free Gratuity to 3-Year Contracts',
-    concern: "Only employees with 3 years of continuous service can get tax-free gratuity. This punishes short-term workers and young professionals.",
+    concern: "Clause 3 amends Section 5 of the ITA to only allow tax-free gratuity for continuous service over 3 years. This punishes short-term workers and young professionals.",
     position: "I demand that gratuity remains tax-free for all employees regardless of contract length.",
     category: 'AMEND'
   },
   {
+    id: 'clause-2-xiii-pension-retroactive',
+    clauseId: 'Clause 2',
+    title: 'Retrospective Tax on Pre-2010 Pension Savings',
+    concern: "Deletes Section 53(1), exposing workers with pension savings predating 2010 to immediate retrospective tax consequences on their hard-earned life savings.",
+    position: "I demand the retention of Section 53(1) to protect the vested rights of long-term workers.",
+    category: 'DELETE'
+  },
+  {
+    id: 'clause-pension-reclassification',
+    clauseId: 'Pages 53/74',
+    title: 'Taxation of Pension & Public Lump Sums',
+    concern: "Reclassifies public pension scheme lump sums to align with commercial registered funds, effectively increasing the tax burden on retirees' payouts.",
+    position: "I demand that public pension lump sums remain protected from new tax reclassifications.",
+    category: 'DELETE'
+  },
+  {
     id: 'clause-vat-refund-3',
-    clauseId: 'Section 31',
+    clauseId: 'Clause 28',
     title: 'Delaying VAT Refunds for 3 Full Years',
-    concern: "Lets KRA hold on to citizens' money for an extra year. This starves businesses of working capital and slows down the economy.",
+    concern: "Amends Section 31 of the VAT Act to extend the refund window from 2 to 3 years. This starves businesses of working capital and slows the economy.",
     position: "I call for the refund window to be shortened to 1 year.",
     category: 'DELETE'
   },
@@ -235,7 +267,7 @@ export const FINANCE_BILL_2026_CLAUSES: FinanceBillClause[] = [
     id: 'clause-reit-property',
     clauseId: 'REIT Stamp',
     title: 'Easier Real Estate Investment (REITs)',
-    concern: "Removes heavy taxes when moving property into investment trusts. This helps modernize our housing market.",
+    concern: "Clause 56 Section 96A removes heavy taxes when moving property into investment trusts. This helps modernize our housing market.",
     position: "I support this move to formalize and grow the property market.",
     category: 'ACCEPT'
   },
@@ -243,7 +275,7 @@ export const FINANCE_BILL_2026_CLAUSES: FinanceBillClause[] = [
     id: 'clause-trust-single',
     clauseId: 'S. 11 Trust',
     title: 'Preventing Double Tax on Family Trusts',
-    concern: "Ensures that once a family trust pays its taxes, the beneficiaries are not taxed again. This protects family savings.",
+    concern: "Clause 8 replaces Section 11 of the ITA to ensure beneficiaries are not taxed again after the trust pays income tax. This protects family savings.",
     position: "I support this measure for tax fairness.",
     category: 'ACCEPT'
   },
@@ -265,9 +297,9 @@ export const FINANCE_BILL_2026_CLAUSES: FinanceBillClause[] = [
   },
   {
     id: 'clause-amnesty-ext',
-    clauseId: 'Amnesty',
+    clauseId: 'Clause 44',
     title: 'Extending Tax Amnesty until December 2026',
-    concern: "Gives citizens more time to settle old tax debts without massive interest and penalties.",
+    concern: "Amends Section 39A of the TPA to give citizens more time to settle old tax debts without massive interest and penalties.",
     position: "I call on Parliament to approve this extension for all Kenyans.",
     category: 'ACCEPT'
   },
@@ -275,7 +307,7 @@ export const FINANCE_BILL_2026_CLAUSES: FinanceBillClause[] = [
     id: 'clause-immovable-def',
     clauseId: 'S. 2 ITA',
     title: 'Fixing the Definition of Immovable Property',
-    concern: "Corrects the law to ensure land and mining rights are treated fairly. A necessary legal clean-up.",
+    concern: "Clause 2(a). Corrects the law to ensure land and mining rights are treated fairly. A necessary legal clean-up.",
     position: "I support this clean-up.",
     category: 'ACCEPT'
   },
@@ -283,23 +315,23 @@ export const FINANCE_BILL_2026_CLAUSES: FinanceBillClause[] = [
     id: 'clause-offshore-cgt',
     clauseId: 'Catch-all',
     title: 'Widening Offshore Tax on Global Share Sales',
-    concern: "Attempts to tax share sales that happen outside Kenya if there is any 'nexus' to Kenya. Overly broad and will drive away foreign investors.",
+    concern: "Clause 2(d) attempts to tax share sales that happen outside Kenya if there is any 'nexus' to Kenya. Overly broad and will drive away foreign investors.",
     position: "I demand a minimum 20% value threshold to avoid nuisance taxes.",
     category: 'AMEND'
   },
   {
-    id: 'clause-vasp-1m',
-    clauseId: 'VASP 1M',
-    title: 'Punitive KES 1M Penalty for Crypto Reports',
-    concern: "Imposes a massive 1 million shilling penalty for crypto providers who miss a report. This is disproportional and will kill innovation.",
-    position: "I call for a maximum penalty of KES 50,000.",
+    id: 'clause-vasp-framework',
+    clauseId: 'Clauses 37-41',
+    title: 'Mandatory VASP Data Reporting & 1M Penalties',
+    concern: "Amends the TPA to force crypto providers to file mandatory information returns on all users. Violates financial privacy and criminalizes digital innovation.",
+    position: "I call for the removal of the mandatory reporting framework and the reduction of the penalty to KES 50,000.",
     category: 'AMEND'
   },
   {
     id: 'clause-interchange-Fees',
-    clauseId: 'WHT Card',
+    clauseId: 'Clause 2(b) + 7',
     title: 'Taxing the Hidden Fees in Card Payments',
-    concern: "Adds a 5-20% tax on the internal fees banks pay for card networking. Businesses will pass this hidden cost to shoppers.",
+    concern: "Combines the 'management fee' redefinition with Section 10 withholding (Clause 7) to tax bank interchange fees. Businesses will pass this cost to shoppers.",
     position: "I call for the total deletion of this hidden tax.",
     category: 'DELETE'
   },
@@ -307,15 +339,15 @@ export const FINANCE_BILL_2026_CLAUSES: FinanceBillClause[] = [
     id: 'issue-winnings-reintro',
     clauseId: 'Betting',
     title: 'Reintroducing 20% Tax on Winnings',
-    concern: "Brings back the 20% tax on betting payouts which was removed only last year. Creates an unstable tax environment.",
+    concern: "Brings back the 20% tax on betting payouts in the Excise First Schedule Part II which was removed only last year.",
     position: "I call for a stable and predictable tax rate for the sector.",
     category: 'AMEND'
   },
   {
     id: 'issue-scrap-metal',
-    clauseId: 'Scrap 1.5%',
-    title: 'New 1.5% Tax on Every Scrap Metal Sale',
-    concern: "Imposes a gross tax on scrap metal. Many poor collectors work on less than 1% profit; this tax will bankrupt them.",
+    clauseId: 'Clause 7',
+    title: 'New Withholding Tax on Scrap Metal Sale',
+    concern: "Inserts scrap metal into the Section 10 ITA list (withholding tax). This will bankrupt many poor collectors who work on tiny margins.",
     position: "I demand this clause be deleted until a profit-only tax is possible.",
     category: 'DELETE'
   },
@@ -329,41 +361,49 @@ export const FINANCE_BILL_2026_CLAUSES: FinanceBillClause[] = [
   },
   {
     id: 'issue-software-royalty-2',
-    clauseId: 'Software',
+    clauseId: 'Clause 2(c)',
     title: 'Higher Cost for Business Software (Royalty)',
-    concern: "Treating regular software payments as royalties subject to 20% tax will make computers and accounting tools much more expensive.",
+    concern: "Rewrites the royalty definition in ITA Section 2 to explicitly include off-the-shelf software, making accounting tools more expensive.",
     position: "I call for software to stay in its current non-royalty category.",
     category: 'DELETE'
   },
   {
     id: 'antique-car-tax-37',
-    clauseId: 'Clause 37 (Excise Duty)',
+    clauseId: 'Clause 33 & 36',
     title: '50% Luxury Tax on Antique & Classic Vehicles',
-    concern: "Proposes a massive 50% ad valorem excise duty on antique, vintage, and classic vehicles older than 30 years and valued over KES 10 million. This will destroy the automotive heritage and restoration sector in Kenya.",
-    position: "I demand the deletion of this punitive tax to protect the collectors' economy and cultural heritage.",
+    concern: "Clause 33 defines antique vehicles and Clause 36 imposes a 50% rate. This will destroy the restoration sector and cultural heritage in Kenya.",
+    position: "I demand the deletion of this punitive tax to protect the collectors' economy.",
     category: 'DELETE'
   },
   {
-    id: 'filing-deadline-shift',
-    clauseId: 'Income Tax Sec 52',
+    id: 'filing-deadline-shift-v2',
+    clauseId: 'Clause 18',
     title: 'Shortened Tax Filing Deadline (April instead of June)',
-    concern: "Moves the deadline for annual tax returns from June 30th to April 30th. This 2-month reduction creates unnecessary pressure on small businesses and individuals to finalize audits and compliance.",
-    position: "I urge Parliament to retain the June 30th deadline to allow for proper constitutional and financial auditing.",
+    concern: "Amends ITA Section 52 to move the deadline for annual tax returns from June 30th to April 30th. This creates unnecessary pressure on audit compliance.",
+    position: "I urge Parliament to retain the June 30th deadline to allow for proper auditing.",
     category: 'DELETE'
   },
   {
     id: 'digital-finance-vat-28',
-    clauseId: 'Clause 28 (VAT)',
+    clauseId: 'Clause 31',
     title: '16% Tax on Digital Bank & Mobile Money Transfers',
-    concern: "Imposes 16% VAT on digital financial services, money transfers, and payment processing. This increases the cost of every transaction for ordinary Kenyans using M-Pesa or mobile banking.",
+    concern: "Imposes 16% VAT on digital financial services and payment processing by amending the First and Second Schedules. Increases transaction costs for ordinary Kenyans.",
     position: "I formally oppose this tax on financial inclusion and demand its total deletion.",
     category: 'DELETE'
   },
   {
+    id: 'clause-31-vat-exemption-finance',
+    clauseId: 'Clause 31',
+    title: 'Removal of VAT Exemption on Financial Services',
+    concern: "Amends the VAT Second Schedule Part II to remove exemptions for money transfers and payment aggregation. This is the statutory foundation for taxing financial inclusion.",
+    position: "I demand that financial services remain in the VAT-exempt list to protect financial inclusion.",
+    category: 'DELETE'
+  },
+  {
     id: 'calendar-days-dispute-77',
-    clauseId: 'Clause 77 (TPA)',
+    clauseId: 'Clause 49',
     title: 'Counting Weekends in Tax Dispute Timelines',
-    concern: "Changes the calculation of timelines for tax objections from working days to calendar days. This effectively 'steals' time from the citizen by counting Saturdays and Sundays against their right to legal defense.",
+    concern: "Amends ITA Section 77 (Clause 49). Counts Saturdays and Sundays against the citizen's right to legal defense in tax objections.",
     position: "I demand that timelines remain as 'Working Days' to protect the right to fair administrative action.",
     category: 'DELETE'
   },
@@ -371,8 +411,8 @@ export const FINANCE_BILL_2026_CLAUSES: FinanceBillClause[] = [
     id: 'unconstitutional-assembly-violation',
     clauseId: 'Articles 27(8), 81(b), 3(2)',
     title: 'Unconstitutionality of National Assembly Composition',
-    concern: "The current composition of the National Assembly is in blatant violation of the Two-Thirds Gender Rule (Articles 27(8) and 81(b)) and the Supreme Court Advisory Opinion 2 of 2012. Any business conducted, including the passage of the Finance Bill 2026, is therefore unconstitutional under Article 3(2).",
-    position: "I formally challenge the legality of the National Assembly to process this Bill and demand its literal dissolution to comply with the Constitution.",
+    concern: "The National Assembly is in violation of the Two-Thirds Gender Rule. Any business conducted, including this Finance Bill, is unconstitutional under Article 3(2).",
+    position: "I formally challenge the legality of the National Assembly to process this Bill and demand compliance with the Constitution.",
     category: 'DELETE'
   }
 ];
