@@ -116,7 +116,7 @@ const InfrastructureDetails: React.FC = () => {
               <Cpu className="text-kenya-green mb-4" />
               <h3 className="text-xl font-black mb-3 tracking-tight">How are we securing the Funding then?</h3>
               <p className="text-sm leading-relaxed text-white/60">
-                To prevent further outages and guarantee secure transactions - even with donations, we have isolated & distributed shards of some of our processes into their own separate instances. This keeps data separate from the main site traffic, ensuring total transparency and zero downtime as we fix the main site's issue.
+                To prevent further outages and guarantee secure transactions, - even with donations - we have isolated & distributed shards of some of our processes into their own separate instances. This keeps data separate from the main site traffic, ensuring total transparency and zero downtime as we fix the main site's issue.
               </p>
             </div>
             <div className="bg-gradient-to-br from-amber-500/10 to-transparent border border-amber-500/20 p-8 rounded-[40px]">
