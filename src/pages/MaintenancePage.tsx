@@ -232,7 +232,7 @@ const MaintenancePage: React.FC = () => {
             <h1 className="ceka-maint-heading">Help Us Restore CEKA Services</h1>
 
             <p style={{ textAlign: 'center', color: 'rgba(255,255,255,0.5)', fontSize: 14, marginBottom: 8 }}>
-              We are working hard to restore CEKA services. Help us by supporting our efforts through donating to our channel below
+              We are working hard to restore CEKA services downed over the weekend's Finance Bill emails. Help us by supporting our efforts via donating on our channels below
             </p>
 
             {/* THE TRACKER */}
