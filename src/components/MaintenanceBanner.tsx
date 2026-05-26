@@ -5,8 +5,8 @@ import { ledgerService } from "@/services/ledgerService";
 /* ─────────────────────────────────────────────────────────────────────────────
    MaintenanceBanner.tsx
    STRICT MODE: iOS Skeuomorphic / Glassmorphic Edition
-   Target: KSh 5,500 Recovery Milestone
-   Powered by: Isolated Ledger Service (ftswzvqwxdwgkvfbwfpx)
+   Layout: FLOW-SAFE (Pushes content down, doesn't overlap)
+   Mobile: Resized and optimized for narrow screens.
 ───────────────────────────────────────────────────────────────────────────── */
 
 const SESSION_KEY = "ceka_maint_banner_dismissed";
@@ -73,125 +73,136 @@ const MaintenanceBanner: React.FC = () => {
         @keyframes shimmer-liquid { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
 
         .ceka-banner-root {
-          position: sticky;
-          top: 0; left: 0; right: 0;
+          position: relative; /* STRICT MODE: No overlap, pushes Navbar down */
           z-index: 3002;
           display: flex;
           align-items: center;
           justify-content: center;
-          padding: 8px 16px;
-          background: rgba(0, 40, 10, 0.75);
-          backdrop-filter: blur(32px) saturate(210%);
-          -webkit-backdrop-filter: blur(32px) saturate(210%);
-          border-bottom: 1px solid rgba(0, 200, 80, 0.15);
-          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.05);
-          font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
+          padding: 10px 16px;
+          background: rgba(0, 30, 5, 0.85);
+          backdrop-filter: blur(40px) saturate(200%);
+          -webkit-backdrop-filter: blur(40px) saturate(200%);
+          border-bottom: 1px solid rgba(0, 255, 100, 0.15);
+          box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+          font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
         }
 
         .ceka-banner-inner {
           display: flex;
           align-items: center;
+          justify-content: space-between;
           gap: 12px;
           width: 100%;
-          max-width: 1100px;
+          max-width: 1200px;
+          flex-wrap: wrap; /* Safety for very small screens */
         }
 
         .alert-pill {
           display: flex;
           align-items: center;
           gap: 6px;
-          padding: 4px 10px;
-          background: rgba(0, 200, 80, 0.12);
-          border: 1px solid rgba(0, 200, 80, 0.25);
+          padding: 5px 12px;
+          background: rgba(0, 200, 80, 0.1);
+          border: 1px solid rgba(0, 220, 100, 0.25);
           border-radius: 100px;
-          color: rgba(0, 220, 100, 0.95);
+          color: rgba(0, 250, 130, 1);
           font-size: 11px;
-          font-weight: 700;
-          letter-spacing: 0.03em;
+          font-weight: 800;
+          letter-spacing: 0.04em;
           text-transform: uppercase;
+          white-space: nowrap;
           animation: ceka-banner-pulse 2s infinite;
         }
 
         .ceka-banner-text {
           font-size: 12.5px;
           font-weight: 500;
-          color: rgba(200, 255, 220, 0.7);
+          color: rgba(200, 255, 220, 0.65);
           flex: 1;
+          display: block;
         }
 
-        /* iOS Skeuomorphic Mini Tracker */
+        /* Responsive Mobile Behavior */
+        @media (max-width: 768px) {
+          .ceka-banner-text { display: none; } /* Hide long text on mobile to save space */
+          .alert-pill { font-size: 10px; padding: 4px 8px; }
+          .ceka-banner-inner { gap: 8px; }
+        }
+
+        /* iOS Skeuomorphic Bezel Tracker */
         .banner-tracker-wrap {
           display: flex;
           align-items: center;
-          gap: 10px;
-          background: rgba(0, 0, 0, 0.25);
-          padding: 4px 12px;
+          gap: 8px;
+          background: rgba(0, 0, 0, 0.4);
+          padding: 4px 10px;
           border-radius: 100px;
-          border: 1px solid rgba(255, 255, 255, 0.05);
-          box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
+          border: 1.2px solid rgba(255, 255, 255, 0.04);
+          box-shadow: inset 0 2px 5px rgba(0,0,0,0.5);
+          min-width: 90px;
         }
 
         .mini-track-bg {
-          width: 60px;
-          height: 5px;
-          background: rgba(255, 255, 255, 0.06);
+          flex: 1;
+          width: 50px;
+          height: 6px;
+          background: rgba(255, 255, 255, 0.05);
           border-radius: 100px;
           overflow: hidden;
           position: relative;
+          box-shadow: inset 0 1px 2px rgba(0,0,0,0.4);
         }
 
         .mini-track-fill {
           height: 100%;
-          background: linear-gradient(90deg, #008c32, #00c850, #008c32);
+          background: linear-gradient(90deg, #007722, #00e676, #007722);
           background-size: 200% 100%;
           border-radius: 100px;
           width: ${progressPercent}%;
-          transition: width 1s ease;
-          animation: shimmer-liquid 3s linear infinite;
+          transition: width 1.5s cubic-bezier(0.23, 1, 0.32, 1);
+          animation: shimmer-liquid 4s linear infinite;
         }
 
         .mini-tracker-label {
-          font-size: 10.5px;
-          font-weight: 800;
-          color: rgba(0, 220, 100, 0.9);
+          font-size: 10px;
+          font-weight: 900;
+          color: rgba(0, 255, 120, 0.9);
           font-variant-numeric: tabular-nums;
         }
 
+        /* FIXED MOBILE BUTTON */
         .ceka-banner-link {
           display: flex;
           align-items: center;
           gap: 6px;
-          font-size: 12px;
-          font-weight: 700;
+          font-size: 11px;
+          font-weight: 800;
           color: white;
           text-decoration: none;
-          background: rgba(0, 220, 100, 0.15);
-          padding: 5px 12px;
+          background: linear-gradient(180deg, #00aa44 0%, #008833 100%);
+          padding: 6px 14px;
           border-radius: 100px;
-          border: 1px solid rgba(0, 220, 100, 0.3);
-          transition: all 0.2s;
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          box-shadow: 0 4px 10px rgba(0,0,10,0.4), inset 0 1px 0 rgba(255,255,255,0.2);
+          white-space: nowrap;
+          transition: transform 0.2s;
         }
-        .ceka-banner-link:hover {
-          background: rgba(0, 220, 100, 0.25);
-          transform: translateY(-1px);
-        }
+        
+        .ceka-banner-link:active { transform: scale(0.96); }
 
         .ceka-banner-dismiss {
-          width: 28px;
-          height: 28px;
+          width: 24px;
+          height: 24px;
           display: flex;
           align-items: center;
           justify-content: center;
           border: none;
-          background: rgba(255,255,255,0.05);
+          background: rgba(255,255,255,0.06);
           border-radius: 50%;
-          color: rgba(200,255,220,0.4);
+          color: rgba(200,255,220,0.3);
           cursor: pointer;
-          transition: all 0.2s;
+          flex-shrink: 0;
         }
-        .ceka-banner-dismiss:hover { background: rgba(255,255,255,0.1); color: white; }
-
-        @media (max-width: 800px) { .ceka-banner-text { display: none; } }
       `}</style>
 
       <div className="ceka-banner-root" role="banner">
@@ -202,7 +213,7 @@ const MaintenanceBanner: React.FC = () => {
           </div>
 
           <span className="ceka-banner-text">
-            Finance Bill Requests Downed Our Database... help us restore the site fully.
+            Finance Bill requests downed our database... help us restore the site fully.
           </span>
 
           <div className="banner-tracker-wrap">
@@ -214,7 +225,7 @@ const MaintenanceBanner: React.FC = () => {
 
           <Link to={MAINTENANCE_ROUTE} className="ceka-banner-link">
             <WalletIcon />
-            <span>How to Support {"->"} </span>
+            <span>How to Support {"->"}</span>
           </Link>
 
           <button className="ceka-banner-dismiss" onClick={dismiss}>
