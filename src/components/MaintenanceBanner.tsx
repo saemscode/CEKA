@@ -303,7 +303,7 @@ const MaintenanceBanner: React.FC = () => {
               )}
               {cardIndex === 2 && (
                 <motion.div key="card3" className="flip-card" variants={cardVariants} initial="initial" animate="animate" exit="exit" transition={{ duration: 0.5 }}>
-                  <span className="flip-text cta-text">SUPPORT CEKA: <span className="highlight-green">WE NEED YOUR HELP</span></span>
+                  <span className="flip-text cta-text">ACT NOW: <span className="highlight-green">WE NEED YOUR HELP</span></span>
                 </motion.div>
               )}
             </AnimatePresence>
