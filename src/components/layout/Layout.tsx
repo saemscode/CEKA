@@ -5,6 +5,7 @@ import BottomNavbar from './BottomNavbar';
 import DonationWidget from '@/components/donation/DonationWidget';
 import GlobalAIAssistant from '@/components/ai/GlobalAIAssistant';
 import InAppBrowserBanner from '@/components/ui/InAppBrowserBanner';
+import MaintenanceBanner from '@/components/MaintenanceBanner';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface LayoutProps {
@@ -30,6 +31,7 @@ const Layout = ({ children, hideBottomNav, hideBackButton }: LayoutProps) => {
 
   return (
     <div className="flex min-h-screen flex-col relative overflow-x-hidden">
+      <MaintenanceBanner />
       <Navbar />
       <InAppBrowserBanner />
       <main className="flex-1 pt-16 lg:pt-0 pb-16 lg:pb-0 w-full overflow-x-hidden">{children}</main>

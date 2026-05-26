@@ -271,7 +271,7 @@
   background: linear-gradient(to bottom, #006600, #004d00);
   border-radius: 5px;
   border: 2.5px solid #f8fafc;
-  box-shadow: inset 0 0 1px rgba(255,255,255,0.2);
+  box-shadow: inset 0 0 1px rgba(255, 255, 255, 0.2);
 }
 
 ::-webkit-scrollbar-thumb:hover {
@@ -1881,14 +1881,14 @@ button.ios-control-btn {
 /* ===== PREMIUM OAUTH SKEUOMORPHIC STYLES ===== */
 .authorize-button {
   background: linear-gradient(180deg, #1E6BFF 0%, #0A4BBF 100%) !important;
-  box-shadow: 
-    inset 0 1px 1px rgba(255,255,255,0.4),
-    inset 0 -2px 4px rgba(0,0,0,0.1),
-    0 15px 35px rgba(30,107,255,0.4) !important;
-  border: 1px solid rgba(255,255,255,0.2) !important;
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.4),
+    inset 0 -2px 4px rgba(0, 0, 0, 0.1),
+    0 15px 35px rgba(30, 107, 255, 0.4) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
   transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1) !important;
   color: white !important;
-  text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
   font-weight: 800 !important;
   letter-spacing: 0.05em !important;
   text-transform: uppercase !important;
@@ -1896,17 +1896,17 @@ button.ios-control-btn {
 
 .authorize-button:active {
   transform: scale(0.97) !important;
-  box-shadow: 
-    inset 0 2px 4px rgba(0,0,0,0.2),
-    0 5px 15px rgba(30,107,255,0.2) !important;
+  box-shadow:
+    inset 0 2px 4px rgba(0, 0, 0, 0.2),
+    0 5px 15px rgba(30, 107, 255, 0.2) !important;
 }
 
 .authorize-button:hover {
   background: linear-gradient(180deg, #2a7aff 0%, #0c56d8 100%) !important;
-  box-shadow: 
-    inset 0 1px 1px rgba(255,255,255,0.5),
-    inset 0 -2px 4px rgba(0,0,0,0.15),
-    0 20px 40px rgba(30,107,255,0.5) !important;
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.5),
+    inset 0 -2px 4px rgba(0, 0, 0, 0.15),
+    0 20px 40px rgba(30, 107, 255, 0.5) !important;
 }
 
 .glass-morphism {
@@ -1927,14 +1927,31 @@ button.ios-control-btn {
 }
 
 @keyframes pulse-fingerprint {
-  0% { opacity: 0.6; transform: scale(0.95); }
-  50% { opacity: 1; transform: scale(1.05); filter: drop-shadow(0 0 10px rgba(30, 107, 255, 0.6)); }
-  100% { opacity: 0.6; transform: scale(0.95); }
+  0% {
+    opacity: 0.6;
+    transform: scale(0.95);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.05);
+    filter: drop-shadow(0 0 10px rgba(30, 107, 255, 0.6));
+  }
+
+  100% {
+    opacity: 0.6;
+    transform: scale(0.95);
+  }
 }
 
 @keyframes rotate-shimmer {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .premium-card-border {
@@ -1949,11 +1966,9 @@ button.ios-control-btn {
   left: -50%;
   width: 200%;
   height: 200%;
-  background: conic-gradient(
-    transparent, 
-    rgba(30, 107, 255, 0.1), 
-    transparent 30%
-  );
+  background: conic-gradient(transparent,
+      rgba(30, 107, 255, 0.1),
+      transparent 30%);
   animation: rotate-shimmer 4s linear infinite;
   pointer-events: none;
-}
+}

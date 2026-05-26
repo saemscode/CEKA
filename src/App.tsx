@@ -60,6 +60,7 @@ import Tools from '@/pages/Tools';
 import About from '@/pages/About';
 import TemplateViewerPage from '@/pages/TemplateViewerPage';
 import NotFound from '@/pages/NotFound';
+import MaintenancePage from '@/pages/MaintenancePage';
 
 const queryClient = new QueryClient();
 
@@ -131,9 +132,10 @@ const AppContent = () => {
         <Route path="/blog/:slug" element={<BlogPost />} />
         <Route path="/calendar" element={<EventsCalendar />} />
         <Route path="/admin/dashboard" element={<AdminDashboard />} />
-        <Route path="/resources" element={<ResourceLibrary />} />
-        <Route path="/resources/:id" element={<ResourceDetail />} />
-        <Route path="/resources/type/:type" element={<ResourceLibrary />} />
+        <Route path="/maintenance" element={<MaintenancePage />} />
+        <Route path="/resources" element={<Navigate to="/maintenance" replace />} />
+        <Route path="/resources/:id" element={<Navigate to="/maintenance" replace />} />
+        <Route path="/resources/type/:type" element={<Navigate to="/maintenance" replace />} />
         <Route path="/resources/upload" element={
           <ProtectedRoute>
             <ResourceUpload />
@@ -146,10 +148,10 @@ const AppContent = () => {
         } />
         <Route path="/resource-hub" element={<Navigate to="/resources" replace />} />
         <Route path="/oauth/consent" element={<OAuthConsent />} />
-        <Route path="/legislative-tracker" element={<LegislativeTracker />} />
-        <Route path="/legislative-tracker/:id" element={<LegislativeTrackerDetail />} />
-        <Route path="/legislation/:id" element={<LegislationDetail />} />
-        <Route path="/bill/:slug" element={<BillDetail />} />
+        <Route path="/legislative-tracker" element={<Navigate to="/maintenance" replace />} />
+        <Route path="/legislative-tracker/:id" element={<Navigate to="/maintenance" replace />} />
+        <Route path="/legislation/:id" element={<Navigate to="/maintenance" replace />} />
+        <Route path="/bill/:slug" element={<Navigate to="/maintenance" replace />} />
         <Route path="/template/:id" element={<TemplateViewerPage />} />
         <Route path="/reject-finance-bill" element={<RejectFinanceBill />} />
         <Route path="/shambles" element={<SHAmbles />} />

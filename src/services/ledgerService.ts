@@ -45,6 +45,26 @@ class LedgerService {
       return null;
     }
   }
+
+  async getDonationStats() {
+    try {
+      const { data, error } = await this.supabase
+        .from('transactions')
+        .select('amount')
+        .eq('status', 'success');
+
+      if (error) throw error;
+      
+      const totalAmount = (data || []).reduce((sum, tx) => sum + (Number(tx.amount) / 100), 0);
+      return {
+        total: totalAmount,
+        count: data?.length || 0
+      };
+    } catch (error) {
+      console.error('[LedgerService] Error fetching stats:', error);
+      return { total: 0, count: 0 };
+    }
+  }
 }
 
 export const ledgerService = new LedgerService();
