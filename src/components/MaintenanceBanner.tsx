@@ -41,7 +41,7 @@ const SketchArrowIcon: React.FC = () => (
 /* ── SVG: Cancel Close (from icons 3) ── */
 const CloseIcon: React.FC = () => (
   <svg fill="currentColor" height="12px" width="12px" viewBox="0 0 492 492" xmlns="http://www.w3.org/2000/svg" style={{ flexShrink: 0 }}>
-    <path d="M300.188,246L484.14,62.04c5.06-5.064,7.852-11.82,7.86-19.024c0-7.208-2.792-13.972-7.86-19.028L468.02,7.872 c-5.068-5.076-11.824-7.856-19.036-7.856c-7.2,0-13.956,2.78-19.024,7.856L246.008,191.82L62.048,7.872 c-5.06-5.076-11.82-7.856-19.028-7.856c-7.2,0-13.96,2.78-19.02,7.856L7.872,23.988c-10.496,10.496-10.496,27.568,0,38.052 L191.828,246L7.872,429.952c-5.064,5.072-7.852,11.828-7.852,19.032c0,7.204,2.788,13.96,7.852,19.028l16.124,16.116 c5.06,5.072,11.824,7.856,19.02,7.856c7.208,0,13.968-2.784,19.028-7.856l183.96-183.952l183.952,183.952 c5.068,5.072,11.824,7.856,19.024,7.856h0.008c7.204,0,13.96-2.784,19.028-7.856l16.12-16.116 c5.06-5.064,7.852-11.824,7.852-19.028c0-7.204-2.792-13.96-7.852-19.028L300.188,246z"/>
+    <path d="M300.188,246L484.14,62.04c5.06-5.064,7.852-11.82,7.86-19.024c0-7.208-2.792-13.972-7.86-19.028L468.02,7.872 c-5.068-5.076-11.824-7.856-19.036-7.856c-7.2,0-13.956,2.78-19.024,7.856L246.008,191.82L62.048,7.872 c-5.06-5.076-11.82-7.856-19.028-7.856c-7.2,0-13.96,2.78-19.02,7.856L7.872,23.988c-10.496,10.496-10.496,27.568,0,38.052 L191.828,246L7.872,429.952c-5.064,5.072-7.852,11.828-7.852,19.032c0,7.204,2.788,13.96,7.852,19.028l16.124,16.116 c5.06,5.072,11.824,7.856,19.02,7.856c7.208,0,13.968-2.784,19.028-7.856l183.96-183.952l183.952,183.952 c5.068,5.072,11.824,7.856,19.024,7.856h0.008c7.204,0,13.96-2.784,19.028-7.856l16.12-16.116 c5.06-5.064,7.852-11.824,7.852-19.028c0-7.204-2.792-13.96-7.852-19.028L300.188,246z" />
   </svg>
 );
 
@@ -62,7 +62,7 @@ const MaintenanceBanner: React.FC = () => {
     };
     fetchStats();
     const pollInterval = setInterval(fetchStats, 30000);
-    
+
     // THE RECOVERY FLIP: Cycle through 3 cards every 4 seconds
     const flipInterval = setInterval(() => {
       setCardIndex((prev) => (prev + 1) % 3);
@@ -201,15 +201,34 @@ const MaintenanceBanner: React.FC = () => {
 
         /* Card 2 & 3: High Impact Text */
         .flip-text {
-          font-size: 13.5px;
+          font-family: "JetBrains Mono", "SF Mono", "Menlo", monospace;
+          font-size: 13px;
           font-weight: 700;
-          color: rgba(255, 255, 255, 0.9);
+          color: rgba(255, 255, 255, 0.85);
           text-align: center;
-          letter-spacing: -0.01em;
+          letter-spacing: 0.05em;
+          text-transform: uppercase;
         }
 
-        .highlight-red { color: #ff3b30; text-shadow: 0 0 10px rgba(255, 59, 48, 0.3); }
-        .highlight-green { color: #34c759; }
+        .cta-text {
+          font-family: -apple-system, "SF Pro Display", "Inter", sans-serif;
+          font-weight: 900;
+          letter-spacing: -0.02em;
+          font-size: 14px;
+        }
+
+        .highlight-red { 
+          color: #ff453a; 
+          font-weight: 900;
+          text-shadow: 0 0 15px rgba(255, 69, 58, 0.5); 
+        }
+        .highlight-green { 
+          color: #32d74b; 
+          font-weight: 900;
+          text-shadow: 0 0 15px rgba(50, 215, 75, 0.4);
+        }
+        .highlight-white { color: rgba(255, 255, 255, 1); font-weight: 900; }
+
 
         /* THE SUPPORT BUTTON */
         .btn-right {
@@ -279,12 +298,12 @@ const MaintenanceBanner: React.FC = () => {
               )}
               {cardIndex === 1 && (
                 <motion.div key="card2" className="flip-card" variants={cardVariants} initial="initial" animate="animate" exit="exit" transition={{ duration: 0.5 }}>
-                  <span className="flip-text">DATABASE STATE: <span className="highlight-red">CRITICAL / OFFLINE</span></span>
+                  <span className="flip-text">DATABASE STATE: <span className="highlight-red">CRITICAL</span> <span className="highlight-white"> / </span> <span className="highlight-red">OFFLINE</span></span>
                 </motion.div>
               )}
               {cardIndex === 2 && (
                 <motion.div key="card3" className="flip-card" variants={cardVariants} initial="initial" animate="animate" exit="exit" transition={{ duration: 0.5 }}>
-                  <span className="flip-text">RESTORE CEKA: <span className="highlight-green">WE NEED YOUR HELP</span></span>
+                  <span className="flip-text cta-text">SUPPORT CEKA: <span className="highlight-green">WE NEED YOUR HELP</span></span>
                 </motion.div>
               )}
             </AnimatePresence>
