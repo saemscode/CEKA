@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { ledgerService } from "@/services/ledgerService";
+import { motion, AnimatePresence } from "framer-motion";
 
 /* ─────────────────────────────────────────────────────────────────────────────
    MaintenanceBanner.tsx
-   STRICT MODE: iOS Skeuomorphic / Glassmorphic Edition
+   STRICT MODE: iOS Skeuomorphic / Glassmorphic Control Center
    Target: KSh 5,500 Recovery Milestone
-   Powered by: Isolated Ledger Service (ftswzvqwxdwgkvfbwfpx)
+   Feature: Three-card "Recovery Flip" Animation
 ───────────────────────────────────────────────────────────────────────────── */
 
 const SESSION_KEY = "ceka_maint_banner_dismissed";
@@ -20,41 +21,57 @@ const AlertIcon: React.FC = () => (
   </svg>
 );
 
-/* ── SVG: Wallet Money (from report/context) ── */
-const WalletIcon: React.FC = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ flexShrink: 0 }}>
-    <path fill-rule="evenodd" clip-rule="evenodd" d="M20.4105 9.86058C20.3559 9.8571 20.2964 9.85712 20.2348 9.85715L20.2194 9.85715H17.8015C15.8086 9.85715 14.1033 11.4382 14.1033 13.5C14.1033 15.5618 15.8086 17.1429 17.8015 17.1429H20.2194L20.2348 17.1429C20.2964 17.1429 20.3559 17.1429 20.4105 17.1394C21.22 17.0879 21.9359 16.4495 21.9961 15.5577C22.0001 15.4992 22 15.4362 22 15.3778L22 15.3619V11.6381L22 11.6222C22 11.5638 22.0001 11.5008 21.9961 11.4423C21.9359 10.5506 21.22 9.91209 20.4105 9.86058ZM17.5872 14.4714C18.1002 14.4714 18.5162 14.0365 18.5162 13.5C18.5162 12.9635 18.1002 12.5286 17.5872 12.5286C17.0741 12.5286 16.6581 12.9635 16.6581 13.5C16.6581 14.0365 17.0741 14.4714 17.5872 14.4714Z" fill="currentColor" />
-    <path fill-rule="evenodd" clip-rule="evenodd" d="M20.2341 18.6C20.3778 18.5963 20.4866 18.7304 20.4476 18.8699C20.2541 19.562 19.947 20.1518 19.4542 20.6485C18.7329 21.3755 17.8183 21.6981 16.6882 21.8512C15.5902 22 14.1872 22 12.4158 22H10.3794C8.60803 22 7.20501 22 6.10697 21.8512C4.97692 21.6981 4.06227 21.3755 3.34096 20.6485C2.61964 19.9215 2.29953 18.9997 2.1476 17.8608C1.99997 16.7541 1.99999 15.3401 2 13.5548V13.4452C1.99998 11.6599 1.99997 10.2459 2.1476 9.13924C2.29953 8.00031 2.61964 7.07848 3.34096 6.35149C4.06227 5.62451 4.97692 5.30188 6.10697 5.14876C7.205 4.99997 8.60802 4.99999 10.3794 5L12.4158 5C14.1872 4.99998 15.5902 4.99997 16.6882 5.14876C17.8183 5.30188 18.7329 5.62451 19.4542 6.35149C19.947 6.84817 20.2541 7.43804 20.4476 8.13012C20.4866 8.26959 20.3778 8.40376 20.2341 8.4L17.8015 8.40001C15.0673 8.40001 12.6575 10.5769 12.6575 13.5C12.6575 16.4231 15.0673 18.6 17.8015 18.6L20.2341 18.6ZM5.61446 8.88572C5.21522 8.88572 4.89157 9.21191 4.89157 9.61429C4.89157 10.0167 5.21522 10.3429 5.61446 10.3429H9.46988C9.86912 10.3429 10.1928 10.0167 10.1928 9.61429C10.1928 9.21191 9.86912 8.88572 9.46988 8.88572H5.61446Z" fill="currentColor" />
-    <path d="M7.77668 4.02439L9.73549 2.58126C10.7874 1.80625 12.2126 1.80625 13.2645 2.58126L15.2336 4.03197C14.4103 3.99995 13.4909 3.99998 12.4829 4H10.3123C9.39123 3.99998 8.5441 3.99996 7.77668 4.02439Z" fill="currentColor" />
+/* ── SVG: Hand-Drawn Right Arrow (from icons 3) ── */
+const SketchArrowIcon: React.FC = () => (
+  <svg width="20" height="20" viewBox="0 0 60.707 60.707" fill="currentColor" xmlns="http://www.w3.org/2000/svg" style={{ flexShrink: 0 }}>
+    <path d="M55.377,24.919c-4.115-3.246-8.23-6.492-12.346-9.738c-0.002-0.002-0.006-0.002-0.008-0.003
+      c-0.027-0.025-0.064-0.05-0.117-0.071c-6.672-2.722-2.856,7.661-4.514,7.908c-6.086,0.909-12.17,1.816-18.257,2.725
+      c-5.814,0.868-11.628,1.735-17.441,2.604C0.936,28.606,0,29.399,0,31.151c0,1.594,2.95,1.537,4.005,1.693
+      c6.749,1.005,13.499,2.009,20.248,3.015c2.339,0.348,14.326,0.482,14.326,3.657c0,1.317-0.851,6.098,1.261,6.463
+      c1.711,0.297,2.764-0.32,4.064-1.347c5.203-4.103,10.408-8.208,15.611-12.311c0.364-0.287,0.613-0.573,0.805-0.858
+      c0.016-0.017,0.025-0.036,0.039-0.054c0.045-0.069,0.098-0.14,0.133-0.208c0.068-0.129,0.123-0.268,0.154-0.411
+      C61.255,28.468,57.145,26.314,55.377,24.919z M2.33,29.856c-0.064,0.153-0.128,0.309-0.19,0.462
+      c-0.054,0.131-0.101,0.262-0.139,0.388c-0.019-0.027-0.051-0.046-0.068-0.074c-0.332-0.542-0.01-0.936,0.609-1.229
+      C2.47,29.541,2.398,29.691,2.33,29.856z M52.773,25.01c0.104,0.082,0.207,0.164,0.312,0.246c-1.814,3.778-3.71,7.517-5.721,11.197
+      c-0.266,0.483-0.328,0.457-0.133-0.061c0.765-2.021,1.59-4.017,2.424-6.004c0.214-0.509,0.619-1.304,0.904-1.776
+      C51.294,27.409,52.033,26.209,52.773,25.01z" />
   </svg>
 );
 
 /* ── SVG: Cancel Close (from icons 3) ── */
 const CloseIcon: React.FC = () => (
   <svg fill="currentColor" height="12px" width="12px" viewBox="0 0 492 492" xmlns="http://www.w3.org/2000/svg" style={{ flexShrink: 0 }}>
-    <path d="M300.188,246L484.14,62.04c5.06-5.064,7.852-11.82,7.86-19.024c0-7.208-2.792-13.972-7.86-19.028L468.02,7.872 c-5.068-5.076-11.824-7.856-19.036-7.856c-7.2,0-13.956,2.78-19.024,7.856L246.008,191.82L62.048,7.872 c-5.06-5.076-11.82-7.856-19.028-7.856c-7.2,0-13.96,2.78-19.02,7.856L7.872,23.988c-10.496,10.496-10.496,27.568,0,38.052 L191.828,246L7.872,429.952c-5.064,5.072-7.852,11.828-7.852,19.032c0,7.204,2.788,13.96,7.852,19.028l16.124,16.116 c5.06,5.072,11.824,7.856,19.02,7.856c7.208,0,13.968-2.784,19.028-7.856l183.96-183.952l183.952,183.952 c5.068,5.072,11.824,7.856,19.024,7.856h0.008c7.204,0,13.96-2.784,19.028-7.856l16.12-16.116 c5.06-5.064,7.852-11.824,7.852-19.028c0-7.204-2.792-13.96-7.852-19.028L300.188,246z" />
+    <path d="M300.188,246L484.14,62.04c5.06-5.064,7.852-11.82,7.86-19.024c0-7.208-2.792-13.972-7.86-19.028L468.02,7.872 c-5.068-5.076-11.824-7.856-19.036-7.856c-7.2,0-13.956,2.78-19.024,7.856L246.008,191.82L62.048,7.872 c-5.06-5.076-11.82-7.856-19.028-7.856c-7.2,0-13.96,2.78-19.02,7.856L7.872,23.988c-10.496,10.496-10.496,27.568,0,38.052 L191.828,246L7.872,429.952c-5.064,5.072-7.852,11.828-7.852,19.032c0,7.204,2.788,13.96,7.852,19.028l16.124,16.116 c5.06,5.072,11.824,7.856,19.02,7.856c7.208,0,13.968-2.784,19.028-7.856l183.96-183.952l183.952,183.952 c5.068,5.072,11.824,7.856,19.024,7.856h0.008c7.204,0,13.96-2.784,19.028-7.856l16.12-16.116 c5.06-5.064,7.852-11.824,7.852-19.028c0-7.204-2.792-13.96-7.852-19.028L300.188,246z"/>
   </svg>
 );
 
 const MaintenanceBanner: React.FC = () => {
   const [visible, setVisible] = useState<boolean>(false);
   const [stats, setStats] = useState<{ total: number; count: number }>({ total: 0, count: 0 });
+  const [cardIndex, setCardIndex] = useState(0);
 
   useEffect(() => {
     try {
       const dismissed = sessionStorage.getItem(SESSION_KEY);
       if (!dismissed) setVisible(true);
-    } catch {
-      setVisible(true);
-    }
+    } catch { setVisible(true); }
 
     const fetchStats = async () => {
       const data = await ledgerService.getDonationStats();
       setStats(data);
     };
     fetchStats();
-    const interval = setInterval(fetchStats, 30000);
-    return () => clearInterval(interval);
+    const pollInterval = setInterval(fetchStats, 30000);
+    
+    // THE RECOVERY FLIP: Cycle through 3 cards every 4 seconds
+    const flipInterval = setInterval(() => {
+      setCardIndex((prev) => (prev + 1) % 3);
+    }, 4000);
+
+    return () => {
+      clearInterval(pollInterval);
+      clearInterval(flipInterval);
+    };
   }, []);
 
   const progressPercent = Math.min(100, (stats.total / RECOVERY_GOAL) * 100);
@@ -66,11 +83,17 @@ const MaintenanceBanner: React.FC = () => {
 
   if (!visible) return null;
 
+  const cardVariants = {
+    initial: { opacity: 0, y: 15, filter: "blur(4px)" },
+    animate: { opacity: 1, y: 0, filter: "blur(0px)" },
+    exit: { opacity: 0, y: -15, filter: "blur(4px)" }
+  };
+
   return (
     <>
       <style>{`
-        @keyframes ceka-banner-pulse { 0% { opacity: 0.6; } 50% { opacity: 1; } 100% { opacity: 0.6; } }
         @keyframes shimmer-liquid { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+        @keyframes icon-pulse { 0% { transform: scale(1); opacity: 0.8; } 50% { transform: scale(1.1); opacity: 1; } 100% { transform: scale(1); opacity: 0.8; } }
 
         .ceka-banner-root {
           position: sticky;
@@ -80,144 +103,200 @@ const MaintenanceBanner: React.FC = () => {
           align-items: center;
           justify-content: center;
           padding: 8px 16px;
-          background: rgba(0, 40, 10, 0.75);
-          backdrop-filter: blur(32px) saturate(210%);
-          -webkit-backdrop-filter: blur(32px) saturate(210%);
-          border-bottom: 1px solid rgba(0, 200, 80, 0.15);
-          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.05);
-          font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
+          background: rgba(0, 40, 10, 0.8);
+          backdrop-filter: blur(40px) saturate(200%);
+          -webkit-backdrop-filter: blur(40px) saturate(200%);
+          border-bottom: 1px solid rgba(0, 200, 80, 0.2);
+          box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+          font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+          height: 52px;
+          overflow: hidden;
         }
 
         .ceka-banner-inner {
           display: flex;
           align-items: center;
+          justify-content: space-between;
           gap: 12px;
           width: 100%;
           max-width: 1100px;
-        }
-
-        .alert-pill {
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          padding: 4px 10px;
-          background: rgba(0, 200, 80, 0.12);
-          border: 1px solid rgba(0, 200, 80, 0.25);
-          border-radius: 100px;
-          color: rgba(0, 220, 100, 0.95);
-          font-size: 11px;
-          font-weight: 700;
-          letter-spacing: 0.03em;
-          text-transform: uppercase;
-          animation: ceka-banner-pulse 2s infinite;
-        }
-
-        .ceka-banner-text {
-          font-size: 12.5px;
-          font-weight: 500;
-          color: rgba(200, 255, 220, 0.7);
-          flex: 1;
-        }
-
-        /* iOS Skeuomorphic Mini Tracker */
-        .banner-tracker-wrap {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          background: rgba(0, 0, 0, 0.25);
-          padding: 4px 12px;
-          border-radius: 100px;
-          border: 1px solid rgba(255, 255, 255, 0.05);
-          box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
-        }
-
-        .mini-track-bg {
-          width: 60px;
-          height: 5px;
-          background: rgba(255, 255, 255, 0.06);
-          border-radius: 100px;
-          overflow: hidden;
-          position: relative;
-        }
-
-        .mini-track-fill {
           height: 100%;
-          background: linear-gradient(90deg, #008c32, #00c850, #008c32);
-          background-size: 200% 100%;
-          border-radius: 100px;
-          width: ${progressPercent}%;
-          transition: width 1s ease;
-          animation: shimmer-liquid 3s linear infinite;
         }
 
-        .mini-tracker-label {
-          font-size: 10.5px;
-          font-weight: 800;
-          color: rgba(0, 220, 100, 0.9);
-          font-variant-numeric: tabular-nums;
-        }
-
-        .ceka-banner-link {
+        .badge-left {
           display: flex;
           align-items: center;
-          gap: 6px;
-          font-size: 12px;
-          font-weight: 700;
-          color: white;
-          text-decoration: none;
-          background: rgba(0, 220, 100, 0.15);
-          padding: 5px 12px;
+          gap: 8px;
+          padding: 6px 12px;
+          background: rgba(0, 200, 80, 0.1);
+          border: 1.5px solid rgba(0, 200, 100, 0.3);
           border-radius: 100px;
-          border: 1px solid rgba(0, 220, 100, 0.3);
-          transition: all 0.2s;
-        }
-        .ceka-banner-link:hover {
-          background: rgba(0, 220, 100, 0.25);
-          transform: translateY(-1px);
+          color: rgba(0, 255, 120, 1);
+          font-size: 11px;
+          font-weight: 800;
+          letter-spacing: 0.05em;
+          text-transform: uppercase;
+          animation: icon-pulse 3s ease-in-out infinite;
+          flex-shrink: 0;
         }
 
-        .ceka-banner-dismiss {
-          width: 28px;
-          height: 28px;
+        /* THE FLIP CENTER */
+        .banner-flip-center {
+          flex: 1;
+          position: relative;
+          height: 100%;
           display: flex;
           align-items: center;
           justify-content: center;
-          border: none;
+          overflow: hidden;
+        }
+
+        .flip-card {
+          width: 100%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        /* Card 1: Original Progress Pill */
+        .pill-tracker {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          background: rgba(0, 0, 0, 0.4);
+          padding: 6px 16px;
+          border-radius: 100px;
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          box-shadow: inset 0 2px 4px rgba(0,0,0,0.5);
+          width: 100%;
+          max-width: 320px;
+        }
+
+        .track-bg {
+          flex: 1;
+          height: 6px;
+          background: rgba(255, 255, 255, 0.04);
+          border-radius: 100px;
+          overflow: hidden;
+          position: relative;
+          border: 1px solid rgba(255,255,255,0.02);
+        }
+
+        .track-fill {
+          height: 100%;
+          background: linear-gradient(90deg, #008c32, #00ff66, #008c32);
+          background-size: 200% 100%;
+          width: ${progressPercent}%;
+          transition: width 1.5s cubic-bezier(0.23, 1, 0.32, 1);
+          animation: shimmer-liquid 3s linear infinite;
+        }
+
+        .track-label {
+          font-size: 12px;
+          font-weight: 900;
+          color: white;
+          font-variant-numeric: tabular-nums;
+          white-space: nowrap;
+        }
+
+        /* Card 2 & 3: High Impact Text */
+        .flip-text {
+          font-size: 13.5px;
+          font-weight: 700;
+          color: rgba(255, 255, 255, 0.9);
+          text-align: center;
+          letter-spacing: -0.01em;
+        }
+
+        .highlight-red { color: #ff3b30; text-shadow: 0 0 10px rgba(255, 59, 48, 0.3); }
+        .highlight-green { color: #34c759; }
+
+        /* THE SUPPORT BUTTON */
+        .btn-right {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          background: linear-gradient(180deg, #00c850 0%, #008c32 100%);
+          padding: 6px 14px;
+          border-radius: 100px;
+          text-decoration: none;
+          color: white;
+          font-size: 12px;
+          font-weight: 800;
+          box-shadow: 0 4px 12px rgba(0, 100, 30, 0.4), inset 0 1px 0 rgba(255,255,255,0.2);
+          transition: all 0.2s cubic-bezier(0.23, 1, 0.32, 1);
+          flex-shrink: 0;
+        }
+
+        .btn-right:hover { transform: translateY(-1px) scale(1.02); filter: brightness(1.1); }
+        .btn-right:active { transform: translateY(0) scale(0.98); }
+
+        .close-wrapper {
+          margin-left: 4px;
+          width: 26px;
+          height: 26px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
           background: rgba(255,255,255,0.05);
           border-radius: 50%;
-          color: rgba(200,255,220,0.4);
+          color: rgba(255,255,255,0.3);
           cursor: pointer;
-          transition: all 0.2s;
+          border: none;
+          transition: 0.2s;
         }
-        .ceka-banner-dismiss:hover { background: rgba(255,255,255,0.1); color: white; }
+        .close-wrapper:hover { background: rgba(255,255,255,0.1); color: white; }
 
-        @media (max-width: 800px) { .ceka-banner-text { display: none; } }
+        @media (max-width: 600px) {
+          .ceka-banner-root { height: 48px; padding: 0 12px; }
+          .badge-left span { display: none; }
+          .badge-left { padding: 6px; }
+          .btn-right span { display: none; }
+          .btn-right { padding: 8px; }
+          .flip-text { font-size: 11.5px; }
+          .pill-tracker { max-width: 140px; padding: 4px 10px; }
+        }
       `}</style>
 
       <div className="ceka-banner-root" role="banner">
         <div className="ceka-banner-inner">
-          <div className="alert-pill">
+          {/* LEFT: Pulsing Icon */}
+          <div className="badge-left">
             <AlertIcon />
-            Services Partly Down
+            <span>Operational Update</span>
           </div>
 
-          <span className="ceka-banner-text">
-            Finance Bill Requests Downed Our Database... help us restore the site fully.
-          </span>
-
-          <div className="banner-tracker-wrap">
-            <span className="mini-tracker-label">{Math.round(progressPercent)}%</span>
-            <div className="mini-track-bg">
-              <div className="mini-track-fill" />
-            </div>
+          {/* CENTER: The Animated Flipper */}
+          <div className="banner-flip-center">
+            <AnimatePresence mode="wait">
+              {cardIndex === 0 && (
+                <motion.div key="card1" className="flip-card" variants={cardVariants} initial="initial" animate="animate" exit="exit" transition={{ duration: 0.5 }}>
+                  <div className="pill-tracker">
+                    <span className="track-label">{Math.round(progressPercent)}%</span>
+                    <div className="track-bg"><div className="track-fill" /></div>
+                  </div>
+                </motion.div>
+              )}
+              {cardIndex === 1 && (
+                <motion.div key="card2" className="flip-card" variants={cardVariants} initial="initial" animate="animate" exit="exit" transition={{ duration: 0.5 }}>
+                  <span className="flip-text">DATABASE STATE: <span className="highlight-red">CRITICAL / OFFLINE</span></span>
+                </motion.div>
+              )}
+              {cardIndex === 2 && (
+                <motion.div key="card3" className="flip-card" variants={cardVariants} initial="initial" animate="animate" exit="exit" transition={{ duration: 0.5 }}>
+                  <span className="flip-text">RESTORE CEKA: <span className="highlight-green">WE NEED YOUR HELP</span></span>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
 
-          <Link to={MAINTENANCE_ROUTE} className="ceka-banner-link">
-            <WalletIcon />
-            <span>How to Support {"->"} </span>
+          {/* RIGHT: Sketch Arrow Button */}
+          <Link to={MAINTENANCE_ROUTE} className="btn-right">
+            <span>How to Support</span>
+            <SketchArrowIcon />
           </Link>
 
-          <button className="ceka-banner-dismiss" onClick={dismiss}>
+          <button className="close-wrapper" onClick={dismiss} type="button">
             <CloseIcon />
           </button>
         </div>
