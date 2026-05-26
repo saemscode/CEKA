@@ -206,18 +206,75 @@ const MaintenancePage: React.FC = () => {
           filter: brightness(1.1);
         }
 
-        .ceka-maint-notice {
-          display: flex;
-          gap: 12px;
-          padding: 18px;
-          background: rgba(255, 255, 255, 0.03);
-          border-radius: 20px;
+        .ceka-status-grid {
+          width: 100%;
+          margin-top: 24px;
+          background: rgba(255, 255, 255, 0.02);
           border: 1px solid rgba(255, 255, 255, 0.05);
-          margin-top: 32px;
-          color: rgba(255, 255, 255, 0.6);
-          font-size: 13px;
-          line-height: 1.6;
+          border-radius: 16px;
+          overflow: hidden;
+          box-shadow: inset 0 1px 2px rgba(0,0,0,0.2);
         }
+
+        .status-row {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 12px 16px;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+          font-family: -apple-system, sans-serif;
+        }
+        .status-row:last-child { border-bottom: none; }
+
+        .status-name {
+          font-size: 11px;
+          font-weight: 600;
+          color: rgba(255, 255, 255, 0.4);
+          text-transform: uppercase;
+          letter-spacing: 0.03em;
+        }
+
+        .status-indicator {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          font-size: 11px;
+          font-weight: 700;
+        }
+
+        .dot {
+          width: 6px;
+          height: 6px;
+          border-radius: 50%;
+          position: relative;
+        }
+        .dot::after {
+          content: '';
+          position: absolute;
+          inset: -2px;
+          border-radius: 50%;
+          background: inherit;
+          opacity: 0.4;
+          animation: status-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        @keyframes status-pulse { 0% { transform: scale(1); opacity: 0.4; } 50% { transform: scale(2.5); opacity: 0; } 100% { transform: scale(1); opacity: 0; } }
+
+        .dot-red { background: #ff453a; box-shadow: 0 0 10px rgba(255, 69, 58, 0.5); color: #ff453a; }
+        .dot-green { background: #32d74b; box-shadow: 0 0 10px rgba(50, 215, 75, 0.5); color: #32d74b; }
+        .dot-amber { background: #ffd60a; box-shadow: 0 0 10px rgba(255, 214, 10, 0.5); color: #ffd60a; }
+
+        .transparency-link {
+          display: block;
+          text-align: center;
+          font-size: 11px;
+          color: rgba(255, 255, 255, 0.25);
+          text-decoration: none;
+          margin-top: 24px;
+          font-weight: 500;
+          transition: all 0.2s;
+        }
+        .transparency-link:hover { color: rgba(255, 255, 255, 0.6); }
       `}</style>
 
       <div className="ceka-maint-root">
@@ -232,7 +289,7 @@ const MaintenancePage: React.FC = () => {
             <h1 className="ceka-maint-heading">Help Us Restore CEKA Services</h1>
 
             <p style={{ textAlign: 'center', color: 'rgba(255,255,255,0.5)', fontSize: 14, marginBottom: 8 }}>
-              We are working hard to restore CEKA services downed over the weekend's Finance Bill emails. Help us by supporting our efforts via donating on our channels below
+              Working to restore critical infrastructure downed by the 2026 Finance Bill surge. All contributions go directly toward server recovery and database fortification.
             </p>
 
             {/* THE TRACKER */}
@@ -263,13 +320,36 @@ const MaintenancePage: React.FC = () => {
               Return to Unaffected Pages
             </Link>
 
-            <div className="ceka-maint-notice">
-              <SocialIcon />
-              <div>
-                <strong>AFFECTED:</strong> Finance Bill page & ALL individual Bill pages, Legislative Tracker, Resources (Civic Education docs), Pieces (educative carousels).<br />
-                All other civic tools, pages & subdomains remain operational.
+            <div className="ceka-status-grid">
+              <Link to="/infrastructure" className="status-row hover:bg-white/[0.03] transition-colors cursor-pointer block no-underline">
+                <div className="flex items-center justify-between w-full">
+                  <span className="status-name">Finance Bill 2026</span>
+                  <div className="status-indicator dot-red"><div className="dot" />Offline</div>
+                </div>
+              </Link>
+              <Link to="/infrastructure" className="status-row hover:bg-white/[0.03] transition-colors cursor-pointer block no-underline">
+                <div className="flex items-center justify-between w-full">
+                  <span className="status-name">Legislative Tracker</span>
+                  <div className="status-indicator dot-red"><div className="dot" />Offline</div>
+                </div>
+              </Link>
+              <div className="status-row">
+                <span className="status-name">Resource Library</span>
+                <div className="status-indicator dot-amber"><div className="dot" />Maintenance</div>
+              </div>
+              <div className="status-row">
+                <span className="status-name">Civic Tools & Apps</span>
+                <div className="status-indicator dot-green"><div className="dot" />Operational</div>
+              </div>
+              <div className="status-row">
+                <span className="status-name">Infrastructure / APIs</span>
+                <div className="status-indicator dot-green"><div className="dot" />Operational</div>
               </div>
             </div>
+
+            <Link to="/transparency" className="transparency-link">
+              Why support our recovery efforts? View our Transparency Manifesto
+            </Link>
           </div>
         </main>
       </div>

@@ -37,8 +37,12 @@ export const useMaintenanceScroll = () => {
       // Threshold check for handoff
       if (scrollY >= threshold && threshold > 0) {
         setIsFixed(true);
+        // SYNC: Update global offset for sensitized components (Toaster)
+        document.documentElement.style.setProperty('--toast-header-offset', `${navbarRef.current?.offsetHeight || 0}px`);
       } else {
         setIsFixed(false);
+        // SYNC: Reset offset when header is not fixed at top
+        document.documentElement.style.setProperty('--toast-header-offset', '0px');
       }
     };
 

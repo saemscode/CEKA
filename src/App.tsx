@@ -61,6 +61,8 @@ import About from '@/pages/About';
 import TemplateViewerPage from '@/pages/TemplateViewerPage';
 import NotFound from '@/pages/NotFound';
 import MaintenancePage from '@/pages/MaintenancePage';
+import TransparencyManifesto from '@/pages/TransparencyManifesto';
+import InfrastructureDetails from '@/pages/InfrastructureDetails';
 
 const queryClient = new QueryClient();
 
@@ -133,6 +135,8 @@ const AppContent = () => {
         <Route path="/calendar" element={<EventsCalendar />} />
         <Route path="/admin/dashboard" element={<AdminDashboard />} />
         <Route path="/maintenance" element={<MaintenancePage />} />
+        <Route path="/transparency" element={<TransparencyManifesto />} />
+        <Route path="/infrastructure" element={<InfrastructureDetails />} />
         <Route path="/resources" element={<Navigate to="/maintenance" replace />} />
         <Route path="/resources/:id" element={<Navigate to="/maintenance" replace />} />
         <Route path="/resources/type/:type" element={<Navigate to="/maintenance" replace />} />
