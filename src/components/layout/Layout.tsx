@@ -34,7 +34,12 @@ const Layout = ({ children, hideBottomNav, hideBackButton }: LayoutProps) => {
       <MaintenanceBanner />
       <Navbar />
       <InAppBrowserBanner />
-      <main className="flex-1 pt-16 lg:pt-0 pb-16 lg:pb-0 w-full overflow-x-hidden">{children}</main>
+      <main 
+        className="flex-1 lg:pt-0 pb-16 lg:pb-0 w-full overflow-x-hidden transition-all duration-500"
+        style={{ paddingTop: 'calc(4rem + var(--maint-banner-height, 0px))' }}
+      >
+        {children}
+      </main>
       <Footer />
       {!hideBottomNav && <BottomNavbar />}
 

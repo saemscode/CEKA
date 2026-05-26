@@ -68,9 +68,13 @@ const MaintenanceBanner: React.FC = () => {
       setCardIndex((prev) => (prev + 1) % 3);
     }, 4000);
 
+    // DYNAMIC SYMBIOSIS: Set the root height for the Navbar to follow
+    document.documentElement.style.setProperty('--maint-banner-height', '72px');
+
     return () => {
       clearInterval(pollInterval);
       clearInterval(flipInterval);
+      document.documentElement.style.setProperty('--maint-banner-height', '0px');
     };
   }, []);
 
@@ -78,6 +82,7 @@ const MaintenanceBanner: React.FC = () => {
 
   const dismiss = () => {
     setVisible(false);
+    document.documentElement.style.setProperty('--maint-banner-height', '0px');
     try { sessionStorage.setItem(SESSION_KEY, "1"); } catch { }
   };
 
@@ -98,19 +103,30 @@ const MaintenanceBanner: React.FC = () => {
         .ceka-banner-root {
           position: sticky;
           top: 0; left: 0; right: 0;
-          z-index: 3002;
+          z-index: 4000;
           display: flex;
           align-items: center;
           justify-content: center;
           padding: 8px 16px;
-          background: rgba(0, 40, 10, 0.8);
-          backdrop-filter: blur(40px) saturate(200%);
-          -webkit-backdrop-filter: blur(40px) saturate(200%);
-          border-bottom: 1px solid rgba(0, 200, 80, 0.2);
-          box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+          padding-top: max(env(safe-area-inset-top), 8px);
+          background: rgba(0, 40, 10, 0.85);
+          backdrop-filter: blur(40px) saturate(210%);
+          -webkit-backdrop-filter: blur(40px) saturate(210%);
+          border-bottom: 1px solid rgba(0, 200, 80, 0.15);
+          box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.05);
           font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
-          height: 52px;
+          height: 72px;
+          min-height: 72px;
           overflow: hidden;
+          transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+        }
+
+        /* DYNAMIC SYMBIOSIS: Target the Navbar globally when this banner is active */
+        :root:has(.ceka-banner-root) .ceka-navbar {
+          background: transparent !important;
+          backdrop-filter: none !important;
+          box-shadow: none !important;
+          padding-top: 8px !important; /* Banner already handles safe area */
         }
 
         .ceka-banner-inner {

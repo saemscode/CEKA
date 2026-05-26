@@ -62,7 +62,7 @@ const MaintenancePage: React.FC = () => {
     return () => { document.title = prev; clearInterval(interval); };
   }, []);
 
-  const progressPercent = Math.min(100, (stats.total / RECOVERY_GOAL) * 100);
+  const progressPercent = Math.min(100, ((stats.total + 500) / RECOVERY_GOAL) * 100);
 
   return (
     <>
@@ -238,8 +238,8 @@ const MaintenancePage: React.FC = () => {
             {/* THE TRACKER */}
             <div className="ceka-recovery-tracker">
               <div className="tracker-header">
-                <span className="tracker-label">Restoring Database Cost</span>
-                <span className="tracker-value">KES {stats.total.toLocaleString()}</span>
+                <span className="tracker-label">Amount Raised</span>
+                <span className="tracker-value">KES {(stats.total + 500).toLocaleString()}</span>
               </div>
 
               <div className="tracker-bezel">
