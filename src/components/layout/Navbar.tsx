@@ -70,7 +70,11 @@ const getCategoryBgColor = (categoryName: string) => {
   return 'bg-primary/10';
 };
 
-const Navbar = () => {
+interface NavbarProps {
+  isFixed?: boolean;
+}
+
+const Navbar = React.forwardRef<HTMLElement, NavbarProps>(({ isFixed }, ref) => {
   const [isOpen, setIsOpen] = useState(false);
   const [showBg, setShowBg] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
@@ -121,11 +125,20 @@ const Navbar = () => {
   return (
     <>
       <nav
+        ref={ref}
         className={cn(
-          "sticky top-0 z-[3999] w-full transition-all duration-500 font-sans ceka-navbar",
-          showBg ? "bg-white/95 dark:bg-black/95 backdrop-blur-3xl shadow-ios-high py-2" : "bg-white/40 dark:bg-black/20 backdrop-blur-sm lg:bg-transparent py-4"
+          "z-[3999] w-full transition-all duration-500 font-sans ceka-navbar",
+          isFixed 
+            ? "fixed left-0 right-0 shadow-ios-high py-2 bg-white/95 dark:bg-black/95 backdrop-blur-3xl" 
+            : "relative py-4 bg-white/40 dark:bg-black/20 backdrop-blur-sm lg:bg-transparent",
+          showBg && !isFixed ? "bg-white/95 dark:bg-black/95 backdrop-blur-3xl shadow-ios-high py-2" : ""
         )}
-        style={{ paddingTop: 'max(env(safe-area-inset-top), 8px)' }}
+        style={{ 
+          top: isFixed ? 'env(safe-area-inset-top, 0px)' : 'auto',
+          paddingTop: isFixed ? '8px' : 'max(env(safe-area-inset-top), 8px)',
+          transform: isFixed ? 'translate3d(0,0,0)' : 'none',
+          transition: 'transform 0.32s cubic-bezier(0.23, 1, 0.32, 1), background 0.3s, padding 0.3s, top 0.32s'
+        }}
       >
         <div className="container mx-auto px-6 flex items-center justify-between">
           <Logo className="h-8 w-auto z-50" />
@@ -272,7 +285,7 @@ const Navbar = () => {
       <AuthModal open={showAuthModal} onOpenChange={setShowAuthModal} />
     </>
   );
-};
+});
 
 export default Navbar;
 

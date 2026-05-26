@@ -7,6 +7,7 @@ import GlobalAIAssistant from '@/components/ai/GlobalAIAssistant';
 import InAppBrowserBanner from '@/components/ui/InAppBrowserBanner';
 import MaintenanceBanner from '@/components/MaintenanceBanner';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useMaintenanceScroll } from '@/hooks/useMaintenanceScroll';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -24,6 +25,9 @@ const Layout = ({ children, hideBottomNav, hideBackButton }: LayoutProps) => {
   const [isAIHidden, setIsAIHidden] = useState(false);
   const [isDonationHidden, setIsDonationHidden] = useState(false);
 
+  // PRECISE SCROLL HANDOFF LOGIC
+  const { bannerRef, navbarRef, isFixed, navbarHeight } = useMaintenanceScroll();
+
   // Handle donation widget timeout
   const handleDonationTimeout = () => {
     setDonationTimedOut(true);
@@ -31,8 +35,9 @@ const Layout = ({ children, hideBottomNav, hideBackButton }: LayoutProps) => {
 
   return (
     <div className="flex min-h-screen flex-col relative overflow-x-hidden">
-      <MaintenanceBanner />
-      <Navbar />
+      <MaintenanceBanner ref={bannerRef} />
+      <Navbar ref={navbarRef} isFixed={isFixed} />
+      {isFixed && <div style={{ height: navbarHeight, pointerEvents: 'none' }} />}
       <InAppBrowserBanner />
       <main className="flex-1 pt-16 lg:pt-0 pb-16 lg:pb-0 w-full overflow-x-hidden">
         {children}
