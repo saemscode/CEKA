@@ -237,9 +237,14 @@ const MaintenancePage: React.FC = () => {
         .status-indicator {
           display: flex;
           align-items: center;
-          gap: 6px;
-          font-size: 11px;
-          font-weight: 700;
+          justify-content: flex-end;
+          gap: 8px;
+          font-size: 10px;
+          font-weight: 800;
+          min-width: 92px; /* Normalizes bar length regardless of word count */
+          color: white; /* RESTORED VISIBILITY */
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
         }
 
         .dot {
@@ -247,6 +252,7 @@ const MaintenancePage: React.FC = () => {
           height: 6px;
           border-radius: 50%;
           position: relative;
+          flex-shrink: 0;
         }
         .dot::after {
           content: '';
@@ -258,11 +264,31 @@ const MaintenancePage: React.FC = () => {
           animation: status-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
         }
 
-        @keyframes status-pulse { 0% { transform: scale(1); opacity: 0.4; } 50% { transform: scale(2.5); opacity: 0; } 100% { transform: scale(1); opacity: 0; } }
+        @keyframes status-pulse { 0% { transform: scale(1); opacity: 0.4; } 50% { transform: scale(3); opacity: 0; } 100% { transform: scale(1); opacity: 0; } }
 
-        .dot-red { background: #ff453a; box-shadow: 0 0 10px rgba(255, 69, 58, 0.5); color: #ff453a; }
-        .dot-green { background: #32d74b; box-shadow: 0 0 10px rgba(50, 215, 75, 0.5); color: #32d74b; }
-        .dot-amber { background: #ffd60a; box-shadow: 0 0 10px rgba(255, 214, 10, 0.5); color: #ffd60a; }
+        .dot-red .dot { background: #ff453a; box-shadow: 0 0 10px rgba(255, 69, 58, 0.6); }
+        .dot-red { color: #ff453a; } /* Semantic text color but legible against black */
+        
+        .dot-green .dot { background: #32d74b; box-shadow: 0 0 10px rgba(50, 215, 75, 0.6); }
+        .dot-green { color: #32d74b; }
+
+        .dot-amber .dot { background: #ffd60a; box-shadow: 0 0 10px rgba(255, 214, 10, 0.6); }
+        .dot-amber { color: #ffd60a; }
+
+        .status-legend {
+          display: flex;
+          justify-content: center;
+          gap: 16px;
+          margin-top: 16px;
+          padding-top: 12px;
+          border-top: 1px solid rgba(255, 255, 255, 0.03);
+          font-size: 9px;
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 0.1em;
+          color: rgba(255, 255, 255, 0.2);
+        }
+        .legend-item { display: flex; items-center; gap: 4px; }
 
         .transparency-link {
           display: block;
@@ -344,6 +370,13 @@ const MaintenancePage: React.FC = () => {
               <div className="status-row">
                 <span className="status-name">Infrastructure / APIs</span>
                 <div className="status-indicator dot-green"><div className="dot" />Operational</div>
+              </div>
+
+              {/* THE KEY / LEGEND */}
+              <div className="status-legend">
+                <div className="legend-item"><div className="dot" style={{ background: '#ff453a', width: 4, height: 4 }} /> Stalled</div>
+                <div className="legend-item"><div className="dot" style={{ background: '#ffd60a', width: 4, height: 4 }} /> Migrating</div>
+                <div className="legend-item"><div className="dot" style={{ background: '#32d74b', width: 4, height: 4 }} /> Healthy</div>
               </div>
             </div>
 
