@@ -298,12 +298,12 @@ const MaintenanceBanner: React.FC = () => {
               )}
               {cardIndex === 1 && (
                 <motion.div key="card2" className="flip-card" variants={cardVariants} initial="initial" animate="animate" exit="exit" transition={{ duration: 0.5 }}>
-                  <span className="flip-text">DATABASE STATE: <span className="highlight-red">CRITICAL</span> <span className="highlight-white"> / </span> <span className="highlight-red">OFFLINE</span></span>
+                  <span className="flip-text">DATABASE STATUS: <span className="highlight-red"> OFFLINE</span></span>
                 </motion.div>
               )}
               {cardIndex === 2 && (
                 <motion.div key="card3" className="flip-card" variants={cardVariants} initial="initial" animate="animate" exit="exit" transition={{ duration: 0.5 }}>
-                  <span className="flip-text cta-text">ACT NOW: <span className="highlight-green">WE NEED YOUR HELP</span></span>
+                  <span className="flip-text cta-text">ACT NOW: <span className="highlight-green">WE NEED YOU</span></span>
                 </motion.div>
               )}
             </AnimatePresence>
