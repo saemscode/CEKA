@@ -122,7 +122,8 @@ const MaintenanceBanner: React.FC = () => {
         }
 
         /* DYNAMIC SYMBIOSIS: Target the Navbar globally when this banner is active */
-        :root:has(.ceka-banner-root) .ceka-navbar {
+        /* INTELLIGENT DETACHMENT: Only override if NOT scrolled (no shadow-ios-high class) */
+        :root:has(.ceka-banner-root) .ceka-navbar:not(.shadow-ios-high) {
           background: transparent !important;
           backdrop-filter: none !important;
           box-shadow: none !important;
