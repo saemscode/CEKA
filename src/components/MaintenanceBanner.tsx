@@ -68,13 +68,10 @@ const MaintenanceBanner: React.FC = () => {
       setCardIndex((prev) => (prev + 1) % 3);
     }, 4000);
 
-    // DYNAMIC SYMBIOSIS: Set the root height for the Navbar to follow
-    document.documentElement.style.setProperty('--maint-banner-height', '72px');
-
+    // Recovery state management remains here for potential future logic
     return () => {
       clearInterval(pollInterval);
       clearInterval(flipInterval);
-      document.documentElement.style.setProperty('--maint-banner-height', '0px');
     };
   }, []);
 
@@ -82,7 +79,6 @@ const MaintenanceBanner: React.FC = () => {
 
   const dismiss = () => {
     setVisible(false);
-    document.documentElement.style.setProperty('--maint-banner-height', '0px');
     try { sessionStorage.setItem(SESSION_KEY, "1"); } catch { }
   };
 
@@ -101,8 +97,7 @@ const MaintenanceBanner: React.FC = () => {
         @keyframes icon-pulse { 0% { transform: scale(1); opacity: 0.8; } 50% { transform: scale(1.1); opacity: 1; } 100% { transform: scale(1); opacity: 0.8; } }
 
         .ceka-banner-root {
-          position: sticky;
-          top: 0; left: 0; right: 0;
+          position: relative; /* Scrolls away with the page */
           z-index: 4000;
           display: flex;
           align-items: center;
