@@ -10,12 +10,12 @@ import { ledgerService } from "@/services/ledgerService";
 ───────────────────────────────────────────────────────────────────────────── */
 
 const INSTAGRAM_URL = "https://www.instagram.com/civiceducationke";
-const SUPPORT_URL   = "https://ko-fi.com/civiceducationke"; 
+const SUPPORT_URL = "https://ko-fi.com/civiceducationke";
 const RECOVERY_GOAL = 5500;
 
 /* ── SVG: Danger Alert (from report/context) ── */
 const AlertIcon: React.FC = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
     <path d="M21.7605 15.92L15.3605 4.4C14.5005 2.85 13.3105 2 12.0005 2C10.6905 2 9.50047 2.85 8.64047 4.4L2.24047 15.92C1.43047 17.39 1.34047 18.8 1.99047 19.91C2.64047 21.02 3.92047 21.63 5.60047 21.63H18.4005C20.0805 21.63 21.3605 21.02 22.0105 19.91C22.6605 18.8 22.5705 17.38 21.7605 15.92ZM11.2505 9C11.2505 8.59 11.5905 8.25 12.0005 8.25C12.4105 8.25 12.7505 8.59 12.7505 9V14C12.7505 14.41 12.4105 14.75 12.0005 14.75C11.5905 14.75 11.2505 14.41 11.2505 14V9ZM12.7105 17.71C12.6605 17.75 12.6105 17.79 12.5605 17.83C12.5005 17.87 12.4405 17.9 12.3805 17.92C12.3205 17.95 12.2605 17.97 12.1905 17.98C12.1305 17.99 12.0605 18 12.0005 18C11.9405 18 11.8705 17.99 11.8005 17.98C11.7405 17.97 11.6805 17.95 11.6205 17.92C11.5605 17.9 11.5005 17.87 11.4405 17.83C11.3905 17.79 11.3405 17.75 11.2905 17.71C11.1105 17.52 11.0005 17.26 11.0005 17C11.0005 16.74 11.1105 16.48 11.2905 16.29C11.3405 16.25 11.3905 16.21 11.4405 16.17C11.5005 16.13 11.5605 16.1 11.6205 16.08C11.6805 16.05 11.7405 16.03 11.8005 16.02C11.9305 15.99 12.0705 15.99 12.1905 16.02C12.2605 16.03 12.3205 16.05 12.3805 16.08C12.4405 16.1 12.5005 16.13 12.5605 16.17C12.6105 16.21 12.6605 16.25 12.7105 16.29C12.8905 16.48 13.0005 16.74 13.0005 17C13.0005 17.26 12.8905 17.52 12.7105 17.71Z" fill="currentColor" />
   </svg>
 );
@@ -23,9 +23,9 @@ const AlertIcon: React.FC = () => (
 /* ── SVG: Wallet Money (from report/context) ── */
 const WalletIcon: React.FC = () => (
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path fill-rule="evenodd" clip-rule="evenodd" d="M20.4105 9.86058C20.3559 9.8571 20.2964 9.85712 20.2348 9.85715L20.2194 9.85715H17.8015C15.8086 9.85715 14.1033 11.4382 14.1033 13.5C14.1033 15.5618 15.8086 17.1429 17.8015 17.1429H20.2194L20.2348 17.1429C20.2964 17.1429 20.3559 17.1429 20.4105 17.1394C21.22 17.0879 21.9359 16.4495 21.9961 15.5577C22.0001 15.4992 22 15.4362 22 15.3778L22 15.3619V11.6381L22 11.6222C22 11.5638 22.0001 11.5008 21.9961 11.4423C21.9359 10.5506 21.22 9.91209 20.4105 9.86058ZM17.5872 14.4714C18.1002 14.4714 18.5162 14.0365 18.5162 13.5C18.5162 12.9635 18.1002 12.5286 17.5872 12.5286C17.0741 12.5286 16.6581 12.9635 16.6581 13.5C16.6581 14.0365 17.0741 14.4714 17.5872 14.4714Z" fill="currentColor"/>
-    <path fill-rule="evenodd" clip-rule="evenodd" d="M20.2341 18.6C20.3778 18.5963 20.4866 18.7304 20.4476 18.8699C20.2541 19.562 19.947 20.1518 19.4542 20.6485C18.7329 21.3755 17.8183 21.6981 16.6882 21.8512C15.5902 22 14.1872 22 12.4158 22H10.3794C8.60803 22 7.20501 22 6.10697 21.8512C4.97692 21.6981 4.06227 21.3755 3.34096 20.6485C2.61964 19.9215 2.29953 18.9997 2.1476 17.8608C1.99997 16.7541 1.99999 15.3401 2 13.5548V13.4452C1.99998 11.6599 1.99997 10.2459 2.1476 9.13924C2.29953 8.00031 2.61964 7.07848 3.34096 6.35149C4.06227 5.62451 4.97692 5.30188 6.10697 5.14876C7.205 4.99997 8.60802 4.99999 10.3794 5L12.4158 5C14.1872 4.99998 15.5902 4.99997 16.6882 5.14876C17.8183 5.30188 18.7329 5.62451 19.4542 6.35149C19.947 6.84817 20.2541 7.43804 20.4476 8.13012C20.4866 8.26959 20.3778 8.40376 20.2341 8.4L17.8015 8.40001C15.0673 8.40001 12.6575 10.5769 12.6575 13.5C12.6575 16.4231 15.0673 18.6 17.8015 18.6L20.2341 18.6ZM5.61446 8.88572C5.21522 8.88572 4.89157 9.21191 4.89157 9.61429C4.89157 10.0167 5.21522 10.3429 5.61446 10.3429H9.46988C9.86912 10.3429 10.1928 10.0167 10.1928 9.61429C10.1928 9.21191 9.86912 8.88572 9.46988 8.88572H5.61446Z" fill="currentColor"/>
-    <path d="M7.77668 4.02439L9.73549 2.58126C10.7874 1.80625 12.2126 1.80625 13.2645 2.58126L15.2336 4.03197C14.4103 3.99995 13.4909 3.99998 12.4829 4H10.3123C9.39123 3.99998 8.5441 3.99996 7.77668 4.02439Z" fill="currentColor"/>
+    <path fill-rule="evenodd" clip-rule="evenodd" d="M20.4105 9.86058C20.3559 9.8571 20.2964 9.85712 20.2348 9.85715L20.2194 9.85715H17.8015C15.8086 9.85715 14.1033 11.4382 14.1033 13.5C14.1033 15.5618 15.8086 17.1429 17.8015 17.1429H20.2194L20.2348 17.1429C20.2964 17.1429 20.3559 17.1429 20.4105 17.1394C21.22 17.0879 21.9359 16.4495 21.9961 15.5577C22.0001 15.4992 22 15.4362 22 15.3778L22 15.3619V11.6381L22 11.6222C22 11.5638 22.0001 11.5008 21.9961 11.4423C21.9359 10.5506 21.22 9.91209 20.4105 9.86058ZM17.5872 14.4714C18.1002 14.4714 18.5162 14.0365 18.5162 13.5C18.5162 12.9635 18.1002 12.5286 17.5872 12.5286C17.0741 12.5286 16.6581 12.9635 16.6581 13.5C16.6581 14.0365 17.0741 14.4714 17.5872 14.4714Z" fill="currentColor" />
+    <path fill-rule="evenodd" clip-rule="evenodd" d="M20.2341 18.6C20.3778 18.5963 20.4866 18.7304 20.4476 18.8699C20.2541 19.562 19.947 20.1518 19.4542 20.6485C18.7329 21.3755 17.8183 21.6981 16.6882 21.8512C15.5902 22 14.1872 22 12.4158 22H10.3794C8.60803 22 7.20501 22 6.10697 21.8512C4.97692 21.6981 4.06227 21.3755 3.34096 20.6485C2.61964 19.9215 2.29953 18.9997 2.1476 17.8608C1.99997 16.7541 1.99999 15.3401 2 13.5548V13.4452C1.99998 11.6599 1.99997 10.2459 2.1476 9.13924C2.29953 8.00031 2.61964 7.07848 3.34096 6.35149C4.06227 5.62451 4.97692 5.30188 6.10697 5.14876C7.205 4.99997 8.60802 4.99999 10.3794 5L12.4158 5C14.1872 4.99998 15.5902 4.99997 16.6882 5.14876C17.8183 5.30188 18.7329 5.62451 19.4542 6.35149C19.947 6.84817 20.2541 7.43804 20.4476 8.13012C20.4866 8.26959 20.3778 8.40376 20.2341 8.4L17.8015 8.40001C15.0673 8.40001 12.6575 10.5769 12.6575 13.5C12.6575 16.4231 15.0673 18.6 17.8015 18.6L20.2341 18.6ZM5.61446 8.88572C5.21522 8.88572 4.89157 9.21191 4.89157 9.61429C4.89157 10.0167 5.21522 10.3429 5.61446 10.3429H9.46988C9.86912 10.3429 10.1928 10.0167 10.1928 9.61429C10.1928 9.21191 9.86912 8.88572 9.46988 8.88572H5.61446Z" fill="currentColor" />
+    <path d="M7.77668 4.02439L9.73549 2.58126C10.7874 1.80625 12.2126 1.80625 13.2645 2.58126L15.2336 4.03197C14.4103 3.99995 13.4909 3.99998 12.4829 4H10.3123C9.39123 3.99998 8.5441 3.99996 7.77668 4.02439Z" fill="currentColor" />
   </svg>
 );
 
@@ -39,7 +39,7 @@ const NextArrowIcon: React.FC = () => (
 /* ── SVG: Chat Round (from icons 3) ── */
 const SocialIcon: React.FC = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path fill-rule="evenodd" clip-rule="evenodd" d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 13.5997 2.37562 15.1116 3.0434 16.4525C3.22094 16.8088 3.27314 17.2136 3.17719 17.5973L2.69852 19.512C2.45041 20.5044 3.49557 21.3575 4.4116 20.9161L6.44474 19.9358C6.81591 19.7567 7.24031 19.7508 7.61482 19.9196C8.98319 20.5372 10.4514 20.8846 12 20.8846V22ZM8 10.6154C8.42398 10.6154 8.76923 10.2701 8.76923 9.84615C8.76923 9.42217 8.42398 9.07692 8 9.07692H16C16.424 9.07692 16.7692 9.42217 16.7692 9.84615C16.7692 10.2701 16.424 10.6154 16 10.6154H8ZM8 14.1538C8.42398 14.1538 8.76923 13.8086 8.76923 13.3846C8.76923 12.9606 8.42398 12.6154 8 12.6154H13C13.424 12.6154 13.7692 12.9606 13.7692 13.3846C13.7692 13.8086 13.424 14.1538 13 14.1538H8Z" fill="currentColor"/>
+    <path fill-rule="evenodd" clip-rule="evenodd" d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 13.5997 2.37562 15.1116 3.0434 16.4525C3.22094 16.8088 3.27314 17.2136 3.17719 17.5973L2.69852 19.512C2.45041 20.5044 3.49557 21.3575 4.4116 20.9161L6.44474 19.9358C6.81591 19.7567 7.24031 19.7508 7.61482 19.9196C8.98319 20.5372 10.4514 20.8846 12 20.8846V22ZM8 10.6154C8.42398 10.6154 8.76923 10.2701 8.76923 9.84615C8.76923 9.42217 8.42398 9.07692 8 9.07692H16C16.424 9.07692 16.7692 9.42217 16.7692 9.84615C16.7692 10.2701 16.424 10.6154 16 10.6154H8ZM8 14.1538C8.42398 14.1538 8.76923 13.8086 8.76923 13.3846C8.76923 12.9606 8.42398 12.6154 8 12.6154H13C13.424 12.6154 13.7692 12.9606 13.7692 13.3846C13.7692 13.8086 13.424 14.1538 13 14.1538H8Z" fill="currentColor" />
   </svg>
 );
 
@@ -50,13 +50,13 @@ const MaintenancePage: React.FC = () => {
   useEffect(() => {
     const prev = document.title;
     document.title = "Service Update — CEKA";
-    
+
     const fetchStats = async () => {
       const data = await ledgerService.getDonationStats();
       setStats(data);
       setLoading(false);
     };
-    
+
     fetchStats();
     const interval = setInterval(fetchStats, 30000);
     return () => { document.title = prev; clearInterval(interval); };
@@ -226,48 +226,48 @@ const MaintenancePage: React.FC = () => {
         <main style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, zIndex: 10 }}>
           <div className="ceka-maint-card">
             <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 20 }}>
-               <AlertIcon />
+              <AlertIcon />
             </div>
-            
-            <h1 className="ceka-maint-heading">System Recovery Tracker</h1>
-            
+
+            <h1 className="ceka-maint-heading">Help Us Restore CEKA Services</h1>
+
             <p style={{ textAlign: 'center', color: 'rgba(255,255,255,0.5)', fontSize: 14, marginBottom: 8 }}>
-              This is not a cyberattack. We are migrating core vitals to our new hardened ledger.
+              We are working hard to restore CEKA services. Help us by supporting our efforts through donating to our channel below
             </p>
 
             {/* THE TRACKER */}
             <div className="ceka-recovery-tracker">
               <div className="tracker-header">
-                <span className="tracker-label">Vitals Recovery Goal</span>
+                <span className="tracker-label">Restoring Database Cost</span>
                 <span className="tracker-value">KES {stats.total.toLocaleString()}</span>
               </div>
-              
+
               <div className="tracker-bezel">
                 <div className="tracker-fill" />
                 <div className="tracker-gloss" />
               </div>
 
               <div className="tracker-footer">
-                <span>{Math.round(progressPercent)}% of Milestone</span>
+                <span>{Math.round(progressPercent)}% of Goal</span>
                 <span>KSh {RECOVERY_GOAL.toLocaleString()}</span>
               </div>
             </div>
 
             <a href={SUPPORT_URL} target="_blank" rel="noopener noreferrer" className="ceka-maint-btn-primary">
               <WalletIcon />
-              Support the Recovery Fund
+              Donate Any Amount
             </a>
 
             <Link to="/" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, color: 'rgba(255,255,255,0.4)', textDecoration: 'none', fontSize: 13, marginTop: 24, fontWeight: 600 }}>
               <NextArrowIcon />
-              Return to Safe Modules
+              Return to Unaffected Pages
             </Link>
 
             <div className="ceka-maint-notice">
               <SocialIcon />
               <div>
-                <strong>AFFECTED:</strong> Legislative Tracker, Resources, Bill Detail Pages.<br/>
-                All other civic tools remain operational.
+                <strong>AFFECTED:</strong> Finance Bill page & ALL individual Bill pages, Legislative Tracker, Resources (Civic Education docs), Pieces (educative carousels).<br />
+                All other civic tools, pages & subdomains remain operational.
               </div>
             </div>
           </div>
