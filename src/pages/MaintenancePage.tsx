@@ -158,7 +158,7 @@ const MaintenancePage: React.FC = () => {
         .tracker-fill {
           height: 100%;
           border-radius: 100px;
-          background: linear-gradient(90deg, #006622, #00c850, #00ff66, #00c850);
+          background: linear-gradient(90deg, #b7f0caff, #00c850, #00ff66, #00c850);
           background-size: 300% 100%;
           width: ${progressPercent}%;
           transition: width 1.5s cubic-bezier(0.23, 1, 0.32, 1);
