@@ -381,7 +381,7 @@ const MaintenancePage: React.FC = () => {
             </div>
 
             <Link to="/transparency" className="transparency-link">
-              Why support our recovery efforts? View our Transparency Manifesto
+              Asking questions? We answer them here
             </Link>
           </div>
         </main>
