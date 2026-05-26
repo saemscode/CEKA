@@ -10,7 +10,7 @@ import { ledgerService } from "@/services/ledgerService";
 ───────────────────────────────────────────────────────────────────────────── */
 
 const INSTAGRAM_URL = "https://www.instagram.com/civiceducationke";
-const SUPPORT_URL = "https://ko-fi.com/civiceducationke";
+const SUPPORT_URL = "https://zenlipa.co.ke/tip/civic-education-kenya";
 const RECOVERY_GOAL = 5500;
 
 /* ── SVG: Danger Alert (from report/context) ── */
