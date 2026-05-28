@@ -350,13 +350,13 @@ const MaintenancePage: React.FC = () => {
               <Link to="/infrastructure" className="status-row hover:bg-white/[0.03] transition-colors cursor-pointer block no-underline">
                 <div className="flex items-center justify-between w-full">
                   <span className="status-name">Finance Bill 2026</span>
-                  <div className="status-indicator dot-red"><div className="dot" />Offline</div>
+                  <div className="status-indicator dot-amber"><div className="dot" />Under Maintenance</div>
                 </div>
               </Link>
               <Link to="/infrastructure" className="status-row hover:bg-white/[0.03] transition-colors cursor-pointer block no-underline">
                 <div className="flex items-center justify-between w-full">
                   <span className="status-name">Legislative Tracker</span>
-                  <div className="status-indicator dot-red"><div className="dot" />Offline</div>
+                  <div className="status-indicator dot-amber"><div className="dot" />Under Maintenance</div>
                 </div>
               </Link>
               <div className="status-row">
