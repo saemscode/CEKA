@@ -215,7 +215,7 @@ class StorageService {
         }
 
         // If it's a Cloudflare Worker route, return as-is (handled by /b2-image/ proxy)
-        if (pathOrUrl.startsWith('/b2-image/')) {
+        if (pathOrUrl.includes('b2-image/')) {
             return pathOrUrl;
         }
 

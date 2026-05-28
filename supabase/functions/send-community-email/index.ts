@@ -1,3 +1,5 @@
+// @ts-nocheck
+
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { sendEmail } from "../_shared/mailing.ts";
@@ -29,33 +31,33 @@ const handler = async (req: Request): Promise<Response> => {
   if (req.method !== 'POST') {
     return new Response(
       JSON.stringify({ error: 'Method not allowed' }),
-      { 
-        status: 405, 
-        headers: { 'Content-Type': 'application/json', ...corsHeaders } 
+      {
+        status: 405,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders }
       }
     );
   }
 
   try {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
-    
-    const { 
-      first_name, 
-      last_name, 
-      email, 
-      county, 
-      interests, 
-      areas_of_interest, 
-      terms_accepted 
+
+    const {
+      first_name,
+      last_name,
+      email,
+      county,
+      interests,
+      areas_of_interest,
+      terms_accepted
     }: CommunityMemberRequest = await req.json();
 
     // Validate required fields
     if (!first_name || !last_name || !email || !terms_accepted) {
       return new Response(
         JSON.stringify({ error: 'Missing required fields' }),
-        { 
-          status: 400, 
-          headers: { 'Content-Type': 'application/json', ...corsHeaders } 
+        {
+          status: 400,
+          headers: { 'Content-Type': 'application/json', ...corsHeaders }
         }
       );
     }
@@ -65,17 +67,17 @@ const handler = async (req: Request): Promise<Response> => {
     if (!emailRegex.test(email)) {
       return new Response(
         JSON.stringify({ error: 'Invalid email format' }),
-        { 
-          status: 400, 
-          headers: { 'Content-Type': 'application/json', ...corsHeaders } 
+        {
+          status: 400,
+          headers: { 'Content-Type': 'application/json', ...corsHeaders }
         }
       );
     }
 
     // Get client IP and user agent for logging
-    const source_ip = req.headers.get('x-forwarded-for') || 
-                     req.headers.get('x-real-ip') || 
-                     'unknown';
+    const source_ip = req.headers.get('x-forwarded-for') ||
+      req.headers.get('x-real-ip') ||
+      'unknown';
     const user_agent = req.headers.get('user-agent') || 'unknown';
 
     // Check for duplicate submissions in last 24 hours
@@ -92,9 +94,9 @@ const handler = async (req: Request): Promise<Response> => {
       console.error('Database check error:', checkError);
       return new Response(
         JSON.stringify({ error: 'Database error during validation' }),
-        { 
-          status: 500, 
-          headers: { 'Content-Type': 'application/json', ...corsHeaders } 
+        {
+          status: 500,
+          headers: { 'Content-Type': 'application/json', ...corsHeaders }
         }
       );
     }
@@ -102,9 +104,9 @@ const handler = async (req: Request): Promise<Response> => {
     if (existingSubmissions && existingSubmissions.length > 0) {
       return new Response(
         JSON.stringify({ error: 'You have already submitted an application recently' }),
-        { 
-          status: 409, 
-          headers: { 'Content-Type': 'application/json', ...corsHeaders } 
+        {
+          status: 409,
+          headers: { 'Content-Type': 'application/json', ...corsHeaders }
         }
       );
     }
@@ -133,18 +135,18 @@ const handler = async (req: Request): Promise<Response> => {
       console.error('Database insertion error:', dbError);
       return new Response(
         JSON.stringify({ error: 'Failed to save application' }),
-        { 
-          status: 500, 
-          headers: { 'Content-Type': 'application/json', ...corsHeaders } 
+        {
+          status: 500,
+          headers: { 'Content-Type': 'application/json', ...corsHeaders }
         }
       );
     }
 
     // Prepare email content
-    const areasOfInterestText = areas_of_interest && areas_of_interest.length > 0 
-      ? areas_of_interest.map((area: string) => 
-          area.replace('-', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())
-        ).join(', ')
+    const areasOfInterestText = areas_of_interest && areas_of_interest.length > 0
+      ? areas_of_interest.map((area: string) =>
+        area.replace('-', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())
+      ).join(', ')
       : 'None specified';
 
     const emailHtml = `
@@ -196,14 +198,14 @@ const handler = async (req: Request): Promise<Response> => {
                 </div>
                 <div class="field">
                     <div class="field-label">Submission Date</div>
-                    <div class="field-value">${new Date().toLocaleString('en-KE', { 
-                      timeZone: 'Africa/Nairobi',
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit'
-                    })} (EAT)</div>
+                    <div class="field-value">${new Date().toLocaleString('en-KE', {
+      timeZone: 'Africa/Nairobi',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    })} (EAT)</div>
                 </div>
                 <div class="field">
                     <div class="field-label">IP Address</div>
@@ -232,7 +234,7 @@ const handler = async (req: Request): Promise<Response> => {
 
       console.log('Email Mesh: Delivery successful');
       emailStatus = 'processed';
-      
+
       // Update database status
       await supabase
         .from('community_members')
@@ -241,7 +243,7 @@ const handler = async (req: Request): Promise<Response> => {
     } catch (emailError) {
       console.error('Email Mesh: Delivery failed:', emailError);
       emailStatus = 'email_failed';
-      
+
       // Update database status
       await supabase
         .from('community_members')
@@ -290,8 +292,8 @@ const handler = async (req: Request): Promise<Response> => {
         }
 
         const eventPayload = {
-          email: email.toLowerCase().trim(),
-          event: "application_submitted",
+          contactEmail: email.toLowerCase().trim(),
+          eventName: "application_submitted",
           properties: {
             FIRSTNAME: first_name.trim(),
             LASTNAME: last_name.trim(),
@@ -325,7 +327,7 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     return new Response(
-      JSON.stringify({ 
+      JSON.stringify({
         message: 'Application submitted successfully!',
         application_id: insertedMember.id,
         email_status: emailStatus
