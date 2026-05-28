@@ -249,6 +249,81 @@ const handler = async (req: Request): Promise<Response> => {
         .eq('id', insertedMember.id);
     }
 
+    // Brevo Integration: Upsert contact and fire custom event for welcome automation
+    try {
+      const brevoApiKey = Deno.env.get('BREVO_API_KEY');
+      if (brevoApiKey) {
+        const brevoListIdRaw = Deno.env.get('BREVO_COMMUNITY_LIST_ID');
+        const brevoListId = brevoListIdRaw ? parseInt(brevoListIdRaw, 10) : null;
+
+        const contactPayload: Record<string, unknown> = {
+          email: email.toLowerCase().trim(),
+          attributes: {
+            FIRSTNAME: first_name.trim(),
+            LASTNAME: last_name.trim(),
+            COUNTY: county?.trim() || '',
+            INTERESTS: interests?.trim() || '',
+            AREAS_OF_INTEREST: (areas_of_interest || []).join(', ')
+          },
+          updateEnabled: true
+        };
+
+        if (brevoListId && !isNaN(brevoListId)) {
+          contactPayload.listIds = [brevoListId];
+        }
+
+        const contactResp = await fetch("https://api.brevo.com/v3/contacts", {
+          method: "POST",
+          headers: {
+            "api-key": brevoApiKey,
+            "Content-Type": "application/json",
+            "Accept": "application/json"
+          },
+          body: JSON.stringify(contactPayload)
+        });
+
+        if (!contactResp.ok) {
+          const errText = await contactResp.text();
+          console.error(`[Brevo] Contact upsert failed (${contactResp.status}): ${errText}`);
+        } else {
+          console.log(`[Brevo] Contact upserted: ${email}`);
+        }
+
+        const eventPayload = {
+          email: email.toLowerCase().trim(),
+          event: "application_submitted",
+          properties: {
+            FIRSTNAME: first_name.trim(),
+            LASTNAME: last_name.trim(),
+            COUNTY: county?.trim() || '',
+            INTERESTS: interests?.trim() || '',
+            AREAS_OF_INTEREST: (areas_of_interest || []).join(', ')
+          }
+        };
+
+        const eventResp = await fetch("https://api.brevo.com/v3/events", {
+          method: "POST",
+          headers: {
+            "api-key": brevoApiKey,
+            "Content-Type": "application/json",
+            "Accept": "application/json"
+          },
+          body: JSON.stringify(eventPayload)
+        });
+
+        if (!eventResp.ok) {
+          const errText = await eventResp.text();
+          console.error(`[Brevo] Event fire failed (${eventResp.status}): ${errText}`);
+        } else {
+          console.log(`[Brevo] Event "application_submitted" fired for: ${email}`);
+        }
+      } else {
+        console.warn('[Brevo] BREVO_API_KEY not found, skipping contact upsert and event fire');
+      }
+    } catch (brevoErr) {
+      console.error('[Brevo] Integration error (non-fatal):', brevoErr);
+    }
+
     return new Response(
       JSON.stringify({ 
         message: 'Application submitted successfully!',

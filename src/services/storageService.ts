@@ -214,6 +214,11 @@ class StorageService {
             return pathOrUrl;
         }
 
+        // If it's a Cloudflare Worker route, return as-is (handled by /b2-image/ proxy)
+        if (pathOrUrl.startsWith('/b2-image/')) {
+            return pathOrUrl;
+        }
+
         // If it's a path and we're configured for B2, sign via B2
         if (this.useBackblaze) {
             const signed = await backblazeStorage.getAuthorizedUrl(pathOrUrl);
