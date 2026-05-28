@@ -144,8 +144,22 @@
     </script>
 
 
-      <script src="https://js.paystack.co/v1/inline.js"></script>
-  <!-- Cloudflare Web Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "140de02530d94bee99baa5685a4e78eb"}'></script><!-- End Cloudflare Web Analytics -->
+  <script src="https://js.paystack.co/v1/inline.js"></script>
+  <!-- Cloudflare Web Analytics -->
+  <script defer src='https://static.cloudflareinsights.com/beacon.min.js'
+    data-cf-beacon='{"token": "140de02530d94bee99baa5685a4e78eb"}'></script><!-- End Cloudflare Web Analytics -->
+  <script src="https://cdn.brevo.com/js/sdk-loader.js" async></script>
+  <script>
+    // Version: 2.0
+    window.Brevo = window.Brevo || [];
+    Brevo.push([
+      "init",
+      {
+        client_key: "u9woqr28f9yeajgrw42u15su",
+        // Optional: Add other initialization options, see documentation
+      }
+    ]);
+  </script>
 
 </head>
 
