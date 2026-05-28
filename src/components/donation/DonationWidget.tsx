@@ -43,10 +43,10 @@ interface DonationWidgetProps {
   onHide?: () => void;
 }
 
-const DonationWidget: React.FC<DonationWidgetProps> = ({ 
-  onTimedOut, 
-  isVisible: controlledVisibility, 
-  offsetY = 140, 
+const DonationWidget: React.FC<DonationWidgetProps> = ({
+  onTimedOut,
+  isVisible: controlledVisibility,
+  offsetY = 140,
   onClose,
   isHidden,
   onHide
@@ -56,12 +56,12 @@ const DonationWidget: React.FC<DonationWidgetProps> = ({
   const [isHovering, setIsHovering] = useState(false);
   const [hasTimedOut, setHasTimedOut] = useState(false);
   const [opacity, setOpacity] = useState(1);
-  
+
   // Paystack & Tiered State
   const [amount, setAmount] = useState<number | string>(500);
   const [isCustom, setIsCustom] = useState(false);
   const [isPaying, setIsPaying] = useState(false);
-  
+
   const widgetMountTimeRef = useRef<number>(Date.now());
   const visibilityTimerRef = useRef<any>(null);
   const timeoutTimerRef = useRef<any>(null);
@@ -119,7 +119,7 @@ const DonationWidget: React.FC<DonationWidgetProps> = ({
     visibilityTimerRef.current = setTimeout(() => {
       setIsVisible(true);
     }, 5000);
-    
+
     timeoutTimerRef.current = setTimeout(() => {
       if (!isExpanded) {
         setIsVisible(false);
@@ -127,7 +127,7 @@ const DonationWidget: React.FC<DonationWidgetProps> = ({
         if (onTimedOut) onTimedOut();
       }
     }, MAX_WIDGET_DISPLAY_TIME);
-    
+
     return clearTimers;
   }, [isExpanded, onTimedOut, controlledVisibility]);
 
@@ -163,7 +163,7 @@ const DonationWidget: React.FC<DonationWidgetProps> = ({
     }
 
     const publicKey = (import.meta.env.VITE_PAYSTACK_PUBLIC_KEY || '').trim().replace(/^["']|["']$/g, '');
-    
+
     if (!publicKey) {
       console.error('PAYSTACK_PUBLIC_KEY is not defined in the environment.');
       toast({
@@ -179,7 +179,7 @@ const DonationWidget: React.FC<DonationWidgetProps> = ({
       const handler = window.PaystackPop.setup({
         key: publicKey,
         email: 'support@civiceducationkenya.com',
-        amount: Math.round(finalAmount * 100), 
+        amount: Math.round(finalAmount * 100),
         currency: 'KES',
         ref: 'WIDGET-' + Math.floor((Math.random() * 1000000000) + 1),
         metadata: {
@@ -242,74 +242,68 @@ const DonationWidget: React.FC<DonationWidgetProps> = ({
           })
         }}
       >
-          {!isExpanded ? (
-            <div
-              className="relative group cursor-pointer"
-              onMouseEnter={handleMouseEnter}
-              onMouseLeave={handleMouseLeave}
-              onClick={handleExpand}
-            >
-              <div className="relative w-48 h-12 flex items-center">
-                <div 
-                  className={`absolute right-12 top-0 h-12 flex items-center transition-all duration-500 ease-out ${
-                    isHovering 
-                      ? 'opacity-100 translate-x-0' 
-                      : 'opacity-0 translate-x-4 pointer-events-none'
+        {!isExpanded ? (
+          <div
+            className="relative group cursor-pointer"
+            onMouseEnter={handleMouseEnter}
+            onMouseLeave={handleMouseLeave}
+            onClick={handleExpand}
+          >
+            <div className="relative w-48 h-12 flex items-center">
+              <div
+                className={`absolute right-12 top-0 h-12 flex items-center transition-all duration-500 ease-out ${isHovering
+                  ? 'opacity-100 translate-x-0'
+                  : 'opacity-0 translate-x-4 pointer-events-none'
                   }`}
-                >
-                  <div 
-                    className={`absolute inset-0 rounded-full transition-all duration-500 ease-out ${
-                      isHovering 
-                        ? 'bg-black/20 backdrop-blur-sm scale-100' 
-                        : 'bg-black/0 backdrop-blur-none scale-75'
-                    }`} 
-                  />
-                  <span 
-                    className={`relative px-4 py-2 text-white font-semibold text-sm whitespace-nowrap transition-all duration-500 ease-out drop-shadow-lg ${
-                      isHovering 
-                        ? 'opacity-100 scale-100' 
-                        : 'opacity-0 scale-90'
+              >
+                <div
+                  className={`absolute inset-0 rounded-full transition-all duration-500 ease-out ${isHovering
+                    ? 'bg-black/20 backdrop-blur-sm scale-100'
+                    : 'bg-black/0 backdrop-blur-none scale-75'
                     }`}
-                  >
-                    Support Us
-                  </span>
-                </div>
-                <div 
-                  className={`absolute right-0 w-12 h-12 rounded-full flex items-center justify-center transition-all duration-500 ease-out shadow-2xl ${
-                    isHovering
-                      ? 'bg-gradient-to-br from-red-400 via-red-500 to-red-600 shadow-red-500/50 scale-110'
-                      : 'bg-gradient-to-br from-red-500 via-red-600 to-red-700 shadow-red-600/40 scale-100'
-                  }`}
+                />
+                <span
+                  className={`relative px-4 py-2 text-white font-semibold text-sm whitespace-nowrap transition-all duration-500 ease-out drop-shadow-lg ${isHovering
+                    ? 'opacity-100 scale-100'
+                    : 'opacity-0 scale-90'
+                    }`}
                 >
-                  <div className="absolute inset-1 rounded-full bg-gradient-to-br from-red-300/30 to-transparent" />
-                  <Heart 
-                    className={`relative z-10 transition-all duration-300 ease-out ${
-                      isHovering 
-                        ? 'h-6 w-6 text-white drop-shadow-lg' 
-                        : 'h-5 w-5 text-white/90'
-                    }`} 
-                  />
-                  <div 
-                    className={`absolute inset-0 rounded-full bg-red-400 transition-all duration-1000 ease-out ${
-                      isHovering 
-                        ? 'animate-ping opacity-20' 
-                        : 'opacity-0'
-                    }`} 
-                  />
-                </div>
+                  Support Us
+                </span>
+              </div>
+              <div
+                className={`absolute right-0 w-12 h-12 rounded-full flex items-center justify-center transition-all duration-500 ease-out shadow-2xl ${isHovering
+                  ? 'bg-gradient-to-br from-red-400 via-red-500 to-red-600 shadow-red-500/50 scale-110'
+                  : 'bg-gradient-to-br from-red-500 via-red-600 to-red-700 shadow-red-600/40 scale-100'
+                  }`}
+              >
+                <div className="absolute inset-1 rounded-full bg-gradient-to-br from-red-300/30 to-transparent" />
+                <Heart
+                  className={`relative z-10 transition-all duration-300 ease-out ${isHovering
+                    ? 'h-6 w-6 text-white drop-shadow-lg'
+                    : 'h-5 w-5 text-white/90'
+                    }`}
+                />
+                <div
+                  className={`absolute inset-0 rounded-full bg-red-400 transition-all duration-1000 ease-out ${isHovering
+                    ? 'animate-ping opacity-20'
+                    : 'opacity-0'
+                    }`}
+                />
               </div>
             </div>
-          ) : (
-            <>
-              {/* Dimming Backdrop */}
-              <motion.div 
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                onClick={handleCollapse}
-                className="absolute inset-0 bg-black/40 backdrop-blur-sm z-[-1]"
-              />
-              <div className="w-80 max-h-[90vh] flex flex-col bg-white/10 dark:bg-gray-900/10 backdrop-blur-xl border border-white/20 dark:border-gray-700/20 rounded-2xl shadow-2xl overflow-hidden glass-card">
+          </div>
+        ) : (
+          <>
+            {/* Dimming Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={handleCollapse}
+              className="absolute inset-0 bg-black/40 backdrop-blur-sm z-[-1]"
+            />
+            <div className="w-80 max-h-[90vh] flex flex-col bg-white/10 dark:bg-gray-900/10 backdrop-blur-xl border border-white/20 dark:border-gray-700/20 rounded-2xl shadow-2xl overflow-hidden glass-card">
               <div className="bg-gradient-to-r from-kenya-green/20 to-kenya-green/10 p-4 border-b border-white/10 dark:border-gray-700/10">
                 <div className="flex justify-between items-center">
                   <h3 className="font-bold text-lg flex items-center text-gray-900 dark:text-white tracking-tight">
@@ -323,66 +317,66 @@ const DonationWidget: React.FC<DonationWidgetProps> = ({
                     className="relative group rounded-full p-2 hover:bg-white/10 dark:hover:bg-gray-800/10 transition-all duration-300 backdrop-blur-sm"
                     onClick={handleCollapse}
                   >
-                    <X className="h-4 w-4 text-gray-500 dark:text-gray-400 group-hover:text-kenya-red transition-colors" />
+                    <X className="h-4 w-4 text-gray-700 dark:text-gray-400 group-hover:text-kenya-red/70 transition-colors" />
                   </button>
                 </div>
               </div>
 
               <div className="p-4 overflow-y-auto space-y-4">
                 <div className="space-y-4">
-                   <div className="flex items-center gap-3 px-3 py-2 bg-kenya-green/5 border border-kenya-green/10 rounded-xl">
-                      <img src="/icons/check-box-svgrepo-com.svg" className="w-4 h-4 invert dark:invert-0 opacity-50" alt="" />
-                      <span className="text-[10px] font-black uppercase tracking-widest text-slate-700 dark:text-slate-300">100% Secure via Paystack</span>
-                   </div>
+                  <div className="flex items-center gap-3 px-3 py-2 bg-kenya-green/5 border border-kenya-green/10 rounded-xl">
+                    <img src="/icons/check-box-svgrepo-com.svg" className="w-4 h-4 invert-0 dark:invert opacity-50" alt="" />
+                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-700 dark:text-slate-300">100% Secure via Paystack</span>
+                  </div>
 
-                   <div className="grid grid-cols-2 gap-3">
-                      {[100, 200, 500, 1000].map(val => (
-                        <button
-                          key={val}
-                          onClick={() => { setAmount(val); setIsCustom(false); }}
-                          className={`h-16 rounded-xl border relative overflow-hidden transition-all duration-300 group ${amount === val && !isCustom ? 'border-kenya-green bg-kenya-green/10 shadow-lg' : 'border-white/10 bg-white/5 hover:border-kenya-green/30'}`}
-                        >
-                          <div className="flex flex-col items-center justify-center h-full text-center">
-                            <span className={`text-sm font-black transition-all ${amount === val && !isCustom ? 'text-kenya-green' : 'text-slate-700 dark:text-slate-200 group-hover:text-kenya-green'}`}>
-                              KES {val}
-                            </span>
-                            <span className={`text-[8px] font-black uppercase tracking-widest transition-all ${amount === val && !isCustom ? 'text-kenya-green/60' : 'text-slate-500/70 dark:text-slate-400/70'}`}>Support Tier</span>
-                          </div>
-                        </button>
-                      ))}
-                   </div>
-
-                   <button
-                      onClick={() => setIsCustom(!isCustom)}
-                      className={`w-full py-3 rounded-xl border font-black text-[10px] uppercase tracking-widest transition-all ${isCustom ? 'border-kenya-green bg-kenya-green/10 text-kenya-green' : 'border-slate-400/20 dark:border-white/10 bg-white/5 text-slate-700 dark:text-slate-300 hover:bg-white/10'}`}
-                   >
-                      {isCustom ? 'Use Fixed Amounts' : 'Custom Support Amount'}
-                   </button>
-
-                   {isCustom && (
-                      <motion.div 
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="relative group "
+                  <div className="grid grid-cols-2 gap-3">
+                    {[100, 200, 500, 1000].map(val => (
+                      <button
+                        key={val}
+                        onClick={() => { setAmount(val); setIsCustom(false); }}
+                        className={`h-16 rounded-xl border relative overflow-hidden transition-all duration-300 group ${amount === val && !isCustom ? 'border-kenya-green bg-kenya-green/10 shadow-lg' : 'border-white/10 bg-white/5 hover:border-kenya-green/30'}`}
                       >
-                        <input
-                          type="number"
-                          value={amount}
-                          onChange={e => setAmount(e.target.value)}
-                          className="w-full h-14 px-4 bg-white/5 border border-kenya-green/20 focus:border-kenya-green outline-none rounded-xl text-2xl font-black text-center text-kenya-green transition-all"
-                          placeholder="0"
-                          autoFocus
-                        />
-                        <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-black uppercase tracking-widest opacity-20">KES</div>
-                      </motion.div>
-                   )}
+                        <div className="flex flex-col items-center justify-center h-full text-center">
+                          <span className={`text-sm font-black transition-all ${amount === val && !isCustom ? 'text-kenya-green' : 'text-slate-700 dark:text-slate-200 group-hover:text-kenya-green'}`}>
+                            KES {val}
+                          </span>
+                          <span className={`text-[8px] font-black uppercase tracking-widest transition-all ${amount === val && !isCustom ? 'text-kenya-green/60' : 'text-slate-500/70 dark:text-slate-400/70'}`}>Support Tier</span>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
 
-                   <button
+                  <button
+                    onClick={() => setIsCustom(!isCustom)}
+                    className={`w-full py-3 rounded-xl border font-black text-[10px] uppercase tracking-widest transition-all ${isCustom ? 'border-kenya-green bg-kenya-green/10 text-kenya-green' : 'border-slate-400/20 dark:border-white/10 bg-white/5 text-slate-700 dark:text-slate-300 hover:bg-white/10'}`}
+                  >
+                    {isCustom ? 'Use Fixed Amounts' : 'Write Your Own Amount'}
+                  </button>
+
+                  {isCustom && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="relative group "
+                    >
+                      <input
+                        type="number"
+                        value={amount}
+                        onChange={e => setAmount(e.target.value)}
+                        className="w-full h-14 px-4 bg-white/5 border border-kenya-green/20 focus:border-kenya-green outline-none rounded-xl text-2xl font-black text-center text-kenya-green transition-all"
+                        placeholder="0"
+                        autoFocus
+                      />
+                      <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-black uppercase tracking-widest opacity-20">KES</div>
+                    </motion.div>
+                  )}
+
+                  <button
                     onClick={handlePaystackDonate}
                     disabled={isPaying}
-                    className="w-full py-4 rounded-xl font-black uppercase text-xs tracking-[0.2em] bg-kenya-green hover:bg-[#30D158] text-white transition-all shadow-xl shadow-kenya-green/20 flex items-center justify-center gap-3 active:scale-95 disabled:opacity-50"
+                    className="w-full py-4 rounded-xl font-black uppercase text-xs tracking-[0.2em] bg-kenya-green hover:bg-[#0ead36] text-white transition-all shadow-xl shadow-kenya-green/20 flex items-center justify-center gap-3 active:scale-95 disabled:opacity-50"
                   >
-                    <img src="/icons/wallet-money-svgrepo-com.svg" className="w-5 h-5 invert" alt="" />
+                    <img src="/icons/wallet-money-svgrepo-com.svg" className="w-5 h-5 invert dark:invert-0" alt="" />
                     {isPaying ? 'Processing...' : `Donate KES ${amount}`}
                   </button>
                 </div>
@@ -395,7 +389,7 @@ const DonationWidget: React.FC<DonationWidgetProps> = ({
 
                 <div className="space-y-3">
                   {DONATION_OPTIONS.filter(o => o.name === 'M-Pesa').map((option) => (
-                    <div 
+                    <div
                       key={option.name}
                       className="group relative p-4 rounded-xl flex items-center justify-between hover:bg-white/10 transition-all duration-300 border border-white/10 backdrop-blur-sm cursor-pointer"
                       onClick={handleMpesa}
