@@ -206,14 +206,14 @@ export const backblazeService = {
 
         // Use the Edge Proxy as the primary method, especially if keys are missing from the bundle
         if (!isDev || !config.keyId || !config.appKey) {
-            console.log(`[B2] Routing path through Edge Proxy: ${path}`);
-            return `${SUPABASE_URL}/functions/v1/b2-proxy?path=${encodeURIComponent(path)}`;
+            console.log(`[B2] Routing path through Cloudflare B2 Proxy: ${path}`);
+            return `/b2-image/${path}`;
         }
 
         const client = getB2Client();
         if (!client) {
-            console.warn('[B2] Client not initialized for signed URL, falling back to proxy');
-            return `${SUPABASE_URL}/functions/v1/b2-proxy?path=${encodeURIComponent(path)}`;
+            console.warn('[B2] Client not initialized for signed URL, falling back to CF proxy');
+            return `/b2-image/${path}`;
         }
 
         try {
@@ -226,8 +226,8 @@ export const backblazeService = {
             console.log(`[B2] Generated legacy signed URL for: ${path}`);
             return signedUrl;
         } catch (error) {
-            console.error('[B2] Signed URL error, falling back to proxy:', error);
-            return `${SUPABASE_URL}/functions/v1/b2-proxy?path=${encodeURIComponent(path)}`;
+            console.error('[B2] Signed URL error, falling back to CF proxy:', error);
+            return `/b2-image/${path}`;
         }
     },
 
@@ -282,8 +282,8 @@ export const backblazeService = {
             // Remove any query params if present
             const cleanPath = path.split('?')[0];
 
-            // Construct the Proxy URL
-            const proxyUrl = `${SUPABASE_URL}/functions/v1/b2-proxy?path=${encodeURIComponent(cleanPath)}`;
+            // Construct the CF Proxy URL
+            const proxyUrl = `/b2-image/${cleanPath}`;
 
             return proxyUrl;
         } catch (error) {
