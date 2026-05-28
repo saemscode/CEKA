@@ -332,7 +332,7 @@ const DonationWidget: React.FC<DonationWidgetProps> = ({
                 <div className="space-y-4">
                    <div className="flex items-center gap-3 px-3 py-2 bg-kenya-green/5 border border-kenya-green/10 rounded-xl">
                       <img src="/icons/check-box-svgrepo-com.svg" className="w-4 h-4 invert dark:invert-0 opacity-50" alt="" />
-                      <span className="text-[10px] font-bold uppercase tracking-widest opacity-60">100% Secure via Paystack</span>
+                      <span className="text-[10px] font-black uppercase tracking-widest text-slate-700 dark:text-slate-300">100% Secure via Paystack</span>
                    </div>
 
                    <div className="grid grid-cols-2 gap-3">
@@ -343,10 +343,10 @@ const DonationWidget: React.FC<DonationWidgetProps> = ({
                           className={`h-16 rounded-xl border relative overflow-hidden transition-all duration-300 group ${amount === val && !isCustom ? 'border-kenya-green bg-kenya-green/10 shadow-lg' : 'border-white/10 bg-white/5 hover:border-kenya-green/30'}`}
                         >
                           <div className="flex flex-col items-center justify-center h-full text-center">
-                            <span className={`text-xs font-black transition-all ${amount === val && !isCustom ? 'text-kenya-green' : 'text-slate-500 opacity-60 group-hover:opacity-100'}`}>
+                            <span className={`text-sm font-black transition-all ${amount === val && !isCustom ? 'text-kenya-green' : 'text-slate-700 dark:text-slate-200 group-hover:text-kenya-green'}`}>
                               KES {val}
                             </span>
-                            <span className="text-[8px] font-bold uppercase tracking-tighter opacity-40">Support Tier</span>
+                            <span className={`text-[8px] font-black uppercase tracking-widest transition-all ${amount === val && !isCustom ? 'text-kenya-green/60' : 'text-slate-500/70 dark:text-slate-400/70'}`}>Support Tier</span>
                           </div>
                         </button>
                       ))}
@@ -354,7 +354,7 @@ const DonationWidget: React.FC<DonationWidgetProps> = ({
 
                    <button
                       onClick={() => setIsCustom(!isCustom)}
-                      className={`w-full py-3 rounded-xl border font-bold text-[10px] uppercase tracking-widest transition-all ${isCustom ? 'border-kenya-green bg-kenya-green/10 text-kenya-green' : 'border-white/10 bg-white/5 text-slate-500'}`}
+                      className={`w-full py-3 rounded-xl border font-black text-[10px] uppercase tracking-widest transition-all ${isCustom ? 'border-kenya-green bg-kenya-green/10 text-kenya-green' : 'border-slate-400/20 dark:border-white/10 bg-white/5 text-slate-700 dark:text-slate-300 hover:bg-white/10'}`}
                    >
                       {isCustom ? 'Use Fixed Amounts' : 'Custom Support Amount'}
                    </button>
@@ -389,7 +389,7 @@ const DonationWidget: React.FC<DonationWidgetProps> = ({
 
                 <div className="relative py-4 flex items-center gap-4">
                   <div className="flex-1 h-px bg-white/10" />
-                  <span className="text-[8px] font-black uppercase tracking-widest opacity-30 whitespace-nowrap">Or Direct Transfer</span>
+                  <span className="text-[9px] font-black uppercase tracking-widest text-slate-600 dark:text-slate-400 whitespace-nowrap">Or Direct Transfer</span>
                   <div className="flex-1 h-px bg-white/10" />
                 </div>
 
@@ -405,8 +405,8 @@ const DonationWidget: React.FC<DonationWidgetProps> = ({
                           {option.icon}
                         </div>
                         <div>
-                          <p className="font-bold text-xs text-gray-900 dark:text-white mb-0.5">{option.name} Manual</p>
-                          <p className="text-[10px] text-gray-500 dark:text-gray-400 font-medium">{option.description}</p>
+                          <p className="font-bold text-xs text-slate-800 dark:text-white mb-0.5">{option.name} Manual</p>
+                          <p className="text-[10px] text-slate-600 dark:text-slate-300 font-bold">{option.description}</p>
                         </div>
                       </div>
                       <button
@@ -419,7 +419,7 @@ const DonationWidget: React.FC<DonationWidgetProps> = ({
                 </div>
 
                 <button
-                  className="w-full py-3 rounded-xl font-bold text-[10px] uppercase tracking-widest text-slate-500 hover:text-slate-800 dark:hover:text-white transition-all"
+                  className="w-full py-3 rounded-xl font-black text-[10px] uppercase tracking-widest text-slate-600 dark:text-slate-400 hover:text-kenya-red dark:hover:text-kenya-red transition-all"
                   onClick={handleCollapse}
                 >
                   Maybe Later
