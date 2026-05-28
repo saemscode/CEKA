@@ -292,8 +292,10 @@ const handler = async (req: Request): Promise<Response> => {
         }
 
         const eventPayload = {
-          contactEmail: email.toLowerCase().trim(),
-          eventName: "application_submitted",
+          event_name: "application_submitted",
+          identifiers: {
+            email: email.toLowerCase().trim()
+          },
           properties: {
             FIRSTNAME: first_name.trim(),
             LASTNAME: last_name.trim(),
