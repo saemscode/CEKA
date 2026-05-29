@@ -294,12 +294,14 @@ const handler = async (req: Request): Promise<Response> => {
         const eventPayload = {
           event_name: "application_submitted",
           identifiers: {
-            email: email.toLowerCase().trim()
+            email_id: email.toLowerCase().trim()
           },
-          properties: {
+          contact_properties: {
             FIRSTNAME: first_name.trim(),
             LASTNAME: last_name.trim(),
-            COUNTY: county?.trim() || '',
+            COUNTY: county?.trim() || ''
+          },
+          event_properties: {
             INTERESTS: interests?.trim() || '',
             AREAS_OF_INTEREST: (areas_of_interest || []).join(', ')
           }
