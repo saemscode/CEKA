@@ -77,16 +77,17 @@ export function BillFollowButton({
         disabled={loading}
         className={cn(
           "relative flex items-center justify-center gap-1.5 transition-all duration-300 min-w-[44px]",
-          isFollowing ? 'bg-kenya-green hover:bg-kenya-green/90 text-white' : '',
+          isFollowing ? 'bg-kenya-green hover:bg-kenya-green/90 text-white shadow-md' : 'hover:border-kenya-green/40',
           className
         )}
       >
-        {/* Tier 1 & 3: Icon (Visible Tablet+ and Ultra-Thin Mobile) */}
+        {/* The Cascading Icon Container */}
+        {/* 1. Visible on Web/Tablet (sm:flex) for [Follow + Icon] */}
+        {/* 2. Hidden on mobile (xs:hidden) for [Follow Only] */}
+        {/* 3. Re-appears on ultra-thin defaults (flex) for [Icon Only] */}
         <div className={cn(
-          "relative shrink-0 transition-transform",
-          isFollowing && "scale-110",
-          "hidden sm:flex", // Visible tablet+
-          !isFollowing && !showLabelOnMobile ? "flex" : "xs:hidden sm:flex" // Fallback for ultra-thin
+          "relative shrink-0 transition-transform flex xs:hidden sm:flex",
+          isFollowing && "scale-110"
         )}>
           <img 
             src="/context/icons 3/person-2-svgrepo-com.svg" 
@@ -94,32 +95,23 @@ export function BillFollowButton({
             alt="Follow"
           />
           {!isFollowing && (
-            <div className="absolute -top-1 -right-1 h-3 w-3 bg-kenya-green rounded-full border border-white dark:border-slate-900 flex items-center justify-center">
-              <Plus className="h-2 w-2 text-white" />
+            <div className="absolute -top-1 -right-1 h-2.5 w-2.5 bg-kenya-green rounded-full border border-white dark:border-slate-900 flex items-center justify-center">
+              <Plus className="h-1.5 w-1.5 text-white" />
             </div>
           )}
         </div>
         
-        {/* Tier 1 & 2: Label (Visible Tablet and standard Mobile) */}
+        {/* The Cascading Label Container */}
+        {/* Visible on Mobile/Tablet/Web, hidden ONLY on ultra-thin (<xs) */}
         <span className={cn(
-          "font-bold truncate mt-0.5",
-          "hidden xs:inline", // Visible tablet and mobile, hidden on ultra-thin
+          "font-bold truncate mt-0.5 hidden xs:inline",
         )}>
           {isFollowing ? 'Following' : 'Follow'}
         </span>
 
-        {/* Tier 3 Fallback Icon (Only visible when text is hidden) */}
-        <div className="xs:hidden flex shrink-0">
-           <img 
-            src="/context/icons 3/person-2-svgrepo-com.svg" 
-            className="h-4 w-4 dark:invert"
-            alt="Follow"
-          />
-        </div>
-
-        {/* Count - Desktop Only to preserve carousel width */}
+        {/* Count - Desktop Only */}
         {showCount && followCount > 0 && (
-          <span className="hidden lg:flex items-center gap-1 text-[10px] opacity-80 border-l border-current/20 pl-1.5 ml-0.5">
+          <span className="hidden lg:flex items-center gap-1 text-[10px] opacity-80 border-l border-current/20 pl-1.5 ml-0.5 font-black">
             {followCount}
           </span>
         )}

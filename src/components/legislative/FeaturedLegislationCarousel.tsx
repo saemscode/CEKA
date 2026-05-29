@@ -28,9 +28,15 @@ interface FeaturedLegislationCarouselProps {
 }
 
 const FeaturedLegislationCarousel: React.FC<FeaturedLegislationCarouselProps> = ({ bills, isLoading }) => {
+    // Derived state for loop physics (Data Buffer)
+    const isLoopable = bills.length > 1;
+    const displayBills = bills.length > 0 && bills.length < 8 
+        ? [...bills, ...bills, ...bills] // Triple for ultra-smooth loop on small lists
+        : bills;
+
     const [emblaRef, emblaApi] = useEmblaCarousel(
         {
-            loop: true,
+            loop: isLoopable,
             align: 'start',
             skipSnaps: false,
             dragFree: false,
@@ -105,13 +111,13 @@ const FeaturedLegislationCarousel: React.FC<FeaturedLegislationCarouselProps> = 
                 </div>
 
                 <div className="flex items-center gap-2">
-                    {/* Dot Indicators */}
+                    {/* Dot Indicators — mapped to original bills, not buffered duplicates */}
                     <div className="hidden sm:flex items-center gap-1.5 mr-2">
-                        {scrollSnaps.map((_, idx) => (
+                        {bills.map((_, idx) => (
                             <button
                                 key={idx}
                                 onClick={() => emblaApi?.scrollTo(idx)}
-                                className={`h-1.5 rounded-full transition-all duration-300 ${idx === selectedIndex
+                                className={`h-1.5 rounded-full transition-all duration-300 ${(selectedIndex % bills.length) === idx
                                         ? 'w-6 bg-kenya-green'
                                         : 'w-1.5 bg-slate-300 dark:bg-white/20 hover:bg-slate-400 dark:hover:bg-white/40'
                                     }`}
@@ -141,13 +147,13 @@ const FeaturedLegislationCarousel: React.FC<FeaturedLegislationCarouselProps> = 
             {/* Carousel */}
             <div className="overflow-hidden relative" ref={emblaRef}>
                 <div className="flex gap-4">
-                    {Array.isArray(bills) && bills.map((bill, index) => (
+                    {Array.isArray(displayBills) && displayBills.map((bill, index) => (
                         <motion.div
-                            key={bill.id}
+                            key={`${bill.id}-${index}`}
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: index * 0.1 }}
-                            className="min-w-[280px] sm:min-w-[320px] md:min-w-[380px] flex-[0_0_85%] sm:flex-[0_0_48%] md:flex-[0_0_38%] lg:flex-[0_0_30%]"
+                            transition={{ delay: (index % bills.length) * 0.1 }}
+                            className="min-w-[280px] sm:min-w-[320px] md:min-w-[380px] flex-[0_0_85%] sm:flex-[0_0_45%] lg:flex-[0_0_31%]"
                         >
                             <Card className="h-full border-0 bg-white dark:bg-white/5 shadow-lg hover:shadow-xl transition-all duration-300 rounded-3xl overflow-hidden group">
                                 <CardContent className="p-6 flex flex-col h-full">
@@ -212,13 +218,13 @@ const FeaturedLegislationCarousel: React.FC<FeaturedLegislationCarouselProps> = 
                 <div className="absolute top-0 right-0 w-8 h-full bg-gradient-to-l from-background to-transparent pointer-events-none z-10" />
             </div>
 
-            {/* Mobile Dot Indicators */}
+            {/* Mobile Dot Indicators — mapped to original bills, not buffered duplicates */}
             <div className="flex sm:hidden items-center justify-center gap-1.5 mt-4">
-                {scrollSnaps.map((_, idx) => (
+                {bills.map((_, idx) => (
                     <button
                         key={idx}
                         onClick={() => emblaApi?.scrollTo(idx)}
-                        className={`h-1.5 rounded-full transition-all duration-300 ${idx === selectedIndex
+                        className={`h-1.5 rounded-full transition-all duration-300 ${(selectedIndex % bills.length) === idx
                                 ? 'w-6 bg-kenya-green'
                                 : 'w-1.5 bg-slate-300 dark:bg-white/20'
                             }`}

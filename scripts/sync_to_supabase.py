@@ -181,6 +181,14 @@ def sync_data(output_dir="processed_data/legislative"):
                 # Always ensure status is set
                 item_status = item.get('status') or existing.get('status') or "Published"
                 
+                # STATUS_LOCK GUARD: If the existing bill has a manual status lock,
+                # preserve the DB status and stages — do NOT overwrite with scraped data
+                if existing.get('status_lock'):
+                    logging.info(f"🔒 LOCKED: Preserving status for '{item['title']}' — status_lock is active.")
+                    item_status = existing['status']  # Keep the DB status
+                    new_data.pop("status", None)      # Remove status from update payload
+                    new_data.pop("stages", None)       # Remove stages from update payload
+
                 # FORCE UPDATE: We now update the bill regardless of status change 
                 # to ensure new structural metadata (like Article 114) is captured.
                 logging.info(f"🔄 Refreshing Intelligence: {item['title']} ({item_status})")
@@ -197,7 +205,8 @@ def sync_data(output_dir="processed_data/legislative"):
                             "version_title": existing['title']
                         })
                     new_data["history"] = history
-                    new_data["status"] = item_status # Update status in payload
+                    if not existing.get('status_lock'):
+                        new_data["status"] = item_status # Update status in payload only if NOT locked
                 
                 supabase.table("bills").update(new_data).eq("id", existing['id']).execute()
                 stats["updates"] += 1

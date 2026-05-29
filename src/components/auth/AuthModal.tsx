@@ -188,7 +188,7 @@ const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent 
-        className={`sm:max-w-md backdrop-blur-lg shadow-lg border border-primary/10 relative overflow-auto max-h-[90vh] z-50 fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2
+        className={`sm:max-w-md backdrop-blur-lg shadow-lg border border-primary/10 overflow-auto max-h-[90vh]
           ${isDarkMode ? 
             'bg-gray-800/90 text-white border-gray-700' : 
             'bg-white/90 text-gray-900 border-gray-200'}`}

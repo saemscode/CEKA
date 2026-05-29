@@ -1533,7 +1533,9 @@ Return EXACTLY a JSON object with these keys:
             if detected: return normalize_stage_label(detected)
 
         # 3. Simple Keyword Fallback
-        if 'assent' in t: return "ASSENT"
+        # GUARD: 'assent' alone is NOT enough — every bill contains it in boilerplate
+        # ('enacted by the parliament', 'commencement'). Require 'presidential assent' phrase.
+        if 'presidential assent' in t or 'signed into law' in t: return "ASSENT"
         if 'reading' in t:
             if 'third' in t: return "3RD READING"
             if 'second' in t: return "2ND READING"

@@ -123,8 +123,8 @@ STAGE_PATTERNS = {
     "assent": [
         re.compile(r'presidential\s+assent', re.I),
         re.compile(r'assented\s+(?:to\s+)?by\s+(?:the\s+)?president', re.I),
-        re.compile(r'commencement\s+(?:date|notice)', re.I),
-        re.compile(r'enacted\s+by\s+the\s+parliament', re.I),
+        # REMOVED: 'commencement date/notice' and 'enacted by the parliament' 
+        # — these appear in EVERY bill's boilerplate preamble and are NOT assent evidence
         re.compile(r'(?:kenya\s+)?gazette\s+(?:notice|supplement).*?(?:act\s+no|commencement)', re.I),
         re.compile(r'signed\s+into\s+law', re.I),
     ],
@@ -493,10 +493,15 @@ class StageDetector:
 
         try:
             # Fetch current bill
-            bill_resp = self.supabase.table("bills").select("id, status, stages").eq("id", bill_id).single().execute()
+            bill_resp = self.supabase.table("bills").select("id, status, stages, status_lock").eq("id", bill_id).single().execute()
             bill = bill_resp.data
             if not bill:
                 logger.warning(f"Bill {bill_id} not found in DB.")
+                return False
+
+            # STATUS_LOCK GUARD: If bill has a manual lock, refuse to change status
+            if bill.get("status_lock"):
+                logger.info(f"🔒 LOCKED: Refusing stage update for bill {bill_id} — status_lock is active.")
                 return False
 
             current_status = bill.get("status", "Publication")

@@ -401,7 +401,9 @@ class SovereignCorroborator:
                                 status_reasons.append(f"Confirmed {hit['source']} via {hit['headline']}")
 
                         # ── Check for ASSENT signals ──
-                        elif 'assent' in combined or 'signed into law' in snippet:
+                        # GUARD: bare 'assent' matches speculative news ('will the president assent?')
+                        # Require 'presidential assent' or 'signed into law' as confirmation phrases
+                        elif 'presidential assent' in combined or 'signed into law' in snippet:
                             sovereign_status = "ASSENT"
                             status_reasons.append(f"Confirmed Assent via {hit['source']}")
 
