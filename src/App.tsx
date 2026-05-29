@@ -137,9 +137,9 @@ const AppContent = () => {
         <Route path="/maintenance" element={<MaintenancePage />} />
         <Route path="/transparency" element={<TransparencyManifesto />} />
         <Route path="/infrastructure" element={<InfrastructureDetails />} />
-        <Route path="/resources" element={<Navigate to="/maintenance" replace />} />
-        <Route path="/resources/:id" element={<Navigate to="/maintenance" replace />} />
-        <Route path="/resources/type/:type" element={<Navigate to="/maintenance" replace />} />
+        <Route path="/resources" element={<ResourceLibrary />} />
+        <Route path="/resources/:id" element={<ResourceDetail />} />
+        <Route path="/resources/type/:type" element={<ResourceLibrary />} />
         <Route path="/resources/upload" element={
           <ProtectedRoute>
             <ResourceUpload />
@@ -152,10 +152,10 @@ const AppContent = () => {
         } />
         <Route path="/resource-hub" element={<Navigate to="/resources" replace />} />
         <Route path="/oauth/consent" element={<OAuthConsent />} />
-        <Route path="/legislative-tracker" element={<Navigate to="/maintenance" replace />} />
-        <Route path="/legislative-tracker/:id" element={<Navigate to="/maintenance" replace />} />
-        <Route path="/legislation/:id" element={<Navigate to="/maintenance" replace />} />
-        <Route path="/bill/:slug" element={<Navigate to="/maintenance" replace />} />
+        <Route path="/legislative-tracker" element={<LegislativeTracker />} />
+        <Route path="/legislative-tracker/:id" element={<LegislativeTrackerDetail />} />
+        <Route path="/legislation/:id" element={<LegislationDetail />} />
+        <Route path="/bill/:slug" element={<BillDetail />} />
         <Route path="/template/:id" element={<TemplateViewerPage />} />
         <Route path="/reject-finance-bill" element={<RejectFinanceBill />} />
         <Route path="/shambles" element={<SHAmbles />} />

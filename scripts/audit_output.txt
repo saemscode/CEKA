@@ -1,0 +1,6 @@
+Total Finance Bills: 5
+ID: 004c66d1-dc07-456c-96d6-4e1de1bb03fe | Title: The Finance Bill , 2023. | Date: 2023-01-01T00:00:00+00:00
+ID: 5f07300d-b69c-4cf8-88d2-28ac1c6a1f6e | Title: The Finance Bill, 2026 | Date: 2026-05-05T00:00:00+00:00
+ID: c4083367-1af5-4439-9f61-3e2b6b9a198d | Title: Finance Bill, 2024 | Date: 2024-01-01T00:00:00+00:00
+ID: f125cfdc-e25e-47a1-88dc-4cdad147b8b2 | Title: The Finance Bill 2025 | Date: 2025-01-01T00:00:00+00:00
+ID: 8feb617a-660e-40fa-915c-a4715c630027 | Title: Finance Bill, 2025 | Date: 2025-05-06T00:00:00+00:00

@@ -1,57 +1,31 @@
-import os
+import requests
 import json
-import logging
-from scripts.supabase_direct import SupabaseDirect
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+url = "https://cajrvemigxghnfmyopiy.supabase.co/rest/v1/bills?id=eq.5f07300d-b69c-4cf8-88d2-28ac1c6a1f6e"
+headers = {
+    "apikey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNhanJ2ZW1pZ3hnaG5mbXlvcGl5Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0NDyOTU1OTAsImV4cCI6MjA1OTg3MTU5MH0._PgYb_PnGbEIpWZ8VTswhYUuaII1MvqeXj1M5hP5HWM",
+    "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNhanJ2ZW1pZ3hnaG5mbXlvcGl5Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0NDyOTU1OTAsImV4cCI6MjA1OTg3MTU5MH0._PgYb_PnGbEIpWZ8VTswhYUuaII1MvqeXj1M5hP5HWM",
+    "Content-Type": "application/json",
+    "Prefer": "return=minimal"
+}
 
-def fix_finance_bill_2026():
-    db = SupabaseDirect()
-    
-    # 1. Find the bill
-    bills = db.select("bills", eq="title", eq_val="Finance Bill 2026")
-    if not bills:
-        # Try fuzzy match if exact fails
-        logger.warning("Exact title 'Finance Bill 2026' not found. Searching for 'Finance Bill'...")
-        bills = db.select("bills", columns="id,title,status,stages")
-        bills = [b for b in bills if "Finance Bill 2026" in b['title']]
+data = {
+    "status": "FIRST_READING",
+    "stages": {
+        "pre_publication": {"status": "completed", "completed_at": "2026-04-08"},
+        "publication": {"status": "completed", "completed_at": "2026-05-05"},
+        "first_reading": {"status": "active"},
+        "second_reading": {"status": "pending"},
+        "committee": {"status": "pending"},
+        "report": {"status": "pending"},
+        "third_reading": {"status": "pending"},
+        "mediation": {"status": "pending"},
+        "assent": {"status": "pending"}
+    },
+    "title": "The Finance Bill, 2026",
+    "description": "The Finance Bill, 2026"
+}
 
-    if not bills:
-        logger.error("Finance Bill 2026 not found.")
-        return
-
-    bill = bills[0]
-    bill_id = bill['id']
-    logger.info(f"Found bill: {bill['title']} (ID: {bill_id})")
-    logger.info(f"Current status: {bill['status']}")
-    
-    # 2. Update status and purge stages history if it contains 'Discarded'
-    new_status = "First Reading" # Reverting to a safe initial state
-    
-    # Handle stages JSONB if it exists
-    stages = bill.get('stages', [])
-    if isinstance(stages, str):
-        try:
-            stages = json.loads(stages)
-        except:
-            stages = []
-    
-    if not isinstance(stages, list):
-        stages = []
-
-    # Remove any Discarded entry from stages
-    cleaned_stages = [s for s in stages if s.get('stage') != 'Discarded']
-    
-    update_data = {
-        "status": new_status,
-        "stages": cleaned_stages,
-        "analysis_status": "pending" # Reset to allow re-analysis with corrected logic
-    }
-    
-    logger.info(f"Updating bill to status: {new_status}")
-    db.update("bills", update_data, eq="id", eq_val=bill_id)
-    logger.info("Successfully corrected bill status.")
-
-if __name__ == "__main__":
-    fix_finance_bill_2026()
+response = requests.patch(url, headers=headers, json=data)
+print(f"Status: {response.status_code}")
+print(f"Response: {response.text}")
