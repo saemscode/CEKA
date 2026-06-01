@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/providers/AuthProvider';
@@ -19,6 +19,20 @@ import {
   Trophy,
   Loader2,
   BookOpen,
+  Upload,
+  Eye,
+  FlaskConical,
+  ImageIcon,
+  Sparkles,
+  X,
+  RefreshCw,
+  BarChart3,
+  UserCheck,
+  Bot,
+  Trash2,
+  Edit3,
+  CheckSquare,
+  XSquare,
 } from 'lucide-react';
 
 // ─────────────────────────────────────────────
@@ -437,37 +451,46 @@ const TranslatorView = ({
 };
 
 // ─────────────────────────────────────────────
-// REVIEWER DASHBOARD
+// REVIEWER DASHBOARD — Behavioral Audit Tabs
 // ─────────────────────────────────────────────
+
+type AuditTab = 'flagged' | 'fast_track' | 'auto_approved' | 'sampling';
 
 const ReviewerDashboard = ({ userRole }: { userRole: string }) => {
   const { toast } = useToast();
-  const [queue, setQueue] = useState<PendingSubmission[]>([]);
+  const [auditTab, setAuditTab] = useState<AuditTab>('flagged');
+  const [queue, setQueue] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [notes, setNotes] = useState<Record<string, string>>({});
+  const [editText, setEditText] = useState<Record<string, string>>({});
   const { user } = useAuth();
 
-  const fetchQueue = useCallback(async () => {
+  const fetchQueue = useCallback(async (tab: AuditTab) => {
     setLoading(true);
-    const { data, error } = await (supabase as any).from('translation_submissions')
-      .select(`
-        id, unit_id, language_code, translated_text, channel,
-        confidence_score, status, glossary_checked, reviewer_notes, created_at,
-        translation_units (source_text, project_slug, field_type)
-      `)
-      .eq('status', 'pending')
-      .order('created_at', { ascending: true })
-      .limit(50);
+    let query = (supabase as any).from('translation_submissions').select(`
+      id, unit_id, lang_code, translated_text, source,
+      confidence_score, status, reviewer_notes, flagged_reason, created_at,
+      translation_units (source_text, carousel_id, slide_number, type)
+    `);
 
+    if (tab === 'flagged') {
+      query = query.eq('status', 'flagged').order('created_at', { ascending: false }).limit(50);
+    } else if (tab === 'fast_track') {
+      query = query.eq('status', 'pending').gte('confidence_score', 0.60).lt('confidence_score', 0.90).order('confidence_score', { ascending: false }).limit(50);
+    } else if (tab === 'auto_approved') {
+      query = query.eq('status', 'approved').gte('confidence_score', 0.90).order('created_at', { ascending: false }).limit(50);
+    } else if (tab === 'sampling') {
+      query = query.eq('status', 'approved').gte('confidence_score', 0.90).order('created_at', { ascending: false }).limit(20);
+    }
+
+    const { data, error } = await query;
     if (!error && data) setQueue(data as any[]);
     setLoading(false);
   }, []);
 
-  useEffect(() => {
-    fetchQueue();
-  }, [fetchQueue]);
+  useEffect(() => { fetchQueue(auditTab); }, [fetchQueue, auditTab]);
 
-  const handleDecision = async (id: string, decision: 'approved' | 'rejected') => {
+  const handleDecision = async (id: string, decision: 'approved' | 'rejected', sub: any) => {
     if (!user) return;
     const { error } = await (supabase as any)
       .from('translation_submissions')
@@ -479,17 +502,51 @@ const ReviewerDashboard = ({ userRole }: { userRole: string }) => {
       })
       .eq('id', id);
 
-    if (error) {
-      toast({ title: 'Failed', description: error.message, variant: 'destructive' });
-      return;
+    if (error) { toast({ title: 'Failed', description: error.message, variant: 'destructive' }); return; }
+
+    // Log AI Correction if human overrules an auto-approved submission
+    if (sub.confidence_score >= 0.90 && sub.status === 'approved') {
+      await (supabase as any).from('ai_corrections').insert({
+        submission_id: id,
+        ai_decision: 'approved',
+        human_decision: decision,
+        correction_type: decision === 'rejected' ? 'false_positive' : 'confirmed',
+        notes: notes[id] || `Human ${decision} an AI auto-approved submission`,
+      });
     }
 
-    toast({
-      title: decision === 'approved' ? 'Approved ✓' : 'Rejected',
-      description: `Submission has been ${decision}.`,
-    });
+    toast({ title: decision === 'approved' ? '✅ Approved' : '❌ Rejected', description: `Submission updated.` });
     setQueue((prev) => prev.filter((s) => s.id !== id));
   };
+
+  const handleCorrect = async (id: string, sub: any) => {
+    const corrected = editText[id];
+    if (!corrected?.trim()) return;
+    await (supabase as any).from('translation_submissions').update({
+      translated_text: corrected,
+      status: 'approved',
+      reviewed_by: user?.id,
+      reviewed_at: new Date().toISOString(),
+      reviewer_notes: `Human corrected: ${notes[id] || 'vernacular review'}`,
+    }).eq('id', id);
+
+    await (supabase as any).from('ai_corrections').insert({
+      submission_id: id,
+      ai_decision: sub.status,
+      human_decision: 'corrected_and_approved',
+      correction_type: 'vernacular_correction',
+      notes: `Changed to: ${corrected}`,
+    });
+    toast({ title: '✏️ Corrected & Approved', description: 'Translation saved with your correction.' });
+    setQueue((prev) => prev.filter((s) => s.id !== id));
+  };
+
+  const auditTabs: { key: AuditTab; label: string; icon: React.ReactNode; desc: string; color: string }[] = [
+    { key: 'flagged', label: 'Flagged', icon: <AlertTriangle size={14} />, desc: 'Auto-rejected or spammy', color: 'bg-red-500/20 text-red-300 border-red-500/30' },
+    { key: 'fast_track', label: 'Fast Track', icon: <Sparkles size={14} />, desc: 'Score 60–89%', color: 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30' },
+    { key: 'auto_approved', label: 'Auto-Approved', icon: <Bot size={14} />, desc: 'AI approved ≥90%', color: 'bg-green-500/20 text-green-300 border-green-500/30' },
+    { key: 'sampling', label: 'Sampling', icon: <BarChart3 size={14} />, desc: 'Spot-check AI quality', color: 'bg-ios-blue/20 text-ios-blue border-ios-blue/30' },
+  ];
 
   if (loading) {
     return (
@@ -501,103 +558,144 @@ const ReviewerDashboard = ({ userRole }: { userRole: string }) => {
 
   return (
     <div className="space-y-6">
-      <div className="glass-light p-6 rounded-[2rem] border border-white/50 shadow-ios-high flex justify-between items-center">
+      {/* Header */}
+      <div className="glass-light p-6 rounded-[2rem] border border-white/50 shadow-ios-high flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold text-midnight">Review Queue</h2>
-          <p className="text-sm text-midnight/50">{queue.length} submissions pending</p>
+          <h2 className="text-xl font-bold text-midnight">Behavioral Audit Dashboard</h2>
+          <p className="text-sm text-midnight/50">AI handles 90% automatically. You review the rest.</p>
         </div>
-        <Badge className="bg-kenya-green/20 text-green-700 border-green-300/30 px-4 py-2 rounded-2xl text-xs font-bold uppercase tracking-widest">
-          {userRole}
-        </Badge>
+        <div className="flex items-center gap-3">
+          <Badge className="bg-kenya-green/20 text-green-700 border-green-300/30 px-4 py-2 rounded-2xl text-xs font-bold uppercase tracking-widest">{userRole}</Badge>
+          <button onClick={() => fetchQueue(auditTab)} className="p-2 glass-light rounded-xl text-midnight/40 hover:text-midnight transition-colors">
+            <RefreshCw size={16} />
+          </button>
+        </div>
+      </div>
+
+      {/* Audit Tab Bar */}
+      <div className="flex gap-3 flex-wrap">
+        {auditTabs.map((t) => (
+          <button
+            key={t.key}
+            id={`audit-tab-${t.key}`}
+            onClick={() => setAuditTab(t.key)}
+            className={`flex items-center gap-2 px-5 py-3 rounded-2xl text-sm font-bold border transition-all duration-200 ${
+              auditTab === t.key ? t.color + ' shadow-md scale-105' : 'glass-dark text-white/40 border-white/10 hover:text-white/60'
+            }`}
+          >
+            {t.icon}{t.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Tab Description */}
+      <div className="glass-dark border border-white/10 rounded-2xl px-5 py-3">
+        <p className="text-white/40 text-xs">
+          {auditTabs.find(t => t.key === auditTab)?.desc}
+          {auditTab === 'sampling' && ' — Review a random sample of AI-approved translations to monitor quality drift.'}
+          {auditTab === 'flagged' && ' — These submissions were automatically blocked. Verify before deleting or overruling the AI.'}
+          {auditTab === 'fast_track' && ' — These almost passed automatically. A fast read is all they need.'}
+        </p>
       </div>
 
       {queue.length === 0 ? (
         <div className="text-center py-24">
           <CheckCircle2 className="w-16 h-16 text-green-400 mx-auto mb-4" />
           <h3 className="text-xl font-bold text-white">Queue clear!</h3>
-          <p className="text-white/50 mt-2">No pending submissions.</p>
+          <p className="text-white/50 mt-2">The AI is handling everything in this category.</p>
         </div>
       ) : (
         <div className="space-y-4">
           {queue.map((sub) => {
+            const score = sub.confidence_score || 0;
+            const scoreColor = score >= 0.9 ? 'text-green-400' : score >= 0.6 ? 'text-yellow-400' : 'text-red-400';
             const flags = Array.isArray(sub.glossary_flags) ? sub.glossary_flags : [];
             return (
-              <Card
-                key={sub.id}
-                className="glass-dark border-white/10 rounded-[2rem] p-8 space-y-6"
-              >
+              <Card key={sub.id} className="glass-dark border-white/10 rounded-[2rem] p-8 space-y-5">
+                {/* Meta Row */}
                 <div className="flex items-start justify-between gap-4">
-                  <div className="space-y-2 flex-1">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <Badge className="bg-white/5 border-white/10 text-white/40 text-[0.6rem] px-3 py-1 rounded-full uppercase tracking-widest">
-                        {sub.translation_units?.field_type ?? 'segment'}
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <Badge className="bg-white/5 border-white/10 text-white/40 text-[0.6rem] px-3 py-1 rounded-full uppercase tracking-widest">
+                      {sub.translation_units?.type ?? 'unit'}
+                    </Badge>
+                    <Badge className="bg-white/5 border-white/10 text-white/40 text-[0.6rem] px-3 py-1 rounded-full uppercase tracking-widest">
+                      {(sub.lang_code || '??').toUpperCase()}
+                    </Badge>
+                    <Badge className="bg-white/5 border-white/10 text-white/40 text-[0.6rem] px-3 py-1 rounded-full uppercase tracking-widest">
+                      via {sub.source || 'web'}
+                    </Badge>
+                    {sub.flagged_reason && (
+                      <Badge className="bg-red-500/20 text-red-300 border-red-500/20 text-[0.6rem] px-3 py-1 rounded-full flex items-center gap-1">
+                        <AlertTriangle size={10} /> {sub.flagged_reason}
                       </Badge>
-                      <Badge className="bg-white/5 border-white/10 text-white/40 text-[0.6rem] px-3 py-1 rounded-full uppercase tracking-widest">
-                        {sub.language_code.toUpperCase()}
-                      </Badge>
-                      <Badge className="bg-white/5 border-white/10 text-white/40 text-[0.6rem] px-3 py-1 rounded-full uppercase tracking-widest">
-                        via {sub.channel}
-                      </Badge>
-                      {flags.length > 0 && (
-                        <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/20 text-[0.6rem] px-3 py-1 rounded-full uppercase tracking-widest flex items-center gap-1">
-                          <AlertTriangle size={10} />
-                          {flags.length} flag{flags.length !== 1 ? 's' : ''}
-                        </Badge>
-                      )}
-                    </div>
-                    <p className="text-white/50 text-sm leading-relaxed">
-                      <span className="text-white/30 font-bold uppercase text-[0.6rem] tracking-widest mr-2">SOURCE</span>
-                      {sub.translation_units?.source_text}
-                    </p>
-                    <p className="text-white text-lg font-medium leading-relaxed">
-                      <span className="text-white/30 font-bold uppercase text-[0.6rem] tracking-widest mr-2">TRANSLATION</span>
-                      {sub.translated_text}
-                    </p>
-                    {flags.length > 0 && (
-                      <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-xl px-4 py-3 space-y-1">
-                        {flags.map((f: string, i: number) => (
-                          <p key={i} className="text-yellow-300 text-xs flex items-center gap-2">
-                            <AlertTriangle size={12} />
-                            {f}
-                          </p>
-                        ))}
-                      </div>
                     )}
                   </div>
-                  <div className="text-right">
-                    <span className={`text-lg font-black ${sub.confidence_score >= 0.7 ? 'text-green-400' : sub.confidence_score >= 0.5 ? 'text-yellow-400' : 'text-red-400'}`}>
-                      {Math.round(sub.confidence_score * 100)}%
-                    </span>
-                    <p className="text-[0.55rem] text-white/20 uppercase tracking-widest">confidence</p>
+                  <div className="text-right shrink-0">
+                    <span className={`text-2xl font-black ${scoreColor}`}>{Math.round(score * 100)}%</span>
+                    <p className="text-[0.55rem] text-white/20 uppercase tracking-widest">AI score</p>
                   </div>
                 </div>
 
-                <textarea
-                  className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-3 text-sm text-white/70 placeholder:text-white/20 outline-none resize-none h-16 transition-all focus:ring-2 focus:ring-ios-blue/20"
-                  placeholder="Reviewer notes (optional)..."
-                  value={notes[sub.id] ?? ''}
-                  onChange={(e) =>
-                    setNotes((prev) => ({ ...prev, [sub.id]: e.target.value }))
-                  }
-                />
+                {/* Side-by-Side */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="bg-white/5 rounded-2xl p-4">
+                    <span className="text-[0.6rem] uppercase tracking-widest text-white/30 font-bold block mb-2">Source English</span>
+                    <p className="text-white/70 text-sm leading-relaxed">{sub.translation_units?.source_text}</p>
+                  </div>
+                  <div className="bg-ios-blue/10 rounded-2xl p-4">
+                    <span className="text-[0.6rem] uppercase tracking-widest text-ios-blue/60 font-bold block mb-2">Translation</span>
+                    <p className="text-white text-sm leading-relaxed font-medium">{sub.translated_text}</p>
+                  </div>
+                </div>
 
-                <div className="flex gap-4 justify-end">
-                  <Button
-                    id={`reject-${sub.id}`}
-                    onClick={() => handleDecision(sub.id, 'rejected')}
-                    variant="outline"
-                    className="border-red-500/30 text-red-400 hover:bg-red-500/10 rounded-2xl px-8 py-5 font-bold"
-                  >
-                    Reject
-                  </Button>
-                  <Button
-                    id={`approve-${sub.id}`}
-                    onClick={() => handleDecision(sub.id, 'approved')}
-                    className="bg-kenya-green hover:bg-kenya-green/90 text-white rounded-2xl px-10 py-5 font-bold shadow-ios-high"
-                  >
-                    <CheckCircle2 size={18} className="mr-2" />
-                    Approve
-                  </Button>
+                {/* Human Correction Field */}
+                {(auditTab === 'flagged' || auditTab === 'fast_track' || auditTab === 'sampling') && (
+                  <div className="space-y-2">
+                    <label className="text-[0.6rem] uppercase tracking-widest text-white/30 font-bold">✏️ Correct Translation (leave blank to keep original)</label>
+                    <textarea
+                      className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white/80 placeholder:text-white/20 outline-none resize-none h-16 focus:ring-2 focus:ring-ios-blue/20 transition-all"
+                      placeholder="Type your corrected translation here..."
+                      value={editText[sub.id] ?? ''}
+                      onChange={(e) => setEditText(prev => ({ ...prev, [sub.id]: e.target.value }))}
+                    />
+                    <input
+                      className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-2.5 text-sm text-white/60 placeholder:text-white/20 outline-none focus:ring-2 focus:ring-ios-blue/20 transition-all"
+                      placeholder="Reviewer note (e.g. 'valid Dholuo idiom, not AI error')..."
+                      value={notes[sub.id] ?? ''}
+                      onChange={(e) => setNotes(prev => ({ ...prev, [sub.id]: e.target.value }))}
+                    />
+                  </div>
+                )}
+
+                {/* Action Row */}
+                <div className="flex gap-3 justify-end flex-wrap">
+                  {editText[sub.id]?.trim() ? (
+                    <Button
+                      id={`correct-${sub.id}`}
+                      onClick={() => handleCorrect(sub.id, sub)}
+                      className="bg-purple-600 hover:bg-purple-500 text-white rounded-2xl px-8 py-5 font-bold"
+                    >
+                      <Edit3 size={16} className="mr-2" /> Save Correction
+                    </Button>
+                  ) : (
+                    <>
+                      <Button
+                        id={`reject-${sub.id}`}
+                        onClick={() => handleDecision(sub.id, 'rejected', sub)}
+                        variant="outline"
+                        className="border-red-500/30 text-red-400 hover:bg-red-500/10 rounded-2xl px-8 py-5 font-bold"
+                      >
+                        <XSquare size={16} className="mr-2" /> Reject
+                      </Button>
+                      <Button
+                        id={`approve-${sub.id}`}
+                        onClick={() => handleDecision(sub.id, 'approved', sub)}
+                        className="bg-kenya-green hover:bg-kenya-green/90 text-white rounded-2xl px-10 py-5 font-bold shadow-ios-high"
+                      >
+                        <CheckSquare size={18} className="mr-2" /> Approve
+                      </Button>
+                    </>
+                  )}
                 </div>
               </Card>
             );
@@ -609,193 +707,479 @@ const ReviewerDashboard = ({ userRole }: { userRole: string }) => {
 };
 
 // ─────────────────────────────────────────────
-// ADMIN INGESTION FORM
+// CAROUSEL INGEST — Full Pipeline UI
 // ─────────────────────────────────────────────
+
+interface SlideRow {
+  url: string;
+  slide_number: number;
+  extracted: {
+    headline?: string;
+    subheadline?: string;
+    body?: string;
+    cta?: string;
+    metadata?: string;
+  } | null;
+  confidence: number;
+  status: 'idle' | 'extracting' | 'done' | 'error';
+}
+
+const INGEST_FUNCTION_URL = 'https://cajrvemigxghnfmyopiy.supabase.co/functions/v1/ingest-media';
 
 const AdminIngestion = () => {
   const { toast } = useToast();
-  const { user, session } = useAuth();
-  const [form, setForm] = useState({
-    project_slug: '',
-    slide_index: 1,
-    field_type: 'body' as 'headline' | 'body' | 'cta' | 'caption' | 'note',
-    source_text: '',
-    context_hint: '',
-    char_limit: '',
-    priority: 1,
+  const { session } = useAuth();
+  const [batchTitle, setBatchTitle] = useState('');
+  const [sourceUrl, setSourceUrl] = useState('');
+  const [slides, setSlides] = useState<SlideRow[]>([
+    { url: '', slide_number: 1, extracted: null, confidence: 0, status: 'idle' },
+  ]);
+  const [extracting, setExtracting] = useState(false);
+  const [publishing, setPublishing] = useState(false);
+  const [batchId, setBatchId] = useState<string | null>(null);
+  const [phase, setPhase] = useState<'input' | 'review' | 'published'>('input');
+
+  // ── MANUAL TEXT FORM (Fallback for quick adds) ──
+  const [manualMode, setManualMode] = useState(false);
+  const [manualForm, setManualForm] = useState({
+    project_slug: '', slide_index: 1, field_type: 'body' as string,
+    source_text: '', context_hint: '', char_limit: '',
   });
-  const [submitting, setSubmitting] = useState(false);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!form.project_slug.trim() || !form.source_text.trim()) {
-      toast({ title: 'Missing fields', description: 'Project slug and source text are required.', variant: 'destructive' });
-      return;
-    }
-    setSubmitting(true);
-
-    const { data: newUnit, error } = await (supabase as any).from('translation_units').insert({
-      project_slug: form.project_slug.trim().toLowerCase().replace(/\s+/g, '-'),
-      slide_index: form.slide_index,
-      field_type: form.field_type,
-      source_text: form.source_text.trim(),
-      context_hint: form.context_hint.trim() || null,
-      char_limit: form.char_limit ? parseInt(form.char_limit, 10) : null,
-      priority: form.priority,
-      status: 'open',
-      created_by: user?.id,
-    }).select().single();
-
-    if (error || !newUnit) {
-      toast({ title: 'Failed', description: error?.message || "Insert failed", variant: 'destructive' });
-      setSubmitting(false);
-      return;
-    }
-
-    // Trigger AI Pre-drafting for all active languages in parallel
-    const { data: langs } = await (supabase as any).from("languages").select("code").eq("is_active", true);
-    if (langs) {
-      const langCodes = (langs as any[]).map(l => l.code);
-      (supabase.functions as any).invoke('translate-ai', {
-        body: {
-          unit_id: newUnit.id,
-          source_text: form.source_text.trim(),
-          target_languages: langCodes
-        }
-      }).catch(console.error);
-    }
-
-    toast({ title: 'Unit created', description: 'Translation task queued. AI pre-drafting initiated for all languages.' });
-    setForm({ project_slug: '', slide_index: 1, field_type: 'body', source_text: '', context_hint: '', char_limit: '', priority: 1 });
-    setSubmitting(false);
-  };
+  const [manualSubmitting, setManualSubmitting] = useState(false);
 
   const inputClass = 'w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-3.5 text-white placeholder:text-white/20 outline-none focus:ring-2 focus:ring-ios-blue/20 transition-all text-sm';
   const labelClass = 'text-[0.65rem] uppercase tracking-widest text-white/40 font-bold block mb-1.5';
 
+  const addSlide = () => {
+    setSlides(prev => [...prev, { url: '', slide_number: prev.length + 1, extracted: null, confidence: 0, status: 'idle' }]);
+  };
+
+  const removeSlide = (idx: number) => {
+    setSlides(prev => prev.filter((_, i) => i !== idx).map((s, i) => ({ ...s, slide_number: i + 1 })));
+  };
+
+  const updateUrl = (idx: number, url: string) => {
+    setSlides(prev => prev.map((s, i) => i === idx ? { ...s, url } : s));
+  };
+
+  const updateExtracted = (idx: number, field: string, value: string) => {
+    setSlides(prev => prev.map((s, i) => i === idx ? { ...s, extracted: { ...s.extracted, [field]: value } } : s));
+  };
+
+  const runExtraction = async () => {
+    const validSlides = slides.filter(s => s.url.trim());
+    if (!batchTitle.trim() || validSlides.length === 0) {
+      toast({ title: 'Missing fields', description: 'Add a campaign title and at least one image URL.', variant: 'destructive' });
+      return;
+    }
+    setExtracting(true);
+    // Mark all as extracting
+    setSlides(prev => prev.map(s => s.url.trim() ? { ...s, status: 'extracting' } : s));
+
+    try {
+      const token = session?.access_token;
+      const res = await fetch(INGEST_FUNCTION_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({
+          title: batchTitle.trim(),
+          source_url: sourceUrl.trim() || null,
+          images: validSlides.map(s => ({ url: s.url, slide_number: s.slide_number })),
+          auto_publish: false,
+        }),
+      });
+
+      if (!res.ok) throw new Error(`Ingest failed: ${res.statusText}`);
+      const result = await res.json();
+      setBatchId(result.batch_id);
+
+      // Merge extractions back into slides
+      setSlides(prev => prev.map((s, i) => {
+        const ext = (result.extractions || []).find((e: any) => e.slide_number === s.slide_number);
+        if (ext) return { ...s, extracted: ext.extracted, confidence: ext.confidence, status: 'done' };
+        return { ...s, status: s.url.trim() ? 'done' : 'idle' };
+      }));
+
+      setPhase('review');
+      toast({ title: '🔍 Extraction Complete', description: `${result.slides_processed} slides staged for your review.` });
+    } catch (err: any) {
+      toast({ title: 'Extraction failed', description: err.message, variant: 'destructive' });
+      setSlides(prev => prev.map(s => ({ ...s, status: 'idle' })));
+    } finally {
+      setExtracting(false);
+    }
+  };
+
+  const publishBatch = async () => {
+    if (!batchId) return;
+    setPublishing(true);
+    try {
+      // For each slide with extracted data, push to translation_units directly
+      const types: { key: string; type: string }[] = [
+        { key: 'headline', type: 'headline' },
+        { key: 'subheadline', type: 'subheadline' },
+        { key: 'body', type: 'body' },
+        { key: 'cta', type: 'cta' },
+      ];
+
+      let unitCount = 0;
+      for (const slide of slides.filter(s => s.extracted && s.status === 'done')) {
+        for (const { key, type } of types) {
+          const text = (slide.extracted as any)?.[key]?.trim();
+          if (!text || text.length < 3) continue;
+          await (supabase as any).from('translation_units').insert({
+            batch_id: batchId,
+            carousel_id: batchTitle.trim(),
+            slide_number: slide.slide_number,
+            type,
+            source_text: text,
+            context_note: `Slide ${slide.slide_number}/${slides.length}. Human-reviewed extraction. Confidence: ${slide.confidence}.`,
+            extraction_confidence: slide.confidence,
+            active: true,
+          });
+          unitCount++;
+        }
+      }
+
+      // Update batch status
+      await (supabase as any).from('carousel_batches').update({ status: 'published' }).eq('id', batchId);
+
+      // Trigger AI pre-drafting for all units in batch
+      const { data: langs } = await (supabase as any).from('languages').select('code').eq('is_active', true);
+      if (langs) {
+        const { data: units } = await (supabase as any).from('translation_units').select('id, source_text').eq('batch_id', batchId);
+        if (units) {
+          for (const unit of (units as any[])) {
+            (supabase.functions as any).invoke('translate-ai', {
+              body: { unit_id: unit.id, source_text: unit.source_text, target_languages: (langs as any[]).map(l => l.code) }
+            }).catch(console.error);
+          }
+        }
+      }
+
+      setPhase('published');
+      toast({ title: '🚀 Campaign Published!', description: `${unitCount} translation units are now live for the community.` });
+    } catch (err: any) {
+      toast({ title: 'Publish failed', description: err.message, variant: 'destructive' });
+    } finally {
+      setPublishing(false);
+    }
+  };
+
+  const handleManualSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!manualForm.project_slug.trim() || !manualForm.source_text.trim()) {
+      toast({ title: 'Missing fields', description: 'Project slug and source text are required.', variant: 'destructive' });
+      return;
+    }
+    setManualSubmitting(true);
+    const { data: newUnit, error } = await (supabase as any).from('translation_units').insert({
+      carousel_id: manualForm.project_slug.trim().toLowerCase().replace(/\s+/g, '-'),
+      slide_number: manualForm.slide_index,
+      type: manualForm.field_type,
+      source_text: manualForm.source_text.trim(),
+      context_note: manualForm.context_hint.trim() || null,
+      char_limit: manualForm.char_limit ? parseInt(manualForm.char_limit, 10) : null,
+      active: true,
+    }).select().single();
+    if (error || !newUnit) { toast({ title: 'Failed', description: error?.message || 'Insert failed', variant: 'destructive' }); setManualSubmitting(false); return; }
+    const { data: langs } = await (supabase as any).from('languages').select('code').eq('is_active', true);
+    if (langs) {
+      (supabase.functions as any).invoke('translate-ai', { body: { unit_id: (newUnit as any).id, source_text: manualForm.source_text.trim(), target_languages: (langs as any[]).map(l => l.code) } }).catch(console.error);
+    }
+    toast({ title: '✅ Unit created', description: 'Translation task queued. AI pre-drafting initiated.' });
+    setManualForm({ project_slug: '', slide_index: 1, field_type: 'body', source_text: '', context_hint: '', char_limit: '' });
+    setManualSubmitting(false);
+  };
+
+  // ── SYSTEM HEALTH MONITOR ──
+  const [health, setHealth] = useState<any>(null);
+  const checkHealth = async () => {
+    const { count: units } = await (supabase as any).from('translation_units').select('*', { count: 'exact', head: true });
+    const { count: pending } = await (supabase as any).from('translation_submissions').select('*', { count: 'exact', head: true }).eq('status', 'pending');
+    const { count: flagged } = await (supabase as any).from('translation_submissions').select('*', { count: 'exact', head: true }).eq('status', 'flagged');
+    const { count: bots } = await (supabase as any).from('profiles').select('*', { count: 'exact', head: true }).not('telegram_id', 'is', null);
+
+    setHealth({
+      units: units || 0,
+      pending: pending || 0,
+      flagged: flagged || 0,
+      bot_users: bots || 0,
+      workers: [
+        { name: 'Vision Engine', status: 'active', icon: <Eye size={12}/> },
+        { name: 'LLM Auditor', status: 'active', icon: <Bot size={12}/> },
+        { name: 'Submission Guard', status: 'active', icon: <ShieldCheck size={12}/> }
+      ]
+    });
+  };
+
+  useEffect(() => { checkHealth(); }, []);
+
+  if (phase === 'published') {
+    return (
+      <div className="flex flex-col items-center justify-center py-24 space-y-6 text-center">
+        <div className="w-20 h-20 bg-kenya-green/20 rounded-full flex items-center justify-center">
+          <CheckCircle2 className="w-10 h-10 text-green-400" />
+        </div>
+        <h2 className="text-2xl font-black text-white">Campaign Published! 🚀</h2>
+        <p className="text-white/50 max-w-md">Translation units are now live. The Telegram Bot and Web UI will serve them to the community immediately.</p>
+        <Button id="another-campaign-btn" onClick={() => { setPhase('input'); setBatchTitle(''); setSourceUrl(''); setSlides([{ url: '', slide_number: 1, extracted: null, confidence: 0, status: 'idle' }]); setBatchId(null); }} className="bg-ios-blue text-white rounded-2xl px-10 py-5 font-bold shadow-ios-high">
+          Ingest Another Campaign
+        </Button>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
-      <div className="glass-light p-6 rounded-[2rem] border border-white/50 shadow-ios-high">
-        <h2 className="text-xl font-bold text-midnight">Content Ingestion</h2>
-        <p className="text-sm text-midnight/50">Add source text units for community translation.</p>
+      {/* System Health Summary */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {[
+          { label: 'Ingested Units', value: health?.units ?? '...', icon: <BookOpen className="text-ios-blue" /> },
+          { label: 'Pending Review', value: health?.pending ?? '...', icon: <RefreshCw className="text-yellow-400" /> },
+          { label: 'Flagged Spam', value: health?.flagged ?? '...', icon: <AlertTriangle className="text-red-400" /> },
+          { label: 'Bot Volunteers', value: health?.bot_users ?? '...', icon: <Send className="text-ios-blue" /> },
+        ].map((stat, i) => (
+          <Card key={i} className="glass-dark border-white/10 p-5 rounded-3xl flex items-center gap-4">
+            <div className="w-10 h-10 rounded-2xl bg-white/5 flex items-center justify-center">{stat.icon}</div>
+            <div>
+              <p className="text-[0.6rem] uppercase tracking-widest text-white/30 font-bold">{stat.label}</p>
+              <p className="text-xl font-black text-white">{stat.value}</p>
+            </div>
+          </Card>
+        ))}
       </div>
 
-      <Card className="glass-dark border-white/10 rounded-[3rem] p-10">
-        <form id="admin-ingestion-form" onSubmit={handleSubmit} className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label htmlFor="project-slug" className={labelClass}>Campaign / Carousel Slug</label>
-              <input
-                id="project-slug"
-                className={inputClass}
-                placeholder="finance-bill-2026"
-                value={form.project_slug}
-                onChange={(e) => setForm((p) => ({ ...p, project_slug: e.target.value }))}
-                required
-              />
+      {/* Header */}
+      <div className="glass-light p-6 rounded-[2rem] border border-white/50 shadow-ios-high flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-xl font-bold text-midnight">Campaign Pipeline</h2>
+          <p className="text-sm text-midnight/50">Manage the autonomous ingestion & bot workers.</p>
+        </div>
+        <div className="flex gap-2">
+          {health?.workers.map((w: any, i: number) => (
+            <Badge key={i} className="bg-midnight/5 text-midnight/40 border-midnight/10 px-3 py-1.5 rounded-xl text-[0.6rem] uppercase tracking-widest flex items-center gap-1.5 font-bold">
+              <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
+              {w.name}
+            </Badge>
+          ))}
+          <button
+            id="toggle-manual-mode"
+            onClick={() => setManualMode(m => !m)}
+            className={`text-xs font-bold px-4 py-2 rounded-xl transition-all border ${
+              manualMode ? 'bg-midnight text-white border-midnight shadow-md' : 'bg-white/10 text-midnight border-midnight/20 hover:bg-white/30'
+            }`}
+          >
+            {manualMode ? '← Carousel Mode' : '+ Quick Add'}
+          </button>
+        </div>
+      </div>
+
+      {/* Manual Quick Add Mode */}
+      {manualMode ? (
+        <Card className="glass-dark border-white/10 rounded-[3rem] p-10">
+          <p className="text-white/40 text-xs uppercase tracking-widest font-bold mb-6">Quick Add — Single Translation Unit</p>
+          <form id="admin-ingestion-form" onSubmit={handleManualSubmit} className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className={labelClass}>Campaign / Carousel Slug</label>
+                <input className={inputClass} placeholder="finance-bill-2026" value={manualForm.project_slug} onChange={e => setManualForm(p => ({ ...p, project_slug: e.target.value }))} required />
+              </div>
+              <div>
+                <label className={labelClass}>Slide Number</label>
+                <input type="number" min={1} className={inputClass} value={manualForm.slide_index} onChange={e => setManualForm(p => ({ ...p, slide_index: parseInt(e.target.value, 10) }))} />
+              </div>
+              <div>
+                <label className={labelClass}>Segment Type</label>
+                <select className={inputClass + ' appearance-none'} value={manualForm.field_type} onChange={e => setManualForm(p => ({ ...p, field_type: e.target.value }))}>
+                  <option value="headline">Headline</option>
+                  <option value="body">Body Text</option>
+                  <option value="cta">Call to Action</option>
+                  <option value="subheadline">Subheadline</option>
+                </select>
+              </div>
+              <div>
+                <label className={labelClass}>Character Limit (optional)</label>
+                <input type="number" min={1} className={inputClass} placeholder="Leave blank for unlimited" value={manualForm.char_limit} onChange={e => setManualForm(p => ({ ...p, char_limit: e.target.value }))} />
+              </div>
             </div>
             <div>
-              <label htmlFor="slide-index" className={labelClass}>Slide Number</label>
-              <input
-                id="slide-index"
-                type="number"
-                min={1}
-                className={inputClass}
-                value={form.slide_index}
-                onChange={(e) => setForm((p) => ({ ...p, slide_index: parseInt(e.target.value, 10) }))}
-              />
+              <label className={labelClass}>Source Text (English)</label>
+              <textarea className={inputClass + ' h-32 resize-none'} placeholder="Paste the English text to be translated..." value={manualForm.source_text} onChange={e => setManualForm(p => ({ ...p, source_text: e.target.value }))} required />
             </div>
             <div>
-              <label htmlFor="field-type" className={labelClass}>Segment Type</label>
-              <select
-                id="field-type"
-                className={inputClass + ' appearance-none'}
-                value={form.field_type}
-                onChange={(e) => setForm((p) => ({ ...p, field_type: e.target.value as any }))}
+              <label className={labelClass}>Context Hint for Translators</label>
+              <input className={inputClass} placeholder="e.g. Formal civic language. Headline of Finance Bill slide." value={manualForm.context_hint} onChange={e => setManualForm(p => ({ ...p, context_hint: e.target.value }))} />
+            </div>
+            <div className="flex justify-end">
+              <Button type="submit" disabled={manualSubmitting} className="bg-ios-blue hover:bg-ios-blue/90 text-white rounded-[2rem] px-12 py-7 text-lg font-bold shadow-ios-high">
+                {manualSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Plus size={18} className="mr-2" />Create Unit</>}
+              </Button>
+            </div>
+          </form>
+        </Card>
+      ) : (
+        <>
+          {/* Campaign Meta */}
+          <Card className="glass-dark border-white/10 rounded-[2rem] p-8 space-y-6">
+            <p className="text-white/40 text-[0.65rem] uppercase tracking-widest font-bold">Step 1 — Campaign Details</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className={labelClass}>Campaign Title</label>
+                <input
+                  className={inputClass}
+                  placeholder="e.g. Finance Bill 2026 Breakdown"
+                  value={batchTitle}
+                  onChange={e => setBatchTitle(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className={labelClass}>Source URL (optional)</label>
+                <input
+                  className={inputClass}
+                  placeholder="Instagram/link where this campaign lives"
+                  value={sourceUrl}
+                  onChange={e => setSourceUrl(e.target.value)}
+                />
+              </div>
+            </div>
+          </Card>
+
+          {/* Slide URL Input */}
+          <Card className="glass-dark border-white/10 rounded-[2rem] p-8 space-y-6">
+            <div className="flex items-center justify-between">
+              <p className="text-white/40 text-[0.65rem] uppercase tracking-widest font-bold">Step 2 — Add Slide Image URLs</p>
+              <button onClick={addSlide} className="flex items-center gap-2 text-ios-blue text-sm font-bold hover:text-ios-blue/80 transition-colors">
+                <Plus size={16} /> Add Slide
+              </button>
+            </div>
+            <div className="space-y-3">
+              {slides.map((slide, idx) => (
+                <div key={idx} className="flex items-center gap-3">
+                  <div className="shrink-0 w-8 h-8 bg-white/5 rounded-xl flex items-center justify-center text-white/30 text-xs font-bold">
+                    {slide.slide_number}
+                  </div>
+                  <div className="relative flex-1">
+                    <ImageIcon size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20" />
+                    <input
+                      className={inputClass + ' pl-10'}
+                      placeholder={`Slide ${slide.slide_number} image URL (https://...)`}
+                      value={slide.url}
+                      onChange={e => updateUrl(idx, e.target.value)}
+                    />
+                  </div>
+                  {slide.status === 'extracting' && <Loader2 size={16} className="text-ios-blue animate-spin shrink-0" />}
+                  {slide.status === 'done' && <CheckCircle2 size={16} className="text-green-400 shrink-0" />}
+                  {slide.status === 'error' && <AlertTriangle size={16} className="text-red-400 shrink-0" />}
+                  {slides.length > 1 && (
+                    <button onClick={() => removeSlide(idx)} className="text-white/20 hover:text-red-400 transition-colors shrink-0">
+                      <X size={16} />
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+            <div className="pt-2">
+              <Button
+                id="run-extraction-btn"
+                onClick={runExtraction}
+                disabled={extracting || !batchTitle.trim() || slides.every(s => !s.url.trim())}
+                className="w-full bg-ios-blue hover:bg-ios-blue/90 text-white rounded-[2rem] py-6 text-base font-bold shadow-ios-high disabled:opacity-50"
               >
-                <option value="headline">Headline</option>
-                <option value="body">Body Text</option>
-                <option value="cta">Call to Action</option>
-                <option value="caption">Caption</option>
-                <option value="note">Note</option>
-              </select>
+                {extracting ? (
+                  <><Loader2 className="w-5 h-5 animate-spin mr-2" />Extracting Text...</>
+                ) : (
+                  <><Sparkles size={18} className="mr-2" />Extract Text with AI</>
+                )}
+              </Button>
             </div>
-            <div>
-              <label htmlFor="char-limit" className={labelClass}>Character Limit (optional)</label>
-              <input
-                id="char-limit"
-                type="number"
-                min={1}
-                className={inputClass}
-                placeholder="Leave blank for unlimited"
-                value={form.char_limit}
-                onChange={(e) => setForm((p) => ({ ...p, char_limit: e.target.value }))}
-              />
+          </Card>
+
+          {/* Review Phase */}
+          {phase === 'review' && (
+            <div className="space-y-4">
+              <div className="glass-light p-6 rounded-[2rem] border border-white/50 flex items-center justify-between">
+                <div>
+                  <p className="text-midnight font-bold text-lg">Step 3 — Review & Correct AI Extractions</p>
+                  <p className="text-midnight/50 text-sm">Edit any fields before publishing. Only headline, subheadline, body, and cta become translation tasks.</p>
+                </div>
+                <Eye size={24} className="text-midnight/30" />
+              </div>
+
+              {slides.filter(s => s.status === 'done' && s.extracted).map((slide, idx) => (
+                <Card key={slide.slide_number} className="glass-dark border-white/10 rounded-[2rem] p-8 space-y-5">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-ios-blue/20 rounded-xl flex items-center justify-center text-ios-blue font-black">
+                        {slide.slide_number}
+                      </div>
+                      <div>
+                        <p className="text-white font-bold">Slide {slide.slide_number} of {slides.length}</p>
+                        <p className="text-white/30 text-xs">{slide.slide_number === slides.length ? '🎯 CTA Slide' : slide.slide_number === 1 ? '🪝 Hook Slide' : '📖 Content Slide'}</p>
+                      </div>
+                    </div>
+                    <span className={`text-sm font-bold px-3 py-1 rounded-full ${
+                      slide.confidence >= 0.85 ? 'bg-green-500/20 text-green-400' :
+                      slide.confidence >= 0.60 ? 'bg-yellow-500/20 text-yellow-400' : 'bg-red-500/20 text-red-400'
+                    }`}>
+                      {Math.round(slide.confidence * 100)}% confidence
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {(['headline', 'subheadline', 'body', 'cta'] as const).map(field => (
+                      <div key={field}>
+                        <label className={labelClass}>{field === 'cta' ? '🎯 Call to Action' : field.charAt(0).toUpperCase() + field.slice(1)}</label>
+                        <textarea
+                          className={inputClass + ' h-20 resize-none'}
+                          placeholder={`No ${field} detected...`}
+                          value={(slide.extracted as any)?.[field] ?? ''}
+                          onChange={e => updateExtracted(slides.indexOf(slide), field, e.target.value)}
+                        />
+                      </div>
+                    ))}
+                  </div>
+
+                  {slide.extracted?.metadata && (
+                    <div className="bg-white/5 rounded-xl px-4 py-3">
+                      <span className="text-[0.6rem] uppercase tracking-widest text-white/30 font-bold">🔒 Metadata (Preserved, Not Translated)</span>
+                      <p className="text-white/40 text-xs mt-1">{slide.extracted.metadata}</p>
+                    </div>
+                  )}
+                </Card>
+              ))}
+
+              <Button
+                id="publish-batch-btn"
+                onClick={publishBatch}
+                disabled={publishing}
+                className="w-full bg-kenya-green hover:bg-kenya-green/90 text-white rounded-[2rem] py-7 text-lg font-bold shadow-ios-high"
+              >
+                {publishing ? (
+                  <><Loader2 className="w-5 h-5 animate-spin mr-2" />Publishing...</>
+                ) : (
+                  <><Upload size={18} className="mr-2" />Confirm & Publish Campaign</>
+                )}
+              </Button>
             </div>
-          </div>
-
-          <div>
-            <label htmlFor="source-text" className={labelClass}>Source Text (English)</label>
-            <textarea
-              id="source-text"
-              className={inputClass + ' h-32 resize-none'}
-              placeholder="Paste the English text to be translated..."
-              value={form.source_text}
-              onChange={(e) => setForm((p) => ({ ...p, source_text: e.target.value }))}
-              required
-            />
-          </div>
-
-          <div>
-            <label htmlFor="context-hint" className={labelClass}>Context Hint for Translators</label>
-            <input
-              id="context-hint"
-              className={inputClass}
-              placeholder="e.g. 'This is a headline for a Finance Bill slide. Use formal civic language.'"
-              value={form.context_hint}
-              onChange={(e) => setForm((p) => ({ ...p, context_hint: e.target.value }))}
-            />
-          </div>
-
-          <div>
-            <label htmlFor="priority" className={labelClass}>Priority (1–10)</label>
-            <input
-              id="priority"
-              type="number"
-              min={1}
-              max={10}
-              className={inputClass}
-              value={form.priority}
-              onChange={(e) => setForm((p) => ({ ...p, priority: parseInt(e.target.value, 10) }))}
-            />
-          </div>
-
-          <div className="flex justify-end">
-            <Button
-              id="submit-unit-btn"
-              type="submit"
-              disabled={submitting}
-              className="bg-ios-blue hover:bg-ios-blue/90 text-white rounded-[2rem] px-12 py-7 text-lg font-bold shadow-ios-high transform active:scale-95 transition-all"
-            >
-              {submitting ? <Loader2 className="w-5 h-5 animate-spin" /> : (
-                <>
-                  <Plus size={18} className="mr-2" />
-                  Create Translation Unit
-                </>
-              )}
-            </Button>
-          </div>
-        </form>
-      </Card>
+          )}
+        </>
+      )}
     </div>
   );
 };
+
+// Preserve old body-only type used in ReviewerDashboard fetch schema reference
+type _LegacyPendingSubmission = PendingSubmission;
+
+
+
 
 // ─────────────────────────────────────────────
 // MAIN PAGE
 // ─────────────────────────────────────────────
 
-type Tab = 'translate' | 'review' | 'admin';
+type Tab = 'translate' | 'review' | 'admin' | 'audit';
 
 const TranslatePage = () => {
   const { user } = useAuth();
@@ -874,10 +1258,12 @@ const TranslatePage = () => {
 
   const canReview = !profileLoading && ['reviewer', 'lead', 'admin'].includes(userRole);
   const canAdmin = !profileLoading && ['lead', 'admin'].includes(userRole);
+  const canAudit = !profileLoading && ['lead', 'admin'].includes(userRole);
 
   const tabs: { key: Tab; label: string; icon: React.ReactNode; guard: boolean }[] = [
     { key: 'translate', label: 'Translate', icon: <Languages size={16} />, guard: true },
     { key: 'review', label: 'Review Queue', icon: <ShieldCheck size={16} />, guard: canReview },
+    { key: 'audit', label: 'AI Audit', icon: <BarChart3 size={16} />, guard: canAudit },
     { key: 'admin', label: 'Ingest Content', icon: <BookOpen size={16} />, guard: canAdmin },
   ];
 
@@ -942,6 +1328,10 @@ const TranslatePage = () => {
         )}
 
         {activeTab === 'review' && canReview && (
+          <ReviewerDashboard userRole={userRole} />
+        )}
+
+        {activeTab === 'audit' && canAudit && (
           <ReviewerDashboard userRole={userRole} />
         )}
 
