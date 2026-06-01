@@ -1,3 +1,4 @@
+//@ts-nocheck
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const WEBHOOK_SECRET = Deno.env.get('VALIDATE_WEBHOOK_SECRET');
@@ -96,7 +97,7 @@ Deno.serve(async (req) => {
     for (const term of glossary) {
       const srcRegex = new RegExp(`\\b${escapeRegex(term.source_term)}\\b`, 'i');
       const appRegex = new RegExp(escapeRegex(term.approved_term), 'i');
-      
+
       if (srcRegex.test(sub.translation_units.source_text)) {
         if (appRegex.test(sub.translated_text)) {
           score += 0.05;

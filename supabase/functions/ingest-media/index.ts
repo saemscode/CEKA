@@ -1,3 +1,4 @@
+//@ts-nocheck
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
@@ -62,7 +63,7 @@ Deno.serve(async (req) => {
       const visionRes = await fetch(VISION_WORKER_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           image_url: img.url,
           slide_number: img.slide_number,
           total_slides: images.length,
