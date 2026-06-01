@@ -63,6 +63,7 @@ import NotFound from '@/pages/NotFound';
 import MaintenancePage from '@/pages/MaintenancePage';
 import TransparencyManifesto from '@/pages/TransparencyManifesto';
 import InfrastructureDetails from '@/pages/InfrastructureDetails';
+import TranslatePage from '@/pages/TranslatePage';
 
 const queryClient = new QueryClient();
 
@@ -186,6 +187,7 @@ const AppContent = () => {
         <Route path="/pieces" element={<Pieces />} />
         <Route path="/tools" element={<Tools />} />
         <Route path="/about" element={<About />} />
+        <Route path="/translate" element={<TranslatePage />} />
         <Route path="/visual-insights" element={<Navigate to="/pieces" replace />} />
         <Route path="/document/:id" element={<DocumentViewerPage />} />
         <Route path="/thumbnail-demo" element={<ThumbnailDemo />} />

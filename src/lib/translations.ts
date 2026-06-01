@@ -96,6 +96,13 @@ export const translations: Record<string, Record<Language, string>> = {
   "Engage": { en: "Engage", sw: "Shiriki", ksl: "Engage", br: "⠑⠝⠛⠁⠛⠑" },
   "Resource Hub": { en: "Resource Hub", sw: "Kituo cha Rasilimali", ksl: "Resource Hub", br: "⠗⠑⠎⠕⠥⠗⠉⠑ ⠥⠃" },
   "Community Hub": { en: "Community Hub", sw: "Uwanja wa Jamii", ksl: "Community Hub", br: "⠉⠕⠍⠍⠥⠝⠊⠞⠽ ⠥⠃" },
+  "Translation Hub": { en: "Translation Hub", sw: "Kituo cha Tafsiri", ksl: "Translation Hub", br: "⠞⠗⠁⠝⠎⠇⠁⠞⠊⠕⠝ ⠥⠃" },
+  "Help translate civic education into Kenyan local languages.": {
+    en: "Help translate civic education into Kenyan local languages.",
+    sw: "Saidia kutafsiri elimu ya uraia katika lugha za mitaa za Kenya.",
+    ksl: "Help translate civic tech",
+    br: "⠓⠑⠇⠏ ⠞⠗⠁⠝⠎⠇⠁⠞⠑ ⠉⠊⠧⠊⠉ ⠑⠙⠥⠉⠁⠞⠊⠕⠝"
+  },
   "Volunteer": { en: "Volunteer", sw: "Jitolee", ksl: "Volunteer", br: "⠧⠕⠇⠥⠝⠞⠑⠑⠗" },
   "Mwananchi": { en: "Mwananchi", sw: "Mwananchi", ksl: "Mwananchi", br: "⠍⠺⠁⠝⠁⠝⠉⠓⠊" },
   "Assembly": { en: "Assembly", sw: "Bunge", ksl: "Assembly", br: "⠁⠎⠎⠑⠍⠃⠇⠽" },

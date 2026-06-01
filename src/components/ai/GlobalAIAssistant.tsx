@@ -155,8 +155,8 @@ const CounterBadge: React.FC<CounterBadgeProps> = ({ remaining, total }) => {
         : tier === 'mid'
             ? 'text-orange-500 dark:text-orange-400'
             : tier === 'high'
-                ? 'text-amber-500 dark:text-amber-400'
-                : 'text-slate-500 dark:text-slate-400';
+                ? 'text-amber-600 dark:text-amber-400'
+                : 'text-slate-00 dark:text-slate-400';
 
     return (
         <motion.span
@@ -370,7 +370,7 @@ const GlobalAIAssistant: React.FC<GlobalAIAssistantProps> = ({ isHidden, onHide 
                     {isOpen && (
                         <>
                             {/* Dimming Backdrop */}
-                            <motion.div 
+                            <motion.div
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
                                 exit={{ opacity: 0 }}
@@ -383,124 +383,124 @@ const GlobalAIAssistant: React.FC<GlobalAIAssistantProps> = ({ isHidden, onHide 
                                 exit={{ opacity: 0, scale: 0.9 }}
                                 className="w-80 max-h-[90vh] bg-white/10 dark:bg-gray-900/10 backdrop-blur-xl border border-white/20 dark:border-gray-700/20 rounded-2xl shadow-2xl overflow-hidden flex flex-col"
                             >
-                            {/* Header */}
-                            <div className="bg-gradient-to-r from-kenya-green/10 to-primary/10 p-4 border-b border-white/10 dark:border-gray-700/10">
-                                <div className="flex justify-between items-center">
-                                    <h3 className="font-bold text-lg flex items-center text-slate-800 dark:text-white">
-                                        <div className="relative mr-3">
-                                            <Bot className="h-6 w-6 text-kenya-green drop-shadow-sm" />
-                                            <div className="absolute inset-0 bg-kenya-green/20 blur-sm rounded-full" />
+                                {/* Header */}
+                                <div className="bg-gradient-to-r from-kenya-green/10 to-primary/10 p-4 border-b border-white/10 dark:border-gray-700/10">
+                                    <div className="flex justify-between items-center">
+                                        <h3 className="font-bold text-lg flex items-center text-slate-800 dark:text-white">
+                                            <div className="relative mr-3">
+                                                <Bot className="h-6 w-6 text-kenya-green drop-shadow-sm" />
+                                                <div className="absolute inset-0 bg-kenya-green/20 blur-sm rounded-full" />
+                                            </div>
+                                            CEKA AI
+                                        </h3>
+                                        <div className="flex items-center gap-2">
+                                            <CounterBadge remaining={remaining} total={FLAGS.DAILY_LIMIT} />
+                                            <button
+                                                className="relative group rounded-full p-2 hover:bg-white/10 dark:hover:bg-gray-800/10 transition-all duration-300 backdrop-blur-sm"
+                                                onClick={() => setIsOpen(false)}
+                                            >
+                                                <X className="h-4 w-4 text-slate-500 dark:text-gray-400 group-hover:text-kenya-red transition-colors" />
+                                                <div className="absolute inset-0 rounded-full bg-white/5 scale-0 group-hover:scale-100 transition-transform duration-300" />
+                                            </button>
                                         </div>
-                                        CEKA AI
-                                    </h3>
-                                    <div className="flex items-center gap-2">
-                                        <CounterBadge remaining={remaining} total={FLAGS.DAILY_LIMIT} />
-                                        <button
-                                            className="relative group rounded-full p-2 hover:bg-white/10 dark:hover:bg-gray-800/10 transition-all duration-300 backdrop-blur-sm"
-                                            onClick={() => setIsOpen(false)}
-                                        >
-                                            <X className="h-4 w-4 text-slate-500 dark:text-gray-400 group-hover:text-kenya-red transition-colors" />
-                                            <div className="absolute inset-0 rounded-full bg-white/5 scale-0 group-hover:scale-100 transition-transform duration-300" />
-                                        </button>
                                     </div>
                                 </div>
-                            </div>
 
-                            {/* Messages */}
-                            <div className="flex-1 overflow-y-auto p-4 space-y-4 green-scrollbar">
-                                {messages.length === 0 && (
-                                    <div className="text-center py-8 space-y-4">
-                                        <div className="h-16 w-16 rounded-2xl bg-kenya-green/10 flex items-center justify-center mx-auto animate-float">
-                                            <ChatRoundIcon size={32} className="text-kenya-green" />
-                                        </div>
-                                        <div>
-                                            <p className="font-bold text-slate-800 dark:text-white">Your Civic Assistant</p>
-                                            <p className="text-xs text-slate-500 dark:text-gray-400 mt-1">Ask about legislation or the Constitution</p>
-                                        </div>
-                                        <div className="flex flex-wrap gap-2 justify-center">
-                                            {['What is Article 43?', 'Explain Finance Bill', 'What can I do as a citizen?'].map(q => (
-                                                <button
-                                                    key={q}
-                                                    onClick={() => {
-                                                        setQuery(q);
-                                                        handleSend(q);
-                                                    }}
-                                                    className="text-xs px-4 py-2 rounded-xl bg-white/10 dark:bg-white/5 border border-white/20 dark:border-white/10 hover:bg-kenya-green/10 hover:border-kenya-green/20 transition-all hover:scale-105 backdrop-blur-sm"
-                                                >
-                                                    {q}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-
-                                {messages.map((m, i) => (
-                                    <motion.div
-                                        key={i}
-                                        initial={{ opacity: 0, y: 10 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                                    >
-                                        <div className={`max-w-[90%] p-3 rounded-2xl text-xs md:text-sm shadow-lg backdrop-blur-md ${m.role === 'user'
-                                            ? 'bg-kenya-green text-white rounded-tr-none'
-                                            : 'bg-white/10 dark:bg-gray-800/20 border border-white/20 dark:border-white/10 text-slate-800 dark:text-white rounded-tl-none'
-                                            }`}>
-                                            <div className={cn(
-                                                "prose prose-sm dark:prose-invert prose-headings:mt-3 prose-headings:mb-1 prose-p:my-1 prose-li:my-0.5 whitespace-pre-wrap break-words max-w-full overflow-hidden leading-snug",
-                                                m.role === 'user' && "text-white prose-p:text-white prose-headings:text-white prose-strong:text-white prose-em:text-white prose-code:text-white"
-                                            )}>
-                                                <ReactMarkdown>
-                                                    {m.content}
-                                                </ReactMarkdown>
+                                {/* Messages */}
+                                <div className="flex-1 overflow-y-auto p-4 space-y-4 green-scrollbar">
+                                    {messages.length === 0 && (
+                                        <div className="text-center py-8 space-y-4">
+                                            <div className="h-16 w-16 rounded-2xl bg-kenya-green/10 flex items-center justify-center mx-auto animate-float">
+                                                <ChatRoundIcon size={32} className="text-kenya-green" />
+                                            </div>
+                                            <div>
+                                                <p className="font-bold text-slate-800 dark:text-white">Your Civic Assistant</p>
+                                                <p className="text-xs text-slate-700 dark:text-gray-400 mt-1">Ask about legislation or the Constitution</p>
+                                            </div>
+                                            <div className="flex flex-wrap gap-2 justify-center">
+                                                {['What is Article 43?', 'Explain Finance Bill', 'What can I do as a citizen?'].map(q => (
+                                                    <button
+                                                        key={q}
+                                                        onClick={() => {
+                                                            setQuery(q);
+                                                            handleSend(q);
+                                                        }}
+                                                        className="text-xs px-4 py-2 rounded-xl bg-white/10 dark:bg-white/5 border border-white/20 dark:border-white/10 hover:bg-kenya-green/10 hover:border-kenya-green/20 transition-all hover:scale-105 backdrop-blur-sm"
+                                                    >
+                                                        {q}
+                                                    </button>
+                                                ))}
                                             </div>
                                         </div>
-                                    </motion.div>
-                                ))}
+                                    )}
 
-                                {loading && (
-                                    <div className="flex justify-start">
-                                        <div className="bg-white/10 dark:bg-gray-800/20 border border-white/20 dark:border-white/10 p-3 rounded-2xl rounded-tl-none shadow-lg backdrop-blur-md">
-                                            <CEKALoader variant="default" size="sm" />
+                                    {messages.map((m, i) => (
+                                        <motion.div
+                                            key={i}
+                                            initial={{ opacity: 0, y: 10 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                                        >
+                                            <div className={`max-w-[90%] p-3 rounded-2xl text-xs md:text-sm shadow-lg backdrop-blur-md ${m.role === 'user'
+                                                ? 'bg-kenya-green text-white rounded-tr-none'
+                                                : 'bg-white/10 dark:bg-gray-800/20 border border-white/20 dark:border-white/10 text-slate-800 dark:text-white rounded-tl-none'
+                                                }`}>
+                                                <div className={cn(
+                                                    "prose prose-sm dark:prose-invert prose-headings:mt-3 prose-headings:mb-1 prose-p:my-1 prose-li:my-0.5 whitespace-pre-wrap break-words max-w-full overflow-hidden leading-snug",
+                                                    m.role === 'user' && "text-white prose-p:text-white prose-headings:text-white prose-strong:text-white prose-em:text-white prose-code:text-white"
+                                                )}>
+                                                    <ReactMarkdown>
+                                                        {m.content}
+                                                    </ReactMarkdown>
+                                                </div>
+                                            </div>
+                                        </motion.div>
+                                    ))}
+
+                                    {loading && (
+                                        <div className="flex justify-start">
+                                            <div className="bg-white/10 dark:bg-gray-800/20 border border-white/20 dark:border-white/10 p-3 rounded-2xl rounded-tl-none shadow-lg backdrop-blur-md">
+                                                <CEKALoader variant="default" size="sm" />
+                                            </div>
                                         </div>
+                                    )}
+                                </div>
+
+                                {/* Credit warning banner — mounts between messages and input */}
+                                {!isExhausted && <CreditWarningBanner remaining={remaining} />}
+
+                                {/* Exhausted state banner */}
+                                {isExhausted && (
+                                    <div className="mx-4 mt-2 px-3 py-2 rounded-xl border bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-700/40 flex items-center gap-2">
+                                        <Flame className="h-3 w-3 text-red-500 shrink-0" />
+                                        <span className="text-[10px] font-semibold text-red-600 dark:text-red-400 leading-tight">
+                                            Daily limit reached. Resets at midnight.
+                                        </span>
                                     </div>
                                 )}
-                            </div>
 
-                            {/* Credit warning banner — mounts between messages and input */}
-                            {!isExhausted && <CreditWarningBanner remaining={remaining} />}
-
-                            {/* Exhausted state banner */}
-                            {isExhausted && (
-                                <div className="mx-4 mt-2 px-3 py-2 rounded-xl border bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-700/40 flex items-center gap-2">
-                                    <Flame className="h-3 w-3 text-red-500 shrink-0" />
-                                    <span className="text-[10px] font-semibold text-red-600 dark:text-red-400 leading-tight">
-                                        Daily limit reached. Resets at midnight.
-                                    </span>
+                                {/* Input */}
+                                <div className="p-4 border-t border-white/10 dark:border-gray-700/10 bg-white/5 dark:bg-black/20">
+                                    <div className="flex gap-2">
+                                        <Input
+                                            placeholder="Ask about Kenya law..."
+                                            value={query}
+                                            onChange={(e) => setQuery(e.target.value)}
+                                            onKeyPress={(e) => e.key === 'Enter' && handleSend()}
+                                            className="h-10 text-sm rounded-xl border-white/20 dark:border-white/10 bg-white/10 dark:bg-black/20 focus:ring-kenya-green/50 placeholder:text-slate-600"
+                                            disabled={isExhausted}
+                                        />
+                                        <Button
+                                            onClick={() => handleSend()}
+                                            size="icon"
+                                            className="h-10 w-10 rounded-xl bg-gradient-to-br from-kenya-green to-primary hover:from-primary hover:to-kenya-green text-white shrink-0 shadow-lg hover:scale-105 transition-all"
+                                            disabled={loading || isExhausted}
+                                        >
+                                            <Send className="h-4 w-4" />
+                                        </Button>
+                                    </div>
                                 </div>
-                            )}
-
-                            {/* Input */}
-                            <div className="p-4 border-t border-white/10 dark:border-gray-700/10 bg-white/5 dark:bg-black/20">
-                                <div className="flex gap-2">
-                                    <Input
-                                        placeholder="Ask about Kenya law..."
-                                        value={query}
-                                        onChange={(e) => setQuery(e.target.value)}
-                                        onKeyPress={(e) => e.key === 'Enter' && handleSend()}
-                                        className="h-10 text-sm rounded-xl border-white/20 dark:border-white/10 bg-white/10 dark:bg-black/20 focus:ring-kenya-green/50 placeholder:text-slate-400"
-                                        disabled={isExhausted}
-                                    />
-                                    <Button
-                                        onClick={() => handleSend()}
-                                        size="icon"
-                                        className="h-10 w-10 rounded-xl bg-gradient-to-br from-kenya-green to-primary hover:from-primary hover:to-kenya-green text-white shrink-0 shadow-lg hover:scale-105 transition-all"
-                                        disabled={loading || isExhausted}
-                                    >
-                                        <Send className="h-4 w-4" />
-                                    </Button>
-                                </div>
-                            </div>
-                        </motion.div>
+                            </motion.div>
                         </>
                     )}
                 </AnimatePresence>

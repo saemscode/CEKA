@@ -9,7 +9,7 @@ import { motion, AnimatePresence } from "framer-motion";
 ───────────────────────────────────────────────────────────────────────────── */
 
 const SESSION_KEY = "ceka_maint_banner_dismissed";
-const SUPPORT_URL = "https://www.zenlipa.com/portal/ceka-independence";
+const SUPPORT_URL = "https://zenlipa.co.ke/tip/civic-education-kenya";
 
 const AlertIcon: React.FC = () => (
   <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ flexShrink: 0 }}>

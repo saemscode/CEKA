@@ -1,0 +1,6 @@
+name = "ceka-extraction-validator"
+main = "index.ts"
+compatibility_date = "2024-05-20"
+
+[ai]
+binding = "AI"
