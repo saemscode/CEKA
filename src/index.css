@@ -1972,3 +1972,17 @@ button.ios-control-btn {
   animation: rotate-shimmer 4s linear infinite;
   pointer-events: none;
 }
+
+/* ── CEKA Translation Hub: Face Background Float ── */
+@keyframes ceka-face-float {
+  0%   { transform: translateY(0px) rotate(var(--r, 0deg)); }
+  33%  { transform: translateY(-9px) rotate(var(--r, 0deg)); }
+  66%  { transform: translateY(-4px) rotate(var(--r, 0deg)); }
+  100% { transform: translateY(0px) rotate(var(--r, 0deg)); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [style*="ceka-face-float"] {
+    animation: none !important;
+  }
+}

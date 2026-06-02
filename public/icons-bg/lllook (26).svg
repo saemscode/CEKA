@@ -1,0 +1,10 @@
+<svg width="48" height="48" viewBox="0 0 48 48" stroke="hsl(120, 68%, 47%)" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"  xmlns="http://www.w3.org/2000/svg">
+    <circle cx="24" cy="24" r="19"/>
+<circle cx="17" cy="21" r="4"/>
+<circle cx="32" cy="21" r="4"/>
+<circle cx="17" cy="21" r="1" stroke="none" fill="hsl(120, 68%, 47%)"/>
+<circle cx="32" cy="21" r="1" stroke="none" fill="hsl(120, 68%, 47%)"/>
+<line x1="20" y1="35" x2="28" y2="35"/>
+<line x1="14" y1="28" x2="20" y2="28"/>
+<line x1="29" y1="28" x2="35" y2="28"/>
+</svg>
