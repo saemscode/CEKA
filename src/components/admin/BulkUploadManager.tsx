@@ -131,15 +131,15 @@ const BulkUploadManager = () => {
         if (regMode === 'carousel_item' && files.length === 0) {
             const firstFile = fileArray[0];
             const pathParts = (firstFile as any).webkitRelativePath?.split('/');
-            const rawName = pathParts && pathParts.length > 1 
-                ? pathParts[0] 
+            const rawName = pathParts && pathParts.length > 1
+                ? pathParts[0]
                 : firstFile.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ');
-            
+
             const cleanTitle = rawName
                 .split(' ')
                 .map(w => w.charAt(0).toUpperCase() + w.slice(1))
                 .join(' ');
-            
+
             const cleanSlug = cleanTitle.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '');
 
             setCarouselInfo(prev => ({
@@ -216,9 +216,9 @@ const BulkUploadManager = () => {
                 const { data, error } = await supabase.storage
                     .from('resources')
                     .upload(filePath, uploadFile.file);
-                
+
                 if (error) throw error;
-                
+
                 const { data: urlData } = supabase.storage.from('resources').getPublicUrl(filePath);
                 result = { success: true, fileUrl: urlData.publicUrl, fileName: filePath };
             }
@@ -237,7 +237,7 @@ const BulkUploadManager = () => {
             if (regMode === 'resource') {
                 const tagsRaw = useSharedMetadata ? sharedMetadata.tags : uploadFile.stagedTags;
                 const tagsArray = tagsRaw.split(',').map(t => t.trim()).filter(Boolean);
-                
+
                 const { error: sqlError } = await supabase.from('resources').insert({
                     title: useSharedMetadata && sharedMetadata.title ? sharedMetadata.title : uploadFile.stagedTitle,
                     description: (useSharedMetadata ? sharedMetadata.description : uploadFile.stagedDescription) || 'Uploaded via Advanced B2 Cloud Manager',
@@ -282,7 +282,7 @@ const BulkUploadManager = () => {
                         original_name: uploadFile.name,
                         title: uploadFile.stagedTitle,
                         aspect_ratio: aspectRatio,
-                        ...(useSharedMetadata ? { 
+                        ...(useSharedMetadata ? {
                             shared_title: sharedMetadata.title,
                             shared_description: sharedMetadata.description
                         } : {})
@@ -431,8 +431,8 @@ const BulkUploadManager = () => {
                 <div className="flex items-center gap-1 bg-black/10 backdrop-blur-xl p-1 rounded-2xl border border-white/10 shadow-ios-inner glass-card">
                     <button
                         onClick={() => setStorageProvider('b2')}
-                        className={`px-4 h-9 rounded-xl text-[10px] font-black uppercase transition-all duration-500 shadow-skeuo flex items-center gap-2 ${storageProvider === 'b2' 
-                            ? 'bg-kenya-green text-white shadow-[0_4px_12px_rgba(0,136,71,0.4)]' 
+                        className={`px-4 h-9 rounded-xl text-[10px] font-black uppercase transition-all duration-500 shadow-skeuo flex items-center gap-2 ${storageProvider === 'b2'
+                            ? 'bg-kenya-green text-white shadow-[0_4px_12px_rgba(0,136,71,0.4)]'
                             : 'bg-kenya-red/60 text-white/70 hover:bg-kenya-red/80'}`}
                     >
                         <div className={`h-1.5 w-1.5 rounded-full ${backblazeReady ? 'bg-white animate-pulse' : 'bg-white/40'}`} />
@@ -440,8 +440,8 @@ const BulkUploadManager = () => {
                     </button>
                     <button
                         onClick={() => setStorageProvider('supabase')}
-                        className={`px-4 h-9 rounded-xl text-[10px] font-black uppercase transition-all duration-500 shadow-skeuo flex items-center gap-2 ${storageProvider === 'supabase' 
-                            ? 'bg-kenya-green text-white shadow-[0_4px_12px_rgba(0,136,71,0.4)]' 
+                        className={`px-4 h-9 rounded-xl text-[10px] font-black uppercase transition-all duration-500 shadow-skeuo flex items-center gap-2 ${storageProvider === 'supabase'
+                            ? 'bg-kenya-green text-white shadow-[0_4px_12px_rgba(0,136,71,0.4)]'
                             : 'bg-kenya-red/60 text-white/70 hover:bg-kenya-red/80'}`}
                     >
                         <div className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
@@ -520,17 +520,17 @@ const BulkUploadManager = () => {
                                     <div className="flex items-center justify-between">
                                         <Label className="text-[10px] font-black uppercase tracking-tighter text-muted-foreground">Target Carousel</Label>
                                         <div className="flex items-center gap-2">
-                                            <Checkbox 
-                                                id="use-shared" 
-                                                checked={useSharedMetadata} 
-                                                onCheckedChange={(v: any) => setUseSharedMetadata(v)} 
+                                            <Checkbox
+                                                id="use-shared"
+                                                checked={useSharedMetadata}
+                                                onCheckedChange={(v: any) => setUseSharedMetadata(v)}
                                             />
                                             <Label htmlFor="use-shared" className="text-[10px] font-bold cursor-pointer">Use Shared Metadata</Label>
                                         </div>
                                     </div>
-                                    
-                                    <Select 
-                                        value={isCreatingNewCarousel ? 'NEW' : selectedCarousel} 
+
+                                    <Select
+                                        value={isCreatingNewCarousel ? 'NEW' : selectedCarousel}
                                         onValueChange={(v) => {
                                             if (v === 'NEW') {
                                                 setIsCreatingNewCarousel(true);
@@ -557,7 +557,7 @@ const BulkUploadManager = () => {
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                 <div className="space-y-2">
                                                     <Label className="text-[9px] font-black uppercase">Carousel Title</Label>
-                                                    <Input 
+                                                    <Input
                                                         value={carouselInfo.title}
                                                         onChange={(e) => {
                                                             const title = e.target.value;
@@ -570,7 +570,7 @@ const BulkUploadManager = () => {
                                                 </div>
                                                 <div className="space-y-2">
                                                     <Label className="text-[9px] font-black uppercase">Slug</Label>
-                                                    <Input 
+                                                    <Input
                                                         value={carouselInfo.slug}
                                                         onChange={(e) => setCarouselInfo(prev => ({ ...prev, slug: e.target.value }))}
                                                         className="rounded-xl h-10 border-muted/30 font-mono text-xs bg-muted/10 opacity-70"
@@ -580,7 +580,7 @@ const BulkUploadManager = () => {
                                             </div>
                                             <div className="space-y-2">
                                                 <Label className="text-[9px] font-black uppercase">Carousel Description</Label>
-                                                <Textarea 
+                                                <Textarea
                                                     value={carouselInfo.description}
                                                     onChange={(e) => setCarouselInfo(prev => ({ ...prev, description: e.target.value }))}
                                                     className="rounded-xl min-h-[80px] border-muted/30"
@@ -589,19 +589,19 @@ const BulkUploadManager = () => {
                                             </div>
                                             <div className="space-y-2">
                                                 <Label className="text-[9px] font-black uppercase">Tags (Comma separated)</Label>
-                                                <Input 
+                                                <Input
                                                     value={carouselInfo.tags}
                                                     onChange={(e) => setCarouselInfo(prev => ({ ...prev, tags: e.target.value }))}
                                                     className="rounded-xl h-10 border-muted/30"
                                                     placeholder="travel, fun"
                                                 />
                                             </div>
-                                            
+
                                             <div className="flex items-center gap-2 pt-2">
-                                                <Checkbox 
-                                                    id="instant-publish" 
-                                                    checked={isInstantPublish} 
-                                                    onCheckedChange={(v: any) => setIsInstantPublish(v)} 
+                                                <Checkbox
+                                                    id="instant-publish"
+                                                    checked={isInstantPublish}
+                                                    onCheckedChange={(v: any) => setIsInstantPublish(v)}
                                                 />
                                                 <Label htmlFor="instant-publish" className="text-[10px] font-bold cursor-pointer text-primary">Instant Publish (One-Click)</Label>
                                             </div>
@@ -641,7 +641,7 @@ const BulkUploadManager = () => {
                     <CardContent className="pt-6 grid grid-cols-1 md:grid-cols-3 gap-6">
                         <div className="space-y-2">
                             <Label className="text-[10px] font-black uppercase tracking-tighter text-muted-foreground">Title Override</Label>
-                            <Input 
+                            <Input
                                 value={sharedMetadata.title}
                                 onChange={(e) => setSharedMetadata(prev => ({ ...prev, title: e.target.value }))}
                                 className="rounded-xl border-2 h-12 bg-background/50 shadow-ios-inner"
@@ -650,7 +650,7 @@ const BulkUploadManager = () => {
                         </div>
                         <div className="space-y-2">
                             <Label className="text-[10px] font-black uppercase tracking-tighter text-muted-foreground">Shared Tags</Label>
-                            <Input 
+                            <Input
                                 value={sharedMetadata.tags}
                                 onChange={(e) => setSharedMetadata(prev => ({ ...prev, tags: e.target.value }))}
                                 className="rounded-xl border-2 h-12 bg-background/50 shadow-ios-inner"
@@ -659,7 +659,7 @@ const BulkUploadManager = () => {
                         </div>
                         <div className="space-y-2">
                             <Label className="text-[10px] font-black uppercase tracking-tighter text-muted-foreground">Shared Description</Label>
-                            <Textarea 
+                            <Textarea
                                 value={sharedMetadata.description}
                                 onChange={(e) => setSharedMetadata(prev => ({ ...prev, description: e.target.value }))}
                                 className="rounded-xl border-2 min-h-[48px] h-12 py-3 bg-background/50 shadow-ios-inner"
@@ -683,8 +683,8 @@ const BulkUploadManager = () => {
                             <Button
                                 size="sm"
                                 onClick={startBatchUpload}
-                                disabled={uploading || !backblazeReady}
-                                className="rounded-xl h-10 px-6 font-black bg-primary shadow-lg shadow-primary/20"
+                                disabled={uploading || (storageProvider === 'b2' && backblazeReady === false)}
+                                className="rounded-xl h-10 px-6 font-black bg-primary shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
                             >
                                 {uploading ? <CEKALoader variant="ios" size="sm" /> : <Zap className="h-4 w-4 mr-2" />}
                                 {isInstantPublish ? "Instant Publish" : "Start Upload"}
@@ -698,7 +698,7 @@ const BulkUploadManager = () => {
                                     <div className="h-12 w-12 rounded-xl bg-background flex items-center justify-center text-muted-foreground shadow-ios-inner group-hover:scale-105 transition-transform">
                                         {getFileIcon(file.type)}
                                     </div>
-                                    
+
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center justify-between gap-2">
                                             <h4 className="font-bold text-sm truncate uppercase tracking-tight">
@@ -723,7 +723,7 @@ const BulkUploadManager = () => {
                                     </div>
 
                                     <div className="flex items-center gap-1">
-                                         {file.url && (
+                                        {file.url && (
                                             <Button size="icon" variant="ghost" className="rounded-xl h-9 w-9" asChild>
                                                 <a href={file.url} target="_blank" rel="noopener noreferrer"><ExternalLink className="h-4 w-4" /></a>
                                             </Button>
@@ -739,7 +739,7 @@ const BulkUploadManager = () => {
                                         </Button>
                                     </div>
                                 </div>
-                                
+
                                 {expandedFiles[file.id] && (
                                     <div className="mt-4 pt-4 border-t border-muted/20 grid grid-cols-1 md:grid-cols-2 gap-4 animate-in slide-in-from-top-2 duration-300">
                                         <div className="space-y-1">
@@ -792,7 +792,7 @@ const BulkUploadManager = () => {
                         <Zap className="h-5 w-5 text-primary" />
                     </div>
                     <p className="text-sm font-medium text-primary/80 leading-tight italic">
-                        <strong>Go Ham Cloud Logic:</strong> When you upload, we save your images securely and link them to your carousel immediately. 
+                        <strong>Go Ham Cloud Logic:</strong> When you upload, we save your images securely and link them to your carousel immediately.
                         No extra steps needed.
                     </p>
                 </CardContent>
