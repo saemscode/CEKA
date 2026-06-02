@@ -137,7 +137,7 @@ const Navbar = React.forwardRef<HTMLElement, NavbarProps>(({ isFixed }, ref) => 
           showBg && !isFixed ? "bg-white/95 dark:bg-black/95 backdrop-blur-3xl shadow-ios-high py-2" : ""
         )}
         style={{ 
-          top: isFixed ? 'env(safe-area-inset-top, 0px)' : 'auto',
+          top: isFixed ? 'env(safe-area-inset-top, 0px)' : '0px',
           paddingTop: isFixed ? '8px' : 'max(env(safe-area-inset-top), 8px)',
           transform: isFixed ? 'translate3d(0,0,0)' : 'none',
           transition: 'transform 0.32s cubic-bezier(0.23, 1, 0.32, 1), background 0.3s, padding 0.3s, top 0.32s'

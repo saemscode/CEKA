@@ -245,12 +245,21 @@ const BulkUploadManager = () => {
                     type: uploadFile.type.split('/')[0] || 'document',
                     category: category,
                     tags: tagsArray,
+                    status: isInstantPublish ? 'published' : 'draft',
                     downloads: 0,
                     views: 0
                 });
                 if (sqlError) throw sqlError;
             }
             else if (regMode === 'carousel_item' && finalCarouselId) {
+                // GO HAM: If instant publish is ON, ensure the parent carousel is also published
+                if (isInstantPublish) {
+                    await (supabase as any)
+                        .from('media_content')
+                        .update({ status: 'published' })
+                        .eq('id', finalCarouselId);
+                }
+
                 // Get the current max order_index for this carousel
                 const { data: currentItems } = await (supabase
                     .from('media_items' as any) as any)
@@ -268,6 +277,7 @@ const BulkUploadManager = () => {
                     file_path: result.fileName,
                     file_url: result.fileUrl,
                     order_index: nextOrder,
+                    status: isInstantPublish ? 'published' : 'draft',
                     metadata: {
                         original_name: uploadFile.name,
                         title: uploadFile.stagedTitle,
