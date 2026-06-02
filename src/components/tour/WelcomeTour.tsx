@@ -3,7 +3,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronRight, ChevronLeft, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import Logo from '@/components/ui/Logo';
 import { cn } from '@/lib/utils';
 
 interface WelcomeTourProps {
@@ -14,16 +13,16 @@ const slides = [
   {
     title: "Welcome to CEKA",
     subtitle: "Educate · Amplify · Empower",
-    description: "Civic Education Kenya (CEKA) is Kenya's premier open-source civic-tech movement dedicated to closing the democracy gap - equipping every citizen with the knowledge, tools, and voice to fully participate in the governance of their country.",
-    icon: "/nasaka.svg",
+    description: "We are glad you are here! Learn more on civic education. Tap 'Next' to continue",
+    icon: "/logo-colored.svg",
     color: "bg-kenya-green",
     textColor: "text-white",
     isLogo: true
   },
   {
     title: "Legislative Tracker",
-    subtitle: "Stay Updated with Bills and Legislative Moves",
-    description: "Track bills from proposal to enactment. Understand the laws that shape our future with real-time updates.",
+    subtitle: "Stay Updated with the Latest Bills",
+    description: "Track bills from proposal to enactment. Understand the laws that shape your future",
     icon: "/icons-v5/shield-check-svgrepo-com (1).svg",
     color: "bg-kenya-black",
     textColor: "text-white",
@@ -64,6 +63,15 @@ const slides = [
     color: "bg-white",
     textColor: "text-kenya-black",
     image: null
+  },
+  {
+    title: "Ready to Begin?",
+    subtitle: "Your Voice Counts",
+    description: "Empower yourself with knowledge and take action. Join thousands of Kenyans in building a stronger democracy together.",
+    icon: "/logo-colored.svg",
+    color: "bg-kenya-green",
+    textColor: "text-white",
+    isLogo: true
   }
 ];
 
@@ -136,21 +144,17 @@ const WelcomeTour = ({ onComplete }: WelcomeTourProps) => {
               className="flex flex-col items-center text-center space-y-6"
             >
               <div className="w-32 h-32 bg-white rounded-[32px] p-6 flex items-center justify-center shadow-ios-high transform transition-transform duration-500 hover:scale-105">
-                {slides[currentSlide].isLogo ? (
-                  <Logo variant="icon-only" className="w-full h-full" />
-                ) : (
-                  <img
-                    src={slides[currentSlide].icon}
-                    className="w-full h-full object-contain"
-                    alt={slides[currentSlide].title}
-                  />
-                )}
+                <img
+                  src={slides[currentSlide].icon}
+                  className="w-full h-full object-contain"
+                  alt={slides[currentSlide].title}
+                />
               </div>
-              
+
               <div className={cn(
                 "px-4 py-1.5 rounded-full font-black tracking-[0.2em] text-[11px] uppercase backdrop-blur-md shadow-sm border",
-                isDarkBg 
-                  ? "bg-white/10 text-white border-white/20" 
+                isDarkBg
+                  ? "bg-white/10 text-white border-white/20"
                   : "bg-black/5 text-kenya-black border-black/10"
               )}>
                 Step {currentSlide + 1} of {slides.length}
@@ -187,7 +191,7 @@ const WelcomeTour = ({ onComplete }: WelcomeTourProps) => {
                   {slides[currentSlide].title}
                 </h2>
               </div>
-              <p className="text-slate-600 dark:text-slate-400 leading-relaxed text-base font-medium">
+              <p className="text-slate-600 dark:text-slate-400 pb-10 leading-relaxed text-base font-medium">
                 {slides[currentSlide].description}
               </p>
             </motion.div>
@@ -224,12 +228,12 @@ const WelcomeTour = ({ onComplete }: WelcomeTourProps) => {
               >
                 {currentSlide === slides.length - 1 ? (
                   <span className="flex items-center justify-center gap-3 font-black">
-                    Start Exploring 
+                    Start Exploring
                     <Check className="w-5 h-5" />
                   </span>
                 ) : (
                   <span className="flex items-center justify-center gap-3 font-black">
-                    Next 
+                    Next
                     <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                   </span>
                 )}
