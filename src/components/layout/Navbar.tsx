@@ -119,7 +119,8 @@ const Navbar = React.forwardRef<HTMLElement, NavbarProps>(({ isFixed }, ref) => 
         { name: translate('CEKA Tools', language), path: '/tools', description: translate('Access datasets, APKs, and investigative kits', language) },
         { name: translate('Nasaka IEBC', language), path: '/nasaka-iebc', description: translate('Find the closest IEBC registration center', language) },
         { name: translate('Peoples-Audit', language), path: '/peoples-audit', description: translate('Breakdown of the economic state of the nation', language) },
-        { name: translate('SHAmbles', language), path: '/shambles', description: translate('Investigation and accountability tracking', language) }
+        { name: translate('SHAmbles', language), path: '/shambles', description: translate('Investigation and accountability tracking', language) },
+        { name: translate('Civic Report', language), path: 'https://report.civiceducationkenya.com/', description: translate('Report human rights and civic malpractices', language) }
       ]
     }
   ];

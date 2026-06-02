@@ -36,8 +36,8 @@ const CEKA_SOCIALS = [
     {
         platform: 'Instagram',
         handle: '@civiceducationke',
-        followers: '5,000+',
-        reach: '500,000 avg monthly',
+        followers: '10,000+',
+        reach: '1M+ avg monthly',
         url: 'https://instagram.com/civiceducationke',
         icon: Instagram,
         color: 'bg-gradient-to-br from-purple-500 via-pink-500 to-orange-400',
@@ -46,7 +46,7 @@ const CEKA_SOCIALS = [
     {
         platform: 'TikTok',
         handle: '@civiceducationkenya',
-        followers: '1,700+',
+        followers: '3,000+',
         reach: null,
         url: 'https://tiktok.com/@civiceducationkenya',
         icon: TikTokIcon,
@@ -55,10 +55,10 @@ const CEKA_SOCIALS = [
     },
     {
         platform: 'X (Twitter)',
-        handle: '@CivicEdKe',
-        followers: '500+',
+        handle: '@CivicEdKenya',
+        followers: '800+',
         reach: null,
-        url: 'https://x.com/CivicEdKe',
+        url: 'https://x.com/CivicEdKenya',
         icon: Twitter,
         color: 'bg-black',
         textColor: 'text-white'
@@ -66,7 +66,7 @@ const CEKA_SOCIALS = [
     {
         platform: 'Upscrolled',
         handle: '@civiceducationkenya',
-        followers: 'New',
+        followers: '6',
         reach: null,
         url: 'https://share.upscrolled.com/en/user/538b4769-8e08-48cf-9f50-debeb4885ac1/',
         icon: UpscrolledLogo,
@@ -76,7 +76,7 @@ const CEKA_SOCIALS = [
     {
         platform: 'Facebook',
         handle: '@civiceducationkenya',
-        followers: '18',
+        followers: '40+',
         reach: null,
         url: 'https://facebook.com/civiceducationkenya',
         icon: Facebook,

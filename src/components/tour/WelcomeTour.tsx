@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronRight, ChevronLeft, Check, Sparkles, MessageSquare, Shield, Zap } from 'lucide-react';
+import { ChevronRight, ChevronLeft, Check, Sparkles, Shield, Zap, MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import Logo from '@/components/ui/Logo';
@@ -13,34 +13,65 @@ interface WelcomeTourProps {
 const slides = [
   {
     title: "Welcome to CEKA",
-    subtitle: "Kenya's Civic Digital Commons",
-    description: "Empowering citizens with knowledge, legislative tracking, and a unified community voices platform.",
+    subtitle: "Educate · Amplify · Empower.",
+    description: "Empowering citizens with the knowledge to act, amplifying voices in the quest for justice and educating the masses via digital tools e.g. Legislative Tracker, forming a unified community-voices platform.",
     icon: Sparkles,
-    color: "bg-primary",
+    color: "bg-kenya-green",
+    textColor: "text-white",
     isLogo: true
   },
   {
     title: "Legislative Tracker",
-    subtitle: "Monitor the Pulse of Parliament",
+    subtitle: "Stay Updated with Bills and Legislative Moves",
     description: "Track bills from proposal to enactment. Understand the laws that shape our future with real-time updates.",
-    icon: Shield,
-    color: "bg-kenya-green",
+    icon: "/icons-v5/shield-check-svgrepo-com.svg",
+    color: "bg-kenya-black",
+    textColor: "text-white",
     image: null
   },
   {
     title: "Resource Hub",
     subtitle: "Knowledge is Power",
     description: "Access a verified library of civic documents, infographics, and educational media stored securely for you.",
-    icon: Zap,
-    color: "bg-gold",
+    icon: "/icons-v5/book-open-svgrepo-com.svg",
+    color: "bg-kenya-red",
+    textColor: "text-white",
     image: null
   },
   {
     title: "Community & Actions",
     subtitle: "Your Voice, Amplified",
     description: "Join discussions, participate in campaigns, and connect with other active citizens in real-time.",
-    icon: MessageSquare,
+    icon: "/icons-v5/people-nearby-svgrepo-com.svg",
+    color: "bg-kenya-white",
+    textColor: "text-kenya-black",
+    image: null
+  },
+  {
+    title: "Our Pieces",
+    subtitle: "Visual Education Series",
+    description: "Explore our collection of educational carousels and visual explainers designed for everyday Kenyans.",
+    icon: "/icons-v5/image-1-svgrepo-com.svg",
+    color: "bg-kenya-black",
+    textColor: "text-white",
+    image: null
+  },
+  {
+    title: "CEKA Blog",
+    subtitle: "Insights and Contributions",
+    description: "Read and contribute pieces on important civic topics. Empowering through written word.",
+    icon: "/icons-v5/edit-svgrepo-com.svg",
+    color: "bg-kenya-white",
+    textColor: "text-kenya-black",
+    image: null
+  },
+  {
+    title: "Volunteer",
+    subtitle: "Make a Difference",
+    description: "Join our community of volunteers and contribute your skills to civil society in Kenya.",
+    icon: "/icons-v5/plus-circle-svgrepo-com.svg",
     color: "bg-kenya-red",
+    textColor: "text-white",
     image: null
   }
 ];
@@ -85,6 +116,9 @@ const WelcomeTour = ({ onComplete }: WelcomeTourProps) => {
     })
   };
 
+  const isDarkBg = slides[currentSlide].color === 'bg-kenya-black' || slides[currentSlide].color === 'bg-kenya-red' || slides[currentSlide].color === 'bg-kenya-green';
+  const contentTextColor = slides[currentSlide].textColor;
+
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-xl p-4 font-sans">
       <motion.div
@@ -94,9 +128,12 @@ const WelcomeTour = ({ onComplete }: WelcomeTourProps) => {
       >
         {/* Left Visual Side (Mobile Top) */}
         <div className={cn(
-          "w-full md:w-5/12 p-8 flex flex-col items-center justify-center transition-colors duration-700",
+          "w-full md:w-5/12 p-8 flex flex-col items-center justify-center transition-colors duration-700 relative overflow-hidden",
           slides[currentSlide].color
         )}>
+          {/* Sophisticated Bevel/Glassmorphism overlay */}
+          <div className="absolute inset-0 bg-white/5 pointer-events-none shadow-inner" />
+
           <AnimatePresence mode="wait" custom={direction}>
             <motion.div
               key={currentSlide}
@@ -106,16 +143,29 @@ const WelcomeTour = ({ onComplete }: WelcomeTourProps) => {
               animate="center"
               exit="exit"
               transition={{ type: "spring", damping: 25, stiffness: 200 }}
-              className="flex flex-col items-center text-center text-white"
+              className={cn("flex flex-col items-center text-center", isDarkBg ? "text-white" : "text-kenya-black")}
             >
               {slides[currentSlide].isLogo ? (
-                <div className="bg-white rounded-2xl p-4 flex items-center justify-center">
+                <div className="bg-white rounded-2xl p-4 flex items-center justify-center shadow-ios-high">
                   <Logo variant="icon-only" className="h-20 w-20" />
                 </div>
               ) : (
-                React.createElement(slides[currentSlide].icon, { className: "h-16 w-16" })
+                typeof slides[currentSlide].icon === 'string' ? (
+                  <img
+                    src={slides[currentSlide].icon as string}
+                    className={cn("h-16 w-16 mb-4 filter drop-shadow-lg", !isDarkBg && "invert")}
+                    alt={slides[currentSlide].title}
+                  />
+                ) : (
+                  React.createElement(slides[currentSlide].icon as any, {
+                    className: "h-16 w-16 mb-4 drop-shadow-xl"
+                  })
+                )
               )}
-              <Badge variant="outline" className="text-white border-white/30 px-3 h-6 mb-4 bg-white/10 font-bold tracking-[0.2em] text-[10px] uppercase">
+              <Badge variant="outline" className={cn(
+                "px-3 h-6 mb-4 font-bold tracking-[0.2em] text-[10px] uppercase",
+                isDarkBg ? "text-white border-white/30 bg-white/10" : "text-kenya-black border-black/30 bg-black/5"
+              )}>
                 Step {currentSlide + 1} of {slides.length}
               </Badge>
             </motion.div>
@@ -181,7 +231,7 @@ const WelcomeTour = ({ onComplete }: WelcomeTourProps) => {
                 {currentSlide === slides.length - 1 ? (
                   <span className="flex items-center gap-2">Start Exploring <Check className="h-5 w-5" /></span>
                 ) : (
-                  <span className="flex items-center gap-2">Continue <ChevronRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" /></span>
+                  <span className="flex items-center gap-2">Next <ChevronRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" /></span>
                 )}
               </Button>
             </div>
