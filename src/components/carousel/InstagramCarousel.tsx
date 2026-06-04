@@ -71,10 +71,18 @@ const InstagramCarousel: React.FC<InstagramCarouselProps> = ({ content, classNam
             '3:2': '66.67%', '1:1': '100%', 'square': '100%', 'portrait': '125%', 'landscape': '56.25%'
         };
         if (ratioMap[ratio]) return ratioMap[ratio];
+
+        // Safely parse decimals outputted by naturalHeight / naturalWidth
+        const numeric = parseFloat(ratio);
+        if (!isNaN(numeric) && numeric > 0 && !ratio.includes(':')) {
+           // We cap at 1.5 (2:3 portrait) to prevent ridiculously tall images
+           return `${Math.min(numeric, 1.5) * 100}%`;
+        }
+
         const parts = ratio.split(':');
         if (parts.length === 2) {
             const [w, h] = parts.map(Number);
-            if (w && h) return `${(h / w) * 100}%`;
+            if (w && h) return `${Math.min((h / w), 1.5) * 100}%`;
         }
         return '100%';
     };
@@ -224,7 +232,7 @@ const InstagramCarousel: React.FC<InstagramCarouselProps> = ({ content, classNam
                                         src={currentItem.file_url || ''}
                                         alt={content.title}
                                         className={cn(
-                                            "w-full h-full object-cover select-none pointer-events-none transition-opacity duration-300",
+                                            "w-full h-full object-contain bg-black/5 select-none pointer-events-none transition-opacity duration-300",
                                             imageLoading ? "opacity-0" : "opacity-100"
                                         )}
                                         loading="lazy"

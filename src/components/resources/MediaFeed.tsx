@@ -178,7 +178,7 @@ const MediaFeed: React.FC = () => {
                     {content.map((item) => (
                         <div
                             key={item.id}
-                            className="aspect-square relative group cursor-pointer overflow-hidden bg-muted"
+                            className="aspect-[4/5] relative group cursor-pointer overflow-hidden bg-muted"
                             onClick={() => setViewMode('feed')}
                         >
                             <img
