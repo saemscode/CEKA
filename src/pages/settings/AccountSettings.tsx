@@ -36,7 +36,9 @@ const AccountSettings = () => {
     email: '',
     avatar_url: '',
     bio: '',
-    county: ''
+    county: '',
+    civic_credits: 0,
+    verification_status: 'unverified'
   });
 
   const [passwords, setPasswords] = useState({
@@ -68,7 +70,9 @@ const AccountSettings = () => {
           email: session?.user?.email || '',
           avatar_url: data.avatar_url || '',
           bio: data.bio || '',
-          county: (data as any).county || ''
+          county: (data as any).county || '',
+          civic_credits: (data as any).civic_credits || 0,
+          verification_status: (data as any).verification_status || 'unverified'
         });
       }
     } catch (err) {
@@ -518,7 +522,23 @@ const AccountSettings = () => {
               <p className="text-xs text-muted-foreground mt-1">Activate your status to join community initiatives.</p>
               <div className="mt-4 flex flex-wrap gap-2">
                 <Badge className="bg-slate-100 text-slate-900 dark:bg-white/5 dark:text-white rounded-full px-3 py-1 font-bold text-[10px] border-none">STATUS: READY</Badge>
-                <Badge className="bg-primary/10 text-primary rounded-full px-3 py-1 font-bold text-[10px] border-none">LEVEL: CITIZEN</Badge>
+                
+                {profile.verification_status === 'official_org' && (
+                   <Badge className="bg-blue-500/10 text-blue-600 rounded-full px-3 py-1 font-bold text-[10px] border-none flex items-center gap-1">
+                      <Shield className="w-3 h-3" /> OFFICIAL ORG
+                   </Badge>
+                )}
+                
+                {profile.verification_status === 'ceka_partner' && (
+                   <Badge className="bg-amber-500/10 text-amber-600 rounded-full px-3 py-1 font-bold text-[10px] border-none flex items-center gap-1">
+                      <Shield className="w-3 h-3" /> CEKA PARTNER
+                   </Badge>
+                )}
+
+                <Badge className="bg-emerald-500/10 text-emerald-600 rounded-full px-3 py-1 font-bold text-[10px] border-none flex items-center gap-1">
+                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                  {profile.civic_credits} CREDITS
+                </Badge>
               </div>
             </div>
           </div>

@@ -33,7 +33,7 @@ export function useSearch() {
     const fetchProfile = async () => {
       const { data } = await supabase
         .from('profiles')
-        .select('id, county, areas_of_interest, interests, contribution_points, preferences')
+        .select('id, county, areas_of_interest, interests, contribution_points, preferences, civic_credits, verification_status')
         .eq('id', user.id)
         .single();
       if (data) setProfile(data as unknown as UserProfile);

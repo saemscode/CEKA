@@ -37,6 +37,8 @@ export interface UserProfile {
   interests?: string[];
   preferred_lang?: string;
   contribution_points?: number;
+  civic_credits?: number;
+  verification_status?: 'unverified' | 'official_org' | 'ceka_partner' | 'supporter';
   preferences?: {
     search_weights?: { match: number; recency: number; county: number };
     type_affinity?: Record<string, number>;
@@ -170,6 +172,20 @@ const CIVIC_KEYWORD_MAP: Record<string, string[]> = {
   'polisi':     ['#KillingsByPolice', '#IPOA', '#DPP'],
   'karo':       ['#HELB', '#Bursari', '#Elimu'],
 };
+
+// ─────────────────────────────────────────────
+// STATIC SYSTEM NAVIGATION ROUTES
+// ─────────────────────────────────────────────
+const SYSTEM_ROUTES = [
+  { id: 'route_resources', type: 'resource', title: 'Resource Hub & Library', metadata: { isRoute: true }, description: 'View, read, and download civic education documents.', url: '/resources', tags: ['resources', 'library', 'downloads', 'documents', 'pdf'] },
+  { id: 'route_constitution', type: 'constitution_chapter', title: 'The Constitution Explorer', metadata: { isRoute: true }, description: 'Read and explore the Kenyan Constitution dynamically.', url: '/constitution', tags: ['constitution', 'law', 'articles', 'katiba', 'chapter'] },
+  { id: 'route_civic_edu', type: 'civic_glossary', title: 'Civic Education Portal', metadata: { isRoute: true }, description: 'Learn about your civic duties and national history.', url: '/civic-education', tags: ['education', 'history', 'duties', 'learn'] },
+  { id: 'route_campaigns', type: 'campaign', title: 'Live Civic Campaigns', metadata: { isRoute: true }, description: 'Join, share, and support active civic campaigns.', url: '/campaigns', tags: ['campaigns', 'support', 'boost', 'activism', 'donate'] },
+  { id: 'route_community', type: 'discussion', title: 'Community Discussions', metadata: { isRoute: true }, description: 'Engage with fellow Kenyans in vital civic talks.', url: '/community', tags: ['community', 'forum', 'talk', 'debate'] },
+  { id: 'route_settings', type: 'resource', title: 'Account Settings', metadata: { isRoute: true }, description: 'Manage your CEKA profile and verification.', url: '/settings', tags: ['settings', 'profile', 'account', 'verification', 'password'] },
+  { id: 'route_upload', type: 'resource', title: 'Upload Resource', metadata: { isRoute: true }, description: 'Submit a new civic document or file.', url: '/resources/upload', tags: ['upload', 'submit', 'file', 'add'] },
+  { id: 'route_tracker', type: 'bill', title: 'Legislative Tracker', metadata: { isRoute: true }, description: 'Track all active and pending bills in the National Assembly.', url: '/legislative-tracker', tags: ['tracker', 'bills', 'legislation', 'parliament'] },
+];
 
 // ─────────────────────────────────────────────
 // TOKEN INTELLIGENCE TABLES
@@ -368,6 +384,26 @@ class SearchService {
     const tokens = rawTokens.map(t => t.toLowerCase()); // exported for client scoring
     const results: SearchResult[] = [];
 
+    // 2.5 Inspect System Routes
+    SYSTEM_ROUTES.forEach(route => {
+      const routeText = `${route.title} ${route.description} ${route.tags.join(' ')}`.toLowerCase();
+      let match = false;
+      for (const t of tokens) {
+        if (routeText.includes(t)) { match = true; break; }
+      }
+      if (match) {
+        results.push({
+          ...route,
+          type: route.type as any,
+          category: 'Navigation',
+          date: new Date().toISOString(),
+          created_at: new Date().toISOString(),
+          relevanceScore: 99.9, // Pin routes to absolute top
+          matchScore: 99.9, recencyScore: 1.0, countyScore: 1.0
+        });
+      }
+    });
+
     // 3. Extract Primary Token (longest word > 2 chars) for strict DB fetching
     // This circumvents the Supabase "or" overwrite sabotage AND avoids
     // short stop-words ("Bill") flooding the pagination limit.
@@ -387,13 +423,14 @@ class SearchService {
     const discussionsOr = buildOrClause(['title', 'body']);
     const chaptersOr    = buildOrClause(['title', 'description']);
     const sectionsOr    = buildOrClause(['title', 'content']);
+    const articlesOr    = buildOrClause(['title', 'content']);
     const glossaryOr    = buildOrClause(['term', 'definition']);
     const carouselOr    = buildOrClause(['title', 'description']);
     const campaignsOr   = buildOrClause(['title', 'description']);
 
     const [
       billsRes, blogsRes, resourcesRes, discussionsRes,
-      chaptersRes, sectionsRes, glossaryRes, carouselRes, campaignsRes
+      chaptersRes, sectionsRes, articlesRes, glossaryRes, carouselRes, campaignsRes
     ] = await Promise.allSettled([
       supabase.from('bills').select('id, title, summary, category, created_at, status').or(billsOr).order('created_at', { ascending: false }).range(offset, offset + limit - 1),
       supabase.from('blog_posts').select('id, title, excerpt, content, tags, created_at, slug, author').eq('status', 'published').or(blogsOr).order('created_at', { ascending: false }).range(offset, offset + limit - 1),
@@ -401,6 +438,7 @@ class SearchService {
       db.from('discussions').select('id, title, body, tags, county, created_at').or(discussionsOr).order('created_at', { ascending: false }).range(offset, offset + limit - 1),
       db.from('constitution_chapters').select('id, title, description, created_at').or(chaptersOr).order('created_at', { ascending: false }).range(offset, offset + limit - 1),
       db.from('constitution_sections').select('id, title, content, chapter_id, created_at').or(sectionsOr).order('created_at', { ascending: false }).range(offset, offset + limit - 1),
+      db.from('constitution_articles').select('id, title, content, chapter_id, created_at').or(articlesOr).order('created_at', { ascending: false }).range(offset, offset + limit - 1),
       db.from('civic_glossary').select('id, term, definition, created_at').or(glossaryOr).order('created_at', { ascending: false }).range(offset, offset + limit - 1),
       db.from('carousel_slides').select('id, title, description, url, created_at').or(carouselOr).order('created_at', { ascending: false }).range(offset, offset + limit - 1),
       db.from('campaigns').select('id, title, description, tags, created_at').or(campaignsOr).order('created_at', { ascending: false }).range(offset, offset + limit - 1),
@@ -485,7 +523,21 @@ class SearchService {
           description: desc, excerpt: desc,
           tags: [], county: undefined,
           created_at: s.created_at, date: s.created_at,
-          url: `/constitution/sections/${s.id}`, category: 'Article',
+          url: `/constitution/sections/${s.id}`, category: 'Constitution',
+        };
+        results.push({ ...base, ...this.computeRelevanceScore(base, userProfile, tokens, cleanQuery, sortBy) });
+      });
+    }
+
+    if (articlesRes.status === 'fulfilled' && articlesRes.value?.data) {
+      articlesRes.value.data.forEach((a: any) => {
+        const desc = (a.content || '').slice(0, 300);
+        const base: any = {
+          id: a.id, type: 'constitution_article', title: a.title,
+          description: desc, excerpt: desc,
+          tags: [], county: undefined,
+          created_at: a.created_at, date: a.created_at,
+          url: `/constitution/article/${a.id}`, category: 'Article',
         };
         results.push({ ...base, ...this.computeRelevanceScore(base, userProfile, tokens, cleanQuery, sortBy) });
       });

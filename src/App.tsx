@@ -21,6 +21,7 @@ import Blog from '@/pages/Blog';
 import BlogPost from '@/pages/BlogPost';
 import EventsCalendar from '@/pages/CivicCalendar';
 import AdminDashboard from '@/pages/AdminDashboard';
+import MaintenancePage from '@/pages/MaintenancePage';
 import ResourceLibrary from '@/pages/ResourceLibrary';
 import ResourceDetail from '@/pages/ResourceDetail';
 import OAuthConsent from '@/pages/OAuthConsent';
@@ -60,10 +61,10 @@ import Tools from '@/pages/Tools';
 import About from '@/pages/About';
 import TemplateViewerPage from '@/pages/TemplateViewerPage';
 import NotFound from '@/pages/NotFound';
-import MaintenancePage from '@/pages/MaintenancePage';
 import TransparencyManifesto from '@/pages/TransparencyManifesto';
 import InfrastructureDetails from '@/pages/InfrastructureDetails';
 import TranslatePage from '@/pages/TranslatePage';
+import ArticleViewer from '@/pages/ArticleViewer';
 
 const queryClient = new QueryClient();
 
@@ -178,6 +179,8 @@ const AppContent = () => {
         <Route path="/advocacy-toolkit/:id" element={<AdvocacyToolkitDetail />} />
         <Route path="/join-community" element={<JoinCommunity />} />
         <Route path="/constitution" element={<ConstitutionPage />} />
+        <Route path="/constitution/article/:articleId" element={<ArticleViewer />} />
+        <Route path="/constitution/chapter/:chapterId/article/:articleId" element={<ArticleViewer />} />
         <Route path="/community" element={<CommunityPortal />} />
         <Route path="/legal" element={<LegalPage />} />
         <Route path="/feedback" element={<FeedbackPage />} />

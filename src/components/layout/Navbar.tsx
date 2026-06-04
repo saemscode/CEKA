@@ -81,7 +81,7 @@ const Navbar = React.forwardRef<HTMLElement, NavbarProps>(({ isFixed }, ref) => 
   const [showAuthModal, setShowAuthModal] = useState(false);
 
   const location = useLocation();
-  const { user, signOut } = useAuth();
+  const { user, profile, signOut } = useAuth();
   const { isAdmin } = useAdmin();
   const { unreadCount } = useNotifications();
   const { language, setLanguage } = useLanguage();
@@ -196,15 +196,32 @@ const Navbar = React.forwardRef<HTMLElement, NavbarProps>(({ isFixed }, ref) => 
             {user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full border-2 border-slate-100 dark:border-white/10 p-0 overflow-hidden">
+                  <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full border-2 border-slate-100 dark:border-white/10 p-0 overflow-hidden relative">
                     <Avatar className="h-full w-full">
                       <AvatarImage src={user?.user_metadata?.avatar_url} />
-                      <AvatarFallback className="bg-primary text-white text-[10px] font-bold">{user?.email?.charAt(0)}</AvatarFallback>
+                      <AvatarFallback className="bg-primary text-white text-[10px] font-bold">{user?.email?.charAt(0).toUpperCase()}</AvatarFallback>
                     </Avatar>
+                    {profile?.verification_status && profile.verification_status !== 'unverified' && (
+                        <div className="absolute -bottom-1 -right-1 bg-white rounded-full">
+                           <Shield className="w-3.5 h-3.5 text-blue-500" fill="currentColor" />
+                        </div>
+                    )}
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56 p-2 rounded-[24px] bg-white/95 dark:bg-[#1C1C1E]/95 backdrop-blur-3xl border-none shadow-2xl mt-2">
-                  <DropdownMenuLabel className="text-[10px] uppercase tracking-widest text-muted-foreground px-3 pt-3">Identity</DropdownMenuLabel>
+                  <DropdownMenuLabel className="px-3 pt-3 flex flex-col gap-1">
+                     <span className="text-[10px] uppercase tracking-widest text-muted-foreground">Identity</span>
+                     <div className="flex items-center gap-1.5 mt-1">
+                        <span className="text-sm font-bold text-slate-800 dark:text-white truncate">{user?.user_metadata?.full_name || user?.email?.split('@')[0]}</span>
+                        {profile?.verification_status === 'official_org' && <Badge variant="secondary" className="text-[9px] bg-blue-500/10 text-blue-600 dark:text-blue-400 py-0 h-4">Official</Badge>}
+                        {profile?.verification_status === 'ceka_partner' && <Badge variant="secondary" className="text-[9px] bg-amber-500/10 text-amber-600 dark:text-amber-400 py-0 h-4">Verified</Badge>}
+                     </div>
+                     <p className="text-xs text-kenya-green font-bold flex items-center gap-1">
+                         <div className="w-2 h-2 rounded-full mb-[1px] bg-kenya-green shadow-[0_0_8px_rgba(56,161,105,0.8)]" />
+                         {profile?.civic_credits || 0} Civic Credits
+                     </p>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator className="bg-slate-100 dark:bg-white/5 my-2" />
                   <DropdownMenuItem asChild><Link to="/settings/account" className="rounded-xl p-3 cursor-pointer">Profile</Link></DropdownMenuItem>
                   <DropdownMenuItem asChild><Link to="/settings" className="rounded-xl p-3 cursor-pointer">Settings</Link></DropdownMenuItem>
                   {isAdmin && <DropdownMenuItem asChild><Link to="/admin/dashboard" className="rounded-xl p-3 cursor-pointer text-primary font-bold">Admin Console</Link></DropdownMenuItem>}
