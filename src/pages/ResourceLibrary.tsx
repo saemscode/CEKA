@@ -35,6 +35,17 @@ import { motion } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { placeholderService } from '@/services/placeholderService';
 import ResourceCard from '@/components/resources/ResourceCard';
+import { CEKALoader } from '@/components/ui/ceka-loader';
+
+// Table for Windows List Mode
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 interface Resource {
   id: string;
@@ -74,6 +85,10 @@ const ResourceLibrary = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState<string>('All');
   const [dynamicThumbnails, setDynamicThumbnails] = useState<Record<string, string>>({});
+  
+  // Pagination State
+  const ITEMS_PER_PAGE = 12;
+  const [page, setPage] = useState(1);
 
   // Load resources from Supabase with debounced search and filters
   useEffect(() => {
@@ -134,8 +149,12 @@ const ResourceLibrary = () => {
 
     const debounceTimer = setTimeout(fetchResources, 400);
     return () => clearTimeout(debounceTimer);
-  }, [sortBy, sortDirection, toast, activeCategory]); // Added activeCategory to trigger refresh if needed, although local filtering is active. 
-  // Actually, keeping it local is better for performance. But we need to ensure uniqueCats are set correctly.
+  }, [sortBy, sortDirection, toast, activeCategory]);
+
+  // Reset page when filters change
+  useEffect(() => {
+    setPage(1);
+  }, [searchTerm, activeCategory, selectedTypes, sortBy, sortDirection]);
 
   // Handle auto-thumbnail generation for videos/media
   useEffect(() => {
@@ -220,6 +239,10 @@ const ResourceLibrary = () => {
       }
     });
   }, [resources, searchTerm, activeCategory, selectedTypes, sortBy, sortDirection]);
+
+  // Slice for Pagination
+  const displayedResources = filteredResources.slice(0, page * ITEMS_PER_PAGE);
+  const hasMore = displayedResources.length < filteredResources.length;
 
   // Group resources by category for the tabbed interface
   const resourcesByCategory = useMemo(() => {
@@ -381,35 +404,42 @@ const ResourceLibrary = () => {
             ))}
           </div>
 
-          <div className="relative max-w-2xl mx-auto w-full">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-            <Input
-              id="resource-search"
-              name="q"
-              type="text"
-              placeholder={translate("Search resources...", language)}
-              className="pl-12 h-14 rounded-[28px] glass-card border-none shadow-ios-high dark:shadow-ios-high-dark text-lg focus-visible:ring-primary/20"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  // No specific action needed as useMemo handles filtering, 
-                  // but we can add a toast or a small animation to signify "Search Triggered"
-                  toast({
-                    title: "Searching...",
-                    description: `Refining vault for "${searchTerm}"`,
-                  });
-                }
-              }}
-            />
+          <div className="flex gap-3 max-w-2xl mx-auto w-full">
+            <div className="relative flex-1">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+              <Input
+                id="resource-search"
+                name="q"
+                type="text"
+                placeholder={translate("Search resources...", language)}
+                className="pl-12 h-14 rounded-2xl glass-card border-none shadow-ios-high dark:shadow-ios-high-dark text-lg focus-visible:ring-primary/20"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    toast({
+                      title: "Searching...",
+                      description: `Refining vault for "${searchTerm}"`,
+                    });
+                  }
+                }}
+              />
+            </div>
+            <Button 
+                onClick={() => {
+                   toast({ title: "Searching...", description: `Refining vault for "${searchTerm}"` });
+                }}
+                className="h-14 px-8 rounded-2xl bg-kenya-black dark:bg-white dark:text-black text-white hover:bg-kenya-red transition-all shadow-lg font-bold"
+            >
+               Search Vault
+            </Button>
           </div>
 
           <div className="w-full">
             {isLoading ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
-                  <div key={i} className="h-72 bg-muted/30 rounded-3xl animate-pulse"></div>
-                ))}
+              <div className="flex flex-col items-center justify-center py-32 gap-4">
+                <CEKALoader variant="scanning" size="lg" />
+                <p className="text-sm font-bold text-muted-foreground uppercase tracking-widest animate-pulse mt-4">Syncing Vault</p>
               </div>
             ) : filteredResources.length === 0 ? (
               <div className="text-center py-20 glass-card rounded-[40px]">
@@ -418,14 +448,75 @@ const ResourceLibrary = () => {
                 </div>
                 <h3 className="text-2xl font-black mb-2">No Results Found</h3>
                 <p className="text-muted-foreground max-w-md mx-auto mb-8">Try adjusting your filters or search term to discover curated civic educational materials.</p>
-                <Button variant="outline" onClick={resetFilters} className="rounded-2xl px-8 h-12">
+                <Button variant="outline" onClick={resetFilters} className="rounded-2xl px-8 h-12 border-primary/20 hover:bg-primary/5">
                   <RefreshCw className="h-4 w-4 mr-2" />
-                  Reset Vault
+                  Reset Vault Filters
                 </Button>
               </div>
             ) : (
-              <div className={`grid gap-6 ${viewMode === 'grid' ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' : 'max-w-4xl mx-auto'}`}>
-                {filteredResources.map(resource => renderResourceCard(resource))}
+              <div className="w-full space-y-8">
+                {viewMode === 'grid' ? (
+                  <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                    {displayedResources.map(resource => renderResourceCard(resource))}
+                  </div>
+                ) : (
+                  <div className="bg-white dark:bg-black/40 border border-slate-100 dark:border-white/10 rounded-2xl overflow-hidden shadow-sm">
+                    <Table>
+                      <TableHeader className="bg-slate-50 dark:bg-white/5">
+                        <TableRow className="border-border/10 hover:bg-transparent">
+                          <TableHead className="font-bold uppercase tracking-wider text-[10px]">Name</TableHead>
+                          <TableHead className="font-bold uppercase tracking-wider text-[10px]">Type</TableHead>
+                          <TableHead className="font-bold uppercase tracking-wider text-[10px] hidden md:table-cell">Category</TableHead>
+                          <TableHead className="font-bold uppercase tracking-wider text-[10px] hidden md:table-cell">Date Added</TableHead>
+                          <TableHead className="text-right font-bold uppercase tracking-wider text-[10px]">Action</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {displayedResources.map((res) => (
+                          <TableRow key={res.id} className="border-border/10 cursor-pointer hover:bg-slate-50/50 dark:hover:bg-white/5 transition-colors" onClick={() => navigate(`/resources/${res.id}`)}>
+                            <TableCell className="font-medium flex items-center gap-3">
+                               <div className="w-8 h-8 rounded-lg bg-kenya-red/10 flex items-center justify-center shrink-0">
+                                  <BookOpen className="w-4 h-4 text-kenya-red" />
+                               </div>
+                               <div className="flex flex-col min-w-0">
+                                  <span className="truncate text-sm font-bold text-slate-800 dark:text-white leading-tight">{res.title}</span>
+                                  <span className="truncate text-[10px] text-muted-foreground">{res.provider || 'CEKA Vault'}</span>
+                               </div>
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="outline" className="text-[10px] uppercase font-bold">{res.type}</Badge>
+                            </TableCell>
+                            <TableCell className="hidden md:table-cell text-sm text-slate-500 dark:text-slate-400">
+                              {res.category}
+                            </TableCell>
+                            <TableCell className="hidden md:table-cell text-sm text-slate-500 dark:text-slate-400">
+                              {res.dateAdded}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <Button size="sm" variant="ghost" className="h-8 rounded-lg hover:bg-kenya-red/10 hover:text-kenya-red font-bold">
+                                View
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+                
+                {hasMore && (
+                  <div className="flex justify-center pt-8 fade-in animate-in">
+                    <Button 
+                      size="lg" 
+                      variant="outline"
+                      className="rounded-full px-12 h-14 font-bold tracking-tight border-primary/20 hover:bg-primary/5 hover:text-primary transition-all shadow-sm"
+                      onClick={() => setPage(p => p + 1)}
+                    >
+                      <List className="w-4 h-4 mr-2" />
+                      Load More Resources
+                    </Button>
+                  </div>
+                )}
               </div>
             )}
           </div>

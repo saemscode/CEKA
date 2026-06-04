@@ -4,6 +4,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ExternalLink, Download, BookOpen, MapPin, Video, FileText, ImageIcon, Gavel, Plus } from 'lucide-react';
+import { CEKALoader } from '@/components/ui/ceka-loader';
 import { formatDate } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -58,7 +59,9 @@ const ResourceCard = ({ resource, downloadable, onToggleSelect, variant = 'grid'
           alt={resource.title}
           className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
           onError={(e) => {
-            (e.target as HTMLImageElement).style.display = 'none';
+            const temp = placeholderService.getPlaceholderByTags(resource.tags || [], resource.type);
+            (e.target as HTMLImageElement).src = temp;
+            (e.target as HTMLImageElement).onerror = null;
           }}
         />
       );
