@@ -131,12 +131,12 @@ const Navbar = React.forwardRef<HTMLElement, NavbarProps>(({ isFixed }, ref) => 
         ref={ref}
         className={cn(
           "z-[3999] w-full transition-all duration-500 font-sans ceka-navbar",
-          isFixed 
-            ? "fixed left-0 right-0 shadow-ios-high py-2 bg-white/95 dark:bg-black/95 backdrop-blur-3xl" 
-            : "relative py-4 bg-white/40 dark:bg-black/20 backdrop-blur-sm lg:bg-transparent",
-          showBg && !isFixed ? "bg-white/95 dark:bg-black/95 backdrop-blur-3xl shadow-ios-high py-2" : ""
+          isFixed
+            ? "fixed left-0 right-0 shadow-ios-high py-2 bg-white/70 dark:bg-black/80 backdrop-blur-3xl"
+            : "sticky top-0 py-4 bg-white/40 dark:bg-black/20 backdrop-blur-sm lg:bg-transparent",
+          showBg && !isFixed ? "bg-white/70 dark:bg-black/80 backdrop-blur-3xl shadow-ios-high py-2" : ""
         )}
-        style={{ 
+        style={{
           top: isFixed ? 'env(safe-area-inset-top, 0px)' : '0px',
           paddingTop: isFixed ? '8px' : 'max(env(safe-area-inset-top), 8px)',
           transform: isFixed ? 'translate3d(0,0,0)' : 'none',
@@ -188,7 +188,7 @@ const Navbar = React.forwardRef<HTMLElement, NavbarProps>(({ isFixed }, ref) => 
           </NavigationMenu>
 
           <div className="flex items-center gap-3">
-            <div className="hidden sm:block"><SearchSuggestion className="w-64" /></div>
+            <div className="hidden sm:block"><SearchSuggestion className="w-80" /></div>
             <ThemeToggle />
 
             <NotificationDropdown className="mr-1" />

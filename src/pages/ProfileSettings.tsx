@@ -19,18 +19,19 @@ import { useToast } from '@/hooks/use-toast';
 import { translate } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { 
-  User, 
-  Settings, 
-  Bell, 
-  Shield, 
-  Moon, 
-  Sun, 
-  Globe, 
-  LogOut, 
-  Camera,
-  Save,
-  AlertTriangle
-} from 'lucide-react';
+  UserIcon as User, 
+  SettingsIcon as Settings, 
+  NotificationIcon as Bell, 
+  ShieldIcon as Shield, 
+  MoonIcon as Moon, 
+  SunIcon as Sun, 
+  GlobeIcon as Globe, 
+  LogoutIcon as LogOut, 
+  CameraIcon as Camera,
+  SaveIcon as Save,
+  AlertIcon as AlertTriangle
+} from '@/components/ui/CustomIcons';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 
 const ProfileSettings = () => {
   const { session, user } = useAuth();
@@ -358,23 +359,12 @@ const ProfileSettings = () => {
                       {translate("Switch between light and dark mode", language)}
                     </p>
                   </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={toggleTheme}
-                  >
-                    {theme === 'dark' ? (
-                      <>
-                        <Sun className="h-4 w-4 mr-2" />
-                        {translate("Light", language)}
-                      </>
-                    ) : (
-                      <>
-                        <Moon className="h-4 w-4 mr-2" />
-                        {translate("Dark", language)}
-                      </>
-                    )}
-                  </Button>
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm text-muted-foreground">
+                      {theme === 'dark' ? translate('Dark Mode', language) : translate('Light Mode', language)}
+                    </span>
+                    <ThemeToggle />
+                  </div>
                 </div>
               </CardContent>
             </Card>

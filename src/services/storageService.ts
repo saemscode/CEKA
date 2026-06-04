@@ -21,6 +21,9 @@ export interface UploadResult {
 class StorageService {
     private initialized = false;
     private useBackblaze = false;
+    private urlCache: Map<string, { url: string, expiry: number }> = new Map();
+    private promiseCache: Map<string, Promise<string>> = new Map();
+    private CACHE_TTL = 1000 * 60 * 4; // 4 minutes
 
     async initialize(): Promise<void> {
         if (this.initialized) return;
@@ -197,52 +200,62 @@ class StorageService {
     }
 
     async getAuthorizedUrl(pathOrUrl: string): Promise<string> {
-        await this.initialize();
+        if (!pathOrUrl) return '';
 
-        console.log(`[StorageService] getAuthorizedUrl called with: ${pathOrUrl.substring(0, 80)}...`);
-
-        // CRITICAL: If this is a B2 URL, ALWAYS use B2 signing regardless of init state
-        if (pathOrUrl.includes('backblazeb2.com')) {
-            console.log('[StorageService] Detected B2 URL, routing to B2 signing...');
-            const signed = await backblazeStorage.getAuthorizedUrl(pathOrUrl);
-            console.log(`[StorageService] B2 signing result: ${signed ? 'SUCCESS' : 'FAILED'}`);
-            return signed || pathOrUrl;
+        // Check value cache first
+        const now = Date.now();
+        const cached = this.urlCache.get(pathOrUrl);
+        if (cached && cached.expiry > now) {
+            return cached.url;
         }
 
-        // If it's a full non-B2 URL, return as-is
-        if (pathOrUrl.startsWith('http')) {
-            return pathOrUrl;
+        // Check promise cache to prevent concurrent request storm
+        const existingPromise = this.promiseCache.get(pathOrUrl);
+        if (existingPromise) {
+            return existingPromise;
         }
 
-        // If it's a Cloudflare Worker route, return as-is (handled by /b2-image/ proxy)
-        if (pathOrUrl.includes('b2-image/')) {
-            return pathOrUrl;
-        }
+        // Create new authorization promise
+        const authPromise = (async () => {
+            try {
+                await this.initialize();
 
-        // If it's a path and we're configured for B2, sign via B2
-        if (this.useBackblaze) {
-            const signed = await backblazeStorage.getAuthorizedUrl(pathOrUrl);
-            return signed || pathOrUrl;
-        }
+                let authorizedUrl = pathOrUrl;
 
-        // Supabase Storage signed URL (fallback)
-        try {
-            const parts = pathOrUrl.split('/');
-            const bucket = parts[0];
-            const filePath = parts.slice(1).join('/');
+                // CRITICAL: If this is a B2 URL, ALWAYS use B2 signing regardless of init state
+                if (pathOrUrl.includes('backblazeb2.com') || pathOrUrl.includes('ceka-resources-vault')) {
+                    const signed = await backblazeStorage.getAuthorizedUrl(pathOrUrl);
+                    authorizedUrl = signed || pathOrUrl;
+                } else if (pathOrUrl.startsWith('http')) {
+                    authorizedUrl = pathOrUrl;
+                } else if (pathOrUrl.includes('b2-image/')) {
+                    authorizedUrl = pathOrUrl;
+                } else if (this.useBackblaze) {
+                    const signed = await backblazeStorage.getAuthorizedUrl(pathOrUrl);
+                    authorizedUrl = signed || pathOrUrl;
+                } else {
+                    // Supabase fallback
+                    const parts = pathOrUrl.split('/');
+                    if (parts.length >= 2) {
+                        const { data, error } = await supabase.storage
+                            .from(parts[0])
+                            .createSignedUrl(parts.slice(1).join('/'), 3600);
+                        if (!error && data) authorizedUrl = data.signedUrl;
+                    }
+                }
 
-            const { data, error } = await supabase.storage
-                .from(bucket)
-                .createSignedUrl(filePath, 3600);
+                // Update value cache
+                this.urlCache.set(pathOrUrl, { url: authorizedUrl, expiry: Date.now() + this.CACHE_TTL });
+                return authorizedUrl;
+            } finally {
+                // Clear promise cache when done
+                this.promiseCache.delete(pathOrUrl);
+            }
+        })();
 
-            if (error) throw error;
-            return data.signedUrl;
-        } catch (error) {
-            console.error('[Storage] Error creating Supabase signed URL:', error);
-            return pathOrUrl;
-        }
+        this.promiseCache.set(pathOrUrl, authPromise);
+        return authPromise;
     }
-
     getStorageProvider(): string {
         return this.useBackblaze ? 'backblaze' : 'supabase';
     }

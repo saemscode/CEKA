@@ -35,7 +35,8 @@ export const useMaintenanceScroll = () => {
       const threshold = bannerRef.current?.offsetHeight || 0;
       
       // Threshold check for handoff
-      if (scrollY >= threshold && threshold > 0) {
+      // FIXED: If threshold is 0 (banner dismissed), it should still allow fixing if scrollY > 0
+      if ((threshold > 0 && scrollY >= threshold) || (threshold === 0 && scrollY > 0)) {
         setIsFixed(true);
         // SYNC: Update global offset for sensitized components (Toaster)
         document.documentElement.style.setProperty('--toast-header-offset', `${navbarRef.current?.offsetHeight || 0}px`);

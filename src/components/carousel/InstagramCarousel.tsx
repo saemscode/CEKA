@@ -6,14 +6,8 @@ import { CEKALoader } from '@/components/ui/ceka-loader';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { mediaService, type MediaContent, type MediaItem } from '@/services/mediaService';
-import { processingService, type ResolutionQuality } from '@/services/processingService';
 import storageService from '@/services/storageService';
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+import DownloadPortal from '@/components/media/DownloadPortal';
 
 interface InstagramCarouselProps {
     content: MediaContent;
@@ -27,10 +21,8 @@ const SWIPE_VELOCITY_THRESHOLD = 500;
 const InstagramCarousel: React.FC<InstagramCarouselProps> = ({ content, className }) => {
     const [currentIndex, setCurrentIndex] = useState(0);
     const [direction, setDirection] = useState(0);
-    const [downloading, setDownloading] = useState<string | null>(null);
     const [isCheckingPdf, setIsCheckingPdf] = useState(false);
     const [imageLoading, setImageLoading] = useState(true);
-    const [availableQualities, setAvailableQualities] = useState<ResolutionQuality[]>(['320p', '720p', '1080p', '4k']);
     const [masterRatio, setMasterRatio] = useState<string | null>(null);
     const [hydratedItems, setHydratedItems] = useState<MediaItem[]>([]);
     const [isHydrating, setIsHydrating] = useState(true);
@@ -70,39 +62,20 @@ const InstagramCarousel: React.FC<InstagramCarouselProps> = ({ content, classNam
     const dragX = useMotionValue(0);
     const dragOpacity = useTransform(dragX, [-200, 0, 200], [0.5, 1, 0.5]);
 
-    // Aspect ratio padding calculator - Convert string ratio (e.g., "4:5") to percentage
+    // Aspect ratio padding calculator
     const getAspectRatioPadding = (ratio?: string | null): string => {
         if (!ratio || ratio.includes('Square')) return '100%';
-
         const ratioMap: Record<string, string> = {
-            '4:3': '75%',
-            '3:4': '133.33%',
-            '4:5': '125%',
-            '5:4': '80%',
-            '16:9': '56.25%',
-            '9:16': '177.78%',
-            '21:9': '42.86%',
-            '2:3': '150%',
-            '3:2': '66.67%',
-            '1:1': '100%',
-            'square': '100%',
-            'portrait': '125%',
-            'landscape': '56.25%'
+            '4:3': '75%', '3:4': '133.33%', '4:5': '125%', '5:4': '80%',
+            '16:9': '56.25%', '9:16': '177.78%', '21:9': '42.86%', '2:3': '150%',
+            '3:2': '66.67%', '1:1': '100%', 'square': '100%', 'portrait': '125%', 'landscape': '56.25%'
         };
-
         if (ratioMap[ratio]) return ratioMap[ratio];
-
-        if (!ratio.includes(':')) {
-            const num = parseFloat(ratio);
-            if (!isNaN(num) && num > 0) return `${num * 100}%`;
-        }
-
         const parts = ratio.split(':');
         if (parts.length === 2) {
             const [w, h] = parts.map(Number);
             if (w && h) return `${(h / w) * 100}%`;
         }
-
         return '100%';
     };
 
@@ -150,7 +123,6 @@ const InstagramCarousel: React.FC<InstagramCarouselProps> = ({ content, classNam
     const handleDownloadPDF = async () => {
         const rawPdfUrl = content.metadata?.pdf_url;
         if (!rawPdfUrl) return;
-
         const pdfUrl = rawPdfUrl.startsWith('http') ? rawPdfUrl : encodeURI(rawPdfUrl);
         setIsCheckingPdf(true);
         try {
@@ -172,45 +144,6 @@ const InstagramCarousel: React.FC<InstagramCarouselProps> = ({ content, classNam
             setIsCheckingPdf(false);
         }
     };
-
-    const handleDownloadImage = async (quality: ResolutionQuality) => {
-        const currentItem = items[currentIndex];
-        if (!currentItem) return;
-
-        setDownloading(quality);
-        try {
-            const filename = `${content.slug}-${currentIndex + 1}-${quality}.jpg`;
-            await processingService.downloadImage(currentItem.id, quality, filename);
-        } catch (err) {
-            console.error('Image download failed:', err);
-            const url = currentItem.file_url;
-            if (url) {
-                const link = document.createElement('a');
-                link.href = url;
-                link.download = `${content.slug}-${currentIndex + 1}.jpg`;
-                link.target = '_blank';
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-            }
-        } finally {
-            setDownloading(null);
-        }
-    };
-
-    useEffect(() => {
-        const currentItem = items[currentIndex];
-        if (currentItem?.metadata?.max_resolution) {
-            const maxRes = currentItem.metadata.max_resolution as string;
-            const resOrder: ResolutionQuality[] = ['320p', '720p', '1080p', '4k'];
-            const maxIndex = resOrder.indexOf(maxRes as ResolutionQuality);
-            if (maxIndex !== -1) {
-                setAvailableQualities(resOrder.slice(0, maxIndex + 1));
-            }
-        } else {
-            setAvailableQualities(['320p', '720p', '1080p', '4k']);
-        }
-    }, [currentIndex, items]);
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -368,45 +301,22 @@ const InstagramCarousel: React.FC<InstagramCarouselProps> = ({ content, classNam
                 </div>
 
                 <div className="flex gap-2">
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button
-                                variant="outline"
-                                disabled={!!downloading}
-                                className="flex-1 rounded-full border-muted-foreground/20 hover:border-kenya-red/50 hover:bg-kenya-red/5 text-xs font-medium transition-all"
-                            >
-                                {downloading ? (
-                                    <>
-                                        <CEKALoader variant="ios" size="xs" />
-                                        {" "} Downloading {downloading}...
-                                    </>
-                                ) : (
-                                    <>
-                                        <Download size={14} className="mr-2" />
-                                        Save Image
-                                    </>
-                                )}
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent
-                            align="start"
-                            className="w-48 rounded-xl p-1.5 shadow-xl border-muted-foreground/10 bg-background/98 backdrop-blur-xl"
-                        >
-                            {availableQualities.map((quality) => (
-                                <DropdownMenuItem
-                                    key={quality}
-                                    onClick={() => handleDownloadImage(quality)}
-                                    disabled={!!downloading}
-                                    className="rounded-lg cursor-pointer py-2.5 px-3 focus:bg-kenya-red/10 focus:text-kenya-red text-sm"
+                    {currentItem?.file_url && currentItem.type === 'image' && (
+                        <DownloadPortal
+                            filePath={currentItem.file_path || currentItem.file_url}
+                            availableQualities={(currentItem.metadata?.qualities as string[]) || ['4k']}
+                            title={content.title}
+                            trigger={
+                                <Button
+                                    variant="outline"
+                                    className="flex-1 rounded-full border-muted-foreground/20 hover:border-kenya-red/50 hover:bg-kenya-red/5 text-xs font-medium transition-all"
                                 >
-                                    <span className="font-medium">{quality}</span>
-                                    <span className="ml-auto text-xs text-muted-foreground">
-                                        {quality === '4k' ? 'Ultra HD' : quality === '1080p' ? 'Full HD' : quality === '720p' ? 'HD' : 'SD'}
-                                    </span>
-                                </DropdownMenuItem>
-                            ))}
-                        </DropdownMenuContent>
-                    </DropdownMenu>
+                                    <Download size={14} className="mr-2" />
+                                    Save Image
+                                </Button>
+                            }
+                        />
+                    )}
 
                     {content.metadata?.pdf_url && (
                         <Button

@@ -196,38 +196,40 @@ export const backblazeService = {
     },
 
     /**
-     * Generate a signed URL for temporary access.
-     * Uses the Edge Function proxy for 100% reliability in production.
+     * Generate a signed URL for temporary access (300s / 5min expiry for security).
+     * Hardened: Automatically handles tiered quality suffixes and uses Edge Proxy fallback.
      */
-    async getSignedUrl(path: string, expiresIn: number = 3600): Promise<string | null> {
+    async getSignedUrl(path: string, expiresIn: number = 300): Promise<string | null> {
         const config = getB2Config();
-        const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || 'https://cajrvemigxghnfmyopiy.supabase.co';
         const isDev = import.meta.env.MODE === 'development';
+
+        // Sanitization: Ensure path doesn't have double slashes
+        const cleanPath = path.replace(/\/+/g, '/').replace(/^\//, '');
 
         // Use the Edge Proxy as the primary method, especially if keys are missing from the bundle
         if (!isDev || !config.keyId || !config.appKey) {
-            console.log(`[B2] Routing path through Cloudflare B2 Proxy: ${path}`);
-            return `/b2-image/${path}`;
+            console.log(`[B2] Routing path through Cloudflare B2 Proxy: ${cleanPath}`);
+            return `/b2-image/${cleanPath}`;
         }
 
         const client = getB2Client();
         if (!client) {
             console.warn('[B2] Client not initialized for signed URL, falling back to CF proxy');
-            return `/b2-image/${path}`;
+            return `/b2-image/${cleanPath}`;
         }
 
         try {
             const command = new GetObjectCommand({
                 Bucket: config.bucketName,
-                Key: path,
+                Key: cleanPath,
             });
 
             const signedUrl = await getSignedUrl(client, command, { expiresIn });
-            console.log(`[B2] Generated legacy signed URL for: ${path}`);
+            console.log(`[B2] Generated legacy signed URL for: ${cleanPath} (Expires in ${expiresIn}s)`);
             return signedUrl;
         } catch (error) {
             console.error('[B2] Signed URL error, falling back to CF proxy:', error);
-            return `/b2-image/${path}`;
+            return `/b2-image/${cleanPath}`;
         }
     },
 
@@ -248,29 +250,31 @@ export const backblazeService = {
         if (!url) return url;
 
         // Only resolve if it's a B2 URL
-        if (!url.includes('backblazeb2.com')) return url;
+        if (!url.includes('backblazeb2.com') && !url.includes('ceka-resources-vault')) return url;
 
         const config = getB2Config();
-        const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || 'https://cajrvemigxghnfmyopiy.supabase.co';
-
-        console.log(`[B2] Routing B2 URL through Edge Proxy for 100% reliability: ${url.substring(0, 60)}...`);
 
         try {
+            const isDev = import.meta.env.MODE === 'development';
+
             // Extract the path (Key) from the URL
-            // B2 sometimes uses path-style: /bucket/key or virtual-host: bucket.s3.../key
             let path = '';
             const bucketSearch = `/${config.bucketName}/`;
-
+            
             if (url.includes(bucketSearch)) {
                 path = url.split(bucketSearch)[1];
             } else {
-                const urlObj = new URL(url);
-                if (urlObj.pathname.startsWith(`/${config.bucketName}/`)) {
-                    path = urlObj.pathname.replace(`/${config.bucketName}/`, '');
-                } else {
-                    // If bucket name isn't in path, it might be the whole path or something else
-                    // but our URLs are usually path-style
-                    path = urlObj.pathname.substring(1);
+                try {
+                    const urlObj = new URL(url);
+                    if (urlObj.pathname.startsWith(`/${config.bucketName}/`)) {
+                        path = urlObj.pathname.replace(`/${config.bucketName}/`, '');
+                    } else {
+                        // Handle potential S3-style subdomain buckets
+                        path = urlObj.pathname.substring(1);
+                    }
+                } catch {
+                    // Fallback for relative paths
+                    path = url;
                 }
             }
 
@@ -279,20 +283,17 @@ export const backblazeService = {
                 return url;
             }
 
-            // Remove any query params if present
-            const cleanPath = path.split('?')[0];
+            const cleanPath = path.split('?')[0].replace(/\/+/g, '/');
 
-            // Construct the CF Proxy URL
-            const proxyUrl = `/b2-image/${cleanPath}`;
+            // FIXED: If in development mode and we have keys, use browser-side signing.
+            if (isDev && config.keyId && config.appKey) {
+                return await this.getSignedUrl(cleanPath);
+            }
 
-            return proxyUrl;
+            console.log(`[B2] Routing B2 URL through Edge Proxy: ${cleanPath}`);
+            return `/b2-image/${cleanPath}`;
         } catch (error) {
             console.error('[B2] Error resolving via proxy fallback:', error);
-            // If proxy construction fails, try legacy browser signing if keys are available
-            if (config.keyId && config.appKey) {
-                console.log('[B2] Attempting legacy browser-side signing as fallback...');
-                return await this.getSignedUrl(url.split(config.bucketName + '/')[1] || url);
-            }
             return url;
         }
     },

@@ -14,7 +14,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import {
-    Upload, Folder, File, X, CheckCircle, XCircle, Clock, RefreshCw,
+    Upload, Folder, File as FileIcon, X, CheckCircle, XCircle, Clock, RefreshCw,
     Image, FileText, Music, Video, Archive, Trash2, Eye, Edit3, Save, Plus, ExternalLink, Settings, Zap,
     ChevronDown, PlusCircle
 } from 'lucide-react';
@@ -188,6 +188,70 @@ const BulkUploadManager = () => {
         setFiles(prev => prev.map(f => f.id === id ? { ...f, ...updates } : f));
     };
 
+    /**
+     * NATIVE CHURN LOGIC: Generates specific quality variants in-browser using Canvas
+     * Targeted at SD (320p), HD (720p), and Full HD (1080p).
+     */
+    const churnImage = async (file: File, quality: '320p' | '720p' | '1080p'): Promise<File> => {
+        return new Promise((resolve, reject) => {
+            const img = new window.Image();
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                let width = img.width;
+                let height = img.height;
+
+                // Targeted heights for standard tiers
+                const targetHeight = quality === '320p' ? 320 : quality === '720p' ? 720 : 1080;
+                
+                // Only scale down, never up
+                if (height > targetHeight) {
+                    const ratio = targetHeight / height;
+                    width = Math.round(width * ratio);
+                    height = targetHeight;
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+
+                const ctx = canvas.getContext('2d');
+                if (!ctx) return reject('Canvas context failed');
+
+                // High quality image smoothing
+                ctx.imageSmoothingEnabled = true;
+                ctx.imageSmoothingQuality = 'high';
+                ctx.drawImage(img, 0, 0, width, height);
+
+                canvas.toBlob((blob) => {
+                    if (!blob) return reject('Blob creation failed');
+                    const extension = file.name.split('.').pop();
+                    const baseName = file.name.replace(/\.[^/.]+$/, '');
+                    const newFile = new File([blob], `${baseName}_${quality}.${extension}`, {
+                        type: file.type,
+                        lastModified: Date.now()
+                    });
+                    resolve(newFile);
+                }, file.type, 0.92); // High 92% quality jpeg/webp
+            };
+            img.onerror = reject;
+            img.src = URL.createObjectURL(file);
+        });
+    };
+
+    /**
+     * Helper to get image dimensions for dynamic tiering
+     */
+    const getImageDimensions = (file: File): Promise<{ width: number; height: number }> => {
+        return new Promise((resolve) => {
+            const img = new window.Image();
+            img.onload = () => {
+                const dims = { width: img.width, height: img.height };
+                URL.revokeObjectURL(img.src);
+                resolve(dims);
+            };
+            img.src = URL.createObjectURL(file);
+        });
+    };
+
     // Upload single file to selected storage and Sync to SQL
     const processFile = async (uploadFile: UploadFile, galleryIdOverride?: string): Promise<void> => {
         setFiles((prev) =>
@@ -197,43 +261,92 @@ const BulkUploadManager = () => {
         try {
             const finalFolder = customFolder || targetFolder;
             const finalCarouselId = galleryIdOverride || selectedCarousel;
+            const isImage = uploadFile.type.startsWith('image');
 
-            // 1. Upload to Storage (B2 or Supabase)
-            let result;
-            if (storageProvider === 'b2') {
-                result = await backblazeStorage.uploadFile(
-                    uploadFile.file,
-                    finalFolder,
-                    (progress) => {
-                        setFiles((prev) =>
-                            prev.map((f) => (f.id === uploadFile.id ? { ...f, progress: Math.min(progress, 90) } : f))
-                        );
+            // 1. QUAD-CHURN PIPELINE: If it's an image, generate variants based on source size
+            const variantsToUpload: { file: File; suffix: string; quality: string }[] = [{ file: uploadFile.file, suffix: '_4k', quality: '4k' }];
+            let sourceDims = { width: 0, height: 0 };
+            const qualitiesAvailable: string[] = ['4k'];
+
+            if (isImage) {
+                try {
+                    console.log(`[Churn] Detecting source dimensions for: ${uploadFile.name}`);
+                    sourceDims = await getImageDimensions(uploadFile.file);
+                    
+                    // DYNAMIC TIERS: Only generate if source meets the height requirement
+                    if (sourceDims.height >= 320) {
+                        const sd = await churnImage(uploadFile.file, '320p');
+                        variantsToUpload.push({ file: sd, suffix: '_320p', quality: '320p' });
+                        qualitiesAvailable.push('320p');
                     }
-                );
-            } else {
-                // Force Supabase upload
-                const filePath = `${finalFolder}/${Date.now()}-${uploadFile.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
-                const { data, error } = await supabase.storage
-                    .from('resources')
-                    .upload(filePath, uploadFile.file);
-
-                if (error) throw error;
-
-                const { data: urlData } = supabase.storage.from('resources').getPublicUrl(filePath);
-                result = { success: true, fileUrl: urlData.publicUrl, fileName: filePath };
+                    if (sourceDims.height >= 720) {
+                        const hd = await churnImage(uploadFile.file, '720p');
+                        variantsToUpload.push({ file: hd, suffix: '_720p', quality: '720p' });
+                        qualitiesAvailable.push('720p');
+                    }
+                    if (sourceDims.height >= 1080) {
+                        const fhd = await churnImage(uploadFile.file, '1080p');
+                        variantsToUpload.push({ file: fhd, suffix: '_1080p', quality: '1080p' });
+                        qualitiesAvailable.push('1080p');
+                    }
+                } catch (churnErr) {
+                    console.warn('[Churn] Multi-quality churn failed, falling back to original only', churnErr);
+                }
             }
 
-            if (!result.success) {
-                throw new Error(result.error || 'Upload failed');
+            // 2. BATCH UPLOAD: Upload all variants with a CONSISTENT timestamp
+            let mainResult: any = null;
+            const uploadedVariants: string[] = [];
+            
+            // Calculate a common base filename for all variants to keep suffixes aligned
+            const commonTimestamp = Date.now();
+            const cleanBaseName = uploadFile.name.replace(/\.[^/.]+$/, '').replace(/[^a-zA-Z0-9.-]/g, '_');
+            const cleanExt = uploadFile.name.split('.').pop();
+            const variantBase = `${finalFolder}/${commonTimestamp}-${cleanBaseName}`;
+
+            for (const variant of variantsToUpload) {
+                let result;
+                const variantFileName = variant.suffix === '_4k' 
+                    ? `${variantBase}.${cleanExt}`
+                    : `${variantBase}${variant.suffix}.${cleanExt}`;
+
+                if (storageProvider === 'b2') {
+                    result = await backblazeStorage.uploadFile(
+                        variant.file,
+                        finalFolder,
+                        (progress) => {
+                            if (variant.suffix === '_4k') {
+                                setFiles((prev) =>
+                                    prev.map((f) => (f.id === uploadFile.id ? { ...f, progress: Math.min(progress, 90) } : f))
+                                );
+                            }
+                        },
+                        variantFileName // FORCE CONSISTENT NAME
+                    );
+                } else {
+                    const filePath = variantFileName;
+                    const { data, error } = await supabase.storage.from('resources').upload(filePath, variant.file);
+                    if (error) throw error;
+                    const { data: urlData } = supabase.storage.from('resources').getPublicUrl(filePath);
+                    result = { success: true, fileUrl: urlData.publicUrl, fileName: filePath };
+                }
+
+                if (result.success) {
+                    if (variant.quality === '4k') mainResult = result;
+                }
             }
 
-            // 1.5 Detect Aspect Ratio for images
+            if (!mainResult || !mainResult.success) {
+                throw new Error(mainResult?.error || 'Upload failed');
+            }
+
+            // 3. Detect Aspect Ratio
             let aspectRatio = '1:1';
-            if (uploadFile.type.startsWith('image')) {
+            if (isImage) {
                 aspectRatio = await mediaService.detectAspectRatio(uploadFile.file);
             }
 
-            // 2. Automated SQL Sync based on Registration Mode
+            // 4. Automated SQL Sync based on Registration Mode
             if (regMode === 'resource') {
                 const tagsRaw = useSharedMetadata ? sharedMetadata.tags : uploadFile.stagedTags;
                 const tagsArray = tagsRaw.split(',').map(t => t.trim()).filter(Boolean);
@@ -241,7 +354,7 @@ const BulkUploadManager = () => {
                 const { error: sqlError } = await supabase.from('resources').insert({
                     title: useSharedMetadata && sharedMetadata.title ? sharedMetadata.title : uploadFile.stagedTitle,
                     description: (useSharedMetadata ? sharedMetadata.description : uploadFile.stagedDescription) || 'Uploaded via Advanced B2 Cloud Manager',
-                    url: result.fileUrl || '',
+                    url: mainResult.fileUrl || '',
                     type: uploadFile.type.split('/')[0] || 'document',
                     category: category,
                     tags: tagsArray,
@@ -252,17 +365,11 @@ const BulkUploadManager = () => {
                 if (sqlError) throw sqlError;
             }
             else if (regMode === 'carousel_item' && finalCarouselId) {
-                // GO HAM: If instant publish is ON, ensure the parent carousel is also published
                 if (isInstantPublish) {
-                    await (supabase as any)
-                        .from('media_content')
-                        .update({ status: 'published' })
-                        .eq('id', finalCarouselId);
+                    await (supabase as any).from('media_content').update({ status: 'published' }).eq('id', finalCarouselId);
                 }
 
-                // Get the current max order_index for this carousel
-                const { data: currentItems } = await (supabase
-                    .from('media_items' as any) as any)
+                const { data: currentItems } = await (supabase.from('media_items' as any) as any)
                     .select('order_index')
                     .eq('content_id', finalCarouselId)
                     .order('order_index', { ascending: false })
@@ -272,16 +379,18 @@ const BulkUploadManager = () => {
 
                 const { error: sqlError } = await (supabase.from('media_items' as any) as any).insert({
                     content_id: finalCarouselId,
-                    type: uploadFile.type.startsWith('image') ? 'image' :
-                        uploadFile.type === 'application/pdf' ? 'pdf' : 'video',
-                    file_path: result.fileName,
-                    file_url: result.fileUrl,
+                    type: isImage ? 'image' : uploadFile.type === 'application/pdf' ? 'pdf' : 'video',
+                    file_path: mainResult.fileName,
+                    file_url: mainResult.fileUrl,
                     order_index: nextOrder,
                     status: isInstantPublish ? 'published' : 'draft',
                     metadata: {
                         original_name: uploadFile.name,
                         title: uploadFile.stagedTitle,
                         aspect_ratio: aspectRatio,
+                        qualities: qualitiesAvailable, 
+                        width: sourceDims.width,
+                        height: sourceDims.height,
                         ...(useSharedMetadata ? {
                             shared_title: sharedMetadata.title,
                             shared_description: sharedMetadata.description
@@ -294,18 +403,14 @@ const BulkUploadManager = () => {
             setFiles((prev) =>
                 prev.map((f) =>
                     f.id === uploadFile.id
-                        ? { ...f, status: 'success', progress: 100, url: result.fileUrl }
+                        ? { ...f, status: 'success', progress: 100, url: mainResult.fileUrl }
                         : f
                 )
             );
         } catch (error: any) {
             console.error('Processing error:', error);
             setFiles((prev) =>
-                prev.map((f) =>
-                    f.id === uploadFile.id
-                        ? { ...f, status: 'error', progress: 0, error: error.message }
-                        : f
-                )
+                prev.map((f) => (f.id === uploadFile.id ? { ...f, status: 'error', progress: 0, error: error.message } : f))
             );
         }
     };
@@ -397,7 +502,7 @@ const BulkUploadManager = () => {
         if (type.startsWith('video/')) return <Video className="h-4 w-4" />;
         if (type.startsWith('audio/')) return <Music className="h-4 w-4" />;
         if (type.includes('pdf')) return <FileText className="h-4 w-4" />;
-        return <File className="h-4 w-4" />;
+        return <FileIcon className="h-4 w-4" />;
     };
 
     const formatSize = (bytes: number): string => {

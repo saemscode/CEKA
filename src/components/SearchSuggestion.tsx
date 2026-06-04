@@ -1,7 +1,6 @@
 // src/components/search/SearchSuggestion.tsx
 import React, { useState, useEffect, useCallback } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Search, FileText, Book, Gavel, MessageSquare, TrendingUp, Clock, X } from 'lucide-react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -10,6 +9,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { searchService, SearchSuggestion as SearchSuggestionType } from '@/lib/searchService';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { translate } from '@/lib/utils';
+import {
+  SearchIcon, SearchSquareIcon, SearchListIcon, SearchLayerIcon, SearchFileIcon,
+  CampaignIcon, ConstitutionChapterIcon, ConstitutionSectionIcon, CivicGlossaryIcon,
+  CarouselSlideIcon, ClockIcon, CloseIcon, TrendingUpIcon
+} from '@/components/ui/CustomIcons';
 
 interface SearchSuggestionProps {
   isMobile?: boolean;
@@ -33,22 +37,23 @@ const SearchSuggestion: React.FC<SearchSuggestionProps> = ({
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [debouncedQuery, setDebouncedQuery] = useState('');
   const navigate = useNavigate();
+  const location = useLocation();
   const { language } = useLanguage();
+
+  const isOnSearchPage = location.pathname === '/search';
 
   const getTypeIcon = (type: string) => {
     switch (type) {
-      case 'resource':
-        return <FileText className="h-4 w-4" />;
-      case 'blog':
-        return <Book className="h-4 w-4" />;
-      case 'bill':
-        return <Gavel className="h-4 w-4" />;
-      case 'discussion':
-        return <MessageSquare className="h-4 w-4" />;
-      case 'campaign':
-        return <TrendingUp className="h-4 w-4" />;
-      default:
-        return <FileText className="h-4 w-4" />;
+      case 'bill':                 return <SearchSquareIcon className="h-4 w-4" />;
+      case 'blog':                 return <SearchListIcon className="h-4 w-4" />;
+      case 'resource':             return <SearchFileIcon className="h-4 w-4" />;
+      case 'discussion':           return <SearchLayerIcon className="h-4 w-4" />;
+      case 'campaign':             return <CampaignIcon className="h-4 w-4" />;
+      case 'constitution_chapter': return <ConstitutionChapterIcon className="h-4 w-4" />;
+      case 'constitution_section': return <ConstitutionSectionIcon className="h-4 w-4" />;
+      case 'civic_glossary':       return <CivicGlossaryIcon className="h-4 w-4" />;
+      case 'carousel_slide':       return <CarouselSlideIcon className="h-4 w-4" />;
+      default:                     return <SearchIcon size={16} />;
     }
   };
 
@@ -110,25 +115,26 @@ const SearchSuggestion: React.FC<SearchSuggestionProps> = ({
   const handleSubmit = useCallback((e: React.FormEvent) => {
     e.preventDefault();
     const trimmedQuery = query.trim();
-    if (trimmedQuery) {
-      if (onSearch) {
-        onSearch(trimmedQuery);
-      } else {
-        navigate(`/search?q=${encodeURIComponent(trimmedQuery)}`);
-      }
-      setShowSuggestions(false);
-    }
-  }, [query, navigate, onSearch]);
+    if (!trimmedQuery) return;
+    setShowSuggestions(false);
+    setQuery('');
+    navigate(`/search?q=${encodeURIComponent(trimmedQuery)}`);
+  }, [query, navigate]);
 
   const handleSuggestionClick = useCallback((suggestion: SearchSuggestionType) => {
-    navigate(`/search?q=${encodeURIComponent(suggestion.title)}`);
     setShowSuggestions(false);
+    setQuery('');
+    if (suggestion.url && suggestion.url !== '/search') {
+      navigate(suggestion.url);
+    } else {
+      navigate(`/search?q=${encodeURIComponent(suggestion.title)}`);
+    }
   }, [navigate]);
 
   const handlePopularSearchClick = useCallback((searchTerm: string) => {
-    setQuery(searchTerm);
-    navigate(`/search?q=${encodeURIComponent(searchTerm)}`);
+    setQuery('');
     setShowSuggestions(false);
+    navigate(`/search?q=${encodeURIComponent(searchTerm)}`);
   }, [navigate]);
 
   const clearSearch = useCallback(() => {
@@ -157,13 +163,15 @@ const SearchSuggestion: React.FC<SearchSuggestionProps> = ({
     visible: { opacity: 1, y: 0 },
   };
 
+  if (isOnSearchPage) return null;
+
   return (
     <div className={`relative ${className}`}>
       <form onSubmit={handleSubmit} className="relative">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            type="search"
+            type="text"
             placeholder={translate("Search resources, bills, blog posts...", language)}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
@@ -180,7 +188,7 @@ const SearchSuggestion: React.FC<SearchSuggestionProps> = ({
               className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 rounded-full bg-muted/50 flex items-center justify-center hover:bg-muted transition-colors"
               aria-label="Clear search"
             >
-              <X className="h-3 w-3" />
+              <CloseIcon className="h-3 w-3" />
             </button>
           )}
         </div>
@@ -255,7 +263,7 @@ const SearchSuggestion: React.FC<SearchSuggestionProps> = ({
             ) : popularSearches.length > 0 && (
               <div className="p-4">
                 <div className="flex items-center space-x-2 mb-3">
-                  <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                  <TrendingUpIcon className="h-4 w-4 text-muted-foreground" />
                   <span className="text-sm font-medium">Popular Searches</span>
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -265,7 +273,7 @@ const SearchSuggestion: React.FC<SearchSuggestionProps> = ({
                       onClick={() => handlePopularSearchClick(term)}
                       className="px-3 py-1.5 text-sm bg-muted/50 hover:bg-muted rounded-lg transition-all duration-200 flex items-center space-x-1"
                     >
-                      <Clock className="h-3 w-3" />
+                      <ClockIcon className="h-3 w-3" />
                       <span>{term}</span>
                     </button>
                   ))}
@@ -275,7 +283,7 @@ const SearchSuggestion: React.FC<SearchSuggestionProps> = ({
             
             <div className="border-t border-border/30 p-3">
               <div className="text-xs text-muted-foreground">
-                Search across: Resources, Bills, Blog Posts, Discussions
+                Search across: Bills, Blog Posts, Resources, Discussions, Constitution, Glossary, Campaigns, Featured
               </div>
             </div>
           </motion.div>

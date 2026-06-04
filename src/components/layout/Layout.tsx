@@ -34,7 +34,7 @@ const Layout = ({ children, hideBottomNav, hideBackButton }: LayoutProps) => {
   };
 
   return (
-    <div className="flex min-h-screen flex-col relative overflow-x-hidden">
+    <div className="flex min-h-screen flex-col relative">
       <MaintenanceBanner ref={bannerRef} />
       <Navbar ref={navbarRef} isFixed={isFixed} />
       {isFixed && <div style={{ height: navbarHeight, pointerEvents: 'none' }} />}
@@ -45,20 +45,18 @@ const Layout = ({ children, hideBottomNav, hideBackButton }: LayoutProps) => {
       <Footer />
       {!hideBottomNav && <BottomNavbar />}
 
-      {/* Restore Handle - Minimalist iOS-inspired bar 2rem off the right border */}
       <AnimatePresence>
         {(isAIHidden || isDonationHidden) && (
           <motion.div
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: 20 }}
-            className="fixed right-8 top-1/2 -translate-y-1/2 z-[3000]"
+            className="fixed right-2 sm:right-8 top-1/2 -translate-y-1/2 z-[3000]"
           >
             <motion.button
               drag="x"
               dragConstraints={{ left: -100, right: 0 }}
               onDragEnd={(_, info) => {
-                // Swipe left restores both
                 if (info.offset.x < -20) {
                   setIsAIHidden(false);
                   setIsDonationHidden(false);
@@ -68,18 +66,18 @@ const Layout = ({ children, hideBottomNav, hideBackButton }: LayoutProps) => {
                 setIsAIHidden(false);
                 setIsDonationHidden(false);
               }}
-              className="w-1.5 h-24 bg-black/20 dark:bg-white/20 backdrop-blur-3xl rounded-full transition-all cursor-pointer group relative border border-white/10 dark:border-white/5"
+              className="w-2.5 sm:w-1.5 h-20 bg-black/50 dark:bg-white/50 sm:bg-black/20 sm:dark:bg-white/20 rounded-full transition-all cursor-pointer group relative border border-black/10 dark:border-white/20 shadow-[0_0_12px_rgba(0,0,0,0.15)]"
               title="Swipe left to restore"
             >
-              <div className="absolute inset-y-0 -left-6 -right-6 bg-transparent" /> {/* Hitbox */}
-              
-              {/* Subtle Indicator */}
-              <motion.div 
+              <div className="absolute inset-y-0 -left-5 -right-5 bg-transparent" />{/* Hitbox */}
+
+              {/* Arrow indicator — always slightly visible on mobile, hover on desktop */}
+              <motion.div
                 animate={{ x: [-2, 0, -2] }}
-                transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
-                className="absolute -left-4 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity"
+                transition={{ repeat: Infinity, duration: 2.5, ease: 'easeInOut' }}
+                className="absolute -left-5 top-1/2 -translate-y-1/2 opacity-60 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
               >
-                <div className="w-1 h-3 bg-black/20 dark:bg-white/20 rounded-full" />
+                <div className="w-1.5 h-4 bg-black/40 dark:bg-white/40 rounded-full" />
               </motion.div>
             </motion.button>
           </motion.div>

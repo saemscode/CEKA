@@ -28,7 +28,7 @@ export function ThemeToggle() {
     >
       <motion.div
         initial={{ scale: 1 }}
-        animate={{ 
+        animate={{
           scale: isAnimating ? [1, 0.8, 1] : 1,
           rotate: isAnimating ? [0, 180, 360] : 0
         }}

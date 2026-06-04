@@ -58,28 +58,68 @@ export interface ModerationQueueItem {
 const ROOT_ADMIN_EMAIL = "civiceducationkenya@gmail.com";
 
 class AdminService {
+  private isAdminCached: boolean | null = null;
+  private lastCheckTime: number = 0;
+  private CACHE_TTL = 1000 * 60 * 5; // 5 minutes
   /**
    * Check if current user is admin using secure user_roles table
+   * Hardened: Handles AbortError and includes retry logic for flaky connections
    */
-  async isUserAdmin(): Promise<boolean> {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return false;
+  async isUserAdmin(retryCount = 0): Promise<boolean> {
+    // Return cached result if valid
+    const now = Date.now();
+    if (this.isAdminCached !== null && (now - this.lastCheckTime) < this.CACHE_TTL) {
+      return this.isAdminCached;
+    }
 
-      // Root Bypass for legacy support
-      if (user.email === ROOT_ADMIN_EMAIL) return true;
+    try {
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      
+      if (authError) {
+        if (authError.name === 'AbortError' && retryCount < 3) {
+          console.warn(`[Admin] Auth check aborted, retrying (${retryCount + 1}/3)...`);
+          await new Promise(resolve => setTimeout(resolve, 200 * (retryCount + 1)));
+          return this.isUserAdmin(retryCount + 1);
+        }
+        throw authError;
+      }
+
+      if (!user) {
+        this.isAdminCached = false;
+        this.lastCheckTime = now;
+        return false;
+      }
+
+      // Root Bypass
+      if (user.email === ROOT_ADMIN_EMAIL) {
+        this.isAdminCached = true;
+        this.lastCheckTime = now;
+        return true;
+      }
 
       // Primary check: user_roles table via RPC
       const { data: hasAdminRole, error: rpcError } = await supabase.rpc('check_user_is_admin');
+      
+      if (rpcError) {
+        if (rpcError.name === 'AbortError' && retryCount < 3) {
+          console.warn(`[Admin] RPC check aborted, retrying (${retryCount + 1}/3)...`);
+          return this.isUserAdmin(retryCount + 1);
+        }
+      }
+
       if (!rpcError && hasAdminRole) return true;
 
       // Fallback: check user_roles table directly
-      const { data: roleData } = await supabase
+      const { data: roleData, error: roleError } = await supabase
         .from('user_roles')
         .select('role')
         .eq('user_id', user.id)
         .eq('role', 'admin')
         .maybeSingle();
+
+      if (roleError && roleError.name === 'AbortError' && retryCount < 3) {
+        return this.isUserAdmin(retryCount + 1);
+      }
 
       if (roleData) return true;
 
@@ -90,11 +130,26 @@ class AdminService {
         .eq('id', user.id)
         .maybeSingle();
 
-      return profile?.is_admin || false;
-    } catch (error) {
+      const isAdmin = (profile?.is_admin || false);
+      this.isAdminCached = isAdmin;
+      this.lastCheckTime = now;
+      return isAdmin;
+    } catch (error: any) {
+      if (error?.name === 'AbortError') {
+        console.warn('[Admin] Check aborted (likely unmount)');
+        return this.isAdminCached || false;
+      }
       console.error('Admin check error:', error);
       return false;
     }
+  }
+
+  /**
+   * Manual cache invalidation (e.g. on logout/login)
+   */
+  invalidateAdminCache() {
+    this.isAdminCached = null;
+    this.lastCheckTime = 0;
   }
 
   async getAdminNotifications(): Promise<AdminNotification[]> {

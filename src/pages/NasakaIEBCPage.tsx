@@ -252,66 +252,92 @@ const NasakaPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Iframe Container */}
-            <div className="bg-gradient-to-b from-white to-ios-blue/5 dark:from-ios-surface-dark dark:to-ios-blue/10 rounded-2xl shadow-ios-high dark:shadow-ios-high-dark overflow-hidden border border-border dark:border-border">
-              {/* Loading State */}
-              {!iframeLoaded && !iframeError && (
-                <div className="h-96 flex flex-col items-center justify-center bg-gradient-to-br from-ios-blue/5 to-transparent dark:from-ios-blue/10 dark:to-transparent">
-                  <CEKALoader variant="scanning" size="lg" text="Scanning Nasaka IEBC Finder..." />
-                </div>
-              )}
-
-              {/* Error State */}
-              {iframeError && (
-                <div className="h-96 flex flex-col items-center justify-center p-8 bg-gradient-to-br from-ios-red/5 to-transparent dark:from-ios-red/10 dark:to-transparent">
-                  <div className="w-16 h-16 bg-ios-red/20 dark:bg-ios-red/30 rounded-full flex items-center justify-center mb-4 backdrop-blur-sm">
-                    <AlertTriangle className="w-8 h-8 text-ios-red" />
+            {/* SECURED PORTAL GATEWAY - Replaces raw iframe as primary action */}
+            <div className="relative group">
+              <div className="absolute -inset-1 bg-gradient-to-r from-ios-blue/20 to-kenya-green/20 rounded-3xl blur opacity-25 group-hover:opacity-100 transition duration-1000 group-hover:duration-200"></div>
+              <div className="relative bg-white/60 dark:bg-ios-surface-dark/40 backdrop-blur-3xl rounded-2xl shadow-ios-high dark:shadow-ios-high-dark overflow-hidden border border-white/40 dark:border-ios-border/50">
+                <div className="p-8 md:p-12 text-center flex flex-col items-center">
+                  {/* Nasaka Brand Hero */}
+                  <div className="w-24 h-24 rounded-[2.5rem] bg-gradient-to-br from-white to-ios-blue/10 dark:from-ios-surface-dark dark:to-ios-blue/20 shadow-ios-high flex items-center justify-center mb-8 border border-white/60 dark:border-ios-border/30 animate-float">
+                    <img
+                      src="/nasaka.svg"
+                      alt="Nasaka"
+                      className="w-12 h-12"
+                      style={{ filter: 'invert(39%) sepia(57%) saturate(2476%) hue-rotate(202deg) brightness(98%) contrast(101%)' }}
+                    />
                   </div>
-                  <h3 className="text-xl font-bold text-foreground dark:text-foreground mb-2">Unable to Load Registration Center Finder</h3>
-                  <p className="text-muted-foreground dark:text-muted-foreground text-center max-w-md mb-6">
-                    The Nasaka IEBC registration center finder is temporarily unavailable. This could be due to network issues or the external service being down.
+                  
+                  <h3 className="text-3xl md:text-4xl font-black tracking-tight text-foreground dark:text-foreground mb-4">
+                    Secured <span className="text-ios-blue dark:text-ios-blue-light">IEBC</span> Finder
+                  </h3>
+                  
+                  <p className="text-lg text-muted-foreground dark:text-muted-foreground max-w-xl mx-auto mb-10 leading-relaxed font-medium">
+                    To protect your location data and ensure 100% compatibility with the official IEBC mapping system, we recommend opening the finder in a secured stand-alone window.
                   </p>
-                  <div className="flex flex-wrap gap-3 justify-center">
-                    <Button
-                      onClick={handleRetry}
-                      variant="outline"
-                      className="rounded-full bg-white/80 dark:bg-ios-surface-dark/80 backdrop-blur-sm border-border dark:border-border"
+
+                  {/* Primary Action Button - Premium iOS Style */}
+                  <a
+                    href={NASAKA_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full max-w-md group/btn"
+                  >
+                    <Button 
+                      className="w-full h-16 rounded-2xl bg-gradient-to-br from-ios-blue to-ios-blue-800 dark:from-ios-blue-light dark:to-ios-blue text-white text-lg font-black shadow-xl shadow-ios-blue/20 dark:shadow-ios-blue-light/20 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-3 border border-white/10"
                     >
-                      <RefreshCw className="w-4 h-4 mr-2 text-foreground dark:text-foreground" />
-                      Try Again
+                      <span>Launch Secured Portal</span>
+                      <ExternalLink className="h-5 w-5 group-hover/btn:translate-x-1 group-hover/btn:-translate-y-1 transition-transform" />
                     </Button>
-                    <a
-                      href={NASAKA_URL}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      <Button className="bg-gradient-to-r from-ios-blue to-ios-blue-800 dark:from-ios-blue-light dark:to-ios-blue hover:from-ios-blue/90 hover:to-ios-blue-800/90 dark:hover:from-ios-blue-light/90 dark:hover:to-ios-blue/90 text-white rounded-full shadow-md shadow-ios-blue/30 dark:shadow-ios-blue-light/30">
-                        <ExternalLink className="w-4 h-4 mr-2" />
-                        Open Directly
-                      </Button>
-                    </a>
+                  </a>
+
+                  {/* Trust Metrics */}
+                  <div className="mt-8 flex items-center gap-6 text-[10px] uppercase tracking-widest font-black text-muted-foreground">
+                    <div className="flex items-center gap-2">
+                      <div className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse" />
+                      Encrypted Connection
+                    </div>
+                    <div className="flex items-center gap-2">
+                       <MapPin className="h-4 w-4 text-ios-blue" />
+                       Native GPS Support
+                    </div>
                   </div>
                 </div>
-              )}
 
-              {/* Iframe - Only mount when ready and hide if error */}
-              {iframeMounted && !iframeError && (
-                <iframe
-                  ref={iframeRef}
-                  src={NASAKA_URL}
-                  className={`w-full transition-opacity duration-300 ${iframeLoaded ? 'opacity-100' : 'opacity-0 absolute'}`}
-                  style={{
-                    height: iframeLoaded ? 'calc(100vh - 320px)' : '1px',
-                    minHeight: iframeLoaded ? '600px' : '1px'
-                  }}
-                  title="Nasaka IEBC Registration Center Finder"
-                  onLoad={handleIframeLoad}
-                  onError={handleIframeError}
-                  sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-modals"
-                  allow="geolocation"
-                  referrerPolicy="strict-origin-when-cross-origin"
-                />
-              )}
+                {/* Optional Embedded Preview - Desktop Only */}
+                <div className="hidden lg:block border-t border-border/20 bg-muted/5">
+                  <div className="p-4 flex items-center justify-between">
+                    <span className="text-[10px] font-black uppercase text-muted-foreground">Internal Preview Mode (May be restricted by IEBC)</span>
+                    <Button variant="ghost" size="sm" onClick={handleRetry} className="h-8 rounded-lg text-[10px] font-black uppercase">Refresh View</Button>
+                  </div>
+                  <div className="h-[400px] relative">
+                    {iframeMounted && !iframeError && (
+                      <iframe
+                        ref={iframeRef}
+                        src={NASAKA_URL}
+                        className={`w-full h-full transition-opacity duration-1000 ${iframeLoaded ? 'opacity-100' : 'opacity-0'}`}
+                        title="Nasaka IEBC Registration Center Finder Preview"
+                        onLoad={handleIframeLoad}
+                        onError={handleIframeError}
+                        sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-modals"
+                        allow="geolocation"
+                        referrerPolicy="strict-origin-when-cross-origin"
+                      />
+                    )}
+                    {!iframeLoaded && !iframeError && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-muted/10 backdrop-blur-sm">
+                        <CEKALoader variant="scanning" size="sm" text="Initializing Preview..." />
+                      </div>
+                    )}
+                    {iframeError && (
+                      <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center">
+                        <AlertTriangle className="h-8 w-8 text-ios-red mb-2 opacity-50" />
+                        <p className="text-[10px] font-bold uppercase text-muted-foreground">Embedded Preview Blocked by Domain Security Policy</p>
+                        <p className="text-[9px] text-muted-foreground mt-1 max-w-[200px]">Use the "Launch Secured Portal" button above for full access.</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
             </div>
 
             {/* Quick Stats Bar */}

@@ -1,22 +1,32 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MoreHorizontal, ExternalLink, X, Smartphone, Globe } from 'lucide-react';
+import { X, Smartphone, Globe } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { MoreHorizontalIcon, ExternalLinkIcon } from '@/components/ui/CustomIcons';
 
 const InAppBrowserBanner: React.FC = () => {
     const [isVisible, setIsVisible] = useState(false);
-    
+    const [isDark, setIsDark] = useState(false);
+
     useEffect(() => {
         const ua = navigator.userAgent || navigator.vendor || (window as any).opera;
         const isInstagram = ua.indexOf('Instagram') > -1;
         const isFB = (ua.indexOf('FBAN') > -1) || (ua.indexOf('FBAV') > -1);
-        
+
         if (isInstagram || isFB) {
-            // Delay showing to ensure it's not jarring
             const timer = setTimeout(() => setIsVisible(true), 1500);
             return () => clearTimeout(timer);
         }
+    }, []);
+
+    // Detect and track dark mode
+    useEffect(() => {
+        const checkDark = () => setIsDark(document.documentElement.classList.contains('dark'));
+        checkDark();
+        const observer = new MutationObserver(checkDark);
+        observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+        return () => observer.disconnect();
     }, []);
 
     if (!isVisible) return null;
@@ -33,7 +43,7 @@ const InAppBrowserBanner: React.FC = () => {
                     <div className="w-full max-w-md bg-white/20 dark:bg-black/40 backdrop-blur-3xl border border-white/30 dark:border-white/10 rounded-[32px] shadow-[0_20px_50px_rgba(0,0,0,0.3)] overflow-hidden flex flex-col">
                         {/* iOS Style Handle */}
                         <div className="h-1.5 w-12 bg-white/30 rounded-full mx-auto mt-3 mb-1" />
-                        
+
                         <div className="p-6 pt-2">
                             <div className="flex items-start justify-between mb-4">
                                 <div className="space-y-1">
@@ -45,40 +55,57 @@ const InAppBrowserBanner: React.FC = () => {
                                         Instagram browser may be unstable. For full functionality, open in your system browser.
                                     </p>
                                 </div>
-                                <button 
+                                <button
                                     onClick={() => setIsVisible(false)}
-                                    className="p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+                                    className="p-2 rounded-full bg-white/10 dark:bg-white/10 hover:bg-white/20 dark:hover:bg-white/20 transition-colors"
                                 >
-                                    <X className="w-4 h-4 text-slate-500" />
+                                    <X className="w-4 h-4 text-slate-500 dark:text-slate-300" />
                                 </button>
                             </div>
 
-                            {/* Visual Instructions */}
+                            {/* Visual Instructions — theme-aware */}
                             <div className="relative rounded-2xl overflow-hidden bg-black/5 dark:bg-white/5 border border-white/10 flex flex-col">
-                                <img 
-                                    src="/assets/iab-guide.jpg" 
-                                    alt="Browser Guide" 
+                                {/* Theme-responsive image */}
+                                <img
+                                    src={isDark ? '/assets/iab-guide-dark.jpg' : '/assets/iab-guide.jpg'}
+                                    alt="Browser Guide"
                                     className="w-full h-auto opacity-90"
                                 />
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex flex-col justify-end p-4">
+                                {/* Overlay — adapts gradient tint for both modes */}
+                                <div className={cn(
+                                    'absolute inset-0 flex flex-col justify-end p-4',
+                                    isDark
+                                        ? 'bg-gradient-to-t from-black/85 via-black/30 to-transparent'
+                                        : 'bg-gradient-to-t from-black/75 via-black/20 to-transparent'
+                                )}>
                                     <div className="space-y-3">
                                         <div className="flex items-center gap-3">
-                                            <div className="w-6 h-6 rounded-full bg-kenya-green flex items-center justify-center text-[10px] font-black text-white shadow-lg">1</div>
-                                            <p className="text-[11px] font-bold text-white uppercase tracking-wider flex items-center gap-2">
-                                                Tap the three dots <MoreHorizontal className="w-4 h-4 inline" /> in the top right
+                                            <div className="w-6 h-6 rounded-full bg-kenya-green flex items-center justify-center text-[10px] font-black text-white shadow-lg flex-shrink-0">1</div>
+                                            <p className={cn(
+                                                'text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5',
+                                                isDark ? 'text-white' : 'text-white'
+                                            )}>
+                                                Tap the three dots
+                                                <MoreHorizontalIcon size={16} className="inline text-white" />
+                                                in the top right
                                             </p>
                                         </div>
                                         <div className="flex items-center gap-3">
-                                            <div className="w-6 h-6 rounded-full bg-kenya-green flex items-center justify-center text-[10px] font-black text-white shadow-lg">2</div>
-                                            <p className="text-[11px] font-bold text-white uppercase tracking-wider flex items-center gap-2">
-                                                Select <ExternalLink className="w-4 h-4 inline" /> 'Open in System Browser'
+                                            <div className="w-6 h-6 rounded-full bg-kenya-green flex items-center justify-center text-[10px] font-black text-white shadow-lg flex-shrink-0">2</div>
+                                            <p className={cn(
+                                                'text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5',
+                                                isDark ? 'text-white' : 'text-white'
+                                            )}>
+                                                Select
+                                                <ExternalLinkIcon size={14} className="inline text-white" />
+                                                'Open in System Browser'
                                             </p>
                                         </div>
                                     </div>
                                 </div>
                             </div>
 
-                            <button 
+                            <button
                                 onClick={() => setIsVisible(false)}
                                 className="w-full mt-5 py-4 bg-gradient-to-r from-kenya-green to-primary rounded-2xl text-white font-black text-xs uppercase tracking-[0.2em] shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2"
                             >
@@ -86,7 +113,7 @@ const InAppBrowserBanner: React.FC = () => {
                                 I Understood
                             </button>
                         </div>
-                        
+
                         {/* Bottom Sheen */}
                         <div className="h-2 bg-gradient-to-r from-transparent via-white/10 to-transparent" />
                     </div>

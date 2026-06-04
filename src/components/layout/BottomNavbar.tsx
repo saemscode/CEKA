@@ -1,6 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, FileText, Upload, Users, User } from 'lucide-react';
+import { 
+  NavHomeIcon, 
+  NavFilesIcon, 
+  NavSearchIcon, 
+  NavCommentIcon, 
+  NavProfileIcon 
+} from '@/components/ui/CustomIcons';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/providers/AuthProvider';
@@ -26,66 +32,85 @@ const BottomNavbar = () => {
     {
       name: 'Home',
       path: '/',
-      icon: <Home className="h-5 w-5" />
+      icon: <NavHomeIcon />
     },
     {
       name: 'Resources',
       path: '/resources',
-      icon: <FileText className="h-5 w-5" />
+      icon: <NavFilesIcon />
     },
     {
-      name: 'Upload',
-      path: '/resources/upload',
-      icon: <Upload className="h-5 w-5" />
+      name: 'Search',
+      path: '/search',
+      icon: <NavSearchIcon />,
+      isCenter: true
     },
     {
-      name: 'Blog',
+      name: 'Community',
       path: '/blog',
-      icon: <Users className="h-5 w-5" />
+      icon: <NavCommentIcon />
     },
     {
       name: session ? 'Profile' : 'Sign In',
       path: session ? '/profile/settings' : '/auth',
-      icon: <User className="h-5 w-5" />
+      icon: <NavProfileIcon />
     }
   ];
-
-  // Determine icon and text size based on screen width
-  const getIconSize = () => {
-    if (windowWidth < 360) return "h-4 w-4";
-    return "h-5 w-5";
-  };
   
   const getTextSize = () => {
     if (windowWidth < 360) return "text-[10px]";
-    return "text-xs";
+    return "text-[11px]";
   };
 
   return (
-    <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-background border-t shadow-lg w-full max-w-full overflow-x-hidden">
-      <nav className="flex justify-between items-center h-16 px-1 sm:px-2">
+    <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/80 dark:bg-black/80 backdrop-blur-2xl border-t border-border/50 shadow-[0_-5px_20px_rgba(0,0,0,0.05)] w-full max-w-full overflow-visible pb-safe">
+      <nav className="flex justify-around items-end h-16 px-2 relative">
         {navItems.map((item) => {
           const isActive = 
             location.pathname === item.path || 
             (item.path !== '/' && location.pathname.includes(item.path)) ||
             (item.path === '/profile/settings' && location.pathname.startsWith('/profile'));
+
+          if (item.isCenter) {
+            return (
+              <Link
+                key={item.path}
+                to={item.path}
+                className="relative -top-5 flex flex-col items-center justify-center z-50 transition-transform active:scale-90 duration-200"
+              >
+                <div className="h-16 w-16 rounded-full bg-slate-900 dark:bg-primary shadow-[0_8px_30px_rgb(0,0,0,0.2)] dark:shadow-primary/30 flex items-center justify-center border-[5px] border-white dark:border-[#0F172A]">
+                  <NavSearchIcon size={28} className="text-white" />
+                </div>
+              </Link>
+            );
+          }
             
           return (
             <Link
               key={item.path}
               to={item.path}
               className={cn(
-                "flex flex-col items-center justify-center flex-1 min-w-0 h-full transition-all duration-300",
+                "flex flex-col items-center justify-center flex-1 h-full pb-2 transition-all duration-300",
                 isActive 
-                  ? "text-primary" 
-                  : "text-muted-foreground hover:text-primary transition-colors"
+                  ? "text-primary scale-105" 
+                  : "text-muted-foreground/70 hover:text-primary transition-colors"
               )}
             >
-              <div className="flex flex-col items-center px-1">
-                {React.cloneElement(item.icon, { className: getIconSize() })}
-                <span className={`${getTextSize()} mt-1 truncate w-full text-center`}>
+              <div className="flex flex-col items-center">
+                {React.cloneElement(item.icon as React.ReactElement, { 
+                  size: 22,
+                  className: cn("transition-all", isActive && "filter drop-shadow-[0_0_8px_rgba(34,197,94,0.3)]")
+                })}
+                <span className={cn(
+                  getTextSize(), 
+                  "mt-1 font-medium tracking-tight transition-all",
+                  isActive ? "opacity-100" : "opacity-80"
+                )}>
                   {translate(item.name, language)}
                 </span>
+                {isActive && (
+                  <div className="absolute bottom-1 w-1 h-1 rounded-full bg-primary animate-pulse" />
+                )}
               </div>
             </Link>
           );

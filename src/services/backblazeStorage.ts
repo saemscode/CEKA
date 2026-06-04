@@ -135,11 +135,14 @@ class BackblazeStorageService {
     async uploadFile(
         file: File,
         folder: string = 'resources',
-        onProgress?: (progress: number) => void
+        onProgress?: (progress: number) => void,
+        customFileName?: string
     ): Promise<UploadResult> {
-        // Support deep paths (e.g. "carousels/special/2026")
-        const cleanFolderName = folder.endsWith('/') ? folder.slice(0, -1) : folder;
-        const fileName = `${cleanFolderName}/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+        // Support deep paths and ensure no trailing slashes on folder
+        const cleanFolderName = folder.replace(/\/+$/, '');
+        
+        // Use customFileName if provided (for multi-quality variants), otherwise generate a timestamped one
+        const fileName = customFileName || `${cleanFolderName}/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
 
         // Ensure initialized
         await this.initialize();
