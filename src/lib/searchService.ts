@@ -258,10 +258,13 @@ class SearchService {
 
       let totalWeight = 0;
       let hitWeight = 0;
+      const titleLower = (item.title || '').toLowerCase();
       for (const t of queryTokens) {
         const w = tokenWeight(t);
+        const lowerT = t.toLowerCase();
         totalWeight += w;
-        if (haystack.includes(t.toLowerCase())) hitWeight += w;
+        if (titleLower.includes(lowerT)) hitWeight += (w * 3.0);
+        else if (haystack.includes(lowerT)) hitWeight += w;
       }
       const weightedFraction = totalWeight > 0 ? hitWeight / totalWeight : 0;
       // Let semantic weights strictly determine the match score
@@ -549,7 +552,7 @@ class SearchService {
 
     const since = new Date(Date.now() - 72 * 60 * 60 * 1000).toISOString();
     const [billsRes, blogsRes] = await Promise.allSettled([
-      supabase.from('bills').select('id, title, summary, category, created_at')
+      supabase.from('bills').select('id, title, summary, category, created_at, slug')
         .gte('created_at', since).order('created_at', { ascending: false }).limit(limit),
       supabase.from('blog_posts').select('id, title, excerpt, content, tags, created_at, slug')
         .eq('status', 'published').gte('created_at', since)
@@ -564,7 +567,7 @@ class SearchService {
           id: b.id, type: 'bill', title: b.title,
           description: b.summary || '', excerpt: b.summary || '',
           tags: [], county: undefined, created_at: b.created_at, date: b.created_at,
-          url: `/legislative-tracker/bills/${b.id}`, category: b.category || 'Law',
+          url: `/legislative-tracker/bills/${b.slug || b.id}`, category: b.category || 'Law',
           relevanceScore: rScore, matchScore: 0, recencyScore: rScore, countyScore: 0,
         });
       });

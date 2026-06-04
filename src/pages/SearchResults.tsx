@@ -30,6 +30,7 @@ import {
   ClockIcon,
   ChevronRightIcon
 } from '@/components/ui/CustomIcons';
+import { SearchEmptyState } from '@/components/search/SearchEmptyState';
 
 const DEFAULT_FILTERS: FilterState = { types: [], sort: 'relevance', county: '', customFilters: [] };
 
@@ -60,18 +61,18 @@ const SearchResults = () => {
 
   const activeFilterCount = filters.types.length + filters.customFilters.length + (filters.county ? 1 : 0);
 
-  // ── URL SEED — receives query from navbar navigation (/search?q=...) ──
+  // ── URL SEED — syncs ?q= changes to live search (supports trending-topic taps) ──
   const [searchParams] = useSearchParams();
-  const didSeedFromUrl = useRef(false);
 
   useEffect(() => {
-    if (didSeedFromUrl.current) return;
     const urlQuery = searchParams.get('q');
     if (urlQuery && urlQuery.trim()) {
       setQuery(urlQuery.trim());
+    } else if (!urlQuery) {
+      // Clear search when navigating to /search with no q param
+      clearQuery();
     }
-    didSeedFromUrl.current = true;
-  }, [searchParams, setQuery]);
+  }, [searchParams]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (filters.sort !== sortBy) {
@@ -170,9 +171,9 @@ const SearchResults = () => {
               </div>
             </div>
 
-            {/* Dynamic Enrichment Cloud */}
+            {/* Dynamic Enrichment Cloud (Hidden in Zen Mode) */}
             <AnimatePresence>
-              {chips.length > 0 && (
+              {!isRestState && chips.length > 0 && (
                 <motion.div
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: 'auto' }}
@@ -252,23 +253,20 @@ const SearchResults = () => {
 
           {/* Results Area */}
           <div className="mt-12 space-y-8">
-            <header className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-white/5">
-              <div className="flex items-center gap-3">
-                {isRestState ? (
-                  <>
-                    <DiscoveryLayerIcon size={18} className="text-emerald-500 dark:text-emerald-400" />
-                    <span className="text-sm font-medium text-slate-500 dark:text-white/40 uppercase tracking-widest">{translate("Results from Search", language)}</span>
-                  </>
-                ) : (
-                  <>
+            {isRestState ? (
+              /* ZEN MODE EMPTY STATE DASHBOARD */
+              <SearchEmptyState />
+            ) : (
+              /* ACTIVE SEARCH STATE */
+              <>
+                <header className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-white/5">
+                  <div className="flex items-center gap-3">
                     <PerfectMatchIcon size={18} className="text-emerald-500 dark:text-emerald-400" />
                     <span className="text-sm font-medium text-slate-500 dark:text-white/40 uppercase tracking-widest">{results.length} {translate("Matches Found", language)}</span>
-                  </>
-                )}
-              </div>
-            </header>
+                  </div>
+                </header>
 
-            {loading ? (
+                {loading ? (
               <div className="space-y-4">
                 {[1, 2, 3].map(i => (
                   <div key={i} className="bg-slate-50 dark:bg-white/5 rounded-2xl p-6 border border-slate-200 dark:border-white/10">
@@ -302,8 +300,8 @@ const SearchResults = () => {
                                 <div className="flex-shrink-0 p-3 bg-slate-100 dark:bg-white/5 rounded-xl border border-slate-200 dark:border-white/10 group-hover:bg-slate-200 dark:group-hover:bg-white/10 transition-colors">
                                   {getResultIcon(result.type)}
                                 </div>
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-center justify-between gap-2 mb-1">
+                                <div className="flex-1 min-w-0 pr-12">
+                                  <div className="flex items-center justify-between flex-wrap gap-2 mb-1">
                                     <span className="text-xs font-medium text-slate-400 dark:text-white/30 uppercase tracking-wider">{result.category}</span>
                                     {!isRestState && (
                                       <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${rel.color}`}>
@@ -318,7 +316,7 @@ const SearchResults = () => {
                                     {result.excerpt || result.description}
                                   </p>
                                   <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-white/5">
-                                    <div className="flex items-center gap-4 text-xs text-slate-400 dark:text-white/30">
+                                    <div className="flex items-center flex-wrap gap-4 text-xs text-slate-400 dark:text-white/30">
                                       <span className="flex items-center gap-1.5">
                                         <ClockIcon size={12} />
                                         {result.date ? new Date(result.date).toLocaleDateString() : 'Active'}
@@ -401,6 +399,8 @@ const SearchResults = () => {
                   ))}
                 </div>
               </motion.div>
+            )}
+              </>
             )}
           </div>
         </div>

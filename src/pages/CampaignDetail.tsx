@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
@@ -8,347 +7,731 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ShareIcon, Clock, CalendarIcon, Users, HandHelping, Heart, CheckCircle2, MessageSquare } from 'lucide-react';
+import {
+  ShareIcon, Clock, CalendarIcon, Users, HandHelping,
+  Heart, CheckCircle2, MessageSquare, Loader2, Rocket,
+  ExternalLink, TrendingUp, MapPin, Globe, Activity
+} from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/providers/AuthProvider';
+import { CreateCampaignModal } from '@/components/campaigns/CreateCampaignModal';
+import { motion, AnimatePresence } from 'framer-motion';
+// Native HTML Head management (SEO) since HelmetProvider may not be active globally
+import { Helmet } from 'react-helmet-async';
 
-// Mock campaign data - in a real app this would come from an API
-const campaignDetails = {
-  id: '1',
-  title: "Youth Voices in Digital Rights",
-  organizer: {
-    name: "Digital Kenya Coalition",
-    avatar: "/placeholder.svg",
-    verified: true
-  },
-  participants: 347,
-  goal: "Advocate for youth-centered digital policies",
-  type: "Digital",
-  content: "We're bringing together young Kenyans to advocate for better digital rights policies. Our campaign focuses on online privacy, freedom of expression, and digital literacy education for all youth.",
-  detailedDescription: `
-    <p>The Youth Voices in Digital Rights campaign aims to empower young Kenyans to actively participate in digital policy discussions that directly impact their lives.</p>
-    
-    <h3>Our Objectives:</h3>
-    <ul>
-      <li>Increase awareness among youth about their digital rights</li>
-      <li>Facilitate youth participation in policy discussions</li>
-      <li>Advocate for youth-centered digital policies</li>
-      <li>Build capacity for digital rights advocacy</li>
-    </ul>
-    
-    <p>Kenya is undergoing rapid digital transformation, but many young people are unaware of their rights in the digital space or lack the means to have their voices heard in policy discussions. This campaign seeks to bridge that gap and ensure that youth perspectives are central to Kenya's digital future.</p>
-    
-    <p>Through workshops, online forums, and direct engagement with policymakers, we aim to create meaningful change in how digital rights are understood and protected in Kenya.</p>
-  `,
-  progress: 65,
-  targetAmount: 500000,
-  raisedAmount: 325000,
-  currency: "KES",
-  startDate: "2025-01-15",
-  endDate: "2025-07-15",
-  location: "Nairobi, Kenya",
-  coverImage: "/placeholder.svg",
-  gallery: [
-    "/placeholder.svg",
-    "/placeholder.svg",
-    "/placeholder.svg"
-  ],
-  updates: [
-    {
-      id: 1,
-      date: "2025-03-10",
-      title: "First Youth Workshop Completed",
-      content: "We held our first youth workshop with 50 participants. Key outcomes included draft recommendations for digital literacy education in schools."
-    },
-    {
-      id: 2,
-      date: "2025-02-15",
-      title: "Campaign Launch Event",
-      content: "Successfully launched the campaign with over 100 attendees including representatives from the Ministry of ICT."
-    }
-  ],
-  supporters: [
-    { name: "Mark Kimani", amount: 5000, date: "2025-03-05", comment: "Keep up the good work!" },
-    { name: "Jane Wanjiku", amount: 2500, date: "2025-03-03", comment: "Important cause for our youth!" },
-    { name: "Alex Omondi", amount: 10000, date: "2025-02-20", comment: null },
-  ]
+// ── Data fetchers ────────────────────────────────────────────────────────────
+
+const fetchCampaignDetail = async (id: string) => {
+  const { data, error } = await supabase
+    .from('campaigns')
+    .select('*')
+    .eq('id', id)
+    .single();
+  if (error) throw error;
+  return data;
 };
 
-const CampaignDetail = () => {
-  const [comment, setComment] = useState("");
-  const { toast } = useToast();
-  const { id } = useParams<{ id: string }>();
+const fetchCampaignFollowStatus = async (campaignId: string, userId: string) => {
+  const { data, error } = await supabase
+    .from('campaign_participants')
+    .select('user_id')
+    .eq('campaign_id', campaignId)
+    .eq('user_id', userId)
+    .maybeSingle();
+  if (error) throw error && error.code !== 'PGRST116' ? error : null; // Ignore 'not found' errors
+  return !!data;
+};
 
-  // In a real app, fetch the campaign detail using the ID
-  const campaign = campaignDetails;
+const fetchCampaignUpdates = async (campaignId: string) => {
+  const { data } = await (supabase.from('campaign_updates') as any)
+    .select('*')
+    .eq('campaign_id', campaignId)
+    .order('date', { ascending: false });
+  return data || [];
+};
+
+const fetchCampaignSupporters = async (campaignId: string) => {
+  const { data } = await (supabase.from('campaign_supporters') as any)
+    .select('*')
+    .eq('campaign_id', campaignId)
+    .order('date', { ascending: false })
+    .limit(20);
+  return data || [];
+};
+
+const fetchSimilarCampaigns = async (currentId: string) => {
+  const { data } = await supabase
+    .from('campaigns')
+    .select('id, title, description, image_url, current_count, organizer')
+    .eq('status', 'active')
+    .neq('id', currentId)
+    .limit(3);
+  return data || [];
+};
+
+// ── Component ────────────────────────────────────────────────────────────────
+
+const CampaignDetail = () => {
+  const { id } = useParams<{ id: string }>();
+  const [comment, setComment] = useState('');
+  const { toast } = useToast();
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const [isCreatorModalOpen, setIsCreatorModalOpen] = useState(false);
+
+  // ── Queries ──────────────────────────────────────────────────────────────
+
+  const { data: campaign, isLoading, isError } = useQuery({
+    queryKey: ['campaign', id],
+    queryFn: () => fetchCampaignDetail(id!),
+    enabled: !!id,
+  });
+
+  const { data: isFollowing } = useQuery({
+    queryKey: ['campaign_participants', id, user?.id],
+    queryFn: () => fetchCampaignFollowStatus(id!, user!.id),
+    enabled: !!id && !!user,
+  });
+
+  const { data: updates = [] } = useQuery({
+    queryKey: ['campaign_updates', id],
+    queryFn: () => fetchCampaignUpdates(id!),
+    enabled: !!id,
+  });
+
+  const { data: supporters = [] } = useQuery({
+    queryKey: ['campaign_supporters', id],
+    queryFn: () => fetchCampaignSupporters(id!),
+    enabled: !!id,
+  });
+
+  const { data: similarCampaigns = [] } = useQuery({
+    queryKey: ['similar_campaigns', id],
+    queryFn: () => fetchSimilarCampaigns(id!),
+    enabled: !!id,
+  });
+
+  // ── Mutations (Optimistic) ───────────────────────────────────────────────
+
+  const followMutation = useMutation({
+    mutationFn: async (follow: boolean) => {
+      if (follow) {
+        await supabase
+          .from('campaign_participants')
+          .insert({ campaign_id: id, user_id: user!.id });
+      } else {
+        await supabase
+          .from('campaign_participants')
+          .delete()
+          .eq('campaign_id', id)
+          .eq('user_id', user!.id);
+      }
+    },
+    onMutate: async (follow) => {
+      await queryClient.cancelQueries({ queryKey: ['campaign_participants', id, user?.id] });
+      const prev = queryClient.getQueryData(['campaign_participants', id, user?.id]);
+      queryClient.setQueryData(['campaign_participants', id, user?.id], follow);
+      return { prev };
+    },
+    onError: (_err, _variables, context) => {
+      queryClient.setQueryData(['campaign_participants', id, user?.id], context?.prev);
+      toast({ title: 'Error', description: 'Could not update follow status.', variant: 'destructive' });
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['campaign', id] });
+    },
+  });
 
   const handleJoinCampaign = () => {
-    toast({
-      title: "Campaign Joined!",
-      description: "You've successfully joined this campaign. We'll send you updates.",
-    });
+    if (!user) {
+      toast({
+        title: 'Authentication Required',
+        description: 'You must be logged in to join a campaign.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    const currentlyFollowing = !!isFollowing;
+    followMutation.mutate(!currentlyFollowing);
+    if (!currentlyFollowing) {
+      toast({
+        title: 'Campaign Joined!',
+        description: "You've successfully joined this campaign. We'll send you updates.",
+      });
+    } else {
+      toast({ title: 'Campaign Left', description: 'You have stopped following this campaign.' });
+    }
   };
 
   const handleDonate = () => {
     toast({
-      title: "Thank you for your support!",
-      description: "You will be redirected to the payment page.",
+      title: 'Redirecting to Secure Payment',
+      description: 'Your contribution is securely logged onto the CEKA Civic Ledger.',
     });
   };
 
   const handleSubmitComment = (e: React.FormEvent) => {
     e.preventDefault();
     if (comment.trim()) {
-      toast({
-        title: "Comment submitted!",
-        description: "Your comment has been posted.",
-      });
-      setComment("");
+      toast({ title: 'Comment submitted!', description: 'Your comment has been posted.' });
+      setComment('');
     }
   };
 
+  const handleShare = async () => {
+    const url = window.location.href;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: campaign?.title, url });
+      } else {
+        await navigator.clipboard.writeText(url);
+        toast({ title: 'Link copied', description: 'Campaign link copied to clipboard.' });
+      }
+    } catch {
+      await navigator.clipboard.writeText(url);
+      toast({ title: 'Link copied', description: 'Campaign link copied to clipboard.' });
+    }
+  };
+
+  // ── Derived values ───────────────────────────────────────────────────────
+
+  const participantCount = campaign?.current_count || 0;
+  const goalCount = campaign?.goal_count || 0;
+  const raisedAmount = (campaign as any)?.raised_amount || 0;
+  const targetAmount = (campaign as any)?.target_amount || 0;
+  const progressValue = goalCount > 0
+    ? Math.min(Math.round((participantCount / goalCount) * 100), 100)
+    : 0;
+  
+  const hasFinancialGoal = targetAmount > 0;
+  const hasGallery = Array.isArray((campaign as any)?.gallery) && (campaign as any).gallery.length > 0;
+  const isExternal = !!(campaign as any)?.external_url;
+  const currency = (campaign as any)?.currency || 'KES';
+  
+  // Trusted Organizer Meta mapping
+  const organizerMeta = (campaign as any)?.organizer_meta || {};
+  const organizerName = organizerMeta.name || (typeof campaign?.organizer === 'string' ? campaign.organizer : 'Community Organizer');
+  const organizerLogo = organizerMeta.logo_url || '/placeholder.svg';
+  const isVerifiedOrg = !!organizerMeta.verified_org;
+
+  // ── Loading / Error states ───────────────────────────────────────────────
+
+  if (isLoading) {
+    return (
+      <Layout>
+        <div className="flex w-full h-[60vh] items-center justify-center">
+          <Loader2 className="w-8 h-8 animate-spin text-kenya-green" />
+        </div>
+      </Layout>
+    );
+  }
+
+  if (isError || !campaign) {
+    return (
+      <Layout>
+        <div className="flex flex-col w-full h-[60vh] items-center justify-center space-y-4">
+          <p className="text-xl font-bold text-slate-800 dark:text-white">Campaign not found</p>
+          <Button onClick={() => window.history.back()}>Go Back</Button>
+        </div>
+      </Layout>
+    );
+  }
+
+  // Fallback for Helmet if missing dependencies
+  const renderSEO = () => {
+     try {
+       // Only renders if installed properly
+       return (
+         <Helmet>
+           <title>{campaign.title} | CEKA Civic Action</title>
+           <meta name="description" content={campaign.description?.substring(0, 160) || "Join the civic movement on CEKA."} />
+           <meta property="og:title" content={campaign.title} />
+           <meta property="og:description" content={campaign.description?.substring(0, 160) || "Join the civic movement on CEKA."} />
+           <meta property="og:image" content={campaign.image_url || "/og-image.jpeg"} />
+           <meta property="twitter:card" content="summary_large_image" />
+         </Helmet>
+       );
+     } catch (e) {
+       return null;
+     }
+  };
+
+  // ── Render ───────────────────────────────────────────────────────────────
+
   return (
     <Layout>
+      {renderSEO()}
       <div className="container py-6 md:py-10">
-        {/* Hero section with cover image */}
-        <div className="relative h-64 md:h-80 lg:h-96 rounded-xl overflow-hidden mb-6">
+
+        {/* Top nav row */}
+        <div className="flex items-center justify-between mb-8">
+          <Button
+            variant="ghost"
+            onClick={() => window.history.back()}
+            className="text-sm font-bold text-slate-500 dark:text-white/50 hover:text-slate-800 dark:hover:text-white"
+          >
+            ← Back to Explore
+          </Button>
+          <Button
+            className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-full font-bold px-6 shadow-lg shadow-emerald-600/20"
+            onClick={() => setIsCreatorModalOpen(true)}
+          >
+            <Rocket className="w-4 h-4 mr-2" /> Start a Campaign
+          </Button>
+        </div>
+
+        {/* Hero */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+          className="relative h-64 md:h-80 lg:h-96 rounded-2xl overflow-hidden mb-6 shadow-xl"
+        >
           <img
-            src={campaign.coverImage}
+            src={campaign.image_url || '/placeholder.svg'}
             alt={campaign.title}
             className="w-full h-full object-cover"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex flex-col justify-end p-6">
+          {/* Top bevel */}
+          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-6">
             <div className="max-w-2xl">
-              <Badge className="mb-3">{campaign.type}</Badge>
-              <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-white mb-2">
+              <Badge className="mb-3 bg-white/15 backdrop-blur-md border-white/20 text-white font-bold text-xs uppercase tracking-wider">
+                {(campaign as any).type || 'Civic Action'}
+              </Badge>
+              <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-white mb-3 leading-tight">
                 {campaign.title}
               </h1>
-              <div className="flex items-center">
-                <Avatar className="h-8 w-8 border-2 border-white">
-                  <AvatarImage src={campaign.organizer.avatar} alt={campaign.organizer.name} />
-                  <AvatarFallback>{campaign.organizer.name.charAt(0)}</AvatarFallback>
+              <div className="flex items-center gap-2">
+                <Avatar className="h-7 w-7 border-2 border-white/40 shadow-lg">
+                  <AvatarImage src={organizerLogo} alt={organizerName} />
+                  <AvatarFallback className="text-[10px] bg-white/20 text-white font-bold">
+                    {organizerName.charAt(0)}
+                  </AvatarFallback>
                 </Avatar>
-                <div className="ml-2">
-                  <p className="text-white text-sm flex items-center">
-                    {campaign.organizer.name}
-                    {campaign.organizer.verified && (
-                      <CheckCircle2 className="h-3.5 w-3.5 ml-1 text-blue-400" />
-                    )}
-                  </p>
-                </div>
+                <p className="text-white/90 font-semibold text-sm flex items-center gap-1">
+                  {organizerName}
+                  {(isVerifiedOrg || (campaign as any)?.organizer?.verified) && (
+                    <CheckCircle2 className="h-3.5 w-3.5 text-blue-400" />
+                  )}
+                </p>
+                {isExternal && (
+                  <Badge className="ml-1 bg-amber-500/20 border-amber-400/30 text-amber-300 text-[9px] font-bold uppercase tracking-wider">
+                     {organizerMeta.origin_source || 'External Organization'}
+                  </Badge>
+                )}
               </div>
             </div>
           </div>
-        </div>
+        </motion.div>
 
         <div className="grid lg:grid-cols-3 gap-6">
-          {/* Main content */}
+
+          {/* ── Main content ── */}
           <div className="lg:col-span-2">
             <Tabs defaultValue="about">
-              <TabsList className="mb-6">
-                <TabsTrigger value="about">About</TabsTrigger>
-                <TabsTrigger value="updates">Updates</TabsTrigger>
-                <TabsTrigger value="supporters">Supporters</TabsTrigger>
-                <TabsTrigger value="comments">Comments</TabsTrigger>
+              <TabsList className="mb-6 bg-slate-100/80 dark:bg-white/5 p-1 rounded-xl w-full overflow-x-auto flex">
+                <TabsTrigger value="about" className="rounded-lg flex-1">About</TabsTrigger>
+                <TabsTrigger value="updates" className="rounded-lg flex-1">
+                  Updates {updates.length > 0 && `(${updates.length})`}
+                </TabsTrigger>
+                {hasFinancialGoal && (
+                  <TabsTrigger value="supporters" className="rounded-lg flex-1">
+                    Supporters {supporters.length > 0 && `(${supporters.length})`}
+                  </TabsTrigger>
+                )}
+                <TabsTrigger value="comments" className="rounded-lg flex-1">Comments</TabsTrigger>
               </TabsList>
 
-              <TabsContent value="about">
-                <div className="prose dark:prose-invert max-w-none">
-                  <div dangerouslySetInnerHTML={{ __html: campaign.detailedDescription }} />
+              {/* About */}
+              <TabsContent value="about" className="animate-in fade-in slide-in-from-bottom-4">
+                <div className="prose dark:prose-invert max-w-none text-slate-700 dark:text-slate-300 leading-relaxed">
+                  <div
+                    dangerouslySetInnerHTML={{
+                      __html:
+                        (campaign as any).detailed_description ||
+                        (campaign as any).content ||
+                        campaign.description ||
+                        '',
+                    }}
+                  />
                 </div>
 
-                {/* Gallery */}
-                <div className="mt-8">
-                  <h3 className="text-lg font-medium mb-4">Campaign Gallery</h3>
-                  <div className="grid grid-cols-3 gap-4">
-                    {campaign.gallery.map((image, index) => (
-                      <div key={index} className="aspect-square rounded-md overflow-hidden">
-                        <img
-                          src={image}
-                          alt={`Campaign image ${index + 1}`}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                    ))}
+                {/* External link CTA */}
+                {isExternal && (
+                  <a
+                    href={(campaign as any).external_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-6 flex items-center justify-between p-4 rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.03] hover:border-emerald-500/40 transition-colors group"
+                  >
+                    <div>
+                      <p className="text-sm font-bold text-slate-800 dark:text-white">View Original Campaign</p>
+                      <p className="text-xs text-slate-500 dark:text-white/40 mt-0.5">Hosted safely on {organizerName}'s external site</p>
+                    </div>
+                    <ExternalLink className="w-5 h-5 text-slate-400 group-hover:text-emerald-500 transition-colors" />
+                  </a>
+                )}
+
+                {/* Gallery — only renders if gallery data exists */}
+                {hasGallery && (
+                  <div className="mt-8">
+                    <h3 className="text-base font-bold mb-4 text-slate-800 dark:text-white">Campaign Gallery</h3>
+                    <div className="grid grid-cols-3 gap-3">
+                      {(campaign as any).gallery.map((image: string, index: number) => (
+                        <div key={index} className="aspect-square rounded-xl overflow-hidden shadow-sm border border-slate-100 dark:border-white/5">
+                          <img
+                            src={image}
+                            alt={`Campaign image ${index + 1}`}
+                            className="w-full h-full object-cover hover:scale-110 transition-transform duration-500"
+                          />
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                </div>
+                )}
               </TabsContent>
 
-              <TabsContent value="updates">
-                <div className="space-y-6">
-                  {campaign.updates.map((update) => (
-                    <Card key={update.id}>
-                      <CardContent className="p-4">
-                        <div className="flex justify-between items-center mb-2">
-                          <h3 className="font-medium">{update.title}</h3>
-                          <span className="text-sm text-muted-foreground">
-                            {new Date(update.date).toLocaleDateString()}
-                          </span>
-                        </div>
-                        <p className="text-muted-foreground">{update.content}</p>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              </TabsContent>
-
-              <TabsContent value="supporters">
+              {/* Updates */}
+              <TabsContent value="updates" className="animate-in fade-in">
                 <div className="space-y-4">
-                  {campaign.supporters.map((supporter, index) => (
-                    <Card key={index}>
-                      <CardContent className="p-4 flex justify-between items-start">
-                        <div>
-                          <p className="font-medium">{supporter.name}</p>
-                          <p className="text-sm text-muted-foreground mt-1">
-                            {new Date(supporter.date).toLocaleDateString()}
-                          </p>
-                          {supporter.comment && (
-                            <p className="text-sm mt-2 italic">{supporter.comment}</p>
-                          )}
-                        </div>
-                        <Badge variant="outline" className="ml-2">
-                          {campaign.currency} {supporter.amount.toLocaleString()}
-                        </Badge>
-                      </CardContent>
-                    </Card>
-                  ))}
+                  {updates.length === 0 ? (
+                    <div className="py-16 text-center rounded-2xl border border-dashed border-slate-200 dark:border-white/10">
+                      <TrendingUp className="w-8 h-8 mx-auto text-slate-300 dark:text-white/15 mb-3" />
+                      <p className="text-sm font-medium text-slate-500 dark:text-white/40">No updates posted yet.</p>
+                    </div>
+                  ) : (
+                    updates.map((update: any) => (
+                      <Card key={update.id} className="border-slate-200 dark:border-white/10 shadow-sm rounded-2xl overflow-hidden">
+                        <div className="h-0.5 bg-gradient-to-r from-kenya-green to-emerald-400" />
+                        <CardContent className="p-5">
+                          <div className="flex justify-between items-start mb-3">
+                            <h3 className="font-bold text-base text-slate-800 dark:text-white">{update.title}</h3>
+                            <span className="text-xs font-semibold text-slate-400 dark:text-white/30 whitespace-nowrap ml-3">
+                              {new Date(update.date).toLocaleDateString('en-KE', { day: 'numeric', month: 'short', year: 'numeric' })}
+                            </span>
+                          </div>
+                          <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">{update.content}</p>
+                        </CardContent>
+                      </Card>
+                    ))
+                  )}
                 </div>
               </TabsContent>
 
-              <TabsContent value="comments">
+              {/* Supporters — only renders if financial goal exists */}
+              {hasFinancialGoal && (
+                <TabsContent value="supporters" className="animate-in fade-in">
+                  <div className="space-y-3">
+                    {supporters.length === 0 ? (
+                      <div className="py-16 text-center rounded-2xl border border-dashed border-slate-200 dark:border-white/10">
+                        <Heart className="w-8 h-8 mx-auto text-slate-300 dark:text-white/15 mb-3" />
+                        <p className="text-sm font-medium text-slate-500 dark:text-white/40">Be the first to support safely on the CEKA Civic Ledger!</p>
+                      </div>
+                    ) : (
+                      supporters.map((supporter: any, index: number) => (
+                        <Card key={index} className="border-slate-200 dark:border-white/10 shadow-sm rounded-2xl">
+                          <CardContent className="p-4 flex justify-between items-start">
+                            <div className="flex items-start gap-3">
+                              <Avatar className="h-8 w-8 shrink-0">
+                                <AvatarFallback className="text-xs font-bold bg-emerald-100 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400">
+                                  {supporter.name?.charAt(0) || 'A'}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div>
+                                <p className="font-bold text-sm text-slate-800 dark:text-white">{supporter.name}</p>
+                                <p className="text-[11px] font-semibold text-slate-400 dark:text-white/30 mt-0.5 uppercase tracking-wider">
+                                  {new Date(supporter.date).toLocaleDateString('en-KE', { day: 'numeric', month: 'short' })}
+                                </p>
+                                {supporter.comment && (
+                                  <p className="text-sm mt-2 italic text-slate-500 dark:text-slate-400">"{supporter.comment}"</p>
+                                )}
+                              </div>
+                            </div>
+                            <Badge
+                              variant="outline"
+                              className="ml-2 shrink-0 bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20 font-bold"
+                            >
+                              {supporter.currency || currency} {Number(supporter.amount).toLocaleString()}
+                            </Badge>
+                          </CardContent>
+                        </Card>
+                      ))
+                    )}
+                  </div>
+                </TabsContent>
+              )}
+
+              {/* Comments */}
+              <TabsContent value="comments" className="animate-in fade-in">
                 <form onSubmit={handleSubmitComment}>
-                  <div className="flex items-start gap-3 mb-6">
-                    <Avatar>
-                      <AvatarFallback>U</AvatarFallback>
+                  <div className="flex items-start gap-4 mb-8">
+                    <Avatar className="w-9 h-9 border border-slate-200 dark:border-white/10 shrink-0">
+                      <AvatarFallback className="bg-slate-100 dark:bg-white/5 text-xs font-bold">
+                        {user?.user_metadata?.full_name?.charAt(0) || 'U'}
+                      </AvatarFallback>
                     </Avatar>
                     <div className="flex-1">
                       <Input
                         id="campaign-comment"
                         name="comment"
-                        placeholder="Add a comment..."
+                        placeholder="Add your voice to this campaign..."
                         value={comment}
                         onChange={(e) => setComment(e.target.value)}
-                        className="mb-2"
+                        className="mb-3 bg-slate-50 dark:bg-black/20 border-slate-200 dark:border-white/10 rounded-xl"
                       />
-                      <Button type="submit" size="sm">Post Comment</Button>
+                      <Button type="submit" size="sm" className="rounded-lg font-bold">Post Comment</Button>
                     </div>
                   </div>
                 </form>
-
-                <div className="flex items-center justify-center py-8 text-muted-foreground">
-                  <MessageSquare className="h-5 w-5 mr-2" />
-                  <span>Be the first to comment</span>
+                <div className="flex flex-col items-center justify-center py-12 text-slate-400 dark:text-white/30 border border-dashed border-slate-200 dark:border-white/10 rounded-2xl">
+                  <MessageSquare className="h-7 w-7 mb-3 opacity-40" />
+                  <span className="text-sm font-medium">No comments yet. Join the conversation.</span>
                 </div>
               </TabsContent>
             </Tabs>
           </div>
 
-          {/* Sidebar */}
-          <div className="space-y-6">
-            {/* Campaign progress */}
-            <Card>
-              <CardContent className="p-6">
-                <div className="mb-4">
-                  <div className="flex justify-between mb-2">
-                    <span className="text-muted-foreground">Raised</span>
-                    <span className="font-medium">{campaign.currency} {campaign.raisedAmount.toLocaleString()}</span>
-                  </div>
-                  <Progress value={campaign.progress} className="h-2" />
-                  <div className="flex justify-between mt-1">
-                    <span className="text-sm text-muted-foreground">{campaign.progress}% of {campaign.currency} {campaign.targetAmount.toLocaleString()}</span>
-                    <span className="text-sm text-muted-foreground">{campaign.participants} supporters</span>
-                  </div>
+          {/* ── Sidebar ── */}
+          <div className="space-y-5">
+
+            {/* Campaign progress card */}
+            <motion.div
+              initial={{ opacity: 0, x: 16 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.1, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+            >
+              <Card className="border-slate-200 dark:border-white/10 shadow-xl overflow-hidden rounded-2xl relative">
+                {/* Visual Trust Indicator (Top right watermark) */}
+                <div className="absolute top-0 right-0 p-3 opacity-5">
+                   <Globe className="w-24 h-24 stroke-[1px] mix-blend-overlay" />
                 </div>
 
-                <div className="space-y-3 mb-6">
-                  <Button
-                    className="w-full bg-kenya-green hover:bg-kenya-green/90"
-                    onClick={handleJoinCampaign}
-                  >
-                    <HandHelping className="mr-2 h-4 w-4" />
-                    Join Campaign
-                  </Button>
+                <div className="h-1 w-full bg-gradient-to-r from-kenya-green to-emerald-400" />
+                <CardContent className="p-6 relative z-10">
 
-                  <Button
-                    variant="outline"
-                    className="w-full"
-                    onClick={handleDonate}
-                  >
-                    <Heart className="mr-2 h-4 w-4" />
-                    Support Campaign
-                  </Button>
-
-                  <Button
-                    variant="ghost"
-                    className="w-full"
-                  >
-                    <ShareIcon className="mr-2 h-4 w-4" />
-                    Share
-                  </Button>
-                </div>
-
-                <div className="space-y-2 border-t pt-4">
-                  <div className="flex items-center">
-                    <CalendarIcon className="h-4 w-4 text-muted-foreground mr-2" />
-                    <span className="text-sm">
-                      Started: {new Date(campaign.startDate).toLocaleDateString()}
-                    </span>
+                  {/* Signature progress — always shown */}
+                  <div className="mb-6">
+                    <div className="flex justify-between items-end mb-2.5">
+                      <span className="text-[10px] uppercase font-bold tracking-[0.16em] text-slate-400 dark:text-white/30">
+                        Signatures
+                      </span>
+                      <span className="font-black text-2xl text-slate-800 dark:text-white tabular-nums">
+                        {participantCount.toLocaleString()}
+                      </span>
+                    </div>
+                    <Progress
+                      value={progressValue}
+                      className="h-2 bg-slate-100 dark:bg-white/5"
+                    />
+                    <div className="flex justify-between mt-2.5">
+                      <span className="text-xs font-bold text-kenya-green">
+                        {progressValue}% of {goalCount.toLocaleString()} goal
+                      </span>
+                      <span className="text-xs font-semibold text-slate-400 dark:text-white/30">
+                        {participantCount} participants
+                      </span>
+                    </div>
                   </div>
 
-                  <div className="flex items-center">
-                    <Clock className="h-4 w-4 text-muted-foreground mr-2" />
-                    <span className="text-sm">
-                      Ends: {new Date(campaign.endDate).toLocaleDateString()}
-                    </span>
-                  </div>
-
-                  <div className="flex items-center">
-                    <Users className="h-4 w-4 text-muted-foreground mr-2" />
-                    <span className="text-sm">
-                      {campaign.participants} active participants
-                    </span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* More campaigns */}
-            <Card>
-              <CardContent className="p-6">
-                <h3 className="font-medium mb-4">Similar Campaigns</h3>
-                <div className="space-y-4">
-                  <Link to="/community/campaigns/2" className="flex items-center gap-3 group">
-                    <div className="w-16 h-16 rounded overflow-hidden shrink-0">
-                      <img
-                        src="/placeholder.svg"
-                        alt="Campaign thumbnail"
-                        className="w-full h-full object-cover"
+                  {/* Financial progress — only renders if target_amount > 0 */}
+                  {hasFinancialGoal && (
+                    <div className="mb-6 p-4 rounded-xl bg-slate-50 dark:bg-white/[0.03] border border-slate-100 dark:border-white/6 group hover:border-emerald-500/20 transition-colors cursor-default">
+                      <div className="flex justify-between items-end mb-2">
+                        <span className="text-[10px] uppercase font-bold tracking-[0.16em] text-slate-400 dark:text-white/30">
+                          Raised
+                        </span>
+                        <span className="font-black text-lg text-slate-800 dark:text-white tabular-nums group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
+                          {currency} {Number(raisedAmount).toLocaleString()}
+                        </span>
+                      </div>
+                      <Progress
+                        value={targetAmount > 0 ? Math.min(Math.round((raisedAmount / targetAmount) * 100), 100) : 0}
+                        className="h-1.5 bg-slate-200 dark:bg-white/10 group-hover:bg-emerald-100 dark:group-hover:bg-emerald-500/20"
                       />
+                      <div className="flex justify-between items-center mt-3">
+                        <span className="text-[11px] font-bold text-slate-500 dark:text-white/40">
+                          {targetAmount > 0 ? Math.round((raisedAmount / targetAmount) * 100) : 0}% of {currency} {Number(targetAmount).toLocaleString()}
+                        </span>
+                        {/* Secure Trust Badge */}
+                        <div className="flex items-center text-[9px] font-bold uppercase tracking-wider text-emerald-600/70 border border-emerald-500/20 bg-emerald-50 dark:bg-emerald-500/10 px-1.5 py-0.5 rounded">
+                           Verified
+                        </div>
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-medium group-hover:text-kenya-green transition-colors">Clean Rivers Initiative</p>
-                      <p className="text-xs text-muted-foreground">215 participants</p>
+                  )}
+
+                  {/* Action buttons */}
+                  <div className="space-y-3 mb-5">
+                    {/* External campaigns redirect instead of follow */}
+                    {isExternal ? (
+                      <a
+                        href={(campaign as any).external_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-full h-12 flex items-center justify-center gap-2 font-bold rounded-xl bg-kenya-green hover:bg-[#0ead36] text-white shadow-lg shadow-kenya-green/20 transition-all active:scale-95"
+                      >
+                        <ExternalLink className="h-4 w-4" />
+                        Take Action
+                      </a>
+                    ) : (
+                      <Button
+                        className={`w-full font-bold rounded-xl h-12 shadow-lg transition-all active:scale-95 ${
+                          isFollowing
+                            ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-white/10 dark:hover:bg-white/15 dark:text-white shadow-none'
+                            : 'bg-kenya-green hover:bg-[#0ead36] text-white shadow-kenya-green/20'
+                        }`}
+                        onClick={handleJoinCampaign}
+                        disabled={followMutation.isPending}
+                      >
+                        {followMutation.isPending ? (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : (
+                          <HandHelping className="mr-2 h-4 w-4" />
+                        )}
+                        {isFollowing ? 'Following Campaign' : 'Join Campaign'}
+                      </Button>
+                    )}
+
+                    {/* Support/donate — only renders if financial goal exists */}
+                    {hasFinancialGoal && (
+                      <Button
+                        variant="outline"
+                        className="w-full text-slate-700 dark:text-white font-bold h-12 rounded-xl group hover:border-kenya-red/50 hover:bg-kenya-red/5 dark:hover:bg-kenya-red/10 border-slate-200 dark:border-white/10"
+                        onClick={handleDonate}
+                      >
+                        <Heart className="mr-2 h-4 w-4 group-hover:text-kenya-red transition-colors" />
+                        Support Safely
+                      </Button>
+                    )}
+
+                    {/* Share / WhatsApp Button Split */}
+                    <div className="flex gap-2">
+                       <a
+                         href={`https://wa.me/?text=${encodeURIComponent(`Join me in verifying this campaign on CEKA Civic Ledger:\n\n${campaign.title}\n\n${window.location.href}`)}`}
+                         target="_blank"
+                         rel="noopener noreferrer"
+                         className="flex-1 flex items-center justify-center h-11 rounded-xl bg-[#25D366]/10 text-[#25D366] hover:bg-[#25D366]/20 font-bold transition-colors"
+                       >
+                         WhatsApp
+                       </a>
+                       <Button
+                         variant="ghost"
+                         className="flex-[2] h-11 rounded-xl text-slate-500 dark:text-white/40 hover:text-slate-800 dark:hover:text-white font-semibold border border-slate-200 dark:border-white/10"
+                         onClick={handleShare}
+                       >
+                         <ShareIcon className="mr-2 h-4 w-4" />
+                         Share Link
+                       </Button>
                     </div>
-                  </Link>
-                  <Link to="/community/campaigns/3" className="flex items-center gap-3 group">
-                    <div className="w-16 h-16 rounded overflow-hidden shrink-0">
-                      <img
-                        src="/placeholder.svg"
-                        alt="Campaign thumbnail"
-                        className="w-full h-full object-cover"
-                      />
+                  </div>
+
+                  {/* Meta info */}
+                  <div className="space-y-2.5 border-t border-slate-100 dark:border-white/6 pt-5">
+                    <div className="flex items-center gap-3">
+                      <CalendarIcon className="h-3.5 w-3.5 text-slate-400 dark:text-white/25 shrink-0" />
+                      <span className="text-xs font-medium text-slate-600 dark:text-slate-300">
+                        Started:{' '}
+                        {(campaign as any).start_date
+                          ? new Date((campaign as any).start_date).toLocaleDateString('en-KE', { day: 'numeric', month: 'short', year: 'numeric' })
+                          : 'Active Now'}
+                      </span>
                     </div>
-                    <div>
-                      <p className="font-medium group-hover:text-kenya-green transition-colors">Girls in STEM</p>
-                      <p className="text-xs text-muted-foreground">156 participants</p>
+                    {(campaign as any).end_date && (
+                      <div className="flex items-center gap-3">
+                        <Clock className="h-3.5 w-3.5 text-slate-400 dark:text-white/25 shrink-0" />
+                        <span className="text-xs font-medium text-slate-600 dark:text-slate-300">
+                          Ends:{' '}
+                          {new Date((campaign as any).end_date).toLocaleDateString('en-KE', { day: 'numeric', month: 'short', year: 'numeric' })}
+                        </span>
+                      </div>
+                    )}
+                    {(campaign as any).location && (
+                      <div className="flex items-center gap-3">
+                        <MapPin className="h-3.5 w-3.5 text-slate-400 dark:text-white/25 shrink-0" />
+                        <span className="text-xs font-medium text-slate-600 dark:text-slate-300">
+                          {(campaign as any).location}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Social Pulse Ticker (Recent Activity) */}
+                    {supporters.length > 0 && (
+                      <div className="flex items-center gap-3 mt-4 pt-3 border-t border-dashed border-slate-100 dark:border-white/5">
+                        <Activity className="h-3.5 w-3.5 text-emerald-500 animate-pulse shrink-0" />
+                        <span className="text-[11px] font-medium text-slate-500 dark:text-white/40 truncate">
+                          <span className="font-bold text-slate-700 dark:text-white/70">{(supporters[0] as any).name}</span> supported recently.
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+
+            {/* Similar campaigns — live from Supabase */}
+            {similarCampaigns.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, x: 16 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.18, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+              >
+                <Card className="border-slate-200 dark:border-white/10 rounded-2xl overflow-hidden shadow-sm">
+                  <div className="bg-slate-50 dark:bg-white/[0.02] px-5 py-4 border-b border-slate-100 dark:border-white/6">
+                    <h3 className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500 dark:text-white/35">
+                      Similar Campaigns
+                    </h3>
+                  </div>
+                  <CardContent className="p-0">
+                    <div className="divide-y divide-slate-100 dark:divide-white/5">
+                      {similarCampaigns.map((sc: any) => (
+                        <Link
+                          key={sc.id}
+                          to={`/campaign/${sc.id}`}
+                          className="flex items-center gap-3 p-4 hover:bg-slate-50 dark:hover:bg-white/[0.025] transition-colors group"
+                        >
+                          <div className="w-12 h-12 rounded-xl overflow-hidden shrink-0 bg-slate-100 dark:bg-white/8 border border-slate-100 dark:border-white/5">
+                            {sc.image_url ? (
+                              <img
+                                src={sc.image_url}
+                                alt={sc.title}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center">
+                                <Rocket className="w-4 h-4 text-slate-400 dark:text-white/20" />
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-bold text-sm text-slate-800 dark:text-white truncate group-hover:text-kenya-green transition-colors leading-tight">
+                              {sc.title}
+                            </p>
+                            <p className="text-[11px] font-semibold text-slate-400 dark:text-white/30 mt-0.5">
+                              {sc.current_count || 0} participants
+                            </p>
+                          </div>
+                        </Link>
+                      ))}
                     </div>
-                  </Link>
-                </div>
-              </CardContent>
-            </Card>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            )}
           </div>
         </div>
       </div>
+
+      <CreateCampaignModal
+        isOpen={isCreatorModalOpen}
+        onClose={() => setIsCreatorModalOpen(false)}
+        onSuccess={() => {
+          toast({ title: 'Campaign created!' });
+        }}
+      />
     </Layout>
   );
 };
