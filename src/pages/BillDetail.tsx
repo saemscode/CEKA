@@ -145,7 +145,7 @@ const BillDetail = () => {
   const calculateDynamicGoal = (current: number, baseGoal: number | null) => {
     const defaultGoal = baseGoal || 1000;
     const milestones = [1000, 2500, 5000, 10000, 25000, 50000, 100000, 250000, 500000, 1000000];
-    
+
     // Find the first milestone that is at least 15% ahead of the current count
     // This ensures there's always a "stretch" goal.
     const activeMilestone = milestones.find(m => m > current * 1.15) || Math.ceil((current * 1.5) / 1000) * 1000;
@@ -233,7 +233,7 @@ const BillDetail = () => {
       }
 
       if (!billData) {
-        setError('Bill context not found in the legislative vault.');
+        setError('Bill context not found in the legislative database.');
         return;
       }
 
@@ -242,7 +242,7 @@ const BillDetail = () => {
       // Load signature stats
       const count = await billService.getSignatureCount(billData.id);
       setSignatureCount(count);
-      
+
       const baseGoal = billData.signature_goal || 1000;
       setSignatureGoal(calculateDynamicGoal(count, baseGoal));
 
@@ -281,18 +281,18 @@ const BillDetail = () => {
 
   const safeStages = getSafeStages();
 
-  const isFinanceBill = !!bill && ((bill.title?.toLowerCase().includes('finance') && (bill.title?.includes('2024') || bill.title?.includes('2025') || bill.title?.includes('2026'))) || 
-                        bill.bill_no?.toLowerCase().includes('finance') ||
-                        bill.id === '74961912-8ba7-47f2-bf61-9ae3abafe2e1' ||
-                        bill.title?.toLowerCase().includes('sovereign petition'));
+  const isFinanceBill = !!bill && ((bill.title?.toLowerCase().includes('finance') && (bill.title?.includes('2024') || bill.title?.includes('2025') || bill.title?.includes('2026'))) ||
+    bill.bill_no?.toLowerCase().includes('finance') ||
+    bill.id === '74961912-8ba7-47f2-bf61-9ae3abafe2e1' ||
+    bill.title?.toLowerCase().includes('sovereign petition'));
 
   // Concern tap handler: prefill response form & smooth-scroll to it
   const handleConcernTap = useCallback((concern: string) => {
     setPrefillQuery(`What's your thought on "${concern}"?`);
-    
+
     // Determine which section to scroll to
     const targetRef = isFinanceBill ? memorandaRef : responseFormRef;
-    
+
     if (targetRef.current) {
       setTimeout(() => {
         targetRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -359,7 +359,7 @@ const BillDetail = () => {
         <title>{`${bill.title} | Legislative Tracker | CEKA`}</title>
         <meta name="description" content={`${bill.summary.substring(0, 155)}... Track the status, download the PDF, and submit a memorandum to Parliament for ${bill.title}.`} />
         <meta name="keywords" content={`${bill.title}, ${bill.category}, ${bill.bill_no || ''}, Kenya Memorandum Builder, Memorandum Builder Kenya, ${isFinanceBill ? 'Finance Bill 2026, Kenya Finance Bill 2026, Finance Bill memorandum builder, write a memorandum for Finance Bill,' : ''} yield public participation Kenya, submit memorandum Kenya, bill tracker Kenya, parliamentary process Kenya`} />
-        
+
         {/* Open Graph / Facebook */}
         <meta property="og:type" content="article" />
         <meta property="og:url" content={window.location.href} />
@@ -787,7 +787,7 @@ const BillDetail = () => {
                           {engagementInsights.velocity > 15 ? 'Viral Spike' : 'Live Interaction'}
                         </p>
                       </div>
-                      <p 
+                      <p
                         className="text-[10px] text-slate-500 font-medium leading-relaxed cursor-pointer hover:text-kenya-green transition-colors"
                         onClick={() => setShareDrawerOpen(true)}
                       >

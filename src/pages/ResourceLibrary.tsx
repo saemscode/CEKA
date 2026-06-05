@@ -85,7 +85,7 @@ const ResourceLibrary = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState<string>('All');
   const [dynamicThumbnails, setDynamicThumbnails] = useState<Record<string, string>>({});
-  
+
   // Pagination State
   const ITEMS_PER_PAGE = 12;
   const [page, setPage] = useState(1);
@@ -419,19 +419,19 @@ const ResourceLibrary = () => {
                   if (e.key === 'Enter') {
                     toast({
                       title: "Searching...",
-                      description: `Refining vault for "${searchTerm}"`,
+                      description: `Refining search for "${searchTerm}"`,
                     });
                   }
                 }}
               />
             </div>
-            <Button 
-                onClick={() => {
-                   toast({ title: "Searching...", description: `Refining vault for "${searchTerm}"` });
-                }}
-                className="h-14 px-8 rounded-2xl bg-kenya-black dark:bg-white dark:text-black text-white hover:bg-kenya-red transition-all shadow-lg font-bold"
+            <Button
+              onClick={() => {
+                toast({ title: "Searching...", description: `Refining vault for "${searchTerm}"` });
+              }}
+              className="h-14 px-8 rounded-2xl bg-kenya-black dark:bg-white dark:text-black text-white hover:bg-kenya-red transition-all shadow-lg font-bold"
             >
-               Search Vault
+              Search Vault
             </Button>
           </div>
 
@@ -475,13 +475,13 @@ const ResourceLibrary = () => {
                         {displayedResources.map((res) => (
                           <TableRow key={res.id} className="border-border/10 cursor-pointer hover:bg-slate-50/50 dark:hover:bg-white/5 transition-colors" onClick={() => navigate(`/resources/${res.id}`)}>
                             <TableCell className="font-medium flex items-center gap-3">
-                               <div className="w-8 h-8 rounded-lg bg-kenya-red/10 flex items-center justify-center shrink-0">
-                                  <BookOpen className="w-4 h-4 text-kenya-red" />
-                               </div>
-                               <div className="flex flex-col min-w-0">
-                                  <span className="truncate text-sm font-bold text-slate-800 dark:text-white leading-tight">{res.title}</span>
-                                  <span className="truncate text-[10px] text-muted-foreground">{res.provider || 'CEKA Vault'}</span>
-                               </div>
+                              <div className="w-8 h-8 rounded-lg bg-kenya-red/10 flex items-center justify-center shrink-0">
+                                <BookOpen className="w-4 h-4 text-kenya-red" />
+                              </div>
+                              <div className="flex flex-col min-w-0">
+                                <span className="truncate text-sm font-bold text-slate-800 dark:text-white leading-tight">{res.title}</span>
+                                <span className="truncate text-[10px] text-muted-foreground">{res.provider || 'CEKA Database'}</span>
+                              </div>
                             </TableCell>
                             <TableCell>
                               <Badge variant="outline" className="text-[10px] uppercase font-bold">{res.type}</Badge>
@@ -503,11 +503,11 @@ const ResourceLibrary = () => {
                     </Table>
                   </div>
                 )}
-                
+
                 {hasMore && (
                   <div className="flex justify-center pt-8 fade-in animate-in">
-                    <Button 
-                      size="lg" 
+                    <Button
+                      size="lg"
                       variant="outline"
                       className="rounded-full px-12 h-14 font-bold tracking-tight border-primary/20 hover:bg-primary/5 hover:text-primary transition-all shadow-sm"
                       onClick={() => setPage(p => p + 1)}

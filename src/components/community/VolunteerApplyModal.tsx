@@ -171,7 +171,7 @@ export const VolunteerApplyModal = ({ opportunity, isOpen, onClose }: VolunteerA
                                 {submitting && (
                                     <div className="w-full space-y-2 mb-2 animate-in fade-in duration-500">
                                         <div className="flex justify-between text-[9px] font-black uppercase tracking-tighter text-primary">
-                                            <span>Sovereign Transmission in Progress...</span>
+                                            <span>Transmission in Progress...</span>
                                             <span>{progress}%</span>
                                         </div>
                                         <Progress value={progress} className="h-1.5" />

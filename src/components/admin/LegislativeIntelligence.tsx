@@ -245,7 +245,7 @@ const LegislativeIntelligence = () => {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <Card className="rounded-[32px] border-none bg-kenya-green/5 overflow-hidden">
                     <CardContent className="p-6">
-                        <p className="text-[10px] font-black uppercase text-muted-foreground mb-1 tracking-widest">Vault Capacity</p>
+                        <p className="text-[10px] font-black uppercase text-muted-foreground mb-1 tracking-widest">Storage Capacity</p>
                         <h3 className="text-3xl font-black tracking-tighter text-kenya-green">{vaultHealth?.totalBills || 0}</h3>
                         <p className="text-[10px] opacity-60 text-kenya-green/80 font-bold">BILLS IN SYSTEM</p>
                     </CardContent>
@@ -277,8 +277,8 @@ const LegislativeIntelligence = () => {
 
             <Tabs defaultValue="queue" className="space-y-4">
                 <TabsList className="bg-muted/50 p-1 rounded-2xl">
-                    <TabsTrigger value="queue" className="rounded-xl px-6">Live Queue</TabsTrigger>
-                    <TabsTrigger value="vault" className="rounded-xl px-6">System Vault</TabsTrigger>
+                    <TabsTrigger value="queue" className="rounded-xl px-6">Live Count</TabsTrigger>
+                    <TabsTrigger value="vault" className="rounded-xl px-6">Storage</TabsTrigger>
                     <TabsTrigger value="sources" className="rounded-xl px-6">Sources</TabsTrigger>
                     <TabsTrigger value="history" className="rounded-xl px-4 py-2 font-bold data-[state=active]:bg-kenya-black data-[state=active]:text-white">Run History</TabsTrigger>
                     <TabsTrigger value="code" className="rounded-xl px-4 py-2 font-bold data-[state=active]:bg-kenya-black data-[state=active]:text-white">Operations & Code</TabsTrigger>
@@ -426,7 +426,7 @@ const LegislativeIntelligence = () => {
                     <Tabs defaultValue="bills_list" className="space-y-4">
                         <TabsList className="bg-muted/30 p-1 rounded-xl">
                             <TabsTrigger value="bills_list" className="text-xs font-bold px-4">Active Bills & History</TabsTrigger>
-                            <TabsTrigger value="op_list" className="text-xs font-bold px-4">Order Papers Repository</TabsTrigger>
+                            <TabsTrigger value="op_list" className="text-xs font-bold px-4">Order Papers Store</TabsTrigger>
                         </TabsList>
 
                         <TabsContent value="bills_list">
@@ -434,7 +434,7 @@ const LegislativeIntelligence = () => {
                                 <CardHeader className="pb-3 border-b border-muted/20">
                                     <div className="flex items-center justify-between">
                                         <div>
-                                            <CardTitle className="text-lg font-black uppercase tracking-tighter">Parliamentary Bills Vault</CardTitle>
+                                            <CardTitle className="text-lg font-black uppercase tracking-tighter">Bills Database</CardTitle>
                                             <CardDescription>Live tracking & version history of all legislative items</CardDescription>
                                         </div>
                                         <Button variant="ghost" onClick={loadData} className="rounded-full h-10 w-10 p-0"><RefreshCw className="h-4 w-4" /></Button>
@@ -533,7 +533,7 @@ const LegislativeIntelligence = () => {
                                         {orderPapers.length === 0 && (
                                             <div className="p-20 text-center opacity-40">
                                                 <FileText className="h-10 w-10 mx-auto mb-3" />
-                                                <p className="font-black uppercase tracking-widest text-xs">No order papers in vault</p>
+                                                <p className="font-black uppercase tracking-widest text-xs">No order papers in our database</p>
                                             </div>
                                         )}
                                     </div>
@@ -789,7 +789,7 @@ const LegislativeIntelligence = () => {
                                             disabled={!selectedScript}
                                         >
                                             <Save className="h-3 w-3" />
-                                            Deploy to Vault
+                                            Deploy to Database
                                         </Button>
                                     </div>
                                 </CardHeader>

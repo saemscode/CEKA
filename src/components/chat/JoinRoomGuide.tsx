@@ -56,7 +56,7 @@ const JoinRoomGuide = ({ roomName, isOpen, onClose }: JoinRoomGuideProps) => {
                                     {translate('Entering', language)} <span className="text-primary">{roomName}</span>
                                 </h3>
                                 <p className="text-sm text-muted-foreground font-medium leading-relaxed">
-                                    {translate('This is a sovereign space for verified civic discourse. Your contributions here drive the national engine.', language)}
+                                    {translate('This is a space for verified civic discourse. Your contributions here drive the national engine.', language)}
                                 </p>
                             </div>
 

@@ -69,7 +69,7 @@ const PollManager = () => {
             console.error('Fetch polls error:', err);
             toast({
                 title: 'Data Sync Failed',
-                description: 'Could not fetch live polls from the sovereign vault.',
+                description: 'Could not fetch live polls from the database.',
                 variant: 'destructive',
             });
         } finally {
@@ -183,7 +183,7 @@ const PollManager = () => {
     if (loading && !isCreating) {
         return (
             <div className="flex flex-col items-center justify-center p-20 py-40">
-                <CEKALoader variant="scanning" size="xl" text="Syncing Public Opinion Vault..." />
+                <CEKALoader variant="scanning" size="xl" text="Syncing Public Opinion..." />
             </div>
         );
     }
@@ -196,7 +196,7 @@ const PollManager = () => {
                         <Radio className="h-6 w-6 text-primary animate-pulse" />
                         Community Poll Intelligence
                     </h2>
-                    <p className="text-sm text-muted-foreground font-medium uppercase tracking-widest mt-1">Sovereign Sentiment Manifest</p>
+                    <p className="text-sm text-muted-foreground font-medium uppercase tracking-widest mt-1">Feedback Polls</p>
                 </div>
                 {!isCreating && (
                     <Button onClick={() => setIsCreating(true)} className="rounded-2xl h-12 px-6 font-bold gap-2 shadow-xl shadow-primary/20 bg-primary hover:bg-primary/90">
@@ -265,7 +265,7 @@ const PollManager = () => {
 
                                 <div className="space-y-4 pt-4 border-t border-slate-200 dark:border-white/5">
                                     <Label className="text-xs font-black uppercase tracking-widest text-muted-foreground flex justify-between">
-                                        Sovereign Options
+                                        Options
                                         <span className="text-primary">{newPoll.options.length} limit</span>
                                     </Label>
                                     <div className="space-y-3">

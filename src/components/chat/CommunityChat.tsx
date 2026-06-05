@@ -480,14 +480,14 @@ const CommunityChat = () => {
                     ) : (
                         <div className="p-4 text-center space-y-4">
                             <Shield className="h-10 w-10 text-primary mx-auto opacity-20" />
-                            <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Secure Vault Active</p>
+                            <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Secure Active Storage</p>
                             <Button
                                 variant="outline"
                                 size="sm"
                                 onClick={() => setIsPrivate(false)}
                                 className="rounded-xl w-full text-[10px] font-bold"
                             >
-                                Exit to Assembly
+                                Exit to Community Chat
                             </Button>
                         </div>
                     )}
@@ -644,7 +644,7 @@ const CommunityChat = () => {
                     </AnimatePresence>
 
                     <div className="w-full">
-                        <PromptInputBox 
+                        <PromptInputBox
                             onSend={handleSendMessage}
                             isLoading={sending}
                             placeholder={`Message ${rooms.find(r => r.id === activeRoom)?.name || 'the Assembly'}...`}
@@ -766,10 +766,10 @@ const CommunityChat = () => {
                     </div>
                 </Card>
             </div>
-            <JoinRoomGuide 
-                isOpen={showGuide} 
-                onClose={handleCloseGuide} 
-                roomName={rooms.find(r => r.id === activeRoom)?.name || 'Assembly'} 
+            <JoinRoomGuide
+                isOpen={showGuide}
+                onClose={handleCloseGuide}
+                roomName={rooms.find(r => r.id === activeRoom)?.name || 'Assembly'}
             />
         </div>
     );

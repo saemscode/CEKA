@@ -78,106 +78,106 @@ const discussionDetails = {
 };
 
 const DiscussionDetail = () => {
-    const { id } = useParams<{ id: string }>();
-    const { user } = useAuth();
-    const { toast } = useToast();
-    const [discussion, setDiscussion] = useState<any>(null);
-    const [comments, setComments] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [comment, setComment] = useState("");
-    const [liked, setLiked] = useState(false);
-    const [saved, setSaved] = useState(false);
-    const [likeCount, setLikeCount] = useState(0);
+  const { id } = useParams<{ id: string }>();
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const [discussion, setDiscussion] = useState<any>(null);
+  const [comments, setComments] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [comment, setComment] = useState("");
+  const [liked, setLiked] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [likeCount, setLikeCount] = useState(0);
 
-    useEffect(() => {
-        if (!id) return;
-        fetchDiscussion();
-        fetchComments();
-    }, [id]);
+  useEffect(() => {
+    if (!id) return;
+    fetchDiscussion();
+    fetchComments();
+  }, [id]);
 
-    const fetchDiscussion = async () => {
-        const { data, error } = await supabase
-            .from('discussions')
-            .select(`
+  const fetchDiscussion = async () => {
+    const { data, error } = await supabase
+      .from('discussions')
+      .select(`
                 *,
                 profiles:user_id (
                     full_name,
                     avatar_url
                 )
             `)
-            .eq('id', id)
-            .single();
+      .eq('id', id)
+      .single();
 
-        if (!error && data) {
-            setDiscussion(data);
-            setLikeCount(data.likes || 0);
-        }
-        setLoading(false);
-    };
+    if (!error && data) {
+      setDiscussion(data);
+      setLikeCount(data.likes || 0);
+    }
+    setLoading(false);
+  };
 
-    const fetchComments = async () => {
-        const { data, error } = await supabase
-            .from('chat_messages')
-            .select(`
+  const fetchComments = async () => {
+    const { data, error } = await supabase
+      .from('chat_messages')
+      .select(`
                 *,
                 profiles:user_id (
                     full_name,
                     avatar_url
                 )
             `)
-            .eq('room_id', `discussion_${id}`) // Assuming room nomenclature
-            .order('created_at', { ascending: true });
+      .eq('room_id', `discussion_${id}`) // Assuming room nomenclature
+      .order('created_at', { ascending: true });
 
-        if (!error && data) {
-            setComments(data);
-        }
-    };
+    if (!error && data) {
+      setComments(data);
+    }
+  };
 
-    const handleLike = async () => {
-        if (!discussion || !user) return;
-        const newLiked = !liked;
-        const newCount = newLiked ? likeCount + 1 : likeCount - 1;
-        
-        setLiked(newLiked);
-        setLikeCount(newCount);
+  const handleLike = async () => {
+    if (!discussion || !user) return;
+    const newLiked = !liked;
+    const newCount = newLiked ? likeCount + 1 : likeCount - 1;
 
-        await supabase.from('discussions').update({ likes: newCount }).eq('id', id);
-    };
+    setLiked(newLiked);
+    setLikeCount(newCount);
 
-    const handleSave = () => {
-        setSaved(!saved);
-        toast({
-            title: saved ? "Removed from bookmarks" : "Added to bookmarks",
-            description: saved ? "This discussion has been removed from your saved items." : "This discussion has been saved to your bookmarks.",
-        });
-    };
+    await supabase.from('discussions').update({ likes: newCount }).eq('id', id);
+  };
 
-    const handleReport = () => {
-        toast({
-            title: "Report submitted",
-            description: "Thank you for helping keep our community safe. We'll review this content shortly.",
-        });
-    };
+  const handleSave = () => {
+    setSaved(!saved);
+    toast({
+      title: saved ? "Removed from bookmarks" : "Added to bookmarks",
+      description: saved ? "This discussion has been removed from your saved items." : "This discussion has been saved to your bookmarks.",
+    });
+  };
 
-    const handleSubmitComment = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!comment.trim() || !user) return;
+  const handleReport = () => {
+    toast({
+      title: "Report submitted",
+      description: "Thank you for helping keep our community safe. We'll review this content shortly.",
+    });
+  };
 
-        const { error } = await supabase.from('chat_messages').insert({
-            user_id: user.id,
-            room_id: `discussion_${id}`,
-            content: comment.trim()
-        });
+  const handleSubmitComment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!comment.trim() || !user) return;
 
-        if (!error) {
-            toast({
-                title: "Comment posted!",
-                description: "Your comment has been added to the discussion.",
-            });
-            setComment("");
-            fetchComments();
-        }
-    };
+    const { error } = await supabase.from('chat_messages').insert({
+      user_id: user.id,
+      room_id: `discussion_${id}`,
+      content: comment.trim()
+    });
+
+    if (!error) {
+      toast({
+        title: "Comment posted!",
+        description: "Your comment has been added to the discussion.",
+      });
+      setComment("");
+      fetchComments();
+    }
+  };
 
   if (loading) return <div className="flex h-screen items-center justify-center bg-[#f8fafc] dark:bg-[#020617]"><CEKALoader variant="ios" size="lg" /></div>;
   if (!discussion) return <div className="flex h-screen items-center justify-center text-muted-foreground bg-[#f8fafc] dark:bg-[#020617]">Discussion not found.</div>;
@@ -186,8 +186,8 @@ const DiscussionDetail = () => {
     <Layout>
       <div className="min-h-screen bg-[#f8fafc] dark:bg-[#020617] bg-pattern-grid transition-colors duration-700">
         <div className="container max-w-4xl py-12 px-4 font-sans animate-in fade-in slide-in-from-bottom-4 duration-1000">
-          <Button 
-            variant="ghost" 
+          <Button
+            variant="ghost"
             className="mb-8 rounded-2xl hover:bg-white/80 dark:hover:bg-white/5 transition-all text-muted-foreground group backdrop-blur-md shadow-sm border border-white/20"
             onClick={() => window.history.back()}
           >
@@ -208,15 +208,15 @@ const DiscussionDetail = () => {
                   </Badge>
                   {discussion.is_pinned && (
                     <Badge variant="outline" className="px-4 py-1.5 rounded-full border-primary/30 text-primary text-[9px] font-black uppercase tracking-[0.15em] bg-primary/5">
-                      Sovereign Priority
+                      Priority
                     </Badge>
                   )}
                 </div>
-                
+
                 <h1 className="text-4xl md:text-6xl font-black tracking-tight mb-8 leading-[1.05] text-slate-900 dark:text-white drop-shadow-sm">
                   {discussion.title}
                 </h1>
-                
+
                 <div className="flex items-center justify-between py-8 border-y border-slate-200/50 dark:border-white/5">
                   <div className="flex items-center gap-4">
                     <div className="relative">
@@ -241,7 +241,7 @@ const DiscussionDetail = () => {
                       </div>
                     </div>
                   </div>
-                  
+
                   <div className="flex gap-3">
                     <Button variant="ghost" size="icon" className="rounded-2xl h-12 w-12 bg-white/50 dark:bg-white/5 shadow-ios-soft hover:shadow-ios-high hover:scale-110 transition-all duration-300" onClick={handleSave}>
                       <Bookmark className={cn("h-5 w-5 transition-colors duration-500", saved ? "fill-primary text-primary scale-125" : "text-muted-foreground")} />
@@ -252,14 +252,14 @@ const DiscussionDetail = () => {
                   </div>
                 </div>
               </CardHeader>
-              
+
               <CardContent className="p-8 md:p-12 pt-4">
                 <div className="prose prose-xl prose-slate dark:prose-invert max-w-none mb-16 leading-relaxed text-slate-700 dark:text-slate-300 font-medium tracking-tight whitespace-pre-wrap">
                   {discussion.content}
                 </div>
 
                 {discussion.image && (
-                  <motion.div 
+                  <motion.div
                     whileHover={{ scale: 1.01 }}
                     className="mb-16 rounded-[32px] overflow-hidden shadow-ios-high border-4 border-white/50 dark:border-white/5"
                   >
@@ -268,8 +268,8 @@ const DiscussionDetail = () => {
                 )}
 
                 <div className="flex flex-wrap items-center gap-8 pt-10 border-t border-slate-200/50 dark:border-white/5">
-                  <Button 
-                    variant="ghost" 
+                  <Button
+                    variant="ghost"
                     className={cn(
                       "h-16 px-10 rounded-[24px] gap-4 transition-all duration-500 font-black text-lg shadow-ios-soft",
                       liked ? "bg-primary text-white shadow-xl scale-105" : "bg-slate-100/80 dark:bg-white/5 text-slate-600 dark:text-slate-400 hover:bg-slate-200"
@@ -309,7 +309,7 @@ const DiscussionDetail = () => {
 
             <div className="relative group p-1 rounded-[36px] bg-gradient-to-br from-primary/20 to-transparent">
               <div className="bg-white/60 dark:bg-black/30 backdrop-blur-3xl rounded-[32px] overflow-hidden border border-white/30 dark:border-white/5 shadow-ios-low">
-                <PromptInputBox 
+                <PromptInputBox
                   onSend={(content) => { setComment(content); handleSubmitComment(new Event('submit') as any); }}
                   placeholder="Contribute your intelligence to this assembly..."
                   isLoading={false}

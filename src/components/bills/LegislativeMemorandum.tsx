@@ -343,7 +343,7 @@ export const LegislativeMemorandum: React.FC<LegislativeMemorandumProps> = ({
   const [expandedAMENDId, setExpandedAMENDId] = useState<string | null>(null);
   const isFinanceBill = (billTitle.toLowerCase().includes('finance') && (billTitle.includes('2024') || billTitle.includes('2025') || billTitle.includes('2026'))) ||
     billNo?.toLowerCase().includes('finance') ||
-    billTitle.toLowerCase().includes('sovereign petition');
+    billTitle.toLowerCase().includes('Petition');
 
   // Trigger bulk selection: when overall userPosition changes, FORCE all technical clauses to it
   useEffect(() => {

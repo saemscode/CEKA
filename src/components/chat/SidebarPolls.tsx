@@ -125,7 +125,7 @@ const SidebarPolls = () => {
             if (error) throw error;
 
             toast({
-                title: 'Sovereign Vote Cast',
+                title: 'Vote Cast',
                 description: 'Your voice has been synchronized with the collective will.',
             });
 

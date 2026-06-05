@@ -196,7 +196,7 @@ export function RichTextEditor({ content, onChange, postId, placeholder = "Start
                   prose-strong:text-slate-900 prose-strong:font-black
                   prose-a:text-kenya-green prose-a:font-bold prose-a:no-underline hover:prose-a:underline
                   prose-img:rounded-3xl prose-img:shadow-2xl"
-                dangerouslySetInnerHTML={{ __html: content || '<p class="text-slate-300 italic">The canvas is blank. Awaiting sovereignty...</p>' }}
+                dangerouslySetInnerHTML={{ __html: content || '<p class="text-slate-300 italic">The canvas is blank. Awaiting CEKA...</p>' }}
               />
             </div>
           ) : (
@@ -215,7 +215,7 @@ export function RichTextEditor({ content, onChange, postId, placeholder = "Start
 
         {isUploading && (
           <div className="flex items-center justify-center p-4 bg-blue-50 text-blue-700 rounded-2xl border border-blue-100 animate-pulse font-bold text-xs">
-            TRANSFUSING MEDIA TO SOVEREIGN STORAGE...
+            TRANSFUSING MEDIA TO STORAGE...
           </div>
         )}
       </CardContent>

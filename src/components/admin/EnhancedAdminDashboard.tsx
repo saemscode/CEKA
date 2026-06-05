@@ -285,69 +285,69 @@ const EnhancedAdminDashboard = () => {
                             Overview
                         </TabsTrigger>
                         {permissions[PERMISSION_KEYS.ANALYTICS_DASHBOARD] && (
-                          <TabsTrigger value="analytics" className="rounded-xl px-4 py-3 font-medium data-[state=active]:shadow-lg">
-                              <Sparkles className="h-4 w-4 mr-2" />
-                              Analytics
-                          </TabsTrigger>
+                            <TabsTrigger value="analytics" className="rounded-xl px-4 py-3 font-medium data-[state=active]:shadow-lg">
+                                <Sparkles className="h-4 w-4 mr-2" />
+                                Analytics
+                            </TabsTrigger>
                         )}
                         {permissions[PERMISSION_KEYS.POLL_MANAGEMENT] && (
-                          <TabsTrigger value="polls" className="rounded-xl px-4 py-3 font-medium data-[state=active]:shadow-lg">
-                              <LucidePieChart className="h-4 w-4 mr-2" />
-                              Polls
-                          </TabsTrigger>
+                            <TabsTrigger value="polls" className="rounded-xl px-4 py-3 font-medium data-[state=active]:shadow-lg">
+                                <LucidePieChart className="h-4 w-4 mr-2" />
+                                Polls
+                            </TabsTrigger>
                         )}
                         {permissions[PERMISSION_KEYS.MEDIA_APPRAISAL] && (
-                          <TabsTrigger value="appraisal" className="rounded-xl px-4 py-3 gap-2 font-medium data-[state=active]:shadow-lg">
-                              <Eye className="h-4 w-4" />
-                              Appraisal
-                              {moderationQueue.length > 0 && (
-                                  <Badge className="h-5 w-5 p-0 flex items-center justify-center bg-kenya-red text-[8px] animate-pulse">
-                                      {moderationQueue.length}
-                                  </Badge>
-                              )}
-                          </TabsTrigger>
+                            <TabsTrigger value="appraisal" className="rounded-xl px-4 py-3 gap-2 font-medium data-[state=active]:shadow-lg">
+                                <Eye className="h-4 w-4" />
+                                Appraisal
+                                {moderationQueue.length > 0 && (
+                                    <Badge className="h-5 w-5 p-0 flex items-center justify-center bg-kenya-red text-[8px] animate-pulse">
+                                        {moderationQueue.length}
+                                    </Badge>
+                                )}
+                            </TabsTrigger>
                         )}
                         {permissions[PERMISSION_KEYS.VOLUNTEER_MANAGEMENT] && (
-                          <TabsTrigger value="volunteers" className="rounded-xl px-4 py-3 font-medium data-[state=active]:shadow-lg">
-                              <Heart className="h-4 w-4 mr-2" />
-                              Volunteers
-                          </TabsTrigger>
+                            <TabsTrigger value="volunteers" className="rounded-xl px-4 py-3 font-medium data-[state=active]:shadow-lg">
+                                <Heart className="h-4 w-4 mr-2" />
+                                Volunteers
+                            </TabsTrigger>
                         )}
                         {permissions[PERMISSION_KEYS.EVENT_MANAGEMENT] && (
-                          <TabsTrigger value="events" className="rounded-xl px-4 py-3 font-medium data-[state=active]:shadow-lg">
-                              <Calendar className="h-4 w-4 mr-2" />
-                              Events
-                          </TabsTrigger>
+                            <TabsTrigger value="events" className="rounded-xl px-4 py-3 font-medium data-[state=active]:shadow-lg">
+                                <Calendar className="h-4 w-4 mr-2" />
+                                Events
+                            </TabsTrigger>
                         )}
                         {permissions[PERMISSION_KEYS.CAMPAIGN_MANAGEMENT] && (
-                          <TabsTrigger value="campaigns" className="rounded-xl px-4 py-3 font-medium data-[state=active]:shadow-lg">
-                              <Radio className="h-4 w-4 mr-2" />
-                              Campaigns
-                          </TabsTrigger>
+                            <TabsTrigger value="campaigns" className="rounded-xl px-4 py-3 font-medium data-[state=active]:shadow-lg">
+                                <Radio className="h-4 w-4 mr-2" />
+                                Campaigns
+                            </TabsTrigger>
                         )}
                         {permissions[PERMISSION_KEYS.BULK_UPLOAD] && (
-                          <TabsTrigger value="uploads" className="rounded-xl px-4 py-3 font-medium data-[state=active]:shadow-lg">
-                              <BookOpen className="h-4 w-4 mr-2" />
-                              Uploads
-                          </TabsTrigger>
+                            <TabsTrigger value="uploads" className="rounded-xl px-4 py-3 font-medium data-[state=active]:shadow-lg">
+                                <BookOpen className="h-4 w-4 mr-2" />
+                                Uploads
+                            </TabsTrigger>
                         )}
                         {permissions[PERMISSION_KEYS.SESSION_MANAGEMENT] && (
-                          <TabsTrigger value="sessions" className="rounded-xl px-4 py-3 font-medium data-[state=active]:shadow-lg">
-                              <Users className="h-4 w-4 mr-2" />
-                              Sessions
-                          </TabsTrigger>
+                            <TabsTrigger value="sessions" className="rounded-xl px-4 py-3 font-medium data-[state=active]:shadow-lg">
+                                <Users className="h-4 w-4 mr-2" />
+                                Sessions
+                            </TabsTrigger>
                         )}
                         {permissions[PERMISSION_KEYS.INTELLIGENCE_PIPELINE] && (
-                          <TabsTrigger value="intelligence" className="rounded-xl px-4 py-3 gap-1 font-medium data-[state=active]:shadow-lg">
-                              <Zap className="h-4 w-4" />
-                              Intel
-                          </TabsTrigger>
+                            <TabsTrigger value="intelligence" className="rounded-xl px-4 py-3 gap-1 font-medium data-[state=active]:shadow-lg">
+                                <Zap className="h-4 w-4" />
+                                Intel
+                            </TabsTrigger>
                         )}
                         {permissions[PERMISSION_KEYS.AUDIT_LOGS] && (
-                          <TabsTrigger value="changes" className="rounded-xl px-4 py-3 font-medium data-[state=active]:shadow-lg">
-                              <FileText className="h-4 w-4 mr-2" />
-                              Audit
-                          </TabsTrigger>
+                            <TabsTrigger value="changes" className="rounded-xl px-4 py-3 font-medium data-[state=active]:shadow-lg">
+                                <FileText className="h-4 w-4 mr-2" />
+                                Audit
+                            </TabsTrigger>
                         )}
                         <TabsTrigger value="broadcast" className="rounded-xl px-4 py-3 font-medium data-[state=active]:shadow-lg bg-primary/5 text-primary">
                             <Send className="h-4 w-4 mr-2" />
@@ -395,7 +395,7 @@ const EnhancedAdminDashboard = () => {
 
                                 <Card className="glass-card border-0 shadow-ios-high dark:shadow-ios-high-dark overflow-hidden group hover:scale-[1.02] transition-transform duration-300">
                                     <CardHeader className="flex flex-row items-center justify-between pb-2">
-                                        <CardTitle className="text-sm font-medium">Storage Vault</CardTitle>
+                                        <CardTitle className="text-sm font-medium">Storage Site</CardTitle>
                                         <div className="h-10 w-10 rounded-2xl bg-amber-500/10 flex items-center justify-center group-hover:scale-110 transition-transform">
                                             <Shield className="h-5 w-5 text-amber-500" />
                                         </div>

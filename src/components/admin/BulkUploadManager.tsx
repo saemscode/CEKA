@@ -202,7 +202,7 @@ const BulkUploadManager = () => {
 
                 // Targeted heights for standard tiers
                 const targetHeight = quality === '320p' ? 320 : quality === '720p' ? 720 : 1080;
-                
+
                 // Only scale down, never up
                 if (height > targetHeight) {
                     const ratio = targetHeight / height;
@@ -272,7 +272,7 @@ const BulkUploadManager = () => {
                 try {
                     console.log(`[Churn] Detecting source dimensions for: ${uploadFile.name}`);
                     sourceDims = await getImageDimensions(uploadFile.file);
-                    
+
                     // DYNAMIC TIERS: Only generate if source meets the height requirement
                     if (sourceDims.height >= 320) {
                         const sd = await churnImage(uploadFile.file, '320p');
@@ -297,7 +297,7 @@ const BulkUploadManager = () => {
             // 2. BATCH UPLOAD: Upload all variants with a CONSISTENT timestamp
             let mainResult: any = null;
             const uploadedVariants: string[] = [];
-            
+
             // Calculate a common base filename for all variants to keep suffixes aligned
             const commonTimestamp = Date.now();
             const cleanBaseName = uploadFile.name.replace(/\.[^/.]+$/, '').replace(/[^a-zA-Z0-9.-]/g, '_');
@@ -306,7 +306,7 @@ const BulkUploadManager = () => {
 
             for (const variant of variantsToUpload) {
                 let result;
-                const variantFileName = variant.suffix === '_4k' 
+                const variantFileName = variant.suffix === '_4k'
                     ? `${variantBase}.${cleanExt}`
                     : `${variantBase}${variant.suffix}.${cleanExt}`;
 
@@ -388,7 +388,7 @@ const BulkUploadManager = () => {
                         original_name: uploadFile.name,
                         title: uploadFile.stagedTitle,
                         aspect_ratio: aspectRatio,
-                        qualities: qualitiesAvailable, 
+                        qualities: qualitiesAvailable,
                         width: sourceDims.width,
                         height: sourceDims.height,
                         ...(useSharedMetadata ? {
@@ -541,7 +541,7 @@ const BulkUploadManager = () => {
                             : 'bg-kenya-red/60 text-white/70 hover:bg-kenya-red/80'}`}
                     >
                         <div className={`h-1.5 w-1.5 rounded-full ${backblazeReady ? 'bg-white animate-pulse' : 'bg-white/40'}`} />
-                        B2 Vault
+                        B2 Database
                     </button>
                     <button
                         onClick={() => setStorageProvider('supabase')}
@@ -566,7 +566,7 @@ const BulkUploadManager = () => {
                     <CardContent className="pt-6 space-y-6">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-2">
-                                <Label className="text-[10px] font-black uppercase tracking-tighter text-muted-foreground">Target Vault Directory</Label>
+                                <Label className="text-[10px] font-black uppercase tracking-tighter text-muted-foreground">Target Database Directory</Label>
                                 <Select value={targetFolder} onValueChange={setTargetFolder}>
                                     <SelectTrigger className="rounded-xl border-2 h-12">
                                         <SelectValue />
