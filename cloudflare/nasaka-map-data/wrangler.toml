@@ -1,0 +1,54 @@
+# ──────────────────────────────────────────────────────────────────────────────
+# nasaka-map-data Worker — wrangler.toml
+# ──────────────────────────────────────────────────────────────────────────────
+# DEPLOYMENT INSTRUCTIONS:
+#   STEP 1 — Create D1 database (Cloudflare Dashboard OR wrangler):
+#     npx wrangler d1 create ceka-map-db
+#     → Copy the output database_id into [[d1_databases]] below
+#
+#   STEP 2 — Create the D1 schema (run once):
+#     npx wrangler d1 execute ceka-map-db --command \
+#       "CREATE TABLE IF NOT EXISTS map_snapshots (id TEXT PRIMARY KEY, data TEXT NOT NULL, updated_at TEXT NOT NULL);"
+#
+#   STEP 3 — Add secrets:
+#     npx wrangler secret put SUPABASE_URL
+#     npx wrangler secret put SUPABASE_ANON_KEY
+#
+#   STEP 4 — Deploy:
+#     cd cloudflare/nasaka-map-data
+#     npm init -y && npm install wrangler --save-dev
+#     npx wrangler deploy
+#
+#   STEP 5 — Verify cron is active:
+#     Cloudflare Dashboard → Workers & Pages → nasaka-map-data → Triggers
+#     Confirm the cron "*/30 * * * *" is listed and enabled.
+# ──────────────────────────────────────────────────────────────────────────────
+
+name = "nasaka-map-data"
+main = "src/index.ts"
+compatibility_date = "2024-09-23"
+compatibility_flags = ["nodejs_compat"]
+
+[observability]
+enabled = true
+
+[observability.logs]
+enabled = true
+
+# ── CRON TRIGGERS ──────────────────────────────────────────────────────────
+# Runs every 30 minutes to sync Supabase → D1
+[triggers]
+crons = ["*/30 * * * *"]
+
+# ── D1 DATABASE BINDING ────────────────────────────────────────────────────
+# Replace PASTE_DATABASE_ID_HERE with the ID from Step 1 above
+[[d1_databases]]
+binding = "CEKA_MAP_DB"
+database_name = "ceka-map-db"
+database_id = "b378184a-6a57-426d-aaf3-8571d2f50a9b"
+
+# ── ROUTES ─────────────────────────────────────────────────────────────────
+# Uncomment and update once your custom domain is verified in Cloudflare
+# [[routes]]
+# pattern = "civiceducationkenya.com/api/map/*"
+# zone_name = "civiceducationkenya.com"

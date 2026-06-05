@@ -1,0 +1,56 @@
+# ──────────────────────────────────────────────────────────────────────────────
+# supabase-cache Worker — wrangler.toml
+# DEPLOYMENT INSTRUCTIONS:
+#   1. cd cloudflare/supabase-cache
+#   2. npx wrangler secret put SUPABASE_URL
+#   3. npx wrangler secret put SUPABASE_ANON_KEY
+#   4. npx wrangler secret put CACHE_PURGE_SECRET
+#   5. npx wrangler deploy
+# ──────────────────────────────────────────────────────────────────────────────
+
+name = "supabase-cache"
+main = "src/index.ts"
+
+# Match the REMOTE compatibility date to avoid unnecessary overrides
+compatibility_date = "2024-09-23"
+compatibility_flags = ["nodejs_compat"]
+
+workers_dev = true
+
+# ── OBSERVABILITY (matches remote) ───────────────────────────────────────────
+[observability]
+enabled = true
+
+[observability.logs]
+enabled = true
+
+# ── ROUTES (preserves existing production traffic) ───────────────────────────
+[[routes]]
+pattern = "www.civiceducationkenya.com/b2-image/*"
+zone_name = "civiceducationkenya.com"
+
+[[routes]]
+pattern = "civiceducationkenya.com/b2-image/*"
+zone_name = "civiceducationkenya.com"
+
+[[routes]]
+pattern = "www.civiceducationkenya.com/api/*"
+zone_name = "civiceducationkenya.com"
+
+[[routes]]
+pattern = "civiceducationkenya.com/api/*"
+zone_name = "civiceducationkenya.com"
+
+# ── VARS (preserves existing production config) ──────────────────────────────
+[vars]
+B2_KEY_ID = "003dc3adf1d5dd00000000002"
+
+# ── BINDINGS ─────────────────────────────────────────────────────────────────
+[[r2_buckets]]
+binding = "STATIC_ASSETS"
+bucket_name = "nasaka-static"
+
+# TODO: Create KV namespace via dashboard or CLI, then paste real ID here
+# [[kv_namespaces]]
+# binding = "SESSIONS"
+# id = "PASTE_KV_NAMESPACE_ID_HERE"

@@ -11,44 +11,41 @@ export interface BillFollow {
 }
 
 export class BillFollowingService {
-  async followBill(billId: string, signal?: AbortSignal): Promise<void> {
-    const { data: { user } } = await supabase.auth.getUser();
+  async followBill(billId: string, userId: string, signal?: AbortSignal): Promise<void> {
     if (signal?.aborted) throw new Error('Aborted');
-    if (!user) throw new Error('User not authenticated');
+    if (!userId) throw new Error('User not authenticated');
 
     const { error } = await (supabase
       .from('bill_follows') as any)
       .insert({
-        user_id: user.id,
+        user_id: userId,
         bill_id: billId
       });
 
     if (error) throw error;
   }
 
-  async unfollowBill(billId: string, signal?: AbortSignal): Promise<void> {
-    const { data: { user } } = await supabase.auth.getUser();
+  async unfollowBill(billId: string, userId: string, signal?: AbortSignal): Promise<void> {
     if (signal?.aborted) throw new Error('Aborted');
-    if (!user) throw new Error('User not authenticated');
+    if (!userId) throw new Error('User not authenticated');
 
     const { error } = await (supabase
       .from('bill_follows') as any)
       .delete()
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
       .eq('bill_id', billId);
 
     if (error) throw error;
   }
 
-  async isFollowingBill(billId: string, signal?: AbortSignal): Promise<boolean> {
-    const { data: { user } } = await supabase.auth.getUser();
+  async isFollowingBill(billId: string, userId: string, signal?: AbortSignal): Promise<boolean> {
     if (signal?.aborted) return false;
-    if (!user) return false;
+    if (!userId) return false;
 
     const { data, error } = await (supabase
       .from('bill_follows') as any)
       .select('id')
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
       .eq('bill_id', billId)
       .maybeSingle();
 
@@ -56,10 +53,9 @@ export class BillFollowingService {
     return !!data;
   }
 
-  async getFollowedBills(signal?: AbortSignal): Promise<any[]> {
-    const { data: { user } } = await supabase.auth.getUser();
+  async getFollowedBills(userId: string, signal?: AbortSignal): Promise<any[]> {
     if (signal?.aborted) return [];
-    if (!user) return [];
+    if (!userId) return [];
 
     const { data, error } = await (supabase
       .from('bill_follows') as any)
@@ -80,7 +76,7 @@ export class BillFollowingService {
         vault_url,
         vault_refreshed_at
       `)
-      .eq('user_id', user.id);
+      .eq('user_id', userId);
 
     if (error) throw error;
     return data?.map((follow: any) => follow.bills) || [];

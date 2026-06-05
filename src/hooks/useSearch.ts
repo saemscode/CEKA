@@ -256,8 +256,8 @@ export function useSearch() {
       clicked_result_rank: rank,
       clicked_relevance_score: result.relevanceScore,
       time_to_click_ms: timeSinceSearch,
-    });
-  }, [query, sessionId]);
+    }, user?.id);
+  }, [query, sessionId, user]);
 
   return {
     query,

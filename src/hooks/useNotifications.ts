@@ -19,7 +19,7 @@ export function useNotifications() {
           setNotifications(prev => [notification, ...prev]);
           setUnreadCount(prev => prev + 1);
         }
-      });
+      }, user.id);
 
       return unsubscribe;
     } else {
@@ -31,7 +31,7 @@ export function useNotifications() {
 
   const fetchNotifications = async () => {
     try {
-      const data = await notificationService.getNotifications();
+      const data = await notificationService.getNotifications({}, user?.id);
       setNotifications(data);
     } catch (error: any) {
       if (error.name !== 'AbortError' && !error.message?.includes('signal is aborted')) {
@@ -44,7 +44,7 @@ export function useNotifications() {
 
   const fetchUnreadCount = async () => {
     try {
-      const count = await notificationService.getUnreadCount();
+      const count = await notificationService.getUnreadCount(user?.id);
       setUnreadCount(count);
     } catch (error) {
       console.error('Error fetching unread count:', error);

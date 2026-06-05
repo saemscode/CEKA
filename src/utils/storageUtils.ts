@@ -151,15 +151,12 @@ export async function createProcessingJob(jobData: {
   status?: string;
   progress?: number;
   current_step?: string;
-}): Promise<ProcessingJob> {
+}, userId?: string | null): Promise<ProcessingJob> {
   try {
     // Validate job data
     if (!jobData.job_name || jobData.job_name.trim().length === 0) {
       throw new StorageError('Job name is required', 'INVALID_JOB_DATA');
     }
-
-    const { data: { user } } = await supabase.auth.getUser();
-    const userId = user?.id;
 
     const jobToCreate = {
       job_name: jobData.job_name.trim(),
@@ -212,6 +209,7 @@ export async function createProcessingJob(jobData: {
 export async function uploadFileDirectly(
   file: File,
   path: string,
+  userId?: string | null,
   bucket: string = 'processed-data',
   options: {
     upsert?: boolean;
@@ -219,13 +217,10 @@ export async function uploadFileDirectly(
   } = {}
 ): Promise<{ data: any; error: any }> {
   try {
-    const { data: user, error: authError } = await supabase.auth.getUser();
-    
-    if (authError || !user.user) {
+    if (!userId) {
       throw new StorageError(
         'User must be authenticated for direct uploads',
-        'AUTH_REQUIRED',
-        authError
+        'AUTH_REQUIRED'
       );
     }
 
@@ -433,11 +428,10 @@ export async function getPublicProcessingJobs(
  */
 export async function updateProcessingJob(
   jobId: string,
-  updates: Partial<ProcessingJob>
+  updates: Partial<ProcessingJob>,
+  userId?: string | null
 ): Promise<ProcessingJob> {
   try {
-    const { data: authData } = await supabase.auth.getUser();
-    const userId = authData?.user?.id;
 
     // Add audit log entry
     const updatedJob = {

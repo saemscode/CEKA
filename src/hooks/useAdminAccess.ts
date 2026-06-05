@@ -2,12 +2,14 @@
 import { useState, useEffect } from 'react';
 import { adminService } from '@/services/adminService';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/providers/AuthProvider';
 
 export const useAdminAccess = () => {
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [sessionLimited, setSessionLimited] = useState<boolean>(false);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   useEffect(() => {
     checkAdminAccess();
@@ -30,7 +32,7 @@ export const useAdminAccess = () => {
       setIsLoading(true);
       
       // First check if user is admin
-      const isUserAdmin = await adminService.isUserAdmin();
+      const isUserAdmin = await adminService.isUserAdmin(user?.id, user?.email);
       
       if (!isUserAdmin) {
         setIsAdmin(false);
@@ -39,7 +41,7 @@ export const useAdminAccess = () => {
       }
 
       // Then check session management
-      const hasSessionAccess = await adminService.checkAdminWithSessionManagement();
+      const hasSessionAccess = await adminService.checkAdminWithSessionManagement(user?.id, user?.email);
       
       if (!hasSessionAccess) {
         setSessionLimited(true);

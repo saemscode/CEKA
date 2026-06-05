@@ -46,17 +46,20 @@ serve(async (req) => {
 
     console.log(`[Paystack-Webhook] Received event: ${event}`)
 
-    const supabaseUrl = Deno.env.get('PROJECT_URL') || Deno.env.get('SUPABASE_URL')
-    const supabaseServiceKey = Deno.env.get('SERVICE_ROLE_KEY') || Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+    const supabaseMainUrl = Deno.env.get('PROJECT_URL') || Deno.env.get('SUPABASE_URL')
+    const supabaseMainKey = Deno.env.get('SERVICE_ROLE_KEY') || Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 
-    if (!supabaseUrl || !supabaseServiceKey) {
-      throw new Error('New Database credentials (PROJECT_URL/SERVICE_ROLE_KEY) not found')
-    }
+    const supabaseDonationsUrl = Deno.env.get('DONATIONS_SUPABASE_URL')
+    const supabaseDonationsKey = Deno.env.get('DONATIONS_SERVICE_ROLE_KEY')
 
-    const supabaseLedger = createClient(supabaseUrl, supabaseServiceKey)
+    if (!supabaseMainUrl || !supabaseMainKey) throw new Error('Main Database credentials not found')
+    if (!supabaseDonationsUrl || !supabaseDonationsKey) throw new Error('Donations Database credentials not found')
 
-    // Log Raw Payload (using public schema)
-    await supabaseLedger
+    const supabaseMain = createClient(supabaseMainUrl, supabaseMainKey)
+    const supabaseDonations = createClient(supabaseDonationsUrl, supabaseDonationsKey)
+
+    // Log Raw Payload (using public schema on Project 1)
+    await supabaseMain
       .from('audit_trail')
       .insert({
         event_type: event,
@@ -64,7 +67,7 @@ serve(async (req) => {
       })
 
     if (event === 'charge.success') {
-      const { error: txError } = await supabaseLedger
+      const { error: txError } = await supabaseDonations
         .from('transactions')
         .insert({
           paystack_id: data.id.toString(),
@@ -85,7 +88,7 @@ serve(async (req) => {
     }
 
     else if (event === 'subscription.create' || event === 'subscription.enable') {
-      const { error: subError } = await supabaseLedger
+      const { error: subError } = await supabaseDonations
         .from('subscriptions')
         .upsert({
           external_customer_id: data.customer.customer_code,

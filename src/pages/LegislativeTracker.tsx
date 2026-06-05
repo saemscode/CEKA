@@ -355,7 +355,7 @@ const LegislativeTracker = () => {
         <title>Kenya Legislative Tracker | Bill Tracker & Public Participation | CEKA</title>
         <meta name="description" content="Track ongoing bills in the Kenya National Assembly and Senate. Real-time updates on Finance Bill 2026, legislative progress, and public participation deadlines. Use CEKA to stay informed about Kenyan lawmaking." />
         <meta name="keywords" content="Finance Bill Kenya, Finance Bill 2026, Kenya Finance Bill, Bill Tracker Kenya, Kenya Parliament bill tracker, real-time bill tracker, legislative tracker Kenya, track bills in Kenya, public participation Kenya, CEKA, Civic Education Kenya, Muswada wa Fedha 2026, maoni ya umma, bunge la Kenya" />
-        
+
         {/* Open Graph / Facebook */}
         <meta property="og:type" content="website" />
         <meta property="og:url" content={window.location.href} />
@@ -385,12 +385,18 @@ const LegislativeTracker = () => {
               animate={{ opacity: 1, y: 0 }}
               className="max-w-4xl"
             >
-              <Badge className="mb-6 rounded-full px-4 py-1.5 bg-kenya-green/10 text-kenya-green border-kenya-green/20 font-black tracking-widest text-[10px] uppercase">
-                <Globe className="h-3 w-3 mr-2" />
-                Civic Education Kenya (CEKA) presents
-              </Badge>
+              <div className="mb-6 flex items-center gap-3">
+                <div className="relative flex items-center justify-center w-36 h-36 rounded-[28px] bg-kenya-green/10 border border-kenya-green/20 shadow-ios-high backdrop-blur-xl shrink-0">
+                  <div className="absolute inset-0 rounded-[28px] bg-gradient-to-br from-kenya-green/20 to-primary/10 opacity-60" />
+                  <img
+                    src="/icons/legislative-tracker.svg"
+                    alt="Legislative Tracker"
+                    className="relative z-10 w-28 h-28 object-contain"
+                  />
+                </div>
+              </div>
               <h1 className="text-5xl md:text-8xl font-[1000] tracking-tight leading-[0.9] mb-8 dark:text-white break-words whitespace-normal max-w-full">
-                The <span className="text-transparent bg-clip-text bg-gradient-to-r from-kenya-green to-primary inline-block">Legislative </span>Tracker.
+                The <span className="text-transparent bg-clip-text bg-gradient-to-r from-kenya-green to-primary inline-block pb-2">Legislative </span>Tracker.
               </h1>
               <p className="text-xl md:text-2xl text-muted-foreground font-medium leading-relaxed max-w-2xl">
                 The most advanced legislative tracker in Kenya. Real-time updates from

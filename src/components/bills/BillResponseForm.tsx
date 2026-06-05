@@ -34,7 +34,7 @@ export const BillResponseForm: React.FC<BillResponseFormProps> = ({
   // Load previously saved response for this user+bill
   useEffect(() => {
     if (!user || !billId) return;
-    billService.getUserBillResponse(billId).then((r) => {
+    billService.getUserBillResponse(billId, user.id).then((r) => {
       if (r) {
         setPreviousResponse(r);
         setResponse(r);
@@ -63,7 +63,7 @@ export const BillResponseForm: React.FC<BillResponseFormProps> = ({
     setSubmitting(true);
     setError(null);
 
-    const ok = await billService.submitBillResponse(billId, response.trim());
+    const ok = await billService.submitBillResponse(billId, response.trim(), user.id);
     setSubmitting(false);
 
     if (ok) {

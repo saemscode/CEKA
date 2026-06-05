@@ -67,15 +67,14 @@ class NotificationService {
    * Get notifications with optional filtering
    * Gracefully handles missing table (migration not yet run)
    */
-  async getNotifications(filters: NotificationFilters = {}): Promise<Notification[]> {
+  async getNotifications(filters: NotificationFilters = {}, userId?: string | null): Promise<Notification[]> {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return [];
+      if (!userId) return [];
 
       // Use type assertion for table that doesn't exist in types.ts yet
       let query = notificationsTable()
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', userId)
         .eq('is_archived', false)
         .order('created_at', { ascending: false });
 
@@ -120,14 +119,13 @@ class NotificationService {
   /**
    * Get unread notification count
    */
-  async getUnreadCount(): Promise<number> {
+  async getUnreadCount(userId?: string | null): Promise<number> {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return 0;
+      if (!userId) return 0;
 
       const { count, error } = await notificationsTable()
         .select('*', { count: 'exact', head: true })
-        .eq('user_id', user.id)
+        .eq('user_id', userId)
         .eq('is_read', false)
         .eq('is_archived', false);
 
@@ -252,7 +250,8 @@ class NotificationService {
   }
 
   subscribeToNotifications(
-    callback: (notification: Notification) => void
+    callback: (notification: Notification) => void,
+    userId?: string | null
   ): () => void {
     let active = true;
 
@@ -261,13 +260,12 @@ class NotificationService {
       this.isSubscribing = true;
 
       try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user || !active) {
+        if (!userId || !active) {
           this.isSubscribing = false;
           return;
         }
 
-        this.userId = user.id;
+        this.userId = userId;
 
         // Clean removal of previous channel
         if (this.channel) {
@@ -289,14 +287,14 @@ class NotificationService {
 
         // Create new channel with user-specific filter
         this.channel = supabase
-          .channel(`user_notifications:${user.id}-${Math.random().toString(36).substr(2, 9)}`)
+          .channel(`user_notifications:${userId}-${Math.random().toString(36).substr(2, 9)}`)
           .on(
             'postgres_changes',
             {
               event: 'INSERT',
               schema: 'public',
               table: 'user_notifications',
-              filter: `user_id=eq.${user.id}`,
+              filter: `user_id=eq.${userId}`,
             },
             async (payload) => {
               if (!active) return;
@@ -451,7 +449,7 @@ class NotificationService {
    * Called after a user follows a bill so they receive status change pushes.
    * Safe to call multiple times — returns cached token if already granted.
    */
-  async requestPushPermission(): Promise<string | null> {
+  async requestPushPermission(userId?: string | null): Promise<string | null> {
     try {
       // Guard: browser must support Notification API
       if (typeof window === 'undefined' || !('Notification' in window)) {
@@ -488,12 +486,11 @@ class NotificationService {
 
       // Upsert the FCM token into the user's profile row
       try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
+        if (userId) {
           await supabase
             .from('profiles')
             .update({ fcm_token: fcmToken } as any)
-            .eq('id', user.id);
+            .eq('id', userId);
         }
       } catch {
         // Non-fatal: push will still work on next token refresh

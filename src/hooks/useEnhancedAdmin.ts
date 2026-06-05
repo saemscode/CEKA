@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { adminService, AdminNotification, AdminDashboardStats, UserActivityStats, ModerationQueueItem } from '@/services/adminService';
 import { BlogPost } from '@/services/blogService';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/providers/AuthProvider';
 
 export function useEnhancedAdmin() {
   const [notifications, setNotifications] = useState<AdminNotification[]>([]);
@@ -12,6 +13,7 @@ export function useEnhancedAdmin() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   useEffect(() => {
     checkAdminStatusAndLoadData();
@@ -24,7 +26,7 @@ export function useEnhancedAdmin() {
 
   const checkAdminStatusAndLoadData = async () => {
     try {
-      const adminStatus = await adminService.isUserAdmin();
+      const adminStatus = await adminService.isUserAdmin(user?.id, user?.email);
       setIsAdmin(adminStatus);
       
       if (adminStatus) {

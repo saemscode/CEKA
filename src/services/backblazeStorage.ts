@@ -136,7 +136,8 @@ class BackblazeStorageService {
         file: File,
         folder: string = 'resources',
         onProgress?: (progress: number) => void,
-        customFileName?: string
+        customFileName?: string,
+        userId?: string | null
     ): Promise<UploadResult> {
         // Support deep paths and ensure no trailing slashes on folder
         const cleanFolderName = folder.replace(/\/+$/, '');
@@ -149,16 +150,17 @@ class BackblazeStorageService {
 
         // Use Supabase Storage fallback if B2 is not configured
         if (!this.config || !this.uploadUrl) {
-            return await this.uploadToSupabase(file, fileName, onProgress);
+            return await this.uploadToSupabase(file, fileName, onProgress, userId);
         }
 
-        return await this.uploadToB2(file, fileName, onProgress);
+        return await this.uploadToB2(file, fileName, onProgress, userId);
     }
 
     private async uploadToB2(
         file: File,
         fileName: string,
-        onProgress?: (progress: number) => void
+        onProgress?: (progress: number) => void,
+        userId?: string | null
     ): Promise<UploadResult> {
         try {
             onProgress?.(10);
@@ -190,7 +192,7 @@ class BackblazeStorageService {
                     provider: 'backblaze_s3',
                     s3_path: fileName
                 }
-            });
+            }, userId);
 
             return {
                 success: true,
@@ -200,14 +202,15 @@ class BackblazeStorageService {
         } catch (error) {
             console.error('[Storage] B2 upload error:', error);
             // Fallback to Supabase
-            return await this.uploadToSupabase(file, fileName, onProgress);
+            return await this.uploadToSupabase(file, fileName, onProgress, userId);
         }
     }
 
     private async uploadToSupabase(
         file: File,
         filePath: string,
-        onProgress?: (progress: number) => void
+        onProgress?: (progress: number) => void,
+        userId?: string | null
     ): Promise<UploadResult> {
         try {
             onProgress?.(10);
@@ -238,7 +241,7 @@ class BackblazeStorageService {
                 storagePath: filePath,
                 storageUrl: urlData.publicUrl,
                 metadata: { storage: 'supabase' }
-            });
+            }, userId);
 
             return {
                 success: true,
@@ -255,10 +258,8 @@ class BackblazeStorageService {
         }
     }
 
-    private async saveMetadataToSupabase(metadata: FileMetadata): Promise<void> {
+    private async saveMetadataToSupabase(metadata: FileMetadata, userId?: string | null): Promise<void> {
         try {
-            const { data: { user } } = await supabase.auth.getUser();
-
             await supabase.from('resource_files' as any).insert({
                 title: metadata.title,
                 description: metadata.description || '',
@@ -271,7 +272,7 @@ class BackblazeStorageService {
                 thumbnail_url: metadata.thumbnailUrl,
                 extracted_text: metadata.extractedText,
                 metadata: metadata.metadata || {},
-                uploaded_by: user?.id
+                uploaded_by: userId || null
             });
         } catch (error) {
             // Metadata save is non-blocking - log but don't fail

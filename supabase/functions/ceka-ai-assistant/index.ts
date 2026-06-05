@@ -8611,9 +8611,11 @@ If technical failure occurs:
 → Apply TIER 8 (Error Template)
 → Be transparent about limitation
 
-Never deviate from assigned tier format.
+Never deviate from civic accuracy — but ALWAYS match response FORMAT and LENGTH to the actual question complexity.
+A simple question deserves a conversational answer. A complex question earns a structured one. Do not produce formatted reports with bold section headers for simple queries — that is the single biggest failure mode.
 Never apologise excessively — be helpful and move forward.
 Never pad responses with unnecessary repetition.
+Never reference dates from your training data — the current date is always injected into this prompt. Use ONLY that date.
 
 Current context: %CONTEXT%`;
 
@@ -8651,23 +8653,36 @@ function postProcessResponse(answer: string, tier?: number): string {
    // 3. Humanize overconfident first-person markers
    processed = processed.replace(/\bI (think|believe|feel|it seems)\b/gi, 'Current public records show');
 
-   // 4. Spacing: collapse excess blank lines, strip leading/trailing whitespace
+   // 4. Strip rigid structural section headers that turn every response into a formatted report.
+   //    These headers are removed entirely; their content below them is preserved.
+   //    Pattern: **HeaderName** or **HeaderName:** on its own line (case-insensitive)
+   processed = processed.replace(
+      /^\*\*(Summary|Key Concepts|Legal Basis|How It Works(?: in Practice)?|Citizen Action|Swahili Terms|Sources|Notes|Process \/ How It Works|How This Works|Key Takeaways|Background|Context|Overview|What This Means)\*\*:?\s*$/gim,
+      ''
+   );
+
+   // 5. Spacing: collapse excess blank lines left by removed headers, strip leading/trailing whitespace
    processed = processed.trim().replace(/\n{3,}/g, "\n\n");
 
-   // 5. For very short responses, collapse into a single paragraph
+   // 6. For very short responses, collapse into a single paragraph
    if (processed.length < 200 && processed.split('\n').length > 2) {
       processed = processed.replace(/\n+/g, " ");
    }
 
-   // 6. Smart freshness: only append if the response contains time-sensitive signals
-   //    AND does not already include a freshness line.
-   //    Settled constitutional law and fixed procedures never need a freshness stamp.
-   if (
-      !processed.includes('Information current as of') &&
+   // 7. Force-overwrite any stale date stamp the model may hallucinate from training data.
+   //    Always replace with today's actual ISO date.
+   const today = new Date().toISOString().split('T')[0];
+   if (processed.includes('Information current as of')) {
+      // Replace any existing date stamp (may contain a stale training-data date)
+      processed = processed.replace(
+         /Information current as of \d{4}-\d{2}-\d{2}\.?/gi,
+         `Information current as of ${today}.`
+      );
+   } else if (
+      // Smart freshness: only append if time-sensitive and response is substantive
       processed.split(' ').length > 50 &&
       isTimeSensitiveResponse(processed)
    ) {
-      const today = new Date().toISOString().split('T')[0];
       processed += `\n\nInformation current as of ${today}.`;
    }
 
@@ -8715,8 +8730,10 @@ Deno.serve(async (req) => {
       }
 
       // Prepare the system prompt with context and date
+      const todayISO = new Date().toISOString().split('T')[0];
       let systemPromptWithDate = SYSTEM_PROMPT.replace('%CONTEXT%', context)
-         .replace(/YYYY-MM-DD/g, new Date().toISOString().split('T')[0]);
+         .replace(/YYYY-MM-DD/g, todayISO)
+         + `\n\nTODAY'S DATE: ${todayISO}. You MUST use this exact date for any "Information current as of" lines. Never use a date from your training data.`;
 
       // --- RAG INTEGRATION: RETRIEVE CONSTITUTIONAL CONTEXT ---
       let ragContext = "";

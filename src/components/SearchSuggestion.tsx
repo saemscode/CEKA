@@ -44,16 +44,16 @@ const SearchSuggestion: React.FC<SearchSuggestionProps> = ({
 
   const getTypeIcon = (type: string) => {
     switch (type) {
-      case 'bill':                 return <SearchSquareIcon className="h-4 w-4" />;
-      case 'blog':                 return <SearchListIcon className="h-4 w-4" />;
-      case 'resource':             return <SearchFileIcon className="h-4 w-4" />;
-      case 'discussion':           return <SearchLayerIcon className="h-4 w-4" />;
-      case 'campaign':             return <CampaignIcon className="h-4 w-4" />;
+      case 'bill': return <SearchSquareIcon className="h-4 w-4" />;
+      case 'blog': return <SearchListIcon className="h-4 w-4" />;
+      case 'resource': return <SearchFileIcon className="h-4 w-4" />;
+      case 'discussion': return <SearchLayerIcon className="h-4 w-4" />;
+      case 'campaign': return <CampaignIcon className="h-4 w-4" />;
       case 'constitution_chapter': return <ConstitutionChapterIcon className="h-4 w-4" />;
       case 'constitution_section': return <ConstitutionSectionIcon className="h-4 w-4" />;
-      case 'civic_glossary':       return <CivicGlossaryIcon className="h-4 w-4" />;
-      case 'carousel_slide':       return <CarouselSlideIcon className="h-4 w-4" />;
-      default:                     return <SearchIcon size={16} />;
+      case 'civic_glossary': return <CivicGlossaryIcon className="h-4 w-4" />;
+      case 'carousel_slide': return <CarouselSlideIcon className="h-4 w-4" />;
+      default: return <SearchIcon size={16} />;
     }
   };
 
@@ -169,7 +169,7 @@ const SearchSuggestion: React.FC<SearchSuggestionProps> = ({
     <div className={`relative ${className}`}>
       <form onSubmit={handleSubmit} className="relative">
         <div className="relative">
-          <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <SearchIcon className="z-10 absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             type="text"
             placeholder={translate("Search resources, bills, blog posts...", language)}
@@ -256,7 +256,7 @@ const SearchSuggestion: React.FC<SearchSuggestionProps> = ({
                 <div className="text-muted-foreground mb-2">
                   No suggestions found for "{query}"
                 </div>
-                <Button variant="outline" size="sm" onClick={() => handleSubmit({ preventDefault: () => {} } as React.FormEvent)}>
+                <Button variant="outline" size="sm" onClick={() => handleSubmit({ preventDefault: () => { } } as React.FormEvent)}>
                   Search anyway
                 </Button>
               </div>
@@ -280,7 +280,7 @@ const SearchSuggestion: React.FC<SearchSuggestionProps> = ({
                 </div>
               </div>
             )}
-            
+
             <div className="border-t border-border/30 p-3">
               <div className="text-xs text-muted-foreground">
                 Search across: Bills, Blog Posts, Resources, Discussions, Constitution, Glossary, Campaigns, Featured

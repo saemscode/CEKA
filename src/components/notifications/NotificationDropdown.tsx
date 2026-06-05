@@ -29,6 +29,7 @@ import {
 import { cn } from '@/lib/utils';
 import { notificationService, type Notification, type NotificationSourceType } from '@/services/notificationService';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/providers/AuthProvider';
 
 // Icon mapping for notification types
 const iconMap: Record<string, React.ElementType> = {
@@ -48,6 +49,7 @@ interface NotificationDropdownProps {
 
 export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ className }) => {
     const navigate = useNavigate();
+    const { user } = useAuth();
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [unreadCount, setUnreadCount] = useState(0);
     const [isLoading, setIsLoading] = useState(true);
@@ -57,8 +59,8 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ clas
     const fetchNotifications = useCallback(async () => {
         try {
             const [data, count] = await Promise.all([
-                notificationService.getNotifications({ limit: 20 }),
-                notificationService.getUnreadCount(),
+                notificationService.getNotifications({ limit: 20 }, user?.id),
+                notificationService.getUnreadCount(user?.id),
             ]);
             setNotifications(data);
             setUnreadCount(count);
@@ -76,7 +78,7 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ clas
         const unsubscribe = notificationService.subscribeToNotifications((newNotification) => {
             setNotifications(prev => [newNotification, ...prev]);
             setUnreadCount(prev => prev + 1);
-        });
+        }, user?.id);
 
         return () => unsubscribe();
     }, [fetchNotifications]);

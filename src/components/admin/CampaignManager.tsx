@@ -22,6 +22,7 @@ import {
     XCircle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useAuth } from '@/providers/AuthProvider';
 
 const CampaignManager = () => {
     const [campaigns, setCampaigns] = useState<any[]>([]);
@@ -36,6 +37,7 @@ const CampaignManager = () => {
         is_active: true
     });
     const { toast } = useToast();
+    const { user } = useAuth();
 
     useEffect(() => {
         loadCampaigns();
@@ -56,7 +58,7 @@ const CampaignManager = () => {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-            await adminService.saveCampaign(form);
+            await adminService.saveCampaign(form, user?.id);
             toast({ title: "Success", description: "Campaign saved successfully." });
             setShowEditor(false);
             setForm({ title: '', description: '', image_url: '', target_url: '', section_target: 'home_hero', is_active: true });
@@ -68,7 +70,7 @@ const CampaignManager = () => {
 
     const toggleCampaign = async (campaign: any) => {
         try {
-            await adminService.saveCampaign({ ...campaign, is_active: !campaign.is_active });
+            await adminService.saveCampaign({ ...campaign, is_active: !campaign.is_active }, user?.id);
             loadCampaigns();
         } catch (error) {
             toast({ title: "Error", description: "Failed to toggle campaign", variant: "destructive" });

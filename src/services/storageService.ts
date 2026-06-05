@@ -1,4 +1,4 @@
-// Storage Service - Hybrid Storage with Backblaze B2 Primary and Supabase Fallback
+// Storage Service - Hybrid Storage with R2 Primary and Supabase Fallback
 // Handles file uploads with automatic provider selection and metadata sync
 
 import { supabase } from '@/integrations/supabase/client';
@@ -36,12 +36,12 @@ class StorageService {
                 console.log('[StorageService] Forced to Supabase Storage by environment config');
                 this.useBackblaze = false;
             } else {
-                // Try to initialize Backblaze
-                this.useBackblaze = await backblazeStorage.initialize();
-                console.log(`[StorageService] Using ${this.useBackblaze ? 'Backblaze B2' : 'Supabase Storage'}`);
+                // Backblaze disabled — R2 is now primary for legacy reads
+                this.useBackblaze = false;
+                console.log('[StorageService] Backblaze disabled; using Supabase Storage for writes');
             }
         } catch (error) {
-            console.warn('[StorageService] Backblaze init failed, using Supabase:', error);
+            console.warn('[StorageService] Backblaze init skipped, using Supabase:', error);
             this.useBackblaze = false;
         }
 
@@ -54,27 +54,9 @@ class StorageService {
         const folder = options.folder || 'resources';
         const fullPath = path.startsWith(folder) ? path : `${folder}/${path}`;
 
-        console.log(`[Storage] Uploading to ${this.useBackblaze ? 'backblaze' : 'supabase'}: ${fullPath}`);
+        // Uploads now route exclusively to Supabase (or future R2 upload logic)
+        console.log(`[Storage] Uploading to supabase: ${fullPath}`);
 
-        if (this.useBackblaze) {
-            try {
-                const result = await backblazeStorage.uploadFile(file, folder, options.onProgress);
-                if (result.success) {
-                    return {
-                        success: true,
-                        url: result.fileUrl,
-                        path: result.fileName,
-                        provider: 'backblaze'
-                    };
-                }
-                throw new Error(result.error);
-            } catch (error) {
-                console.warn('[Storage] Backblaze upload failed, falling back to Supabase:', error);
-                // Fall through to Supabase
-            }
-        }
-
-        // Supabase Storage upload
         return await this.uploadToSupabase(file, fullPath, options);
     }
 
@@ -222,15 +204,24 @@ class StorageService {
 
                 let authorizedUrl = pathOrUrl;
 
-                // CRITICAL: If this is a B2 URL, ALWAYS use B2 signing regardless of init state
+                // MIGRATED: Rewrite legacy Backblaze URLs to Cloudflare R2
                 if (pathOrUrl.includes('backblazeb2.com') || pathOrUrl.includes('ceka-resources-vault')) {
-                    const signed = await backblazeStorage.getAuthorizedUrl(pathOrUrl);
-                    authorizedUrl = signed || pathOrUrl;
+                    try {
+                        const url = new URL(pathOrUrl);
+                        const pathParts = url.pathname.split('/');
+                        // Backblaze format: /file/ceka-resources-vault/carousels/...
+                        // R2 format: /carousels/...
+                        const r2Path = pathParts.slice(3).join('/');
+                        authorizedUrl = `https://cdn.civiceducationkenya.com/${r2Path}`;
+                    } catch {
+                        authorizedUrl = pathOrUrl; // Graceful fallback
+                    }
                 } else if (pathOrUrl.startsWith('http')) {
                     authorizedUrl = pathOrUrl;
                 } else if (pathOrUrl.includes('b2-image/')) {
                     authorizedUrl = pathOrUrl;
                 } else if (this.useBackblaze) {
+                    // Legacy path — kept for safety but unreachable since useBackblaze = false
                     const signed = await backblazeStorage.getAuthorizedUrl(pathOrUrl);
                     authorizedUrl = signed || pathOrUrl;
                 } else {
@@ -256,6 +247,7 @@ class StorageService {
         this.promiseCache.set(pathOrUrl, authPromise);
         return authPromise;
     }
+
     getStorageProvider(): string {
         return this.useBackblaze ? 'backblaze' : 'supabase';
     }

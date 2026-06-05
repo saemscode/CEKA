@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react';
 import { adminService, AdminNotification } from '@/services/adminService';
 import { BlogPost } from '@/services/blogService';
+import { useAuth } from '@/providers/AuthProvider';
 
 export function useAdmin() {
   const [notifications, setNotifications] = useState<AdminNotification[]>([]);
   const [draftPosts, setDraftPosts] = useState<BlogPost[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
 
   useEffect(() => {
     checkAdminStatus();
@@ -14,7 +16,7 @@ export function useAdmin() {
 
   const checkAdminStatus = async () => {
     try {
-      const adminStatus = await adminService.isUserAdmin();
+      const adminStatus = await adminService.isUserAdmin(user?.id, user?.email);
       setIsAdmin(adminStatus);
       
       if (adminStatus) {

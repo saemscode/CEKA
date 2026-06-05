@@ -35,7 +35,7 @@ export function useBillFollowing(billId: string) {
     }
 
     try {
-      const following = await billFollowingService.isFollowingBill(billId, signal);
+      const following = await billFollowingService.isFollowingBill(billId, user.id, signal);
       if (active) setIsFollowing(following);
     } catch (error: any) {
       if (active && error.name !== 'AbortError' && error.message !== 'Aborted' && !error?.message?.includes('AbortError') && !error?.message?.includes('signal is aborted')) {
@@ -62,17 +62,17 @@ export function useBillFollowing(billId: string) {
 
     try {
       if (isFollowing) {
-        await billFollowingService.unfollowBill(billId);
+        await billFollowingService.unfollowBill(billId, user.id);
         setIsFollowing(false);
         setFollowCount(prev => prev - 1);
       } else {
-        await billFollowingService.followBill(billId);
+        await billFollowingService.followBill(billId, user.id);
         setIsFollowing(true);
         setFollowCount(prev => prev + 1);
         // Prompt for OS-level push permission so user receives status change
         // notifications via FCM for this bill and any future followed bills.
         // Non-blocking — runs in background.
-        notificationService.requestPushPermission().catch(() => {});
+        notificationService.requestPushPermission(user.id).catch(() => {});
       }
     } catch (error) {
       console.error('Error toggling follow:', error);

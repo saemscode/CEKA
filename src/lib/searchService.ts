@@ -714,7 +714,7 @@ class SearchService {
     } catch { /* fire-and-forget */ }
   }
 
-  async logClickEvent(event: SearchClickEvent): Promise<void> {
+  async logClickEvent(event: SearchClickEvent, userId?: string | null): Promise<void> {
     try {
       await db.from('search_events').insert({
         session_id: event.session_id,
@@ -727,8 +727,7 @@ class SearchService {
         clicked_relevance_score: event.clicked_relevance_score,
         time_to_click_ms: event.time_to_click_ms,
       });
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) await db.rpc('update_type_affinity', { p_user_id: user.id, p_type: event.clicked_result_type });
+      if (userId) await db.rpc('update_type_affinity', { p_user_id: userId, p_type: event.clicked_result_type });
     } catch { /* fire-and-forget */ }
   }
 

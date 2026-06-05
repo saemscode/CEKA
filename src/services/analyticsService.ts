@@ -285,12 +285,11 @@ class AnalyticsService {
     }
 
     // Track page view (call this from pages)
-    async trackPageView(pagePath: string): Promise<void> {
+    async trackPageView(pagePath: string, userId?: string | null): Promise<void> {
         try {
-            const { data: { user } } = await supabase.auth.getUser();
 
             await supabase.from('page_views' as any).insert({
-                user_id: user?.id || null,
+                user_id: userId || null,
                 page_path: pagePath,
                 referrer: document.referrer || null,
                 user_agent: navigator.userAgent,
@@ -303,13 +302,12 @@ class AnalyticsService {
     }
 
     // Track user activity
-    async trackActivity(activityType: string, data: Record<string, any> = {}): Promise<void> {
+    async trackActivity(activityType: string, userId: string, data: Record<string, any> = {}): Promise<void> {
         try {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) return;
+            if (!userId) return;
 
             await supabase.from('user_activity_log' as any).insert({
-                user_id: user.id,
+                user_id: userId,
                 activity_type: activityType,
                 activity_data: data
             });

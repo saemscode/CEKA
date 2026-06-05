@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { CheckCircle, XCircle, AlertCircle, User, UserX, Shield } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAuth } from '@/providers/AuthProvider';
 import { supabase } from '@/integrations/supabase/client';
 import {
   getSignedUploadUrl,
@@ -30,7 +31,7 @@ interface TestResult {
 const RLSTestPanel: React.FC = () => {
   const [testResults, setTestResults] = useState<TestResult[]>([]);
   const [isRunning, setIsRunning] = useState(false);
-  const [user, setUser] = useState<any>(null);
+  const { user } = useAuth();
   const [testFile, setTestFile] = useState<File | null>(null);
 
   const addTestResult = (result: TestResult) => {
@@ -42,8 +43,6 @@ const RLSTestPanel: React.FC = () => {
   };
 
   const checkUserStatus = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    setUser(user);
     
     addTestResult({
       test: 'User Authentication Status',
@@ -74,7 +73,7 @@ const RLSTestPanel: React.FC = () => {
       }
 
       const filename = `test_uploads/direct_${Date.now()}_${testFile.name}`;
-      const result = await uploadFileDirectly(testFile, filename);
+      const result = await uploadFileDirectly(testFile, filename, user?.id);
       
       addTestResult({
         test: 'Direct Upload Test',
@@ -161,7 +160,7 @@ const RLSTestPanel: React.FC = () => {
         status: 'pending',
         progress: 0,
         current_step: 'Testing RLS job creation'
-      });
+      }, user?.id);
       
       addTestResult({
         test: 'Processing Job Creation Test',

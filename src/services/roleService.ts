@@ -58,24 +58,28 @@ class RoleService {
   private cacheTimestamp: number = 0;
   private readonly CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
-  /**
-   * Get the current user's role from user_roles table
-   */
-  async getUserRole(): Promise<UserRole> {
+  async getUserRole(userId?: string | null, userEmail?: string | null): Promise<UserRole> {
     // Return cached if valid
     if (this.cachedRole !== undefined && Date.now() - this.cacheTimestamp < this.CACHE_TTL) {
       return this.cachedRole;
     }
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        this.cachedRole = null;
-        return null;
+      let uid = userId;
+      let email = userEmail;
+
+      if (!uid) {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          this.cachedRole = null;
+          return null;
+        }
+        uid = user.id;
+        email = user.email;
       }
 
       // Root admin bypass
-      if (user.email === ROOT_ADMIN_EMAIL) {
+      if (email === ROOT_ADMIN_EMAIL) {
         this.cachedRole = 'admin';
         this.cacheTimestamp = Date.now();
         return 'admin';
@@ -93,7 +97,7 @@ class RoleService {
       const { data: roleData } = await (supabase
         .from('user_roles') as any)
         .select('role')
-        .eq('user_id', user.id)
+        .eq('user_id', uid)
         .maybeSingle();
 
       if (roleData?.role === 'admin') {
@@ -112,7 +116,7 @@ class RoleService {
       const { data: profile } = await supabase
         .from('profiles')
         .select('is_admin')
-        .eq('id', user.id)
+        .eq('id', uid)
         .maybeSingle();
 
       if (profile?.is_admin) {
@@ -131,27 +135,24 @@ class RoleService {
     }
   }
 
-  /**
-   * Check if user is admin (full access)
-   */
-  async isAdmin(): Promise<boolean> {
-    const role = await this.getUserRole();
+  async isAdmin(userId?: string | null, userEmail?: string | null): Promise<boolean> {
+    const role = await this.getUserRole(userId, userEmail);
     return role === 'admin';
   }
 
   /**
    * Check if user is core_team (restricted access)
    */
-  async isCoreTeam(): Promise<boolean> {
-    const role = await this.getUserRole();
+  async isCoreTeam(userId?: string | null, userEmail?: string | null): Promise<boolean> {
+    const role = await this.getUserRole(userId, userEmail);
     return role === 'core_team';
   }
 
   /**
    * Check if user has any elevated role (admin or core_team)
    */
-  async hasElevatedAccess(): Promise<boolean> {
-    const role = await this.getUserRole();
+  async hasElevatedAccess(userId?: string | null, userEmail?: string | null): Promise<boolean> {
+    const role = await this.getUserRole(userId, userEmail);
     return role === 'admin' || role === 'core_team';
   }
 
@@ -189,8 +190,8 @@ class RoleService {
   /**
    * Check if current user has a specific permission
    */
-  async hasPermission(permission: string): Promise<boolean> {
-    const role = await this.getUserRole();
+  async hasPermission(permission: string, userId?: string | null, userEmail?: string | null): Promise<boolean> {
+    const role = await this.getUserRole(userId, userEmail);
     if (!role) return false;
 
     // Admin always has all permissions
@@ -204,8 +205,8 @@ class RoleService {
   /**
    * Get all permissions the current user has
    */
-  async getAccessiblePermissions(): Promise<string[]> {
-    const role = await this.getUserRole();
+  async getAccessiblePermissions(userId?: string | null, userEmail?: string | null): Promise<string[]> {
+    const role = await this.getUserRole(userId, userEmail);
     if (!role) return [];
 
     if (role === 'admin') {
@@ -230,8 +231,8 @@ class RoleService {
   /**
    * Admin-only: Assign a role to a user
    */
-  async assignRole(userId: string, role: 'admin' | 'core_team'): Promise<void> {
-    const currentRole = await this.getUserRole();
+  async assignRole(userId: string, role: 'admin' | 'core_team', currentUserId?: string | null, currentUserEmail?: string | null): Promise<void> {
+    const currentRole = await this.getUserRole(currentUserId, currentUserEmail);
     if (currentRole !== 'admin') {
       throw new Error('Only admin can assign roles');
     }
@@ -250,8 +251,8 @@ class RoleService {
   /**
    * Admin-only: Revoke a user's elevated role
    */
-  async revokeRole(userId: string): Promise<void> {
-    const currentRole = await this.getUserRole();
+  async revokeRole(userId: string, currentUserId?: string | null, currentUserEmail?: string | null): Promise<void> {
+    const currentRole = await this.getUserRole(currentUserId, currentUserEmail);
     if (currentRole !== 'admin') {
       throw new Error('Only admin can revoke roles');
     }
@@ -267,8 +268,8 @@ class RoleService {
   /**
    * Admin-only: List all users with elevated roles
    */
-  async listRoleAssignments(): Promise<any[]> {
-    const currentRole = await this.getUserRole();
+  async listRoleAssignments(userId?: string | null, userEmail?: string | null): Promise<any[]> {
+    const currentRole = await this.getUserRole(userId, userEmail);
     if (currentRole !== 'admin') return [];
 
     const { data, error } = await (supabase

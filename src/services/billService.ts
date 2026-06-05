@@ -177,13 +177,12 @@ class BillService {
     }
   }
 
-  async submitBillResponse(billId: string, responseText: string): Promise<boolean> {
+  async submitBillResponse(billId: string, responseText: string, userId: string): Promise<boolean> {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return false;
+      if (!userId) return false;
       const { error } = await supabase
         .from('bill_responses' as any)
-        .insert({ bill_id: billId, user_id: user.id, response: responseText });
+        .insert({ bill_id: billId, user_id: userId, response: responseText });
       if (error) throw error;
       return true;
     } catch (error) {
@@ -192,15 +191,14 @@ class BillService {
     }
   }
 
-  async getUserBillResponse(billId: string): Promise<string | null> {
+  async getUserBillResponse(billId: string, userId: string): Promise<string | null> {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return null;
+      if (!userId) return null;
       const { data, error } = await supabase
         .from('bill_responses' as any)
         .select('response')
         .eq('bill_id', billId)
-        .eq('user_id', user.id)
+        .eq('user_id', userId)
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();

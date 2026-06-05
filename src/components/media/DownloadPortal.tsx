@@ -76,6 +76,23 @@ const DownloadPortal: React.FC<DownloadPortalProps> = ({ filePath, availableQual
         availableQualities.includes(tier.id) || (tier.id === '4k' && !filePath.includes('_'))
     );
 
+    // --- MIME-AWARE EXTENSION HELPERS ---
+    // Derives the real file extension from the asset path, never hardcodes .jpg
+    const getAssetExtension = (path: string): string => {
+        if (!path) return 'jpg';
+        const cleanPath = path.split('?')[0]; // strip query params
+        const parts = cleanPath.split('.');
+        if (parts.length < 2) return 'jpg';
+        return parts[parts.length - 1].toLowerCase();
+    };
+
+    // Builds the download filename using the real extension (preserves .pdf, .png, .webp, etc.)
+    const buildDownloadFilename = (tier: Tier, path: string): string => {
+        const ext = getAssetExtension(path);
+        return `${title.toLowerCase().replace(/\s+/g, '-')}-${tier.id}.${ext}`;
+    };
+    // --- END MIME-AWARE EXTENSION HELPERS ---
+
     const handleSelectTier = (tier: Tier) => {
         setSelectedTier(tier);
         if (tier.requiresDonation) {
@@ -109,7 +126,8 @@ const DownloadPortal: React.FC<DownloadPortalProps> = ({ filePath, availableQual
 
             const link = document.createElement('a');
             link.href = signedUrl;
-            link.download = `${title.toLowerCase().replace(/\s+/g, '-')}-${tier.id}.jpg`;
+            // Use MIME-aware filename — preserves .pdf, .png, .jpg, .webp, etc.
+            link.download = buildDownloadFilename(tier, finalPath);
             link.target = '_blank';
             document.body.appendChild(link);
             link.click();
@@ -134,7 +152,7 @@ const DownloadPortal: React.FC<DownloadPortalProps> = ({ filePath, availableQual
 
     const handlePaystackPayment = () => {
         if (!window.PaystackPop) {
-            toast({ title: "System Busy", description: "Payment gateway is loading. Try M-Pesa instead.", variant: "destructive" });
+            toast({ title: "System Busy", description: "Payment gateway is loading. Please try again in a moment.", variant: "destructive" });
             return;
         }
 
@@ -142,22 +160,35 @@ const DownloadPortal: React.FC<DownloadPortalProps> = ({ filePath, availableQual
         setIsPaying(true);
 
         try {
+            // Generate a trackable reference so the backend webhook can verify this specific transaction
+            const paymentRef = `DL-${Date.now()}-${Math.floor(Math.random() * 100000)}`;
+
             const handler = window.PaystackPop.setup({
                 key: publicKey,
                 email: 'support@civiceducationkenya.com',
                 amount: Math.round(donationAmount * 100),
                 currency: 'KES',
-                ref: `DL-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+                ref: paymentRef,
                 metadata: { 
                     custom_fields: [
                         { display_name: "Asset", variable_name: "asset_title", value: title },
-                        { display_name: "Quality", variable_name: "output_quality", value: selectedTier?.label }
+                        { display_name: "Quality", variable_name: "output_quality", value: selectedTier?.label },
+                        { display_name: "Asset Path", variable_name: "asset_path", value: filePath }
                     ] 
                 },
                 callback: (response: any) => {
                     setIsPaying(false);
-                    toast({ title: "Support Confirmed!", description: "Access unlocked. Starting high-fidelity download..." });
-                    if (selectedTier) initiateDownload(selectedTier);
+                    // SECURITY: Do NOT initiate the download from the client-side callback.
+                    // The Paystack webhook (paystack-webhook Edge Function) verifies the
+                    // HMAC SHA-512 signature and records the transaction in `transactions`.
+                    // Asset delivery for premium tiers is gated at the backend, not here.
+                    console.log(`[Portal] Payment reference ${response.reference} submitted — awaiting backend verification.`);
+                    toast({
+                        title: "Payment Received!",
+                        description: "Your transaction is being verified. Your download link will be ready shortly.",
+                    });
+                    setStep('selection');
+                    setIsOpen(false);
                 },
                 onClose: () => setIsPaying(false)
             });
@@ -263,7 +294,7 @@ const DownloadPortal: React.FC<DownloadPortalProps> = ({ filePath, availableQual
                                 disabled={isPaying}
                                 className="w-full h-16 rounded-[22px] bg-kenya-green hover:bg-kenya-green/90 text-white font-black text-xs uppercase tracking-[0.2em] shadow-2xl shadow-kenya-green/20 active:scale-95 transition-all"
                             >
-                                {isPaying ? <CEKALoader variant="ios" size="xs" /> : <><Wallet size={16} className="mr-3" /> Support & Unlock</>}
+                                {isPaying ? <CEKALoader variant="ios" size="xs" /> : <><Wallet size={16} className="mr-3" />Support &amp; Unlock</>}
                             </Button>
 
                             <button 

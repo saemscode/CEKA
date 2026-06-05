@@ -65,7 +65,7 @@ class AdminService {
    * Check if current user is admin using secure user_roles table
    * Hardened: Handles AbortError and includes retry logic for flaky connections
    */
-  async isUserAdmin(retryCount = 0): Promise<boolean> {
+  async isUserAdmin(userId?: string | null, userEmail?: string | null, retryCount = 0): Promise<boolean> {
     // Return cached result if valid
     const now = Date.now();
     if (this.isAdminCached !== null && (now - this.lastCheckTime) < this.CACHE_TTL) {
@@ -73,25 +73,32 @@ class AdminService {
     }
 
     try {
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
-      
-      if (authError) {
-        if (authError.name === 'AbortError' && retryCount < 3) {
-          console.warn(`[Admin] Auth check aborted, retrying (${retryCount + 1}/3)...`);
-          await new Promise(resolve => setTimeout(resolve, 200 * (retryCount + 1)));
-          return this.isUserAdmin(retryCount + 1);
-        }
-        throw authError;
-      }
+      let uid = userId;
+      let email = userEmail;
 
-      if (!user) {
-        this.isAdminCached = false;
-        this.lastCheckTime = now;
-        return false;
+      if (!uid) {
+        const { data: { user }, error: authError } = await supabase.auth.getUser();
+        
+        if (authError) {
+          if (authError.name === 'AbortError' && retryCount < 3) {
+            console.warn(`[Admin] Auth check aborted, retrying (${retryCount + 1}/3)...`);
+            await new Promise(resolve => setTimeout(resolve, 200 * (retryCount + 1)));
+            return this.isUserAdmin(userId, userEmail, retryCount + 1);
+          }
+          throw authError;
+        }
+
+        if (!user) {
+          this.isAdminCached = false;
+          this.lastCheckTime = now;
+          return false;
+        }
+        uid = user.id;
+        email = user.email;
       }
 
       // Root Bypass
-      if (user.email === ROOT_ADMIN_EMAIL) {
+      if (email === ROOT_ADMIN_EMAIL) {
         this.isAdminCached = true;
         this.lastCheckTime = now;
         return true;
@@ -102,8 +109,7 @@ class AdminService {
       
       if (rpcError) {
         if (rpcError.name === 'AbortError' && retryCount < 3) {
-          console.warn(`[Admin] RPC check aborted, retrying (${retryCount + 1}/3)...`);
-          return this.isUserAdmin(retryCount + 1);
+          return this.isUserAdmin(userId, userEmail, retryCount + 1);
         }
       }
 
@@ -113,12 +119,12 @@ class AdminService {
       const { data: roleData, error: roleError } = await supabase
         .from('user_roles')
         .select('role')
-        .eq('user_id', user.id)
+        .eq('user_id', uid)
         .eq('role', 'admin')
         .maybeSingle();
 
       if (roleError && roleError.name === 'AbortError' && retryCount < 3) {
-        return this.isUserAdmin(retryCount + 1);
+        return this.isUserAdmin(userId, userEmail, retryCount + 1);
       }
 
       if (roleData) return true;
@@ -127,7 +133,7 @@ class AdminService {
       const { data: profile } = await supabase
         .from('profiles')
         .select('is_admin')
-        .eq('id', user.id)
+        .eq('id', uid)
         .maybeSingle();
 
       const isAdmin = (profile?.is_admin || false);
@@ -368,12 +374,16 @@ class AdminService {
     return report;
   }
 
-  async logAdminAction(action: string, resourceType: string, resourceId?: string, details?: any) {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+  async logAdminAction(action: string, resourceType: string, resourceId?: string, details?: any, userId?: string | null) {
+    let uid = userId;
+    if (!uid) {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      uid = user.id;
+    }
 
     await supabase.from('admin_audit_log').insert({
-      user_id: user.id,
+      user_id: uid,
       action,
       resource_type: resourceType,
       resource_id: resourceId,
@@ -407,11 +417,15 @@ class AdminService {
     }));
   }
 
-  async checkAdminWithSessionManagement(): Promise<boolean> {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return false;
+  async checkAdminWithSessionManagement(userId?: string | null, userEmail?: string | null): Promise<boolean> {
+    let email = userEmail;
+    if (!email || !userId) {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return false;
+      email = user.email;
+    }
 
-    if (user.email === ROOT_ADMIN_EMAIL) return true;
+    if (email === ROOT_ADMIN_EMAIL) return true;
 
     const { count } = await supabase
       .from('admin_sessions')
@@ -421,14 +435,18 @@ class AdminService {
     return (count || 0) < 3;
   }
 
-  async cleanupAdminSession(): Promise<void> {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+  async cleanupAdminSession(userId?: string | null): Promise<void> {
+    let uid = userId;
+    if (!uid) {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      uid = user.id;
+    }
 
     await supabase
       .from('admin_sessions')
       .update({ is_active: false })
-      .eq('user_id', user.id);
+      .eq('user_id', uid);
   }
 
   // --- PHASE 2 MANAGEMENT FUNCTIONS ---
@@ -509,9 +527,13 @@ class AdminService {
     return data || [];
   }
 
-  async saveCampaign(campaign: any): Promise<void> {
-    const { data: { user } } = await supabase.auth.getUser();
-    const payload = { ...campaign, created_by: user?.id };
+  async saveCampaign(campaign: any, userId?: string | null): Promise<void> {
+    let uid = userId;
+    if (!uid) {
+      const { data: { user } } = await supabase.auth.getUser();
+      uid = user?.id;
+    }
+    const payload = { ...campaign, created_by: uid };
 
     if (campaign.id) {
       await (supabase.from('platform_campaigns' as any) as any).update(payload).eq('id', campaign.id);
@@ -564,15 +586,19 @@ class AdminService {
 
   // ─── ROLE MANAGEMENT ────────────────────────────────────────────────
 
-  /**
-   * Get the current user's role: admin | core_team | null
-   */
-  async getUserRole(): Promise<'admin' | 'core_team' | null> {
+  async getUserRole(userId?: string | null, userEmail?: string | null): Promise<'admin' | 'core_team' | null> {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return null;
+      let uid = userId;
+      let email = userEmail;
 
-      if (user.email === ROOT_ADMIN_EMAIL) return 'admin';
+      if (!uid) {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return null;
+        uid = user.id;
+        email = user.email;
+      }
+
+      if (email === ROOT_ADMIN_EMAIL) return 'admin';
 
       const { data: hasAdminRole, error: rpcError } = await supabase.rpc('check_user_is_admin');
       if (!rpcError && hasAdminRole) return 'admin';
@@ -580,7 +606,7 @@ class AdminService {
       const { data: roleData } = await (supabase
         .from('user_roles') as any)
         .select('role')
-        .eq('user_id', user.id)
+        .eq('user_id', uid)
         .maybeSingle();
 
       if (roleData?.role === 'admin') return 'admin';
@@ -589,7 +615,7 @@ class AdminService {
       const { data: profile } = await supabase
         .from('profiles')
         .select('is_admin')
-        .eq('id', user.id)
+        .eq('id', uid)
         .maybeSingle();
 
       if (profile?.is_admin) return 'admin';
@@ -603,8 +629,8 @@ class AdminService {
   /**
    * Check if user is core_team
    */
-  async isUserCoreTeam(): Promise<boolean> {
-    const role = await this.getUserRole();
+  async isUserCoreTeam(userId?: string | null, userEmail?: string | null): Promise<boolean> {
+    const role = await this.getUserRole(userId, userEmail);
     return role === 'core_team';
   }
 

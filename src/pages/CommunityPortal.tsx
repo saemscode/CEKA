@@ -64,7 +64,7 @@ const CommunityPortal = () => {
 
   const checkAdminStatus = async () => {
     const { adminService } = await import('@/services/adminService');
-    const isUserAdmin = await adminService.isUserAdmin();
+    const isUserAdmin = await adminService.isUserAdmin(user?.id, user?.email);
     setIsAdmin(isUserAdmin);
   };
 
