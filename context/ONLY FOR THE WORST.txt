@@ -3018,7 +3018,7 @@ class SearchService {
               base = {
                 id: item.id, type: 'bill', title: item.title, description: item.summary || '', excerpt: item.summary || '',
                 tags: item.tags || [], county: item.county, created_at: item.created_at, date: item.created_at,
-                url: `/legislative-tracker/bills/${item.id}`, category: item.category || 'Law'
+                url: `/bill/${item.id}`, category: item.category || 'Law'
               };
               break;
             case 'blog':

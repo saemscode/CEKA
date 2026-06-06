@@ -452,7 +452,7 @@ class SearchService {
           description: b.summary || '', excerpt: b.summary || '',
           tags: b.tags || [], county: b.county,
           created_at: b.created_at, date: b.created_at,
-          url: `/legislative-tracker/bills/${b.slug || b.id}`,
+          url: `/bill/${b.slug || b.id}`,
           category: b.category || 'Law',
           metadata: { status: b.status },
         };
@@ -619,7 +619,7 @@ class SearchService {
           id: b.id, type: 'bill', title: b.title,
           description: b.summary || '', excerpt: b.summary || '',
           tags: [], county: undefined, created_at: b.created_at, date: b.created_at,
-          url: `/legislative-tracker/bills/${b.slug || b.id}`, category: b.category || 'Law',
+          url: `/bill/${b.slug || b.id}`, category: b.category || 'Law',
           relevanceScore: rScore, matchScore: 0, recencyScore: rScore, countyScore: 0,
         });
       });
@@ -667,7 +667,7 @@ class SearchService {
           id: b.id, type: 'bill', title: b.title,
           description: b.summary || '', tags: [],
           created_at: b.created_at,
-          url: `/legislative-tracker/bills/${b.slug || b.id}`, category: b.category || 'Law',
+          url: `/bill/${b.slug || b.id}`, category: b.category || 'Law',
         };
         all.push({ ...base, ...this.computeRelevanceScore(base, userProfile, []) });
       });

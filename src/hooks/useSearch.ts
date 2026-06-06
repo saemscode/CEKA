@@ -82,7 +82,7 @@ export function useSearch() {
         const base: any = {
           id: b.id, type: 'bill', title: b.title, description: b.summary || '', excerpt: b.summary || '',
           tags: b.tags || [], county: b.county, created_at: b.created_at, date: b.created_at,
-          url: `/legislative-tracker/bills/${b.slug || b.id}`, category: 'Law',
+          url: `/bill/${b.slug || b.id}`, category: 'Law',
           metadata: { bill_number: b.bill_number, status: b.status },
         };
         const scored = { ...base, ...searchService.computeRelevanceScore(base, profile, []) };
