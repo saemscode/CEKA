@@ -82,7 +82,7 @@ export function useSearch() {
         const base: any = {
           id: b.id, type: 'bill', title: b.title, description: b.summary || '', excerpt: b.summary || '',
           tags: b.tags || [], county: b.county, created_at: b.created_at, date: b.created_at,
-          url: `/legislative-tracker/bills/${b.id}`, category: 'Law',
+          url: `/legislative-tracker/bills/${b.slug || b.id}`, category: 'Law',
           metadata: { bill_number: b.bill_number, status: b.status },
         };
         const scored = { ...base, ...searchService.computeRelevanceScore(base, profile, []) };
@@ -137,7 +137,7 @@ export function useSearch() {
       try {
         const activeChipLabels = chips.filter(c => c.active).map(c => c.label);
         const searchResults = await searchService.searchAll(query, profile, activeChipLabels, PAGE_SIZE, offset, sortBy);
-        
+
         // Append on load-more, replace on new search
         if (isLoadMoreRef.current) {
           setAllResults(prev => [...prev, ...searchResults]);
@@ -168,7 +168,7 @@ export function useSearch() {
         if (isZeroResults) {
           supabase.functions.invoke('notify-zero-results', {
             body: { query, userId: user?.id, timestamp: new Date().toISOString() },
-          }).catch(() => {}); // fire-and-forget, never block UI
+          }).catch(() => { }); // fire-and-forget, never block UI
         } else {
           // Cache successful search results for offline
           offlineCache.saveSearch(query, searchResults);

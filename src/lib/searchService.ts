@@ -132,45 +132,45 @@ function authorTrustMultiplier(points = 0): number {
 
 const CIVIC_KEYWORD_MAP: Record<string, string[]> = {
   // ── Compound phrases first (evaluated before single words) ────────────────
-  'finance bill':    ['#FinanceBill2026', '#Amendment', '#TaxExemption', '#KRA', '#2026Budget', '#PublicDebt'],
-  'finance act':     ['#FinanceAct', '#TaxAmendment', '#KRA', '#PublicDebt'],
-  'housing levy':    ['#HousingLevy', '#AffordableHousing', '#SHF', '#DeductionDispute'],
+  'finance bill': ['#FinanceBill2026', '#Amendment', '#TaxExemption', '#KRA', '#2026Budget', '#PublicDebt'],
+  'finance act': ['#FinanceAct', '#TaxAmendment', '#KRA', '#PublicDebt'],
+  'housing levy': ['#HousingLevy', '#AffordableHousing', '#SHF', '#DeductionDispute'],
   'public participation': ['#PublicParticipation', '#CivicEngagement', '#Memorandum'],
-  'voter registration':   ['#VoterReg', '#IEBC', '#2027', '#BiometricID'],
-  'county government':    ['#Devolution', '#County', '#CRA', '#DORB'],
-  'national assembly':    ['#Bunge', '#Legislation', '#FirstReading', '#ThirdReading'],
-  'supreme court':        ['#CourtOrder', '#ConstitutionalPetition', '#Ruling'],
-  'healthcare':           ['#UHC', '#SHA', '#NHIF', '#CountyHealth'],
+  'voter registration': ['#VoterReg', '#IEBC', '#2027', '#BiometricID'],
+  'county government': ['#Devolution', '#County', '#CRA', '#DORB'],
+  'national assembly': ['#Bunge', '#Legislation', '#FirstReading', '#ThirdReading'],
+  'supreme court': ['#CourtOrder', '#ConstitutionalPetition', '#Ruling'],
+  'healthcare': ['#UHC', '#SHA', '#NHIF', '#CountyHealth'],
   // ── Single-word keys ────────────────────────────────────────────────────
-  'finance':    ['#Amendment', '#TaxExemption', '#KRA', '#2026Budget', '#PublicDebt'],
-  'bill':       ['#FirstReading', '#Committee', '#PublicParticipation', '#Enacted', '#Rejected'],
-  'election':   ['#IEBC', '#2027', '#VoterReg', '#Petition', '#Malpractice'],
-  'health':     ['#UHC', '#NHIF', '#SHA', '#CountyHealth', '#Devolution'],
-  'education':  ['#TSC', '#CBC', '#Bursary', '#PublicUniversity', '#HELB'],
-  'land':       ['#NLC', '#TitleDeed', '#Eviction', '#CommunityLand'],
-  'tax':        ['#VAT', '#PAYE', '#ExciseDuty', '#TaxAmendment', '#KRA'],
+  'finance': ['#Amendment', '#TaxExemption', '#KRA', '#2026Budget', '#PublicDebt'],
+  'bill': ['#FirstReading', '#Committee', '#PublicParticipation', '#Enacted', '#Rejected'],
+  'election': ['#IEBC', '#2027', '#VoterReg', '#Petition', '#Malpractice'],
+  'health': ['#UHC', '#NHIF', '#SHA', '#CountyHealth', '#Devolution'],
+  'education': ['#TSC', '#CBC', '#Bursary', '#PublicUniversity', '#HELB'],
+  'land': ['#NLC', '#TitleDeed', '#Eviction', '#CommunityLand'],
+  'tax': ['#VAT', '#PAYE', '#ExciseDuty', '#TaxAmendment', '#KRA'],
   'devolution': ['#County', '#CRA', '#DORB', '#EqualizationFund'],
-  'rights':     ['#Constitution', '#KNCHR', '#Petition', '#CourtOrder'],
-  'water':      ['#WaterAct', '#CountyWater', '#WRMA'],
-  'security':   ['#Police', '#DPP', '#IPOA', '#NPS'],
-  'housing':    ['#AffordableHousing', '#SHF', '#HousingLevy'],
+  'rights': ['#Constitution', '#KNCHR', '#Petition', '#CourtOrder'],
+  'water': ['#WaterAct', '#CountyWater', '#WRMA'],
+  'security': ['#Police', '#DPP', '#IPOA', '#NPS'],
+  'housing': ['#AffordableHousing', '#SHF', '#HousingLevy'],
   // Swahili
-  'fedha':      ['#Marekebisho', '#MsamahaKodi', '#KRA', '#Bajeti2026'],
-  'mswada':     ['#SomaMswada', '#Kamati', '#UshirikiWaUmma'],
-  'uchaguzi':   ['#IEBC', '#2027', '#UsajiliWapiga'],
-  'afya':       ['#SHA', '#NHIF', '#UHC'],
-  'ardhi':      ['#NLC', '#HatiMilisi', '#Uhamisho'],
-  'elimu':      ['#TSC', '#CBC', '#Bursari'],
-  'kodi':       ['#VAT', '#PAYE', '#ExciseDuty'],
-  'serikali':   ['#Bunge', '#Cabinet', '#Treasury'],
-  'wananchi':   ['#UshirikiWaUmma', '#Ombi', '#Haki'],
-  'maji':       ['#SheriaYaMaji', '#MajiYaKaunti', '#WRMA'],
+  'fedha': ['#Marekebisho', '#MsamahaKodi', '#KRA', '#Bajeti2026'],
+  'mswada': ['#SomaMswada', '#Kamati', '#UshirikiWaUmma'],
+  'uchaguzi': ['#IEBC', '#2027', '#UsajiliWapiga'],
+  'afya': ['#SHA', '#NHIF', '#UHC'],
+  'ardhi': ['#NLC', '#HatiMilisi', '#Uhamisho'],
+  'elimu': ['#TSC', '#CBC', '#Bursari'],
+  'kodi': ['#VAT', '#PAYE', '#ExciseDuty'],
+  'serikali': ['#Bunge', '#Cabinet', '#Treasury'],
+  'wananchi': ['#UshirikiWaUmma', '#Ombi', '#Haki'],
+  'maji': ['#SheriaYaMaji', '#MajiYaKaunti', '#WRMA'],
   // Sheng
-  'deni':       ['#PublicDebt', '#IMF', '#Bajeti'],
-  'pesa':       ['#Bajeti', '#Ushuru', '#KRA'],
-  'bei':        ['#CostOfLiving', '#Inflation'],
-  'polisi':     ['#KillingsByPolice', '#IPOA', '#DPP'],
-  'karo':       ['#HELB', '#Bursari', '#Elimu'],
+  'deni': ['#PublicDebt', '#IMF', '#Bajeti'],
+  'pesa': ['#Bajeti', '#Ushuru', '#KRA'],
+  'bei': ['#CostOfLiving', '#Inflation'],
+  'polisi': ['#KillingsByPolice', '#IPOA', '#DPP'],
+  'karo': ['#HELB', '#Bursari', '#Elimu'],
 };
 
 // ─────────────────────────────────────────────
@@ -194,27 +194,27 @@ const SYSTEM_ROUTES = [
 // Words that are too generic to carry meaningful signal.
 // When hit, they only contribute 0.15× their usual weight.
 const STOP_WORDS = new Set([
-  'the','a','an','of','in','on','at','to','and','or','for','with',
-  'bill','act','law','kenya','kenyan','national','county','government',
-  'public','new','from','by','it','is','are','was','were','be','been'
+  'the', 'a', 'an', 'of', 'in', 'on', 'at', 'to', 'and', 'or', 'for', 'with',
+  'bill', 'act', 'law', 'kenya', 'kenyan', 'national', 'county', 'government',
+  'public', 'new', 'from', 'by', 'it', 'is', 'are', 'was', 'were', 'be', 'been'
 ]);
 
 // Civic-domain strong nouns. When matched they contribute 2.5× weight.
 // This means matching "finance" counts far more than matching "bill".
 const ENTITY_WORDS = new Set([
-  'finance','housing','health','education','constitution','budget','tax',
-  'election','nhif','sha','kra','iebc','helb','ruto','uhuru','senate',
-  'parliament','tribunal','committee','referendum','devolution','ward',
-  'amendment','revenue','levy','infrastructure','pension','land','water'
+  'finance', 'housing', 'health', 'education', 'constitution', 'budget', 'tax',
+  'election', 'nhif', 'sha', 'kra', 'iebc', 'helb', 'ruto', 'uhuru', 'senate',
+  'parliament', 'tribunal', 'committee', 'referendum', 'devolution', 'ward',
+  'amendment', 'revenue', 'levy', 'infrastructure', 'pension', 'land', 'water'
 ]);
 
 // Compute a query-aware weight for a token.
 function tokenWeight(token: string): number {
   const t = token.toLowerCase();
   if (ENTITY_WORDS.has(t)) return 2.5;
-  if (STOP_WORDS.has(t))   return 0.15;
-  if (/^\d{4}$/.test(t))   return 1.8; // Year tokens get significant weight
-  if (t.length <= 2)       return 0.1;
+  if (STOP_WORDS.has(t)) return 0.15;
+  if (/^\d{4}$/.test(t)) return 1.8; // Year tokens get significant weight
+  if (t.length <= 2) return 0.1;
   return 1.0;
 }
 
@@ -369,12 +369,12 @@ class SearchService {
     const cleanQuery = query.replace(/[.,;:\-_()\[\]]/g, ' ').replace(/\s+/g, ' ').trim();
 
     // 2. Un-CamelCase chips (e.g. "#FinanceBill2026" -> "Finance Bill 2026")
-    const cleanChips = activeChips.map(c => 
+    const cleanChips = activeChips.map(c =>
       c.replace('#', '')
-       .replace(/([a-z])([A-Z])/g, '$1 $2')
-       .replace(/([a-zA-Z])([0-9])/g, '$1 $2')
-       .replace(/([0-9])([a-zA-Z])/g, '$1 $2')
-       .trim()
+        .replace(/([a-z])([A-Z])/g, '$1 $2')
+        .replace(/([a-zA-Z])([0-9])/g, '$1 $2')
+        .replace(/([0-9])([a-zA-Z])/g, '$1 $2')
+        .trim()
     );
 
     const fullQuery = [cleanQuery, ...cleanChips].join(' ').trim();
@@ -417,22 +417,22 @@ class SearchService {
       return [...new Set(conditions)].filter(Boolean).join(',');
     }
 
-    const billsOr       = buildOrClause(['title', 'summary']);
-    const blogsOr       = buildOrClause(['title', 'content']);
-    const resourcesOr   = buildOrClause(['title', 'description']);
+    const billsOr = buildOrClause(['title', 'summary']);
+    const blogsOr = buildOrClause(['title', 'content']);
+    const resourcesOr = buildOrClause(['title', 'description']);
     const discussionsOr = buildOrClause(['title', 'body']);
-    const chaptersOr    = buildOrClause(['title', 'description']);
-    const sectionsOr    = buildOrClause(['title', 'content']);
-    const articlesOr    = buildOrClause(['title', 'content']);
-    const glossaryOr    = buildOrClause(['term', 'definition']);
-    const carouselOr    = buildOrClause(['title', 'description']);
-    const campaignsOr   = buildOrClause(['title', 'description']);
+    const chaptersOr = buildOrClause(['title', 'description']);
+    const sectionsOr = buildOrClause(['title', 'content']);
+    const articlesOr = buildOrClause(['title', 'content']);
+    const glossaryOr = buildOrClause(['term', 'definition']);
+    const carouselOr = buildOrClause(['title', 'description']);
+    const campaignsOr = buildOrClause(['title', 'description']);
 
     const [
       billsRes, blogsRes, resourcesRes, discussionsRes,
       chaptersRes, sectionsRes, articlesRes, glossaryRes, carouselRes, campaignsRes
     ] = await Promise.allSettled([
-      supabase.from('bills').select('id, title, summary, category, created_at, status').or(billsOr).order('created_at', { ascending: false }).range(offset, offset + limit - 1),
+      supabase.from('bills').select('id, title, summary, category, created_at, status, slug').or(billsOr).order('created_at', { ascending: false }).range(offset, offset + limit - 1),
       supabase.from('blog_posts').select('id, title, excerpt, content, tags, created_at, slug, author').eq('status', 'published').or(blogsOr).order('created_at', { ascending: false }).range(offset, offset + limit - 1),
       supabase.from('resources').select('id, title, description, tags, county, created_at, category').or(resourcesOr).order('created_at', { ascending: false }).range(offset, offset + limit - 1),
       db.from('discussions').select('id, title, body, tags, county, created_at').or(discussionsOr).order('created_at', { ascending: false }).range(offset, offset + limit - 1),
@@ -452,7 +452,7 @@ class SearchService {
           description: b.summary || '', excerpt: b.summary || '',
           tags: b.tags || [], county: b.county,
           created_at: b.created_at, date: b.created_at,
-          url: `/legislative-tracker/bills/${b.id}`,
+          url: `/legislative-tracker/bills/${b.slug || b.id}`,
           category: b.category || 'Law',
           metadata: { status: b.status },
         };
@@ -649,7 +649,7 @@ class SearchService {
     const orConditions = tagConditions || undefined;
 
     const [billsRes, blogsRes, resourcesRes] = await Promise.allSettled([
-      supabase.from('bills').select('id, title, summary, category, created_at')
+      supabase.from('bills').select('id, title, summary, category, created_at, slug')
         .limit(limit),
       supabase.from('blog_posts').select('id, title, excerpt, content, tags, created_at, slug')
         .eq('status', 'published')
@@ -667,7 +667,7 @@ class SearchService {
           id: b.id, type: 'bill', title: b.title,
           description: b.summary || '', tags: [],
           created_at: b.created_at,
-          url: `/legislative-tracker/bills/${b.id}`, category: b.category || 'Law',
+          url: `/legislative-tracker/bills/${b.slug || b.id}`, category: b.category || 'Law',
         };
         all.push({ ...base, ...this.computeRelevanceScore(base, userProfile, []) });
       });
