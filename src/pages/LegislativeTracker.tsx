@@ -391,7 +391,7 @@ const LegislativeTracker = () => {
                   <img
                     src="/icons/legislative-tracker.svg"
                     alt="Legislative Tracker"
-                    className="relative z-10 w-28 h-28 object-contain"
+                    className="relative z-10 w-28 h-28 object-contain dark:brightness-0 dark:invert dark:sepia dark:saturate-200 dark:hue-rotate-[100deg]"
                   />
                 </div>
               </div>
