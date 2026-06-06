@@ -52,6 +52,3 @@ database_id = "b378184a-6a57-426d-aaf3-8571d2f50a9b"
 # [[routes]]
 # pattern = "civiceducationkenya.com/api/map/*"
 # zone_name = "civiceducationkenya.com"
-
-[triggers]
-crons = ["*/5 * * * *"]
