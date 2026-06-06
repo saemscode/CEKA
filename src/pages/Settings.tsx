@@ -18,6 +18,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { translate } from '@/lib/utils';
 import { useToast } from '@/components/ui/use-toast';
+import { CEKAFullLoader } from '@/components/ui/ceka-loader';
 
 const Settings = () => {
   const { session } = useAuth();
@@ -412,7 +413,7 @@ const Settings = () => {
             {translate("Cancel", language)}
           </Button>
           <Button onClick={handleSaveSettings}>
-            <Save className="mr-2 h-4 w-4" />
+            <CEKAFullLoader />
             {translate("Save Settings", language)}
           </Button>
         </div>
