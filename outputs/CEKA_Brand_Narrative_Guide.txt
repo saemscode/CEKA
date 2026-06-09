@@ -1,0 +1,89 @@
+CIVIC EDUCATION KENYA (CEKA)
+Brand & Narrative Guide
+ 
+
+This guide defines CEKA's brand identity, voice, narrative framework, logo, social channels, and communication standards. It is the authoritative reference for all external communications, content creation, campaign messaging, and partner-facing materials. Every piece of content produced under the CEKA name must align with these standards.
+
+  PART I: BRAND IDENTITY  
+
+1. Correct Name Usage
+CEKA stands for Civic Education Kenya App. Referring to it as 'the CEKA App' is therefore redundant and must never appear in formal or public communications. Correct usages: CEKA, Civic Education Kenya, the CEKA platform, civiceducationkenya.com. Incorrect: the CEKA App, CEKA's App.
+
+2. Who We Are
+CEKA is an open-source civic-technology ecosystem built to drive political accountability, constitutional literacy, and voter engagement across Kenya. We are community-led, faceless, leaderless, and tribeless. Our work exists at the intersection of civic education, legislative transparency, public participation, and fiscal accountability.
+We do not belong to any political party, government, corporation, or activist coalition. We belong to the Kenyan public. Our organizing spirit: Aluta Continua — the struggle continues.
+
+3. Brand Positioning
+
+4. Visual Identity
+4.1 Brand Colors
+CEKA's palette is derived from the Kenyan flag. These colors are non-negotiable.
+
+4.2 Logo Identity
+The CEKA logo is a pareidolia design — the letter forms suggest a human figure raising a fist, symbolizing civic agency and Kenya's democratic struggle. The design is signed by Civic Education Kenya, November 22, 2024 at 9:50 AM. 17 variations of the original design exist. This document and the CEKA platform together constitute the intellectual property and copyright claim for all design variations.
+
+
+Usage rules: Maintain original proportions at all sizes. Both full-color and monochrome silhouette versions are official. The mark remains legible at high zoom-out levels. When using at Instagram post (1:1) size, apply original Canva dimensions; use proportional ratios for all other formats.
+
+4.3 Typography
+Primary typeface: Arial (universally supported across digital and print). Code Pro and Archivo Black are reserved for the CEKA wordmark. Headlines: bold weight. Body text: regular weight at 11–12pt print / 16–18px digital.
+4.4 Institutional Framing
+CEKA speaks as 'we/us/our' in all public communications. No individual is featured in civic-facing content unless explicitly approved by the Core Team. This is structural — not stylistic. It protects the neutrality and longevity of the platform.
+
+  PART II: VOICE & TONE  
+
+5. CEKA's Voice
+
+  PART III: NARRATIVE FRAMEWORK  
+
+6. The CEKA Narrative Arc
+All CEKA communications follow a four-stage narrative arc: Awareness → Understanding → Participation → Accountability.
+
+7. Key Messages by Audience
+7.1 Youth & Students
+  Your voice matters. Democracy works when you participate. CEKA makes it easy.
+Emphasize accessibility and simplicity
+Highlight the direct impact of their generation on national outcomes
+Use participatory, interactive formats: quizzes, short-form video, explainers
+TikTok and Instagram are primary channels for this audience
+
+7.2 Civil Society & NGOs
+  CEKA is civic infrastructure you can build on. Use our tools, content, and data to amplify your work.
+Emphasize open-source availability and partnership potential
+Highlight technical depth: Bill Tracker, open API, memorandum routing, People's Audit data
+Position CEKA as a force multiplier for existing civic programs
+Mzalendo is a complementary partner — not a competitor — in this ecosystem
+
+7.3 Media & Journalists
+  CEKA simplifies what Parliament does. Use our content as a verified starting point for public-interest reporting.
+Emphasize accuracy, speed, and neutrality
+Highlight the Bill Tracker's real-time monitoring and AI citizen concerns
+People's Audit data is citation-ready for budget and fiscal reporting
+CEKA publicly corrected NTV Kenya's misrepresentation of CEKA tools — accuracy is non-negotiable
+
+7.4 Donors & Funding Partners
+  CEKA is not a project. It is permanent civic infrastructure. Your support keeps it open, independent, and growing.
+Lead with impact: 1M+ reach on key campaigns, Finance Bill 2026 2.1M impressions, NASAKA 1M+ monthly requests
+Show cost-to-impact ratio and specific use of funds
+Emphasize sustainability strategy: open-source, community-powered, diversified income
+Bitcoin/Lightning donation pathway demonstrates financial sovereignty aligned with independence values
+
+  PART IV: SOCIAL MEDIA CHANNELS  
+
+8. Platform Strategy
+
+All social content follows the four-stage narrative arc. Every post has a stated action or destination. Platform tone adapts — more conversational on TikTok and Instagram, more factual on X — while voice remains constant. The faceless, 'we/us/our' framing applies across all platforms.
+
+  PART V: CONTENT STANDARDS  
+
+9. Content Standards
+9.1 Accuracy
+Every factual claim must be sourced from the Constitution of Kenya, Parliamentary records, IEBC official data, or a reputable institution. CEKA does not publish unverified claims. Corrections are published promptly and transparently. AI-assisted content is disclosed to users.
+9.2 Neutrality
+CEKA does not editorialize. Content on legislation, government policy, or political processes presents facts and legal text only. CEKA never advocates for or against any political party, candidate, policy position, or protest movement. Accountability tools (Malpractice Report, SHAmbles, People's Audit) are fact-based and structural — they document and expose, they do not campaign.
+9.3 Accessibility
+Content must be understandable to a Kenyan citizen with secondary school education as the baseline. Legal terms must be defined on first use. Dense legislative text must always be accompanied by a plain-language summary. Visual content should accompany complex data wherever possible.
+9.4 Community Feedback Standards
+CEKA takes public feedback seriously. Documented community responses include: 'Super easy to use', 'Amazing job', 'Asanteee sana for this initiative', 'This feels Govt-level'. These are not testimonials for marketing — they are accountability data points showing CEKA is meeting its accessibility mandate. All critical feedback is responded to promptly and acted upon where technically feasible.
+
+Document Version: 1.1  |  Classification: Internal — Brand  |  civiceducationkenya.com  |  2026

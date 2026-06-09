@@ -23,10 +23,10 @@ const CivicCalendar = () => {
                             <CalendarIcon className="h-4 w-4" />
                             Civic Timeline
                         </motion.div>
-                        <h1 className="text-4xl md:text-5xl font-black tracking-tighter">Tactical Schedule</h1>
+                        <h1 className="text-4xl md:text-5xl font-black tracking-tighter">CEKA Calendar</h1>
                         <p className="text-slate-500 max-w-xl">
-                            Stay synchronized with upcoming legislative deadlines, volunteer opportunities,
-                            and community assemblies across the Republic.
+                            Stay sync'ed up with upcoming CEKA events, legislative deadlines, volunteer opportunities,
+                            and more as we update - plus connect your calendar to have reminders sent to your phone.
                         </p>
                     </div>
 

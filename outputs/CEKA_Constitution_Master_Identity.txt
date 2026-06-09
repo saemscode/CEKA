@@ -1,0 +1,92 @@
+CIVIC EDUCATION KENYA (CEKA)
+Constitution & Master Identity Document
+ 
+
+PREAMBLE
+We, the founding team and community of Civic Education Kenya — hereinafter referred to as CEKA — establish this Constitution as the definitive governing document of the organization. This document defines who we are, what we stand for, and how we operate. It is binding on all team members, contributors, and partners, and serves as the authoritative reference for all organizational decisions, communications, and activities.
+
+  PART I: ORGANIZATIONAL IDENTITY  
+
+1. Name and Nature
+The full name of the organization is Civic Education Kenya, operating under the acronym CEKA. CEKA stands for Civic Education Kenya App — and as such, referring to it as 'the CEKA App' is redundant and must be avoided in all formal and public communications. The correct forms are: CEKA, Civic Education Kenya, or the CEKA platform.
+CEKA is a community-led, open-source civic-technology ecosystem built to drive political accountability, constitutional literacy, and voter engagement across Kenya. It operates simultaneously as an educational repository, a legislative tracker, and a grassroots mobilization tool, providing a structural solution to the civic knowledge gap by translating complex governance structures into actionable, everyday data for the public.
+CEKA is not a political party, a government agency, a for-profit entity, a protest organization, or a partisan advocacy group. CEKA does not endorse candidates, parties, or political causes. CEKA is neutral civic infrastructure.
+
+2. Tagline
+  Educate  •  Amplify  •  Empower
+These three words define the full arc of CEKA's work: we educate citizens on their rights and the structures of governance; we amplify their voices through tools and content that extend reach; we empower them to take real action in democratic processes. This tagline governs the tone and purpose of every product, campaign, and piece of content CEKA produces.
+
+3. Mission
+  To strengthen democracy by making civic knowledge accessible and actionable for all generations.
+This mission drives every product decision, content choice, partnership, and communication CEKA produces. It means: translating complex legislation into plain language, connecting citizens to civic processes, and providing tools that turn passive observers into active participants.
+
+4. Vision
+  A Kenya where everyone knows their rights, participates in the political process, and holds leaders accountable.
+In CEKA's envisioned Kenya, citizens of all ages and backgrounds are fully informed about governance and actively engaged in democracy. Kenyans are not passive observers but empowered participants who influence decisions that affect their lives — using clear information and practical tools.
+
+5. Organizational Philosophy
+CEKA operates as a faceless, leaderless, and tribeless initiative. No individual is elevated above the mission. No tribe, party, or community is centred above the collective. The movement belongs to all Kenyans. This philosophy is captured in the organizing principle: Aluta Continua — the struggle continues — meaning the work of civic empowerment is never finished, and the platform must remain perpetually responsive, open, and independent.
+This posture protects CEKA from political capture, personality cult, and tribal fragmentation. It is a deliberate structural choice that makes the platform more trustworthy and more durable.
+
+6. Core Values
+The following six values underpin every aspect of CEKA's work:
+
+
+  PART II: GOVERNANCE  
+
+7. Governance Structure
+7.1 Core Team
+The Core Team comprises the founders, lead developers, editorial leadership, and platform leads. The Core Team holds primary responsibility for strategic direction, technical architecture, platform integrity, and organizational representation.
+7.2 Advisory Council
+The Advisory Council consists of civic experts, technologists, and civil society representatives. It ensures credibility, provides sector-specific guidance, and advises the Core Team on matters of public interest, governance, and technology.
+7.3 Contributor Community
+The Contributor Community is the open network of developers, translators, educators, and civic professionals who contribute to CEKA's codebase, content library, and campaigns. Contributions are managed through public repositories and governed by the Contributor Guidelines.
+
+8. Decision-Making
+Major organizational decisions are made by the Core Team with input from the Advisory Council and Contributor Community. Decisions are documented and, where appropriate, disclosed publicly. CEKA upholds the principle of transparent governance internally as it advocates for it externally.
+
+9. Finance & Accountability
+CEKA is financed through a combination of grants, donations (Ko-fi, M-Pesa, and Bitcoin/Lightning Network contributions), and civic-aligned partnerships. Funding sources are disclosed publicly where possible. Expenditure is focused exclusively on platform infrastructure, content creation, team compensation, and outreach. CEKA does not generate profit and operates no commercial revenue streams.
+
+  PART III: VISUAL & BRAND IDENTITY  
+
+10. Brand Identity
+10.1 What CEKA Is
+A civic-technology ecosystem and digital education initiative
+An open-source community project inviting contributions from developers, educators, and citizens
+A trustworthy, neutral source of civic information that explains governance in everyday language
+A non-profit initiative serving the public interest without commercial or partisan motivation
+
+10.2 What CEKA Is Not
+Not a political party or partisan organization
+Not an activism or protest movement (though it informs on rights)
+Not a government or quasi-governmental agency
+Not a for-profit or commercial enterprise
+Not an alternative news outlet
+
+10.3 Brand Colors
+
+10.4 Logo Identity
+The CEKA logo is a pareidolia-based design that uses letter forms to suggest a human figure — a person with a raised fist — symbolizing civic agency and the struggle for a better Kenya. It was created and signed by Civic Education Kenya on November 22, 2024 at 9:50 AM, and exists in 17 variations of the original design. This document serves as the authoritative copyright and intellectual property claim for all versions of the design and its template.
+
+
+The logo transforms cleanly into black-and-white silhouette and maintains its recognizability at small sizes. Colour loss reduces differentiation between the red/green sections but the design retains aesthetic and structural integrity. The mark was designed in Canva at Instagram post (1:1) dimensions; use proportional ratios when scaling to other formats.
+
+10.5 Tone of Voice
+CEKA speaks to Kenyans with clarity, respect, and purpose. The voice is Neutral & Respectful, Empowering & Inclusive, Clear & Accessible, and Action-Oriented. It does not change based on platform. It may adapt in formality — more conversational on TikTok, more structured in reports — but the core character remains constant.
+
+10.6 Institutional Framing
+All CEKA public communications use the institutional 'we/us/our' framing. CEKA maintains a faceless, organization-first identity in all civic-facing content. Individual team members are not foregrounded in public communications unless explicitly approved by the Core Team.
+
+  PART IV: STRATEGIC PILLARS  
+
+11. Strategic Pillars
+
+  PART V: AMENDMENTS & AUTHORITY  
+
+12. Document Authority
+This Constitution supersedes all prior versions of CEKA's organizational, mission, or identity documents. In the event of a conflict between this document and any other internal document, this Constitution takes precedence.
+13. Amendments
+Amendments require a formal proposal from any Core Team member, review by the Advisory Council, and approval by a consensus of the Core Team. Approved amendments are logged with a version number, date, and summary of change.
+
+Document Version: 1.1  |  Classification: Internal — Foundational  |  civiceducationkenya.com  |  2026

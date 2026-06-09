@@ -25,9 +25,10 @@ const COLORS = {
 };
 
 const PROGRESS_MESSAGES = [
-    "Loading CEKA Platform...",
+    "Welcome to CEKA!",
     "Gathering civic insights...",
-    "Preparing educational cards...",
+    "Preparing educational resources...",
+    "Collecting all the bills...",
     "You'll be there shortly...",
     "Loading...",
     "Crunching our code...",

@@ -1,0 +1,241 @@
+CIVIC EDUCATION KENYA (CEKA)
+Product Bible
+ 
+
+This Product Bible defines every product in the CEKA ecosystem — purpose, user flows, capabilities, technical details, success metrics, and development roadmap. It is the authoritative reference for all product decisions, technical scoping, and feature prioritization.
+
+  PLATFORM ARCHITECTURE  
+
+Technical Foundation
+All CEKA products share a unified technical backbone: Supabase (23+ Edge Functions, Row-Level Security, real-time subscriptions), React/TypeScript/Vite frontend, Cloudflare DNS/Workers/R2 infrastructure, Vercel deployment, and Capacitor for Android. The codebase is fully open-source at github.com/saemscodes/CEKA.
+The platform's core design principle is layered civic engagement: each product corresponds to a stage in the civic journey from awareness through accountability. All tools are interlinked — NASAKA maps voter registration, the Bill Tracker monitors legislation, People's Audit exposes the fiscal picture, and Recall254 enables accountability when leaders fail.
+
+
+  PRODUCT 1: CEKA CORE PLATFORM  
+
+Purpose
+Central hub for all civic education and engagement tools. Hosts the full range of learning modules, bill tracking, participation tools, news, and community features. The primary entry point for citizens engaging with the CEKA ecosystem.
+User Flow
+User accesses via web browser or Android app
+Optional account creation — anonymous participation supported for sensitive civic actions
+Navigation across: Learn, Track, Participate, News, Community
+Personalized dashboard: followed bills, saved content, learning progress
+Push notifications for new bills, submission deadlines, and civic events
+Key Capabilities
+Interactive learning modules: Constitution, rights, governance, elections, devolution
+User progress tracking across civic education content
+Personalized dashboards
+English/Swahili language toggle
+Account settings: granular notification preferences, optional TOTP MFA
+Three-layer weighted search across all platform content
+Gamification: Flames points economy with Swahili-named tiers (Mwananchi through Mwalimu), badge awards, and perks catalogue
+Technical Stack
+Frontend: React / TypeScript / Vite
+Backend: Supabase (23+ Edge Functions, RLS)
+Mobile: Capacitor Android
+Infrastructure: Cloudflare DNS/Workers/R2, Vercel
+Auth: Supabase Auth with centralized context (OTP rate limiting: three-layer protection post bot-attack hardening)
+Success Metrics
+Monthly active users
+Civic modules completed per user
+Average session duration
+Push notification open rate
+Return user rate
+Flames points issued per month
+
+  PRODUCT 2: LEGISLATIVE BILL TRACKER  
+
+Purpose
+Kenya's most citizen-accessible legislative tracker. Allows citizens to follow Parliamentary bills in real time, understand their implications, and take action via memorandum submissions. Differentiator is AI-powered plain language, clause-level analysis, and direct participation routing.
+User Flow
+User browses active bills by ministry category or search
+Taps a bill to view overview, AI plain-language summary, clause analysis, and timeline
+User follows a bill to receive push notifications on votes, amendments, and deadlines
+User accesses the memorandum builder for formal submissions routed to Parliamentary committees
+WhatsApp sharing of bill summary and submission link
+Key Capabilities
+AI-powered plain-language summarization of legal text
+AI-identified Citizen Concerns per bill
+Clause-level bill analysis with Finance Bill 2026 seed data
+Real-time bill status and Parliamentary timeline tracking
+Keyword search within bills and across the 527+ bill library
+23-category ministry-aligned bill taxonomy
+Sponsor extraction from bill PDFs
+Memorandum builder: server-side deduplication, MP routing by constituency
+Version comparison between bill drafts and amendments
+Public participation deadline countdown
+Competitive Differentiation
+Compared to Mzalendo/Dokeza (institutional depth, Parliament endorsement) and the official Parliament tracker (raw data authority), CEKA's tracker leads on accessibility, AI integration, youth-facing content design, and its integration with broader civic tools. CEKA and Mzalendo are positioned as complementary rather than competing.
+Success Metrics
+Bills followed per user
+Memoranda submissions facilitated per legislative session
+Bill summary reads and shares
+User engagement spikes during active Parliamentary sessions
+
+  PRODUCT 3: ASK CEKA AI & CONSTITUTION RAG CHAT  
+
+Purpose
+Two integrated AI tools: Ask CEKA AI provides general civic Q&A across the platform; the Constitution RAG Chat provides grounded, constitutional-text-anchored responses via Retrieval-Augmented Generation over the full Constitution of Kenya 2010.
+Key Capabilities
+Natural language civic queries in English and Swahili
+Constitutional article and clause explanation in plain language
+AI-generated Citizen Concerns on bill pages
+Guidance on civic tools: Recall254, NASAKA, public participation workflows
+RAG Chat: responses grounded directly in Constitution of Kenya 2010 text — not general AI inference
+Edge Function delivery with stale-date injection and disclaimer controls
+Success Metrics
+Queries per session
+User satisfaction on bill page AI concerns
+RAG response accuracy rate
+
+  PRODUCT 4: PEOPLE'S AUDIT  
+
+Purpose
+A citizen-facing economic oversight dashboard making Kenya's public finances understandable to any mwananchi. Uses Sankey diagrams and dynamic visualizations to chart national debt, trace tax leakages, reveal state resource wastage, and break down public expenditure.
+URL
+civiceducationkenya.com/peoples-audit
+Data Sources
+Controller of Budget reports
+Auditor General reports
+Kenya National Bureau of Statistics (KNBS)
+Official Treasury publications
+Key Capabilities
+Sankey diagram visualizing national budget flows and sector allocations
+Debt tracker: total public debt, projections, and trend visualization
+Tax leakage analysis and wastage mapping
+Dynamically loaded data via Render hosting
+API documentation link and full dataset access for researchers
+Mobile-responsive design
+Success Metrics
+Dashboard sessions
+Dataset downloads and API queries
+Media citations of People's Audit data
+
+  PRODUCT 5: SHAMBLES  
+
+Purpose
+A public accountability ledger dedicated to documenting the systemic failures of Kenya's Social Health Authority (SHA/SHIF) transition: healthcare coverage disruptions, patient rejections, facility failures, and funding gaps. Functions as a public database and whistleblower submission channel.
+URL
+civiceducationkenya.com/shambles
+Key Capabilities
+Public logging portal for SHA/SHIF-related failures indexed by county and health facility
+Exportable case data and accountability timeline
+County and sector filter views
+Whistleblower submission channel for anonymous healthcare failure reports
+Integration with CEKA's broader accountability ecosystem
+Success Metrics
+Cases logged per month
+County coverage completeness
+Media and CSO citations
+
+  PRODUCT 6: MALPRACTICE REPORT  
+
+Purpose
+A secure, standalone reporting application for citizens to anonymously log and crowdsource state malpractice, police brutality, electoral anomalies, and voter registration irregularities.
+URL
+report.civiceducationkenya.com
+Key Capabilities
+Secure anonymous submission portal
+Behavioral anti-spam scoring to block bot submissions
+Telegram-based admin notification system
+Admin dashboard for submission management and case review
+County-focused tracking and categorization
+Data encryption for whistleblower protection
+Cloudflare Pages deployment with Supabase backend
+Success Metrics
+Verified reports submitted per month
+Geographic distribution across counties
+False positive rate on spam scoring
+
+  PRODUCT 7: NASAKA IEBC  
+
+Purpose
+An interactive geolocated mapping service enabling citizens to locate IEBC voter registration centers, electoral offices, and polling stations across Kenya's 47 counties. A primary tool for reducing friction in electoral participation.
+URLs
+nasakaiebc.civiceducationkenya.com | Google Play Store (Nasaka IEBC) | Wikidata Q139784812
+Independence Statement
+An independent civic platform. Not affiliated with or endorsed by the Government of Kenya or IEBC. Sources official IEBC documents supplemented by community-verified contributions.
+Key Capabilities
+Interactive map: 24,000+ IEBC centers across all 47 counties
+Multi-provider geocoding pipeline (v10+, Titan AI cascade fallback)
+GPS-enabled location search and turn-by-turn navigation
+Community-verified data with user contribution pipeline
+Operating hours, contact information, and landmark details per center
+Multilingual support: 15 languages including Swahili and Sheng
+Offline mode support
+Privacy-first: location data processed locally, no personal data collected or stored
+Voter registration deadline alerts
+Traffic & Adoption
+Peak traffic: 1M+ monthly requests requiring server infrastructure upgrade. Consistently high engagement during voter registration drives. Described by LinkedIn users as feeling 'Govt-level' reliable.
+Success Metrics
+Monthly requests
+Play Store downloads and active installs
+County coverage completeness
+Community-verified updates per month
+
+  PRODUCT 8: NASAKA DEVELOPER API  
+
+Purpose
+An open data infrastructure layer exposing CEKA's verified electoral datasets, geospatial configurations, and data frameworks to developers, researchers, and civic organizations.
+URL
+nasakaiebc.civiceducationkenya.com/docs
+Key Capabilities
+Documented REST API endpoints for electoral center data
+Parsed IEBC datasets in developer-ready formats
+Mapping configuration data and boundary datasets
+Reusable for independent civic-tech projects without starting from scratch
+Aligned with open-source and open-data principles
+Success Metrics
+API queries per month
+Downstream civic-tech projects built on the API
+Documentation page visits
+
+  PRODUCT 9: RECALL254  
+
+Purpose
+Civic education and mobilization around the constitutional right to recall non-performing elected leaders (Article 104, Constitution of Kenya). Most Kenyans are unaware this right exists; Recall254 exists to change that.
+Key Capabilities
+Interactive recall eligibility checker by representative
+Step-by-step petition guidance aligned to constitutional requirements
+Petition templates and legal text references
+Active recall campaign bulletin
+Links to constitutional provisions and legal resources
+Success Metrics
+Recall eligibility checks completed
+Resource downloads
+Active petition campaigns tracked
+
+  PRODUCT 10: COMMUNITY PORTAL & CIVIC NEWS  
+
+Community Portal — Purpose
+Peer-to-peer civic dialogue hub. Citizens ask questions, discuss legislation, share resources, and collaborate on civic initiatives.
+Key Capabilities
+Topic tagging across civic categories (Elections, Budget, Rights, Local Government)
+User reputation and contribution scoring
+Content moderation tools
+Integration with CEKA's bill and content library
+Volunteer contributor onboarding infrastructure
+Civic News & Alerts — Purpose
+Curated civic news, legislative briefs, and actionable deadlines ensuring citizens do not miss critical participation windows.
+Key Capabilities
+Sovereign mailing infrastructure: multi-provider Brevo/Resend fleet with dynamic API key rotation
+Seven branded HTML email templates (Kenya Green/Red brand palette)
+Push notification delivery via CEKA App
+Social media content pipeline across Instagram, TikTok, and X
+Automated legislative update aggregation
+
+  FUTURE PRODUCT ROADMAP  
+
+Next-Generation Products
+Translation Bot
+Automated translation pipeline for legislative summaries into Dholuo, Kikuyu, Kamba. Architecture designed across five tiers: Google Sheets zero-infrastructure through full Supabase-native pipeline with Telegram bot, Cloudflare Workers AI pre-drafts, and community glossary enforcement.
+County Civic Monitors
+Localized tools for each of Kenya's 47 counties to track county government performance, budgets, and local legislative proceedings, feeding into the national CEKA platform.
+Civic Mini-Player
+A persistent cross-site civic updates widget — a floating lightweight civic newsticker for embedded use in partner websites and media outlets. Modelled on a music player UI for cross-page continuity.
+Offline Education Kits
+Downloadable PDF and video packages for civic workshops in areas with limited internet connectivity, for use by community leaders, schools, and civil society.
+AI Civic Assistant (Advanced)
+Conversational AI capable of answering citizen questions about Kenyan laws and rights, drawing from CEKA's legislative database and Constitution content in English and Swahili.
+
+Document Version: 1.1  |  Classification: Internal — Product  |  civiceducationkenya.com  |  2026
