@@ -37,7 +37,7 @@ const Layout = ({ children, hideBottomNav, hideBackButton }: LayoutProps) => {
 
   return (
     <div className="flex min-h-screen flex-col relative">
-      <MaintenanceBanner ref={bannerRef} />
+      {/* <MaintenanceBanner ref={bannerRef} /> */}
       <Navbar ref={navbarRef} isFixed={isFixed} />
       {isFixed && <div style={{ height: navbarHeight, pointerEvents: 'none' }} />}
       <InAppBrowserBanner />

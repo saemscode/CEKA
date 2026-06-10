@@ -473,10 +473,14 @@ const DetailCard: React.FC<{
                           <div className="space-y-2">
                             <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 dark:text-white/30">Latest Updates</p>
                             {props.recentBills.map(bill => (
-                              <div key={bill.id} className="flex items-center justify-between gap-2 p-2 rounded-lg bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/5">
+                              <Link 
+                                key={bill.id} 
+                                to={`/bill/${bill.slug || bill.id}`} 
+                                className="flex items-center justify-between gap-2 p-2 rounded-lg bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/5 hover:bg-kenya-green/5 dark:hover:bg-kenya-green/10 transition-colors"
+                              >
                                 <p className="text-xs font-semibold text-slate-700 dark:text-white/80 truncate flex-1">{bill.title}</p>
-                                <Link to={`/bill/${bill.slug || bill.id}`} className="text-[10px] text-kenya-green font-bold shrink-0">→</Link>
-                              </div>
+                                <span className="text-[10px] text-kenya-green font-bold shrink-0">→</span>
+                              </Link>
                             ))}
                           </div>
                         )}
