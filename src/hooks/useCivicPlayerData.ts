@@ -35,7 +35,7 @@ export const useCivicPlayerData = () => {
             type: 'bill_status',
             title: `Bill status changed: ${bill.title}`,
             description: `Moved from "${oldStatus}" to "${bill.status}"`,
-            url: `/legislative-tracker/bills/${bill.slug || bill.id}`,
+            url: `/bill/${bill.slug || bill.id}`,
             timestamp: new Date(),
             read: false,
           });

@@ -23,13 +23,13 @@ const NewsMicIcon: React.FC<{ className?: string }> = ({ className }) => (
 
 // ─── Kenyan Bill Legislative Stages (full pipeline) ──────────────────────────
 const BILL_STAGES = [
-  { label: '1st Reading',  keys: ['1st reading', 'first reading', '1st_reading', 'FIRST READING', '1ST READING'] },
-  { label: '2nd Reading',  keys: ['2nd reading', 'second reading', '2nd_reading', 'SECOND READING', '2ND READING'] },
-  { label: 'Committee',   keys: ['committee', 'committee stage', 'COMMITTEE', 'COMMITTEE STAGE'] },
-  { label: '3rd Reading',  keys: ['3rd reading', 'third reading', '3rd_reading', 'THIRD READING', '3RD READING'] },
-  { label: 'Senate',      keys: ['senate', 'senate stage', 'SENATE', 'SENATE STAGE', 'upper house'] },
-  { label: 'Assent',      keys: ['assent', 'presidential assent', 'ASSENT', 'PRESIDENTIAL ASSENT', 'assented'] },
-  { label: 'Enacted',     keys: ['enacted', 'ENACTED', 'enacted into law', 'LAW', 'passed'] },
+  { label: '1st Reading', keys: ['1st reading', 'first reading', '1st_reading', 'FIRST READING', '1ST READING'] },
+  { label: '2nd Reading', keys: ['2nd reading', 'second reading', '2nd_reading', 'SECOND READING', '2ND READING'] },
+  { label: 'Committee', keys: ['committee', 'committee stage', 'COMMITTEE', 'COMMITTEE STAGE'] },
+  { label: '3rd Reading', keys: ['3rd reading', 'third reading', '3rd_reading', 'THIRD READING', '3RD READING'] },
+  { label: 'Senate', keys: ['senate', 'senate stage', 'SENATE', 'SENATE STAGE', 'upper house'] },
+  { label: 'Assent', keys: ['assent', 'presidential assent', 'ASSENT', 'PRESIDENTIAL ASSENT', 'assented'] },
+  { label: 'Enacted', keys: ['enacted', 'ENACTED', 'enacted into law', 'LAW', 'passed'] },
 ];
 
 function getBillStageIndex(status: string): number {
@@ -153,10 +153,10 @@ const CivicFAB: React.FC<{
         <div className="absolute inset-1 rounded-full" style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.12) 0%, transparent 60%)' }} />
         {/* Icon only — news-microphone on cool, bell on warm, flame on hot */}
         {temperature === 'hot'
-          ? <Flame  className="relative z-10 w-5 h-5 text-white drop-shadow" />
+          ? <Flame className="relative z-10 w-5 h-5 text-white drop-shadow" />
           : temperature === 'warm'
-          ? <Bell   className="relative z-10 w-5 h-5 text-white/90" />
-          : <NewsMicIcon className="relative z-10 w-5 h-5 text-white/80" />}
+            ? <Bell className="relative z-10 w-5 h-5 text-white/90" />
+            : <NewsMicIcon className="relative z-10 w-5 h-5 text-white/80" />}
       </motion.button>
 
       {unreadCount > 0 && (
@@ -475,7 +475,7 @@ const DetailCard: React.FC<{
                             {props.recentBills.map(bill => (
                               <div key={bill.id} className="flex items-center justify-between gap-2 p-2 rounded-lg bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/5">
                                 <p className="text-xs font-semibold text-slate-700 dark:text-white/80 truncate flex-1">{bill.title}</p>
-                                <Link to={`/legislative-tracker/bills/${bill.slug || bill.id}`} className="text-[10px] text-kenya-green font-bold shrink-0">→</Link>
+                                <Link to={`/bill/${bill.slug || bill.id}`} className="text-[10px] text-kenya-green font-bold shrink-0">→</Link>
                               </div>
                             ))}
                           </div>
@@ -498,12 +498,12 @@ const DetailCard: React.FC<{
                         ) : props.followedBills.length === 0 ? (
                           <div className="flex flex-col items-center py-8 gap-2">
                             <FileText className="w-7 h-7 text-slate-200 dark:text-white/10" />
-                            <p className="text-xs text-slate-400 dark:text-white/30 text-center">No bills followed.<br/>Browse the tracker and tap Follow.</p>
+                            <p className="text-xs text-slate-400 dark:text-white/30 text-center">No bills followed.<br />Browse the tracker and tap Follow.</p>
                             <Link to="/legislative-tracker" className="text-xs text-kenya-green font-semibold mt-1">Browse →</Link>
                           </div>
                         ) : (
                           props.followedBills.map((bill) => (
-                            <Link key={bill.id} to={`/legislative-tracker/bills/${bill.slug || bill.id}`} className="block p-3 rounded-xl border border-slate-100 dark:border-white/10 bg-slate-50 dark:bg-white/5 hover:border-kenya-green/30 transition">
+                            <Link key={bill.id} to={`/bill/${bill.slug || bill.id}`} className="block p-3 rounded-xl border border-slate-100 dark:border-white/10 bg-slate-50 dark:bg-white/5 hover:border-kenya-green/30 transition">
                               <div className="flex items-start justify-between gap-2 mb-1">
                                 <p className="text-xs font-semibold text-slate-800 dark:text-white truncate flex-1">{bill.title}</p>
                                 <span className="text-[9px] font-bold text-kenya-green bg-kenya-green/10 px-1.5 py-px rounded-full shrink-0">{bill.status?.split(' ').slice(0, 2).join(' ') || 'Active'}</span>
@@ -729,18 +729,18 @@ const CivicMiniPlayer: React.FC<CivicMiniPlayerProps> = ({ isHidden, onHide }) =
   if (isHidden) return null;
 
   // ── Canonical data state ──────────────────────────────────────────────────
-  const [followedBills, setFollowedBills]               = useState<Bill[]>([]);
-  const [upcomingEvents, setUpcomingEvents]             = useState<CivicEvent[]>([]);
+  const [followedBills, setFollowedBills] = useState<Bill[]>([]);
+  const [upcomingEvents, setUpcomingEvents] = useState<CivicEvent[]>([]);
   const [participatedCampaigns, setParticipatedCampaigns] = useState<Campaign[]>([]);
-  const [recentBills, setRecentBills]                   = useState<Bill[]>([]);
-  const [totalPoints, setTotalPoints]                   = useState(0);
-  const [civicLevel, setCivicLevel]                     = useState(1);
-  const [civicTitle, setCivicTitle]                     = useState('Civic Newcomer');
-  const [leaderboardRank, setLeaderboardRank]           = useState<number | null>(null);
-  const [userBadges, setUserBadges]                     = useState<any[]>([]);
-  const [userNotifications, setUserNotifications]       = useState<any[]>([]);
-  const [npsAnswered, setNpsAnswered]                   = useState<Set<string>>(new Set());
-  const [ringPct, setRingPct]                           = useState(0);
+  const [recentBills, setRecentBills] = useState<Bill[]>([]);
+  const [totalPoints, setTotalPoints] = useState(0);
+  const [civicLevel, setCivicLevel] = useState(1);
+  const [civicTitle, setCivicTitle] = useState('Civic Newcomer');
+  const [leaderboardRank, setLeaderboardRank] = useState<number | null>(null);
+  const [userBadges, setUserBadges] = useState<any[]>([]);
+  const [userNotifications, setUserNotifications] = useState<any[]>([]);
+  const [npsAnswered, setNpsAnswered] = useState<Set<string>>(new Set());
+  const [ringPct, setRingPct] = useState(0);
 
   // ── markNotifRead (canonical) ─────────────────────────────────────────────
   const markNotifRead = useCallback(async (notifId: string) => {
@@ -812,9 +812,9 @@ const CivicMiniPlayer: React.FC<CivicMiniPlayerProps> = ({ isHidden, onHide }) =
   const contentItems: MiniContent[] = React.useMemo(() => {
     const items: MiniContent[] = [];
     if (latestHeadline) items.push({ title: latestHeadline, type: 'Live Update', link: '/legislative-tracker' });
-    followedBills.slice(0, 3).forEach(b => items.push({ title: b.title, type: 'Bill', link: `/legislative-tracker/bills/${b.slug || b.id}` }));
+    followedBills.slice(0, 3).forEach(b => items.push({ title: b.title, type: 'Bill', link: `/bill/${b.slug || b.id}` }));
     upcomingEvents.slice(0, 2).forEach(e => { const { day, month } = fmtDate(e.event_date); items.push({ title: e.title, type: `Event · ${day} ${month}`, link: '/civic-events' }); });
-    recentBills.slice(0, 2).forEach(b => items.push({ title: b.title, type: 'Latest Bill', link: `/legislative-tracker/bills/${b.slug || b.id}` }));
+    recentBills.slice(0, 2).forEach(b => items.push({ title: b.title, type: 'Latest Bill', link: `/bill/${b.slug || b.id}` }));
     participatedCampaigns.slice(0, 2).forEach(c => items.push({ title: c.title, type: 'Campaign', link: `/campaigns/${c.slug || c.id}` }));
     if (!items.length) {
       items.push({ title: 'Civic Education Kenya', type: 'CEKA', link: '/' });
