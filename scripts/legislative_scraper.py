@@ -1453,7 +1453,7 @@ Return EXACTLY a JSON object with these keys:
         return unquote(url.split('/')[-1]).replace('.pdf','')
 
     def _extract_year(self, text: str) -> Optional[str]:
-        m = re.search(r'\b(202[2-9])\b', text)
+        m = re.search(r'(202[2-9])', text)
         return m.group(0) if m else None
 
     def _extract_bill_no(self, text: str) -> str:
@@ -1553,7 +1553,7 @@ Return EXACTLY a JSON object with these keys:
         # Method 1: Direct HTTP request
         if REQUESTS_OK:
             try:
-                r = requests.get(url, timeout=30, allow_redirects=True)
+                r = requests.get(url, timeout=30, allow_redirects=True, verify=False)
                 if r.content[:5] == b"%PDF-":
                     pdf_bytes = r.content
                     logger.info(f"      [DL] PDF downloaded via requests: {len(pdf_bytes)} bytes")

@@ -118,7 +118,7 @@ const DonationWidget: React.FC<DonationWidgetProps> = ({
 
     visibilityTimerRef.current = setTimeout(() => {
       setIsVisible(true);
-    }, 5000);
+    }, 1100);
 
     timeoutTimerRef.current = setTimeout(() => {
       if (!isExpanded) {
@@ -226,7 +226,7 @@ const DonationWidget: React.FC<DonationWidgetProps> = ({
         data-donation-trigger
         className={cn(
           "fixed pointer-events-auto",
-          isExpanded ? "inset-0 flex items-center justify-center z-[9999]" : "z-[999]"
+          isExpanded ? "inset-0 flex items-center justify-center z-[9999]" : "z-40"
         )}
         style={{
           opacity,

@@ -5,6 +5,7 @@ import {
   ConstitutionSection
 } from '@/services/constitutionService';
 import { gamificationService } from '@/services/gamificationService';
+import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/providers/AuthProvider';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -90,7 +91,21 @@ const InteractiveConstitution = () => {
   const handleProgress = async (sectionId: number) => {
     if (!user) return;
 
-    // Award points every 5 sections read
+    // 1. CANONICAL: Insert into constitution_article_reads — fires the DB trigger
+    //    which awards +5 points, sends milestone notifications, and awards badges.
+    //    ON CONFLICT DO NOTHING → each article only counts once per user.
+    try {
+      await (supabase as any)
+        .from('constitution_article_reads')
+        .upsert(
+          { user_id: user.id, article_id: sectionId },
+          { onConflict: 'user_id,article_id', ignoreDuplicates: true }
+        );
+    } catch (_) {
+      // Silently fail — DB trigger is non-critical to UI flow
+    }
+
+    // 2. UI progress bar: award points every 5 sections via gamificationService
     const newCount = readCount + 1;
     setReadCount(newCount);
 

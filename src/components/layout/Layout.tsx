@@ -6,6 +6,7 @@ import DonationWidget from '@/components/donation/DonationWidget';
 import GlobalAIAssistant from '@/components/ai/GlobalAIAssistant';
 import InAppBrowserBanner from '@/components/ui/InAppBrowserBanner';
 import MaintenanceBanner from '@/components/MaintenanceBanner';
+import CivicMiniPlayer from '@/components/civic/CivicMiniPlayer';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useMaintenanceScroll } from '@/hooks/useMaintenanceScroll';
 
@@ -20,10 +21,11 @@ const Layout = ({ children, hideBottomNav, hideBackButton }: LayoutProps) => {
   const [donationTimedOut, setDonationTimedOut] = useState(false);
   // State to track if the donation widget is expanded
   const [showDonationWidget, setShowDonationWidget] = useState(false);
-  
+
   // Shared state for swipe-to-dismiss behavior
   const [isAIHidden, setIsAIHidden] = useState(false);
   const [isDonationHidden, setIsDonationHidden] = useState(false);
+  const [isCivicHidden, setIsCivicHidden] = useState(false);
 
   // PRECISE SCROLL HANDOFF LOGIC
   const { bannerRef, navbarRef, isFixed, navbarHeight } = useMaintenanceScroll();
@@ -39,14 +41,14 @@ const Layout = ({ children, hideBottomNav, hideBackButton }: LayoutProps) => {
       <Navbar ref={navbarRef} isFixed={isFixed} />
       {isFixed && <div style={{ height: navbarHeight, pointerEvents: 'none' }} />}
       <InAppBrowserBanner />
-      <main className="flex-1 pt-16 lg:pt-0 pb-16 lg:pb-0 w-full overflow-x-hidden">
+      <main className="flex-1 lg:pt-0 pb-16 lg:pb-0 w-full overflow-x-hidden">
         {children}
       </main>
       <Footer />
       {!hideBottomNav && <BottomNavbar />}
 
       <AnimatePresence>
-        {(isAIHidden || isDonationHidden) && (
+        {(isAIHidden || isDonationHidden || isCivicHidden) && (
           <motion.div
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
@@ -65,6 +67,7 @@ const Layout = ({ children, hideBottomNav, hideBackButton }: LayoutProps) => {
               onClick={() => {
                 setIsAIHidden(false);
                 setIsDonationHidden(false);
+                setIsCivicHidden(false);
               }}
               className="w-2.5 sm:w-1.5 h-20 bg-black/50 dark:bg-white/50 sm:bg-black/20 sm:dark:bg-white/20 rounded-full transition-all cursor-pointer group relative border border-black/10 dark:border-white/20 shadow-[0_0_12px_rgba(0,0,0,0.15)]"
               title="Swipe left to restore"
@@ -85,9 +88,9 @@ const Layout = ({ children, hideBottomNav, hideBackButton }: LayoutProps) => {
       </AnimatePresence>
 
       {/* AI Assistant FAB - positioned above donation widget */}
-      <GlobalAIAssistant 
-        isHidden={isAIHidden} 
-        onHide={() => setIsAIHidden(true)} 
+      <GlobalAIAssistant
+        isHidden={isAIHidden}
+        onHide={() => setIsAIHidden(true)}
       />
 
       {/* Conditionally render the donation widget */}
@@ -96,8 +99,15 @@ const Layout = ({ children, hideBottomNav, hideBackButton }: LayoutProps) => {
           onTimedOut={handleDonationTimeout}
           isHidden={isDonationHidden}
           onHide={() => setIsDonationHidden(true)}
+          offsetY={148}
         />
       )}
+
+      {/* Civic Pulse Mini-Player */}
+      <CivicMiniPlayer
+        isHidden={isCivicHidden}
+        onHide={() => setIsCivicHidden(true)}
+      />
     </div>
   );
 };

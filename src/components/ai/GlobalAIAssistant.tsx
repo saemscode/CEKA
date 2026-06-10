@@ -350,7 +350,7 @@ const GlobalAIAssistant: React.FC<GlobalAIAssistantProps> = ({ isHidden, onHide 
                 }}
                 className={cn(
                     "fixed pointer-events-auto",
-                    isOpen ? "inset-0 flex items-center justify-center z-[9999]" : "z-[999]",
+                    isOpen ? "inset-0 flex items-center justify-center z-[9999]" : "z-40",
                     !isVisible && !isOpen && "opacity-0 translate-y-20 pointer-events-none"
                 )}
                 style={{
@@ -361,7 +361,7 @@ const GlobalAIAssistant: React.FC<GlobalAIAssistantProps> = ({ isHidden, onHide 
                         right: 0,
                         bottom: 0
                     } : {
-                        bottom: '204px',
+                        bottom: '208px',
                         right: '2rem'
                     })
                 }}

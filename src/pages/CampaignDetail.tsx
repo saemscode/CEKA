@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   ShareIcon, Clock, CalendarIcon, Users, HandHelping,
   Heart, CheckCircle2, MessageSquare, Loader2, Rocket,
-  ExternalLink, TrendingUp, MapPin, Globe, Activity
+  ExternalLink, TrendingUp, MapPin, Globe, Activity, Image as ImageIcon
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
@@ -19,19 +19,53 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/providers/AuthProvider';
 import { CreateCampaignModal } from '@/components/campaigns/CreateCampaignModal';
 import { motion, AnimatePresence } from 'framer-motion';
-// Native HTML Head management (SEO) since HelmetProvider may not be active globally
 import { Helmet } from 'react-helmet-async';
 
 // ── Data fetchers ────────────────────────────────────────────────────────────
 
-const fetchCampaignDetail = async (id: string) => {
-  const { data, error } = await supabase
+const fetchCampaignByIdentifier = async (identifier: string) => {
+  // Try slug first
+  const { data: bySlug } = await supabase
     .from('campaigns')
     .select('*')
-    .eq('id', id)
+    .eq('slug', identifier)
+    .maybeSingle();
+  
+  if (bySlug) return bySlug;
+
+  // Then try UUID
+  const { data: byId, error } = await supabase
+    .from('campaigns')
+    .select('*')
+    .eq('id', identifier)
     .single();
+  
   if (error) throw error;
-  return data;
+  return byId;
+};
+
+const fetchCampaignCollaborations = async (campaignId: string) => {
+  const { data } = await (supabase as any)
+    .from('campaign_collaborations')
+    .select(`
+      *,
+      partner:collaborator_campaign_id (id, title, organizer, slug, image_url)
+    `)
+    .eq('campaign_id', campaignId)
+    .eq('status', 'active');
+  return data || [];
+};
+
+const fetchCampaignMedia = async (campaignId: string) => {
+  const { data } = await (supabase as any)
+    .from('campaign_media')
+    .select(`
+      display_order,
+      media:media_item_id (*)
+    `)
+    .eq('campaign_id', campaignId)
+    .order('display_order');
+  return data?.map((m: any) => m.media) || [];
 };
 
 const fetchCampaignFollowStatus = async (campaignId: string, userId: string) => {
@@ -41,12 +75,13 @@ const fetchCampaignFollowStatus = async (campaignId: string, userId: string) => 
     .eq('campaign_id', campaignId)
     .eq('user_id', userId)
     .maybeSingle();
-  if (error) throw error && error.code !== 'PGRST116' ? error : null; // Ignore 'not found' errors
+  if (error && error.code !== 'PGRST116') throw error;
   return !!data;
 };
 
 const fetchCampaignUpdates = async (campaignId: string) => {
-  const { data } = await (supabase.from('campaign_updates') as any)
+  const { data } = await (supabase as any)
+    .from('campaign_updates')
     .select('*')
     .eq('campaign_id', campaignId)
     .order('date', { ascending: false });
@@ -54,7 +89,8 @@ const fetchCampaignUpdates = async (campaignId: string) => {
 };
 
 const fetchCampaignSupporters = async (campaignId: string) => {
-  const { data } = await (supabase.from('campaign_supporters') as any)
+  const { data } = await (supabase as any)
+    .from('campaign_supporters')
     .select('*')
     .eq('campaign_id', campaignId)
     .order('date', { ascending: false })
@@ -86,14 +122,26 @@ const CampaignDetail = () => {
 
   const { data: campaign, isLoading, isError } = useQuery({
     queryKey: ['campaign', id],
-    queryFn: () => fetchCampaignDetail(id!),
+    queryFn: () => fetchCampaignByIdentifier(id!),
     enabled: !!id,
   });
 
+  const { data: collaborations = [] } = useQuery({
+    queryKey: ['campaign_collaborations', campaign?.id],
+    queryFn: () => fetchCampaignCollaborations(campaign!.id),
+    enabled: !!campaign?.id,
+  });
+
+  const { data: linkedMedia = [] } = useQuery({
+    queryKey: ['campaign_media', campaign?.id],
+    queryFn: () => fetchCampaignMedia(campaign!.id),
+    enabled: !!campaign?.id,
+  });
+
   const { data: isFollowing } = useQuery({
-    queryKey: ['campaign_participants', id, user?.id],
-    queryFn: () => fetchCampaignFollowStatus(id!, user!.id),
-    enabled: !!id && !!user,
+    queryKey: ['campaign_participants', campaign?.id, user?.id],
+    queryFn: () => fetchCampaignFollowStatus(campaign!.id, user!.id),
+    enabled: !!campaign?.id && !!user,
   });
 
   const { data: updates = [] } = useQuery({
@@ -376,19 +424,59 @@ const CampaignDetail = () => {
                   </a>
                 )}
 
-                {/* Gallery — only renders if gallery data exists */}
-                {hasGallery && (
-                  <div className="mt-8">
-                    <h3 className="text-base font-bold mb-4 text-slate-800 dark:text-white">Campaign Gallery</h3>
-                    <div className="grid grid-cols-3 gap-3">
-                      {(campaign as any).gallery.map((image: string, index: number) => (
-                        <div key={index} className="aspect-square rounded-xl overflow-hidden shadow-sm border border-slate-100 dark:border-white/5">
-                          <img
-                            src={image}
-                            alt={`Campaign image ${index + 1}`}
-                            className="w-full h-full object-cover hover:scale-110 transition-transform duration-500"
-                          />
-                        </div>
+                {/* Collaboration Partners */}
+                {collaborations.length > 0 && (
+                  <div className="mt-8 p-4 rounded-2xl bg-kenya-green/5 border border-kenya-green/20">
+                    <h3 className="text-sm font-bold text-kenya-green mb-3 flex items-center gap-2">
+                       <Users className="w-4 h-4" /> Collaboration Partners
+                    </h3>
+                    <div className="flex flex-wrap gap-4">
+                      {collaborations.map((collab: any) => (
+                        <Link 
+                          key={collab.id} 
+                          to={`/campaign/${collab.partner.slug || collab.partner.id}`}
+                          className="flex items-center gap-2 p-2 rounded-xl bg-white dark:bg-black/40 border border-slate-200 dark:border-white/10 hover:border-kenya-green transition"
+                        >
+                          <Avatar className="w-8 h-8">
+                            <AvatarImage src={collab.partner.image_url} />
+                            <AvatarFallback>{collab.partner.title.charAt(0)}</AvatarFallback>
+                          </Avatar>
+                          <span className="text-xs font-bold">{collab.partner.title}</span>
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Gallery */}
+                {(hasGallery || linkedMedia.length > 0) && (
+                  <div className="mt-10">
+                    <h3 className="text-base font-bold mb-6 text-slate-800 dark:text-white flex items-center gap-2">
+                      <ImageIcon className="w-5 h-5 text-kenya-green" /> Campaign Gallery
+                    </h3>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                      {/* Manual Gallery Images */}
+                      {hasGallery && (campaign as any).gallery.map((image: string, index: number) => (
+                        <motion.div 
+                          key={`manual-${index}`} 
+                          whileHover={{ scale: 1.02 }}
+                          className="aspect-video rounded-2xl overflow-hidden shadow-sm border border-slate-100 dark:border-white/5"
+                        >
+                          <img src={image} alt="" className="w-full h-full object-cover" />
+                        </motion.div>
+                      ))}
+                      {/* Linked Media Items */}
+                      {linkedMedia.map((media: any) => (
+                        <motion.div 
+                          key={`linked-${media.id}`} 
+                          whileHover={{ scale: 1.02 }}
+                          className="aspect-video rounded-2xl overflow-hidden shadow-sm border border-slate-200 dark:border-white/10 group relative"
+                        >
+                          <img src={media.url || media.file_path} alt={media.title} className="w-full h-full object-cover" />
+                          <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-3">
+                             <p className="text-[10px] text-white font-bold truncate">{media.title}</p>
+                          </div>
+                        </motion.div>
                       ))}
                     </div>
                   </div>

@@ -9,38 +9,58 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { translate } from '@/lib/utils';
 import { useAuth } from '@/providers/AuthProvider';
 import { supabase } from '@/integrations/supabase/client';
-import { BellRing, Mail, Smartphone, Check, FileText, Users, BookOpen, Heart, CalendarDays, Megaphone, Newspaper } from 'lucide-react';
+import { BellRing, Mail, Smartphone, Check, FileText, Users, BookOpen, Heart, CalendarDays, Megaphone, Newspaper, Award } from 'lucide-react';
 import { CEKALoader } from '@/components/ui/ceka-loader';
 import { useToast } from '@/hooks/use-toast';
 
-// Local storage key
-const NOTIFICATION_STORAGE_KEY = 'ceka_notification_settings';
+// ─────────────────────────────────────────────────────────
+// CANONICAL CATEGORY MAP: UI key → DB notification_preferences.category
+// These match the CHECK constraint in notification_preferences table.
+// ─────────────────────────────────────────────────────────
+const CANONICAL_CATEGORIES = {
+  follow_confirmation:   'follow_confirmation',
+  new_bill:              'new_bill',
+  bill_status_change:    'bill_status_change',
+  volunteer_application: 'volunteer_application',
+  campaign_update:       'campaign_update',
+  system:                'system',
+} as const;
 
-interface NotificationPreferences {
-  all_enabled: boolean;
+type CanonicalCategory = keyof typeof CANONICAL_CATEGORIES;
+
+// Non-canonical prefs stored only in localStorage
+interface LocalPrefs {
+  all_enabled:         boolean;
   email_notifications: boolean;
-  push_notifications: boolean;
-  legislative_updates: boolean;
-  community_replies: boolean;
-  resource_updates: boolean;
-  volunteer_opportunities: boolean;
-  event_reminders: boolean;
-  campaign_updates: boolean;
-  blog_posts: boolean;
+  push_notifications:  boolean;
+  community_replies:   boolean;
+  resource_updates:    boolean;
+  event_reminders:     boolean;
+  blog_posts:          boolean;
 }
 
-const defaultPrefs: NotificationPreferences = {
-  all_enabled: true,
+const LOCAL_KEY = 'ceka_notification_settings';
+
+const defaultLocal: LocalPrefs = {
+  all_enabled:         true,
   email_notifications: true,
-  push_notifications: true,
-  legislative_updates: true,
-  community_replies: true,
-  resource_updates: true,
-  volunteer_opportunities: true,
-  event_reminders: true,
-  campaign_updates: true,
-  blog_posts: true
+  push_notifications:  true,
+  community_replies:   true,
+  resource_updates:    true,
+  event_reminders:     true,
+  blog_posts:          true,
 };
+
+const defaultCanonical: Record<CanonicalCategory, boolean> = {
+  follow_confirmation:   true,
+  new_bill:              true,
+  bill_status_change:    true,
+  volunteer_application: true,
+  campaign_update:       true,
+  system:                true,
+};
+
+const db = supabase as any;
 
 const NotificationSettings: React.FC = () => {
   const { language } = useLanguage();
@@ -49,105 +69,72 @@ const NotificationSettings: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
 
-  const [prefs, setPrefs] = useState<NotificationPreferences>(() => {
-    const stored = localStorage.getItem(NOTIFICATION_STORAGE_KEY);
-    return stored ? JSON.parse(stored) : defaultPrefs;
+  const [local, setLocal] = useState<LocalPrefs>(() => {
+    const stored = localStorage.getItem(LOCAL_KEY);
+    return stored ? JSON.parse(stored) : defaultLocal;
   });
 
-  // Load from database on mount
+  const [canonical, setCanonical] = useState<Record<CanonicalCategory, boolean>>(defaultCanonical);
+
+  // ── Load canonical prefs from DB on mount ────────────────────────────────
   useEffect(() => {
-    const loadPrefs = async () => {
+    const load = async () => {
       if (!session?.user?.id) return;
-
-      try {
-        const { data, error } = await (supabase
-          .from('profiles' as any) as any)
-          .select('notification_preferences')
-          .eq('id', session.user.id)
-          .single();
-
-        if (error && error.code !== 'PGRST116') throw error;
-
-        if (data?.notification_preferences) {
-          const dbPrefs = data.notification_preferences as any;
-          setPrefs(prev => ({ ...prev, ...dbPrefs }));
-        }
-      } catch (err) {
-        console.error('Failed to load notification preferences:', err);
+      const { data } = await db
+        .from('notification_preferences')
+        .select('category, enabled')
+        .eq('user_id', session.user.id);
+      if (data && data.length > 0) {
+        const merged = { ...defaultCanonical };
+        (data as { category: string; enabled: boolean }[]).forEach(row => {
+          if (row.category in merged) {
+            (merged as any)[row.category] = row.enabled;
+          }
+        });
+        setCanonical(merged);
       }
     };
-
-    loadPrefs();
+    load();
   }, [session]);
 
-  // Update preference and sync
-  const updatePref = async (key: keyof NotificationPreferences, value: boolean) => {
-    let newPrefs = { ...prefs, [key]: value };
-
-    // If turning off all notifications, disable individual ones
-    if (key === 'all_enabled' && !value) {
-      newPrefs = {
-        ...newPrefs,
-        email_notifications: false,
-        push_notifications: false
-      };
-    }
-
-    // If turning on any channel, ensure all_enabled is true
-    if ((key === 'email_notifications' || key === 'push_notifications') && value) {
-      newPrefs.all_enabled = true;
-    }
-
-    setPrefs(newPrefs);
-    localStorage.setItem(NOTIFICATION_STORAGE_KEY, JSON.stringify(newPrefs));
-
-    // Sync to database
-    if (session?.user?.id) {
-      setSaving(true);
-      try {
-        const { error } = await (supabase
-          .from('profiles' as any) as any)
-          .upsert({
-            id: session.user.id,
-            notification_preferences: newPrefs,
-            updated_at: new Date().toISOString()
-          });
-
-        if (error) throw error;
-        setLastSaved(new Date());
-      } catch (err) {
-        console.error('Failed to sync notification preferences:', err);
-      } finally {
-        setTimeout(() => setSaving(false), 500);
-      }
+  // ── Upsert one canonical category row ────────────────────────────────────
+  const saveCanonical = async (category: CanonicalCategory, value: boolean) => {
+    if (!session?.user?.id) return;
+    setSaving(true);
+    try {
+      await db.from('notification_preferences').upsert(
+        { user_id: session.user.id, category, enabled: value, updated_at: new Date().toISOString() },
+        { onConflict: 'user_id,category' }
+      );
+      setLastSaved(new Date());
+    } catch (err) {
+      console.error('Failed to save preference:', err);
+    } finally {
+      setTimeout(() => setSaving(false), 400);
     }
   };
 
-  // Update notification type
-  const updateType = async (key: keyof NotificationPreferences, checked: boolean) => {
-    const newPrefs = { ...prefs, [key]: checked };
-    setPrefs(newPrefs);
-    localStorage.setItem(NOTIFICATION_STORAGE_KEY, JSON.stringify(newPrefs));
+  const updateCanonical = (category: CanonicalCategory, value: boolean) => {
+    setCanonical(prev => ({ ...prev, [category]: value }));
+    saveCanonical(category, value);
+  };
 
-    // Sync to database
-    if (session?.user?.id) {
-      try {
-        await (supabase
-          .from('profiles' as any) as any)
-          .upsert({
-            id: session.user.id,
-            notification_preferences: newPrefs,
-            updated_at: new Date().toISOString()
-          });
-      } catch (err) {
-        console.error('Failed to sync:', err);
-      }
+  // ── Local (non-canonical) pref helpers ───────────────────────────────────
+  const updateLocal = (key: keyof LocalPrefs, value: boolean) => {
+    let next = { ...local, [key]: value };
+    if (key === 'all_enabled' && !value) {
+      next = { ...next, email_notifications: false, push_notifications: false };
     }
+    if ((key === 'email_notifications' || key === 'push_notifications') && value) {
+      next.all_enabled = true;
+    }
+    setLocal(next);
+    localStorage.setItem(LOCAL_KEY, JSON.stringify(next));
   };
 
   const handleSave = () => {
     toast({
-      title: translate("Success", language),
+      title: translate("Preferences saved", language),
       description: translate("Your notification preferences have been updated.", language),
     });
   };
@@ -162,7 +149,7 @@ const NotificationSettings: React.FC = () => {
         </div>
       )}
 
-      {/* Main Notification Controls */}
+      {/* Master Switch */}
       <Card className="rounded-[2.5rem] border-none shadow-ios-high overflow-hidden bg-white dark:bg-slate-900">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -176,20 +163,21 @@ const NotificationSettings: React.FC = () => {
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between p-4 bg-primary/5 rounded-2xl border-2 border-primary/20">
             <div className="space-y-0.5">
-              <Label htmlFor="all-notifications" className="font-bold text-primary">{translate("Enable All Notifications", language)}</Label>
+              <Label htmlFor="all-notifications" className="font-bold text-primary">
+                {translate("Enable All Notifications", language)}
+              </Label>
               <p className="text-xs text-muted-foreground">{translate("Receive all system notifications", language)}</p>
             </div>
             <Switch
               id="all-notifications"
-              checked={prefs.all_enabled}
-              onCheckedChange={(checked) => updatePref('all_enabled', checked)}
+              checked={local.all_enabled}
+              onCheckedChange={(checked) => updateLocal('all_enabled', checked)}
             />
           </div>
 
-          {prefs.all_enabled && (
+          {local.all_enabled && (
             <>
               <Separator />
-
               <div className="ml-4 space-y-4">
                 <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-white/5 rounded-2xl">
                   <div className="flex items-center gap-3">
@@ -205,8 +193,8 @@ const NotificationSettings: React.FC = () => {
                   </div>
                   <Switch
                     id="email-notifications"
-                    checked={prefs.email_notifications}
-                    onCheckedChange={(checked) => updatePref('email_notifications', checked)}
+                    checked={local.email_notifications}
+                    onCheckedChange={(checked) => updateLocal('email_notifications', checked)}
                   />
                 </div>
 
@@ -224,8 +212,8 @@ const NotificationSettings: React.FC = () => {
                   </div>
                   <Switch
                     id="push-notifications"
-                    checked={prefs.push_notifications}
-                    onCheckedChange={(checked) => updatePref('push_notifications', checked)}
+                    checked={local.push_notifications}
+                    onCheckedChange={(checked) => updateLocal('push_notifications', checked)}
                   />
                 </div>
               </div>
@@ -234,7 +222,7 @@ const NotificationSettings: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* Notification Types */}
+      {/* ── CANONICAL NOTIFICATION CATEGORIES (wired to notification_preferences table) ── */}
       <Card className="rounded-[2.5rem] border-none shadow-ios-high overflow-hidden bg-white dark:bg-slate-900">
         <CardHeader>
           <CardTitle>{translate("Notification Types", language)}</CardTitle>
@@ -243,135 +231,65 @@ const NotificationSettings: React.FC = () => {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex items-center gap-4 p-4 bg-slate-50 dark:bg-white/5 rounded-2xl hover:bg-slate-100 dark:hover:bg-white/10 transition-colors">
-            <div className="h-10 w-10 rounded-xl bg-amber-500/10 flex items-center justify-center shrink-0">
-              <FileText className="h-5 w-5 text-amber-500" />
-            </div>
-            <div className="flex-1">
-              <Label htmlFor="legislative-updates" className="font-bold cursor-pointer">
-                {translate("Legislative Updates", language)}
-              </Label>
-              <p className="text-xs text-muted-foreground">{translate("New bills, amendments, and parliamentary activities", language)}</p>
-            </div>
-            <Checkbox
-              id="legislative-updates"
-              checked={prefs.legislative_updates}
-              onCheckedChange={(checked) => updateType('legislative_updates', checked as boolean)}
-              className="h-5 w-5"
-            />
-          </div>
 
-          <div className="flex items-center gap-4 p-4 bg-slate-50 dark:bg-white/5 rounded-2xl hover:bg-slate-100 dark:hover:bg-white/10 transition-colors">
-            <div className="h-10 w-10 rounded-xl bg-blue-500/10 flex items-center justify-center shrink-0">
-              <Users className="h-5 w-5 text-blue-500" />
+          {([
+            { key: 'follow_confirmation'   as CanonicalCategory, label: 'Bill Follow Confirmations',    desc: 'Confirmation when you follow a new bill',              icon: <FileText className="h-5 w-5 text-kenya-green" />, color: 'bg-kenya-green/10' },
+            { key: 'new_bill'              as CanonicalCategory, label: 'New Bills',                    desc: 'Be notified when new bills are added to CEKA',         icon: <FileText className="h-5 w-5 text-amber-500" />,    color: 'bg-amber-500/10' },
+            { key: 'bill_status_change'    as CanonicalCategory, label: 'Bill Status Changes',          desc: 'When bills you follow move to a new stage',             icon: <FileText className="h-5 w-5 text-blue-500" />,     color: 'bg-blue-500/10' },
+            { key: 'volunteer_application' as CanonicalCategory, label: 'Volunteer Application Updates',desc: 'Updates on your volunteer application status',          icon: <Heart className="h-5 w-5 text-pink-500" />,        color: 'bg-pink-500/10' },
+            { key: 'campaign_update'       as CanonicalCategory, label: 'Campaign Updates',             desc: 'New campaigns and milestones from civic campaigns',     icon: <Megaphone className="h-5 w-5 text-violet-500" />,  color: 'bg-violet-500/10' },
+            { key: 'system'                as CanonicalCategory, label: 'Badges, Credits & Milestones', desc: 'Badge awards, civic credits earned, and milestones',    icon: <Award className="h-5 w-5 text-yellow-500" />,      color: 'bg-yellow-500/10' },
+          ]).map(({ key, label, desc, icon, color }) => (
+            <div key={key} className="flex items-center gap-4 p-4 bg-slate-50 dark:bg-white/5 rounded-2xl hover:bg-slate-100 dark:hover:bg-white/10 transition-colors">
+              <div className={`h-10 w-10 rounded-xl ${color} flex items-center justify-center shrink-0`}>
+                {icon}
+              </div>
+              <div className="flex-1">
+                <Label htmlFor={`canonical-${key}`} className="font-bold cursor-pointer">
+                  {translate(label, language)}
+                </Label>
+                <p className="text-xs text-muted-foreground">{translate(desc, language)}</p>
+              </div>
+              <Checkbox
+                id={`canonical-${key}`}
+                checked={canonical[key]}
+                onCheckedChange={(c) => updateCanonical(key, !!c)}
+                className="h-5 w-5"
+              />
             </div>
-            <div className="flex-1">
-              <Label htmlFor="community-replies" className="font-bold cursor-pointer">
-                {translate("Community Replies", language)}
-              </Label>
-              <p className="text-xs text-muted-foreground">{translate("Responses to your discussions and comments", language)}</p>
-            </div>
-            <Checkbox
-              id="community-replies"
-              checked={prefs.community_replies}
-              onCheckedChange={(checked) => updateType('community_replies', checked as boolean)}
-              className="h-5 w-5"
-            />
-          </div>
+          ))}
 
-          <div className="flex items-center gap-4 p-4 bg-slate-50 dark:bg-white/5 rounded-2xl hover:bg-slate-100 dark:hover:bg-white/10 transition-colors">
-            <div className="h-10 w-10 rounded-xl bg-green-500/10 flex items-center justify-center shrink-0">
-              <BookOpen className="h-5 w-5 text-green-500" />
-            </div>
-            <div className="flex-1">
-              <Label htmlFor="resource-updates" className="font-bold cursor-pointer">
-                {translate("New Educational Resources", language)}
-              </Label>
-              <p className="text-xs text-muted-foreground">{translate("New carousels, PDFs, and learning materials", language)}</p>
-            </div>
-            <Checkbox
-              id="resource-updates"
-              checked={prefs.resource_updates}
-              onCheckedChange={(checked) => updateType('resource_updates', checked as boolean)}
-              className="h-5 w-5"
-            />
-          </div>
+          <Separator />
+          <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 px-1">Other Preferences</p>
 
-          <div className="flex items-center gap-4 p-4 bg-slate-50 dark:bg-white/5 rounded-2xl hover:bg-slate-100 dark:hover:bg-white/10 transition-colors">
-            <div className="h-10 w-10 rounded-xl bg-pink-500/10 flex items-center justify-center shrink-0">
-              <Heart className="h-5 w-5 text-pink-500" />
+          {([
+            { key: 'community_replies' as keyof LocalPrefs, label: 'Community Replies',         desc: 'Responses to your discussions and comments', icon: <Users       className="h-5 w-5 text-blue-500" />,   color: 'bg-blue-500/10' },
+            { key: 'resource_updates'  as keyof LocalPrefs, label: 'New Educational Resources', desc: 'New carousels, PDFs, and learning materials',  icon: <BookOpen    className="h-5 w-5 text-green-500" />,  color: 'bg-green-500/10' },
+            { key: 'event_reminders'   as keyof LocalPrefs, label: 'Event Reminders',           desc: 'Reminders for upcoming civic events',           icon: <CalendarDays className="h-5 w-5 text-orange-500" />,color: 'bg-orange-500/10' },
+            { key: 'blog_posts'        as keyof LocalPrefs, label: 'Blog Posts',               desc: 'New blog posts and civic analysis articles',    icon: <Newspaper   className="h-5 w-5 text-teal-500" />,  color: 'bg-teal-500/10' },
+          ]).map(({ key, label, desc, icon, color }) => (
+            <div key={key} className="flex items-center gap-4 p-4 bg-slate-50 dark:bg-white/5 rounded-2xl hover:bg-slate-100 dark:hover:bg-white/10 transition-colors">
+              <div className={`h-10 w-10 rounded-xl ${color} flex items-center justify-center shrink-0`}>
+                {icon}
+              </div>
+              <div className="flex-1">
+                <Label htmlFor={`local-${key}`} className="font-bold cursor-pointer">
+                  {translate(label, language)}
+                </Label>
+                <p className="text-xs text-muted-foreground">{translate(desc, language)}</p>
+              </div>
+              <Checkbox
+                id={`local-${key}`}
+                checked={local[key]}
+                onCheckedChange={(c) => updateLocal(key, !!c)}
+                className="h-5 w-5"
+              />
             </div>
-            <div className="flex-1">
-              <Label htmlFor="volunteer-opportunities" className="font-bold cursor-pointer">
-                {translate("Volunteer Opportunities", language)}
-              </Label>
-              <p className="text-xs text-muted-foreground">{translate("Ways to get involved in civic initiatives", language)}</p>
-            </div>
-            <Checkbox
-              id="volunteer-opportunities"
-              checked={prefs.volunteer_opportunities}
-              onCheckedChange={(checked) => updateType('volunteer_opportunities', checked as boolean)}
-              className="h-5 w-5"
-            />
-          </div>
-
-          <div className="flex items-center gap-4 p-4 bg-slate-50 dark:bg-white/5 rounded-2xl hover:bg-slate-100 dark:hover:bg-white/10 transition-colors">
-            <div className="h-10 w-10 rounded-xl bg-orange-500/10 flex items-center justify-center shrink-0">
-              <CalendarDays className="h-5 w-5 text-orange-500" />
-            </div>
-            <div className="flex-1">
-              <Label htmlFor="event-reminders" className="font-bold cursor-pointer">
-                {translate("Event Reminders", language)}
-              </Label>
-              <p className="text-xs text-muted-foreground">{translate("Reminders for upcoming civic events you've RSVP'd to", language)}</p>
-            </div>
-            <Checkbox
-              id="event-reminders"
-              checked={prefs.event_reminders}
-              onCheckedChange={(checked) => updateType('event_reminders', checked as boolean)}
-              className="h-5 w-5"
-            />
-          </div>
-
-          <div className="flex items-center gap-4 p-4 bg-slate-50 dark:bg-white/5 rounded-2xl hover:bg-slate-100 dark:hover:bg-white/10 transition-colors">
-            <div className="h-10 w-10 rounded-xl bg-violet-500/10 flex items-center justify-center shrink-0">
-              <Megaphone className="h-5 w-5 text-violet-500" />
-            </div>
-            <div className="flex-1">
-              <Label htmlFor="campaign-updates" className="font-bold cursor-pointer">
-                {translate("Campaign Updates", language)}
-              </Label>
-              <p className="text-xs text-muted-foreground">{translate("Milestones and updates from civic campaigns", language)}</p>
-            </div>
-            <Checkbox
-              id="campaign-updates"
-              checked={prefs.campaign_updates}
-              onCheckedChange={(checked) => updateType('campaign_updates', checked as boolean)}
-              className="h-5 w-5"
-            />
-          </div>
-
-          <div className="flex items-center gap-4 p-4 bg-slate-50 dark:bg-white/5 rounded-2xl hover:bg-slate-100 dark:hover:bg-white/10 transition-colors">
-            <div className="h-10 w-10 rounded-xl bg-teal-500/10 flex items-center justify-center shrink-0">
-              <Newspaper className="h-5 w-5 text-teal-500" />
-            </div>
-            <div className="flex-1">
-              <Label htmlFor="blog-posts" className="font-bold cursor-pointer">
-                {translate("Blog Posts", language)}
-              </Label>
-              <p className="text-xs text-muted-foreground">{translate("New blog posts and civic analysis articles", language)}</p>
-            </div>
-            <Checkbox
-              id="blog-posts"
-              checked={prefs.blog_posts}
-              onCheckedChange={(checked) => updateType('blog_posts', checked as boolean)}
-              className="h-5 w-5"
-            />
-          </div>
+          ))}
         </CardContent>
       </Card>
 
-      {/* Save Button */}
+      {/* Save */}
       <div className="flex items-center justify-between">
         {lastSaved && (
           <p className="text-xs text-muted-foreground flex items-center gap-1">
