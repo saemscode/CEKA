@@ -851,7 +851,7 @@ class LegislativeScraper:
         base_url = target['url']
 
         for page_num in range(max_pages):
-            page_url = f"{base_url}?title=%20&field_parliament_value=2022&page={page_num}"
+            page_url = f"{base_url}?title=%20&field_parliament_value=2026&page={page_num}"
             logger.info(f"  Page {page_num + 1}: {page_url}")
 
             try:
