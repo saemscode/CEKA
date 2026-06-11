@@ -3053,7 +3053,7 @@ class SearchService {
               base = {
                 id: item.id, type: 'campaign', title: item.title, description: item.description || '', excerpt: (item.description || '').slice(0, 150),
                 tags: ['Campaign', 'Civic Action'], created_at: item.created_at, date: item.created_at,
-                url: `/campaigns/${item.id}`, category: 'Action'
+                url: `/${item.id}`, category: 'Action'
               };
               break;
             case 'glossary':

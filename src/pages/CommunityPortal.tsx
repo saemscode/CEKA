@@ -350,7 +350,7 @@ const CommunityPortal = () => {
                       </div>
                       <DialogFooter>
                         <DialogClose asChild>
-                         <Button variant="ghost" className="rounded-xl">Cancel</Button>
+                          <Button variant="ghost" className="rounded-xl">Cancel</Button>
                         </DialogClose>
                         <Button
                           onClick={handleCreateThread}
@@ -537,7 +537,7 @@ const CommunityPortal = () => {
                       </CardContent>
                       <CardFooter className="p-6 pt-0">
                         <Button asChild className="w-full h-14 rounded-2xl bg-slate-900 dark:bg-white text-white dark:text-black font-black uppercase tracking-[0.15em] text-xs shadow-xl active:scale-95 transition-all">
-                          <Link to={`/campaigns/${campaign.id}`}>Join Movement</Link>
+                          <Link to={`/campaign/${campaign.id}`}>Join Movement</Link>
                         </Button>
                       </CardFooter>
                     </Card>

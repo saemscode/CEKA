@@ -30,7 +30,7 @@ const fetchCampaignByIdentifier = async (identifier: string) => {
     .select('*')
     .eq('slug', identifier)
     .maybeSingle();
-  
+
   if (bySlug) return bySlug;
 
   // Then try UUID
@@ -39,7 +39,7 @@ const fetchCampaignByIdentifier = async (identifier: string) => {
     .select('*')
     .eq('id', identifier)
     .single();
-  
+
   if (error) throw error;
   return byId;
 };
@@ -253,12 +253,12 @@ const CampaignDetail = () => {
   const progressValue = goalCount > 0
     ? Math.min(Math.round((participantCount / goalCount) * 100), 100)
     : 0;
-  
+
   const hasFinancialGoal = targetAmount > 0;
   const hasGallery = Array.isArray((campaign as any)?.gallery) && (campaign as any).gallery.length > 0;
   const isExternal = !!(campaign as any)?.external_url;
   const currency = (campaign as any)?.currency || 'KES';
-  
+
   // Trusted Organizer Meta mapping
   const organizerMeta = (campaign as any)?.organizer_meta || {};
   const organizerName = organizerMeta.name || (typeof campaign?.organizer === 'string' ? campaign.organizer : 'Community Organizer');
@@ -290,21 +290,21 @@ const CampaignDetail = () => {
 
   // Fallback for Helmet if missing dependencies
   const renderSEO = () => {
-     try {
-       // Only renders if installed properly
-       return (
-         <Helmet>
-           <title>{campaign.title} | CEKA Civic Action</title>
-           <meta name="description" content={campaign.description?.substring(0, 160) || "Join the civic movement on CEKA."} />
-           <meta property="og:title" content={campaign.title} />
-           <meta property="og:description" content={campaign.description?.substring(0, 160) || "Join the civic movement on CEKA."} />
-           <meta property="og:image" content={campaign.image_url || "/og-image.jpeg"} />
-           <meta property="twitter:card" content="summary_large_image" />
-         </Helmet>
-       );
-     } catch (e) {
-       return null;
-     }
+    try {
+      // Only renders if installed properly
+      return (
+        <Helmet>
+          <title>{campaign.title} | CEKA Civic Action</title>
+          <meta name="description" content={campaign.description?.substring(0, 160) || "Join the civic movement on CEKA."} />
+          <meta property="og:title" content={campaign.title} />
+          <meta property="og:description" content={campaign.description?.substring(0, 160) || "Join the civic movement on CEKA."} />
+          <meta property="og:image" content={campaign.image_url || "/og-image.jpeg"} />
+          <meta property="twitter:card" content="summary_large_image" />
+        </Helmet>
+      );
+    } catch (e) {
+      return null;
+    }
   };
 
   // ── Render ───────────────────────────────────────────────────────────────
@@ -368,7 +368,7 @@ const CampaignDetail = () => {
                 </p>
                 {isExternal && (
                   <Badge className="ml-1 bg-amber-500/20 border-amber-400/30 text-amber-300 text-[9px] font-bold uppercase tracking-wider">
-                     {organizerMeta.origin_source || 'External Organization'}
+                    {organizerMeta.origin_source || 'External Organization'}
                   </Badge>
                 )}
               </div>
@@ -428,12 +428,12 @@ const CampaignDetail = () => {
                 {collaborations.length > 0 && (
                   <div className="mt-8 p-4 rounded-2xl bg-kenya-green/5 border border-kenya-green/20">
                     <h3 className="text-sm font-bold text-kenya-green mb-3 flex items-center gap-2">
-                       <Users className="w-4 h-4" /> Collaboration Partners
+                      <Users className="w-4 h-4" /> Collaboration Partners
                     </h3>
                     <div className="flex flex-wrap gap-4">
                       {collaborations.map((collab: any) => (
-                        <Link 
-                          key={collab.id} 
+                        <Link
+                          key={collab.id}
                           to={`/campaign/${collab.partner.slug || collab.partner.id}`}
                           className="flex items-center gap-2 p-2 rounded-xl bg-white dark:bg-black/40 border border-slate-200 dark:border-white/10 hover:border-kenya-green transition"
                         >
@@ -457,8 +457,8 @@ const CampaignDetail = () => {
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                       {/* Manual Gallery Images */}
                       {hasGallery && (campaign as any).gallery.map((image: string, index: number) => (
-                        <motion.div 
-                          key={`manual-${index}`} 
+                        <motion.div
+                          key={`manual-${index}`}
                           whileHover={{ scale: 1.02 }}
                           className="aspect-video rounded-2xl overflow-hidden shadow-sm border border-slate-100 dark:border-white/5"
                         >
@@ -467,14 +467,14 @@ const CampaignDetail = () => {
                       ))}
                       {/* Linked Media Items */}
                       {linkedMedia.map((media: any) => (
-                        <motion.div 
-                          key={`linked-${media.id}`} 
+                        <motion.div
+                          key={`linked-${media.id}`}
                           whileHover={{ scale: 1.02 }}
                           className="aspect-video rounded-2xl overflow-hidden shadow-sm border border-slate-200 dark:border-white/10 group relative"
                         >
                           <img src={media.url || media.file_path} alt={media.title} className="w-full h-full object-cover" />
                           <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-3">
-                             <p className="text-[10px] text-white font-bold truncate">{media.title}</p>
+                            <p className="text-[10px] text-white font-bold truncate">{media.title}</p>
                           </div>
                         </motion.div>
                       ))}
@@ -595,7 +595,7 @@ const CampaignDetail = () => {
               <Card className="border-slate-200 dark:border-white/10 shadow-xl overflow-hidden rounded-2xl relative">
                 {/* Visual Trust Indicator (Top right watermark) */}
                 <div className="absolute top-0 right-0 p-3 opacity-5">
-                   <Globe className="w-24 h-24 stroke-[1px] mix-blend-overlay" />
+                  <Globe className="w-24 h-24 stroke-[1px] mix-blend-overlay" />
                 </div>
 
                 <div className="h-1 w-full bg-gradient-to-r from-kenya-green to-emerald-400" />
@@ -646,7 +646,7 @@ const CampaignDetail = () => {
                         </span>
                         {/* Secure Trust Badge */}
                         <div className="flex items-center text-[9px] font-bold uppercase tracking-wider text-emerald-600/70 border border-emerald-500/20 bg-emerald-50 dark:bg-emerald-500/10 px-1.5 py-0.5 rounded">
-                           Verified
+                          Verified
                         </div>
                       </div>
                     </div>
@@ -667,11 +667,10 @@ const CampaignDetail = () => {
                       </a>
                     ) : (
                       <Button
-                        className={`w-full font-bold rounded-xl h-12 shadow-lg transition-all active:scale-95 ${
-                          isFollowing
+                        className={`w-full font-bold rounded-xl h-12 shadow-lg transition-all active:scale-95 ${isFollowing
                             ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-white/10 dark:hover:bg-white/15 dark:text-white shadow-none'
                             : 'bg-kenya-green hover:bg-[#0ead36] text-white shadow-kenya-green/20'
-                        }`}
+                          }`}
                         onClick={handleJoinCampaign}
                         disabled={followMutation.isPending}
                       >
@@ -698,22 +697,22 @@ const CampaignDetail = () => {
 
                     {/* Share / WhatsApp Button Split */}
                     <div className="flex gap-2">
-                       <a
-                         href={`https://wa.me/?text=${encodeURIComponent(`Join me in verifying this campaign on CEKA Civic Ledger:\n\n${campaign.title}\n\n${window.location.href}`)}`}
-                         target="_blank"
-                         rel="noopener noreferrer"
-                         className="flex-1 flex items-center justify-center h-11 rounded-xl bg-[#25D366]/10 text-[#25D366] hover:bg-[#25D366]/20 font-bold transition-colors"
-                       >
-                         WhatsApp
-                       </a>
-                       <Button
-                         variant="ghost"
-                         className="flex-[2] h-11 rounded-xl text-slate-500 dark:text-white/40 hover:text-slate-800 dark:hover:text-white font-semibold border border-slate-200 dark:border-white/10"
-                         onClick={handleShare}
-                       >
-                         <ShareIcon className="mr-2 h-4 w-4" />
-                         Share Link
-                       </Button>
+                      <a
+                        href={`https://wa.me/?text=${encodeURIComponent(`Join me in verifying this campaign on CEKA Civic Ledger:\n\n${campaign.title}\n\n${window.location.href}`)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex-1 flex items-center justify-center h-11 rounded-xl bg-[#25D366]/10 text-[#25D366] hover:bg-[#25D366]/20 font-bold transition-colors"
+                      >
+                        WhatsApp
+                      </a>
+                      <Button
+                        variant="ghost"
+                        className="flex-[2] h-11 rounded-xl text-slate-500 dark:text-white/40 hover:text-slate-800 dark:hover:text-white font-semibold border border-slate-200 dark:border-white/10"
+                        onClick={handleShare}
+                      >
+                        <ShareIcon className="mr-2 h-4 w-4" />
+                        Share Link
+                      </Button>
                     </div>
                   </div>
 
