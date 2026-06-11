@@ -473,9 +473,9 @@ const DetailCard: React.FC<{
                           <div className="space-y-2">
                             <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 dark:text-white/30">Latest Updates</p>
                             {props.recentBills.map(bill => (
-                              <Link 
-                                key={bill.id} 
-                                to={`/bill/${bill.slug || bill.id}`} 
+                              <Link
+                                key={bill.id}
+                                to={`/bill/${bill.slug || bill.id}`}
                                 className="flex items-center justify-between gap-2 p-2 rounded-lg bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/5 hover:bg-kenya-green/5 dark:hover:bg-kenya-green/10 transition-colors"
                               >
                                 <p className="text-xs font-semibold text-slate-700 dark:text-white/80 truncate flex-1">{bill.title}</p>
@@ -819,7 +819,7 @@ const CivicMiniPlayer: React.FC<CivicMiniPlayerProps> = ({ isHidden, onHide }) =
     followedBills.slice(0, 3).forEach(b => items.push({ title: b.title, type: 'Bill', link: `/bill/${b.slug || b.id}` }));
     upcomingEvents.slice(0, 2).forEach(e => { const { day, month } = fmtDate(e.event_date); items.push({ title: e.title, type: `Event · ${day} ${month}`, link: '/civic-events' }); });
     recentBills.slice(0, 2).forEach(b => items.push({ title: b.title, type: 'Latest Bill', link: `/bill/${b.slug || b.id}` }));
-    participatedCampaigns.slice(0, 2).forEach(c => items.push({ title: c.title, type: 'Campaign', link: `/campaigns/${c.slug || c.id}` }));
+    participatedCampaigns.slice(0, 2).forEach(c => items.push({ title: c.title, type: 'Campaign', link: `/campaign/${c.slug || c.id}` }));
     if (!items.length) {
       items.push({ title: 'Civic Education Kenya', type: 'CEKA', link: '/' });
       items.push({ title: 'Follow bills in the tracker', type: 'Resource', link: '/legislative-tracker' });
