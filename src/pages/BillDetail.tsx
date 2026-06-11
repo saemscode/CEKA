@@ -305,6 +305,8 @@ const BillDetail = () => {
       <Layout>
         <div className="min-h-screen bg-white dark:bg-black pt-20">
           <div className="container px-4">
+            {/* SEO: Crawler outgoing link — ensures bots never log 0 outgoing links on slow loads */}
+            <Link to="/legislative-tracker" className="sr-only" aria-hidden="true">Back to Legislative Tracker</Link>
             <div className="h-8 w-32 bg-slate-100 dark:bg-white/5 rounded-full mb-8" />
             <div className="space-y-6">
               <div className="h-16 w-3/4 bg-slate-100 dark:bg-white/5 rounded-3xl" />
@@ -353,25 +355,29 @@ const BillDetail = () => {
     ? descriptionText.slice(0, DESCRIPTION_COLLAPSE_THRESHOLD)
     : descriptionText;
 
+  // SEO FIX: Build meta description and hard-cap at 155 chars to prevent Ahrefs penalty
+  const rawSeoDesc = `${bill.summary} Track the full status, download the PDF, and submit a memorandum to Parliament for ${bill.title}.`;
+  const seoDesc = rawSeoDesc.length > 155 ? rawSeoDesc.substring(0, 152) + '...' : rawSeoDesc;
+
   return (
     <Layout>
       <Helmet>
         <title>{`${bill.title} | Legislative Tracker | CEKA`}</title>
-        <meta name="description" content={`${bill.summary.substring(0, 155)}... Track the status, download the PDF, and submit a memorandum to Parliament for ${bill.title}.`} />
-        <meta name="keywords" content={`${bill.title}, ${bill.category}, ${bill.bill_no || ''}, Kenya Memorandum Builder, Memorandum Builder Kenya, ${isFinanceBill ? 'Finance Bill 2026, Kenya Finance Bill 2026, Finance Bill memorandum builder, write a memorandum for Finance Bill,' : ''} yield public participation Kenya, submit memorandum Kenya, bill tracker Kenya, parliamentary process Kenya`} />
+        <meta name="description" content={seoDesc} />
+        <meta name="keywords" content={`${bill.title}, ${bill.category}, ${bill.bill_no || ''}, Kenya Memorandum Builder, Memorandum Builder Kenya, ${isFinanceBill ? 'Finance Bill 2026, Kenya Finance Bill 2026, Finance Bill memorandum builder, write a memorandum for Finance Bill,' : ''} public participation Kenya, submit memorandum Kenya, bill tracker Kenya, parliamentary process Kenya`} />
 
         {/* Open Graph / Facebook */}
         <meta property="og:type" content="article" />
         <meta property="og:url" content={window.location.href} />
         <meta property="og:title" content={`${bill.title} | Legislative Tracker | CEKA`} />
-        <meta property="og:description" content={bill.summary.substring(0, 150)} />
+        <meta property="og:description" content={seoDesc} />
         <meta property="og:image" content="/icons/og-bill.png" />
 
         {/* Twitter */}
         <meta property="twitter:card" content="summary_large_image" />
         <meta property="twitter:url" content={window.location.href} />
         <meta property="twitter:title" content={`${bill.title} | Legislative Tracker | CEKA`} />
-        <meta property="twitter:description" content={bill.summary.substring(0, 150)} />
+        <meta property="twitter:description" content={seoDesc} />
         <meta property="twitter:image" content="/icons/og-bill.png" />
       </Helmet>
 
