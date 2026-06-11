@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo, memo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { AdminIngestion } from '@/components/translate/AdminIngestion';
 import { useAuth } from '@/providers/AuthProvider';
 import { useToast } from '@/hooks/use-toast';
 import { Card } from '@/components/ui/card';
@@ -9,9 +10,9 @@ import { Badge } from '@/components/ui/badge';
 // Lucide icons purged in favor of Icons v5 SVG collection
 
 
-// ─────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // CEKA ICON ENGINE (Icons v5)
-// ─────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 type CekaIconName =
   | 'translate' | 'review' | 'audit' | 'admin'
@@ -63,9 +64,9 @@ const CekaIcon = ({ name, size = 18, className = "", color = "currentColor" }: {
   </div>
 );
 
-// ─────────────────────────────────────────────
-// FACE BACKGROUND — Mathematical Lattice Mosaic
-// ─────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// FACE BACKGROUND â€” Mathematical Lattice Mosaic
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const FACE_ICONS = Array.from({ length: 28 }, (_, i) => `/icons-bg/lllook (${i + 1}).svg`);
 
@@ -228,7 +229,7 @@ function runGlossaryCheck(sourceText: string, translatedText: string, languageCo
   for (const [en, sw] of Object.entries(SWAHILI_GLOSSARY)) {
     if (sourceText.toLowerCase().includes(en.toLowerCase())) {
       if (!translatedText.toLowerCase().includes(sw.toLowerCase())) {
-        flags.push(`"${en}" → "${sw}" not found`);
+        flags.push(`"${en}" â†’ "${sw}" not found`);
       }
     }
   }
@@ -447,7 +448,7 @@ const TranslatorView = ({
     }
 
     toast({
-      title: flags.length > 0 ? 'Submitted with flags' : 'Asante! ✊🏽',
+      title: flags.length > 0 ? 'Submitted with flags' : 'Asante! âœŠðŸ½',
       description: flags.length > 0
         ? 'Reviewer will verify glossary consistency.'
         : 'Translation queued for verification.',
@@ -620,8 +621,8 @@ const TranslatorView = ({
             <div className="h-px flex-1 mx-6 bg-white/5" />
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-y-8 gap-x-4 pt-4">
-            {progress.map((p) => (
-              <ProgressCard key={p.language_code} progress={p} />
+            {progress.map((p, index) => (
+              <ProgressCard key={(p as any).lang_code || p.language_code || `lang-${index}`} progress={p} />
             ))}
           </div>
         </div>
@@ -688,7 +689,7 @@ const ReviewerDashboard = ({ userRole }: { userRole: string }) => {
       });
     }
 
-    toast({ title: decision === 'approved' ? '✅ Approved' : '❌ Rejected', description: `Submission updated.` });
+    toast({ title: decision === 'approved' ? 'âœ… Approved' : 'âŒ Rejected', description: `Submission updated.` });
     setQueue((prev) => prev.filter((s) => s.id !== id));
   };
 
@@ -710,14 +711,14 @@ const ReviewerDashboard = ({ userRole }: { userRole: string }) => {
       correction_type: 'vernacular_correction',
       notes: `Changed to: ${corrected}`,
     });
-    toast({ title: '✏️ Corrected & Approved', description: 'Translation saved with your correction.' });
+    toast({ title: 'âœï¸ Corrected & Approved', description: 'Translation saved with your correction.' });
     setQueue((prev) => prev.filter((s) => s.id !== id));
   };
 
   const auditTabs = [
     { key: 'flagged', label: 'Flagged', icon: 'alert', desc: 'Auto-rejected or spammy' },
-    { key: 'fast_track', label: 'Fast Track', icon: 'magic', desc: 'Score 60–89%' },
-    { key: 'auto_approved', label: 'AI Review', icon: 'bot', desc: 'AI approved ≥90%' },
+    { key: 'fast_track', label: 'Fast Track', icon: 'magic', desc: 'Score 60â€“89%' },
+    { key: 'auto_approved', label: 'AI Review', icon: 'bot', desc: 'AI approved â‰¥90%' },
     { key: 'sampling', label: 'Quality Check', icon: 'audit', desc: 'Spot-check AI quality' },
   ];
 
@@ -885,180 +886,6 @@ const ReviewerDashboard = ({ userRole }: { userRole: string }) => {
   );
 };
 
-const AdminIngestion = () => {
-  const { toast } = useToast();
-  const { session } = useAuth();
-  const [batchTitle, setBatchTitle] = useState('');
-  const [sourceUrl, setSourceUrl] = useState('');
-  const [slides, setSlides] = useState<any[]>([
-    { url: '', slide_number: 1, extracted: null, confidence: 0, status: 'idle' },
-  ]);
-  const [extracting, setExtracting] = useState(false);
-  const [publishing, setPublishing] = useState(false);
-  const [batchId, setBatchId] = useState<string | null>(null);
-  const [phase, setPhase] = useState<'input' | 'review' | 'published'>('input');
-
-  const addSlide = () => {
-    setSlides(prev => [...prev, { url: '', slide_number: prev.length + 1, extracted: null, confidence: 0, status: 'idle' }]);
-  };
-
-  const removeSlide = (idx: number) => {
-    setSlides(prev => prev.filter((_, i) => i !== idx).map((s, i) => ({ ...s, slide_number: i + 1 })));
-  };
-
-  const updateUrl = (idx: number, url: string) => {
-    setSlides(prev => prev.map((s, i) => i === idx ? { ...s, url } : s));
-  };
-
-  const updateExtracted = (idx: number, field: string, value: string) => {
-    setSlides(prev => prev.map((s, i) => i === idx ? { ...s, extracted: { ...s.extracted, [field]: value } } : s));
-  };
-
-  const runExtraction = async () => {
-    setExtracting(true);
-    setSlides(prev => prev.map(s => s.url.trim() ? { ...s, status: 'extracting' } : s));
-    try {
-      const res = await fetch('https://cajrvemigxghnfmyopiy.supabase.co/functions/v1/ingest-media', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token}` },
-        body: JSON.stringify({ title: batchTitle.trim(), images: slides.map(s => ({ url: s.url, slide_number: s.slide_number })) }),
-      });
-      const result = await res.json();
-      setBatchId(result.batch_id);
-      setSlides(prev => prev.map((s, i) => {
-        const ext = (result.extractions || []).find((e: any) => e.slide_number === s.slide_number);
-        return ext ? { ...s, extracted: ext.extracted, confidence: ext.confidence, status: 'done' } : s;
-      }));
-      setPhase('review');
-    } catch (err: any) {
-      toast({ title: 'Extraction failed', description: err.message, variant: 'destructive' });
-    } finally {
-      setExtracting(false);
-    }
-  };
-
-  const publishBatch = async () => {
-    setPublishing(true);
-    try {
-      for (const slide of slides.filter(s => s.extracted && s.status === 'done')) {
-        for (const key of ['headline', 'subheadline', 'body', 'cta']) {
-          const text = (slide.extracted as any)?.[key]?.trim();
-          if (text) await (supabase as any).from('translation_units').insert({ batch_id: batchId, carousel_id: batchTitle.trim(), slide_number: slide.slide_number, type: key, source_text: text, active: true });
-        }
-      }
-      setPhase('published');
-    } finally {
-      setPublishing(false);
-    }
-  };
-
-  const [health, setHealth] = useState<any>(null);
-  const checkHealth = async () => {
-    // Factual data fetch would happen here
-    setHealth({
-      units: 0, pending: 0, flagged: 0, bot_users: 0,
-      workers: [{ name: 'Vision Engine', icon: 'eye' }, { name: 'LLM Auditor', icon: 'bot' }, { name: 'Submission Guard', icon: 'admin' }]
-    });
-  };
-
-  useEffect(() => { checkHealth(); }, []);
-
-  if (phase === 'published') {
-    return (
-      <div className="flex flex-col items-center justify-center py-24 space-y-6 text-center">
-        <div className="w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center">
-          <CekaIcon name="check" size={40} className="text-green-400" />
-        </div>
-        <h2 className="text-2xl font-black text-white">Campaign Published! 🚀</h2>
-        <Button onClick={() => window.location.reload()} className="bg-ios-blue text-white rounded-2xl px-10 py-5 font-bold shadow-ios-high">
-          Ingest Another Campaign
-        </Button>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-8 animate-fade-in">
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {[
-          { label: 'Cloud Segments', value: health?.units ?? '...', icon: 'admin' },
-          { label: 'User Verification', value: health?.pending ?? '...', icon: 'refresh' },
-          { label: 'Blocked Threats', value: health?.flagged ?? '...', icon: 'alert' },
-          { label: 'Bot Volunteers', value: health?.bot_users ?? '...', icon: 'send' },
-        ].map((stat) => (
-          <Card key={stat.label} className="p-6 flex items-center gap-5 shadow-2xl bg-white/5 border border-white/5 rounded-[2rem]">
-            <div className="w-12 h-12 rounded-[1rem] bg-white/5 flex items-center justify-center border border-white/5">
-              <CekaIcon name={stat.icon as any} size={24} />
-            </div>
-            <div>
-              <p className="text-[0.6rem] uppercase tracking-widest text-white/20 font-black">{stat.label}</p>
-              <p className="text-2xl font-black text-white">{stat.value}</p>
-            </div>
-          </Card>
-        ))}
-      </div>
-
-      <Card className="p-10 space-y-8 bg-white/5 border border-white/5 rounded-[2.5rem]">
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="text-xl font-black text-white/90">Campaign Stories</h3>
-            <p className="text-white/20 text-[0.65rem] font-bold uppercase tracking-widest mt-1">Provide Carousel Image URLs</p>
-          </div>
-          <button onClick={addSlide} className="px-6 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white/60 text-[0.7rem] font-black uppercase tracking-widest hover:bg-white/10 transition-all">
-            + Add Slide
-          </button>
-        </div>
-
-        <div className="space-y-4">
-          <label className="text-[0.65rem] uppercase tracking-widest text-white/20 font-black block ml-2">Campaign Title / Project ID</label>
-          <input
-            style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}
-            className="w-full rounded-2xl px-6 py-4 text-white outline-none focus:ring-2 focus:ring-ios-blue/50 transition-all text-sm font-medium"
-            placeholder="e.g. Finance Bill 2026 - Voter Ed"
-            value={batchTitle}
-            onChange={e => setBatchTitle(e.target.value)}
-          />
-        </div>
-
-        <div className="space-y-4">
-          {slides.map((slide, idx) => (
-            <div key={idx} className="flex items-center gap-5 px-6 py-4 rounded-2xl border border-white/5">
-              <div className="shrink-0 w-10 h-10 bg-white/5 rounded-xl flex items-center justify-center text-white/20 text-xs font-black">{slide.slide_number}</div>
-              <div className="relative flex-1">
-                <CekaIcon name="image" size={16} className="absolute left-0 top-1/2 -translate-y-1/2 opacity-20" />
-                <input className="w-full border-none pl-8 text-sm text-white/80 bg-transparent outline-none" placeholder={`Slide ${slide.slide_number} URL`} value={slide.url} onChange={e => updateUrl(idx, e.target.value)} />
-              </div>
-              {slide.status === 'extracting' && <CekaIcon name="loading" size={18} className="text-ios-blue" />}
-              {slide.status === 'done' && <CekaIcon name="check" size={18} className="text-green-400" />}
-              {slides.length > 1 && <button onClick={() => removeSlide(idx)}><CekaIcon name="close" size={18} /></button>}
-            </div>
-          ))}
-        </div>
-
-        <Button onClick={runExtraction} disabled={extracting} className="w-full py-8 text-lg font-black bg-ios-blue rounded-[1.5rem]">
-          {extracting ? <><CekaIcon name="loading" size={24} /> Extracting...</> : <><CekaIcon name="magic" size={22} /> Extract Content</>}
-        </Button>
-      </Card>
-
-      {phase === 'review' && (
-        <div className="space-y-8">
-          {slides.filter(s => s.status === 'done').map((slide) => (
-            <Card key={slide.slide_number} className="p-10 space-y-8 bg-white/5 border border-white/5 rounded-[2.5rem]">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                {(['headline', 'subheadline', 'body', 'cta'] as const).map(field => (
-                  <textarea key={field} className="w-full bg-white/5 border border-white/5 rounded-2xl p-6 text-sm text-white h-32" value={(slide.extracted as any)?.[field] ?? ''} onChange={e => updateExtracted(slides.indexOf(slide), field, e.target.value)} />
-                ))}
-              </div>
-            </Card>
-          ))}
-          <Button onClick={publishBatch} disabled={publishing} className="w-full py-10 text-xl font-black bg-green-600 rounded-[2rem]">
-            {publishing ? <><CekaIcon name="loading" size={28} /> Publishing...</> : <><CekaIcon name="upload" size={24} /> Start Campaign</>}
-          </Button>
-        </div>
-      )}
-    </div>
-  );
-};
 
 const TranslatePage = () => {
   const { user } = useAuth();
@@ -1109,7 +936,7 @@ const TranslatePage = () => {
     <div className="min-h-screen pt-20 pb-16 px-4" style={{ background: '#060914' }}>
       <CekaLatticeBackground />
       <div className="max-w-5xl mx-auto space-y-10 animate-fade-in" style={{ position: 'relative', zIndex: 1 }}>
-        {/* ── PAGE HEADER ── */}
+        {/* â”€â”€ PAGE HEADER â”€â”€ */}
         <header
           style={{
             background: 'rgba(255,255,255,0.045)',
@@ -1179,7 +1006,7 @@ const TranslatePage = () => {
           </div>
         </header>
 
-        {/* ── ACTIVE TAB CONTENT ── */}
+        {/* â”€â”€ ACTIVE TAB CONTENT â”€â”€ */}
         {activeTab === 'translate' && (
           <TranslatorView
             languages={languages}
