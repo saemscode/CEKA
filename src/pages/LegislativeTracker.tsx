@@ -979,32 +979,33 @@ const LegislativeTracker = () => {
           </div>
         </div>
       </div>
-    </Layout>
 
-    {/* ─────────────────────────────────────────────────────────────────────
-        SEO CRAWLER ANCHOR DIRECTORY
-        Invisible to users (display:none + aria-hidden) but fully readable
-        by Googlebot, Ahrefs, Bing bots etc. Eliminates:
-          • "707 Orphan Pages (has no incoming internal links)"
-          • "707 Pages with no outgoing links"
-        All bill URLs are stamped into the HTML at render time so bots can
-        map the site architecture without triggering the IntersectionObserver
-        infinite-scroll that human browsers use.
-    ─────────────────────────────────────────────────────────────────────── */}
-    <nav
-      aria-hidden="true"
-      style={{ display: 'none', position: 'absolute', overflow: 'hidden', height: 0, width: 0 }}
-    >
-      <ul>
-        {billsData.map((bill) => (
-          <li key={`seo-anchor-${bill.id}`}>
-            <Link to={`/bill/${getBillIdentifier(bill)}`}>
-              {bill.title}
-            </Link>
-          </li>
-        ))}
-      </ul>
-    </nav>
+      {/* ─────────────────────────────────────────────────────────────────────
+          SEO CRAWLER ANCHOR DIRECTORY
+          Invisible to users (display:none + aria-hidden) but fully readable
+          by Googlebot, Ahrefs, Bing bots etc. Eliminates:
+            • "707 Orphan Pages (has no incoming internal links)"
+            • "707 Pages with no outgoing links"
+          All bill URLs are stamped into the HTML at render time so bots can
+          map the site architecture without triggering the IntersectionObserver
+          infinite-scroll that human browsers use.
+      ─────────────────────────────────────────────────────────────────────── */}
+      <nav
+        aria-hidden="true"
+        style={{ display: 'none', position: 'absolute', overflow: 'hidden', height: 0, width: 0 }}
+      >
+        <ul>
+          {billsData.map((bill) => (
+            <li key={`seo-anchor-${bill.id}`}>
+              <Link to={`/bill/${getBillIdentifier(bill)}`}>
+                {bill.title}
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </nav>
+
+    </Layout>
   );
 };
 
