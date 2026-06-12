@@ -3,20 +3,11 @@ import { unzipSync } from 'fflate';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/providers/AuthProvider';
 import { useToast } from '@/hooks/use-toast';
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 
 // ── Cloudflare Worker endpoints ──────────────────────────────────────────────
 const CF_VISION_URL      = 'https://ceka-vision-extract.saemscodes.workers.dev';
 const CF_VALIDATOR_URL   = 'https://ceka-extraction-validator.saemscodes.workers.dev';
 const CF_TRANSLATOR_URL  = 'https://ceka-translation-draft.saemscodes.workers.dev';
-
-// ── Icon shim (re-uses icons-v5 system already on the page) ─────────────────
-const Ic = ({ n, s = 18 }: { n: string; s?: number }) => (
-  <div style={{ width: s, height: s }} className="inline-flex items-center justify-center shrink-0">
-    <img src={`/icons-v5/${n}`} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain', filter: 'brightness(0) invert(1)' }} />
-  </div>
-);
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 function uint8ToBase64(bytes: Uint8Array): string {
@@ -45,24 +36,31 @@ interface Slide {
   error: string | null;
 }
 
-// ── StatusBadge ──────────────────────────────────────────────────────────────
-const STATUS_MAP: Record<SlideStatus, { label: string; color: string }> = {
-  idle:        { label: 'Queued',       color: 'rgba(255,255,255,0.2)' },
-  processing:  { label: 'Extracting…',  color: '#007aff' },
-  translating: { label: 'Translating…', color: '#7832ff' },
-  done:        { label: 'Done',         color: '#00cb44' },
-  error:       { label: 'Error',        color: '#ff6b6b' },
+// ── Deep iOS Aesthetic Helpers ───────────────────────────────────────────────
+const getStatusLabel = (s: Slide) => {
+  if (s.status === 'idle') return 'Waiting';
+  if (s.status === 'processing') return 'Extracting text...';
+  if (s.status === 'translating') return 'Drafting Swahili...';
+  if (s.status === 'done') return 'Completed';
+  if (s.status === 'error') return 'Failed';
+  return '';
 };
 
-const StatusBadge = ({ slide }: { slide: Slide }) => {
-  const { label, color } = slide.status === 'done'
-    ? { label: slide.validator_decision === 'auto_publish' ? 'Auto-Approved' : 'Review Needed', color: slide.validator_decision === 'auto_publish' ? '#00cb44' : '#f5a623' }
-    : STATUS_MAP[slide.status];
-  return (
-    <span style={{ background: `${color}22`, border: `1px solid ${color}55`, color, borderRadius: '0.75rem', padding: '2px 10px', fontSize: '0.6rem', fontWeight: 900, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
-      {label}
-    </span>
-  );
+const getStatusColor = (s: Slide) => {
+  if (s.status === 'idle') return 'rgba(255, 255, 255, 0.3)';
+  if (s.status === 'processing') return 'rgba(10, 132, 255, 0.9)'; // iOS Blue
+  if (s.status === 'translating') return 'rgba(94, 92, 230, 0.9)'; // iOS Indigo
+  if (s.status === 'done') return 'rgba(255, 255, 255, 0.7)';
+  if (s.status === 'error') return 'rgba(255, 69, 58, 0.9)'; // iOS Red
+  return 'rgba(255, 255, 255, 0.2)';
+};
+
+const getProgressWidth = (s: Slide) => {
+  if (s.status === 'idle') return '0%';
+  if (s.status === 'processing') return '40%';
+  if (s.status === 'translating') return '80%';
+  if (s.status === 'done' || s.status === 'error') return '100%';
+  return '0%';
 };
 
 // ── Main component ────────────────────────────────────────────────────────────
@@ -70,7 +68,6 @@ export const AdminIngestion = () => {
   const { toast } = useToast();
   const [batchTitle, setBatchTitle] = useState('');
   const [slides, setSlides] = useState<Slide[]>([]);
-  const [urlInputs, setUrlInputs] = useState<string[]>(['']);
   const [phase, setPhase] = useState<'input' | 'review' | 'published'>('input');
   const [processing, setProcessing] = useState(false);
   const [publishing, setPublishing] = useState(false);
@@ -106,30 +103,25 @@ export const AdminIngestion = () => {
           confidence: 0, validator_decision: null, error: null,
         };
       });
-
       setSlides(newSlides);
-      toast({ title: `✅ ${newSlides.length} slides loaded from ZIP` });
+      // No success toast. Silent, seamless UX.
     } catch (e: any) {
-      toast({ title: 'ZIP failed', description: e.message, variant: 'destructive' });
+      toast({ title: 'Extraction failed', description: e.message, variant: 'destructive' });
     }
   }, [toast]);
 
-  // ── URL ingestion ──────────────────────────────────────────────────────────
-  const loadFromUrls = () => {
-    const valid = urlInputs.filter(u => u.trim().startsWith('http'));
-    if (!valid.length) { toast({ title: 'No valid URLs', variant: 'destructive' }); return; }
-    setSlides(valid.map((url, idx) => ({
-      slide_number: idx + 1, filename: url.split('/').pop() || `slide-${idx + 1}`,
-      base64: '', preview_url: url, status: 'idle', extracted: null,
-      translation_draft: null, confidence: 0, validator_decision: null, error: null,
-    })));
-    toast({ title: `${valid.length} slides queued` });
-  };
+  const onDrop = useCallback(async (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(false);
+    const f = Array.from(e.dataTransfer.files).find(f => f.name.endsWith('.zip'));
+    if (f) await ingestZip(f);
+    else toast({ title: 'Drop a .zip file', variant: 'destructive' });
+  }, [ingestZip, toast]);
 
   // ── Per-slide pipeline: Vision → Validate → Translate ────────────────────
   const processSlide = async (slide: Slide, total: number): Promise<Slide> => {
     const is_final = slide.slide_number === total;
-    const updated: Slide = { ...slide, status: 'processing', error: null };
+    let updated: Slide = { ...slide, status: 'processing', error: null };
     try {
       // 1. Vision extraction
       const vRes = await fetch(CF_VISION_URL, {
@@ -137,9 +129,12 @@ export const AdminIngestion = () => {
         body: JSON.stringify({ image_base64: slide.base64 || undefined, image_url: !slide.base64 ? slide.preview_url : undefined, slide_number: slide.slide_number, total_slides: total, is_final }),
       });
       const vData = await vRes.json() as any;
-      if (!vRes.ok || vData.error) throw new Error(vData.error || 'Vision failed');
+      if (!vRes.ok || vData.error) throw new Error(vData.error || 'Vision model failed');
       updated.extracted = vData.extracted;
       updated.status = 'translating';
+
+      // React state micro-update to trigger UI progress bar
+      setSlides(prev => prev.map(s => s.slide_number === slide.slide_number ? updated : s));
 
       // 2. Quality validation
       const valRes = await fetch(CF_VALIDATOR_URL, {
@@ -160,7 +155,6 @@ export const AdminIngestion = () => {
         const tData = await tRes.json() as any;
         updated.translation_draft = tData.translated_text || null;
       }
-
       updated.status = 'done';
     } catch (e: any) {
       updated.status = 'error';
@@ -171,7 +165,7 @@ export const AdminIngestion = () => {
 
   const runExtraction = async () => {
     if (!batchTitle.trim()) { toast({ title: 'Campaign title required', variant: 'destructive' }); return; }
-    if (!slides.length) { toast({ title: 'Load slides first', variant: 'destructive' }); return; }
+    if (!slides.length) return;
     setProcessing(true);
     const total = slides.length;
     let arr = [...slides];
@@ -181,7 +175,7 @@ export const AdminIngestion = () => {
     }
     setProcessing(false);
     setPhase('review');
-    toast({ title: `Extraction complete — ${arr.filter(s => s.status === 'done').length}/${total} slides done` });
+    // Silent success. Form auto-advances to review mode.
   };
 
   // ── Publish to Supabase ───────────────────────────────────────────────────
@@ -189,7 +183,6 @@ export const AdminIngestion = () => {
     setPublishing(true);
     try {
       const batchId = batchTitle.trim().toLowerCase().replace(/\s+/g, '-');
-      let count = 0;
       for (const slide of slides.filter(s => s.status === 'done' && s.extracted)) {
         const ex = slide.extracted;
         const fields = [
@@ -207,152 +200,145 @@ export const AdminIngestion = () => {
             source_text: f.text, active: true,
             ...(f.type === 'headline' && slide.translation_draft ? { ai_draft_sw: slide.translation_draft } : {}),
           }, { onConflict: 'carousel_id,slide_number,type' });
-          count++;
         }
       }
-      toast({ title: `🚀 Published — ${count} translation units created` });
       setPhase('published');
     } catch (e: any) {
-      toast({ title: 'Publish failed', description: e.message, variant: 'destructive' });
+      toast({ title: 'Upload error', description: e.message, variant: 'destructive' });
     } finally {
       setPublishing(false);
     }
   };
 
-  // ── Drag & Drop ───────────────────────────────────────────────────────────
-  const onDrop = useCallback(async (e: React.DragEvent) => {
-    e.preventDefault(); setDragOver(false);
-    const f = Array.from(e.dataTransfer.files).find(f => f.name.endsWith('.zip'));
-    if (f) await ingestZip(f);
-    else toast({ title: 'Drop a .zip file', variant: 'destructive' });
-  }, [ingestZip, toast]);
-
   // ── Published screen ──────────────────────────────────────────────────────
   if (phase === 'published') return (
-    <div className="flex flex-col items-center justify-center py-24 space-y-6 text-center">
-      <div className="w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center">
-        <Ic n="check-circle-svgrepo-com.svg" s={40} />
+    <div className="flex flex-col items-center justify-center py-32 space-y-4 animate-fade-in text-center">
+      <p className="text-white/60 text-[13px] font-medium tracking-tight">Campaign live</p>
+      <h2 className="text-2xl font-semibold tracking-tight text-white/90">Published successfully.</h2>
+      <div className="pt-8">
+        <button 
+          onClick={() => { setPhase('input'); setSlides([]); setBatchTitle(''); }}
+          className="bg-transparent text-ios-blue text-[15px] font-medium hover:opacity-70 transition-opacity"
+        >
+          Ingest another campaign
+        </button>
       </div>
-      <h2 className="text-2xl font-black text-white">Campaign Published! 🚀</h2>
-      <Button onClick={() => { setPhase('input'); setSlides([]); setBatchTitle(''); setUrlInputs(['']); }}
-        className="bg-ios-blue text-white rounded-2xl px-10 py-5 font-bold">
-        Ingest Another Campaign
-      </Button>
     </div>
   );
 
   return (
-    <div className="space-y-8 animate-fade-in">
+    <div className="max-w-2xl mx-auto space-y-12 animate-fade-in font-sans pt-12">
 
-      {/* ── Stats bar ── */}
-      <div className="grid grid-cols-3 gap-4">
-        {[
-          { label: 'Loaded', value: stats.total },
-          { label: 'Processed', value: stats.done },
-          { label: 'Errors', value: stats.errors },
-        ].map(s => (
-          <Card key={s.label} className="p-5 flex items-center gap-4 bg-white/5 border border-white/5 rounded-[2rem]">
-            <div>
-              <p className="text-[0.6rem] uppercase tracking-widest text-white/20 font-black">{s.label}</p>
-              <p className="text-2xl font-black text-white">{s.value}</p>
-            </div>
-          </Card>
-        ))}
+      {/* ── Minimalist Header ── */}
+      <div className="space-y-1">
+        <h1 className="text-2xl font-semibold tracking-tight text-white/90">New Campaign</h1>
+        <p className="text-[14px] text-white/40 tracking-tight">Drop a ZIP file to extract text via Vision AI.</p>
       </div>
 
-      {/* ── Campaign title ── */}
-      <Card className="p-8 space-y-4 bg-white/5 border border-white/5 rounded-[2.5rem]">
-        <h3 className="text-lg font-black text-white/90">Campaign Identity</h3>
-        <input
-          style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}
-          className="w-full rounded-2xl px-6 py-4 text-white outline-none focus:ring-2 focus:ring-ios-blue/50 text-sm font-medium"
-          placeholder="e.g. Finance Bill 2026 — Voter Education"
-          value={batchTitle} onChange={e => setBatchTitle(e.target.value)}
-        />
-      </Card>
-
-      {/* ── Ingestion ── */}
-      <Card className="p-8 space-y-6 bg-white/5 border border-white/5 rounded-[2.5rem]">
-        <h3 className="text-lg font-black text-white/90">Load Carousel</h3>
-
-        {/* ZIP dropzone */}
-        <div
-          onDragOver={e => { e.preventDefault(); setDragOver(true); }}
-          onDragLeave={() => setDragOver(false)}
-          onDrop={onDrop}
-          onClick={() => fileRef.current?.click()}
-          style={{ border: `2px dashed ${dragOver ? '#007aff' : 'rgba(255,255,255,0.12)'}`, borderRadius: '2rem', background: dragOver ? 'rgba(0,122,255,0.05)' : 'rgba(255,255,255,0.02)', transition: 'all 0.2s', cursor: 'pointer' }}
-          className="p-10 flex flex-col items-center gap-4 text-center"
-        >
-          <Ic n="upload-svgrepo-com.svg" s={40} />
-          <p className="text-white/50 font-bold text-sm">Drag &amp; drop a .zip of carousel slides<br /><span className="text-white/20 text-xs font-normal">Images sorted alphabetically = slide order</span></p>
-          <span style={{ background: 'rgba(0,122,255,0.15)', border: '1px solid rgba(0,122,255,0.3)', color: '#007aff', borderRadius: '1rem', padding: '4px 16px', fontSize: '0.65rem', fontWeight: 900 }}>Browse Files</span>
+      {/* ── Input Group ── */}
+      <div className="space-y-8">
+        <div className="space-y-2">
+          <label className="text-[12px] font-medium text-white/50 tracking-tight">Campaign identity</label>
+          <input
+            className="w-full bg-transparent border-b border-white/10 py-3 text-white/90 text-[15px] outline-none focus:border-ios-blue transition-colors placeholder:text-white/20"
+            placeholder="Finance Bill 2026"
+            value={batchTitle} onChange={e => setBatchTitle(e.target.value)}
+          />
         </div>
+
+        {/* Minimal Drop Area */}
+        {slides.length === 0 && (
+          <div
+            onDragOver={e => { e.preventDefault(); setDragOver(true); }}
+            onDragLeave={() => setDragOver(false)}
+            onDrop={onDrop}
+            onClick={() => fileRef.current?.click()}
+            className={`w-full h-32 flex items-center justify-center rounded-xl border border-white/5 cursor-pointer transition-all duration-300 ${dragOver ? 'bg-ios-blue/5 border-ios-blue/30' : 'bg-white/2 hover:bg-white/5'}`}
+          >
+            <p className="text-[13px] font-medium tracking-tight" style={{ color: dragOver ? '#0a84ff' : 'rgba(255,255,255,0.4)' }}>
+              {dragOver ? 'Drop archive' : 'Select or drop .zip'}
+            </p>
+          </div>
+        )}
         <input ref={fileRef} type="file" accept=".zip" className="hidden" onChange={async e => { if (e.target.files?.[0]) await ingestZip(e.target.files[0]); }} />
+      </div>
 
-        {/* URL inputs */}
-        <div className="space-y-3">
-          <p className="text-[0.65rem] uppercase tracking-widest text-white/20 font-black ml-2">— or paste image URLs —</p>
-          {urlInputs.map((url, idx) => (
-            <div key={idx} className="flex items-center gap-4 px-6 py-3 rounded-2xl border border-white/5">
-              <span className="text-white/20 text-xs font-black shrink-0">{idx + 1}</span>
-              <input className="flex-1 bg-transparent border-none text-sm text-white/80 outline-none" placeholder={`Slide ${idx + 1} image URL`} value={url} onChange={e => setUrlInputs(p => p.map((u, i) => i === idx ? e.target.value : u))} />
-              {urlInputs.length > 1 && <button onClick={() => setUrlInputs(p => p.filter((_, i) => i !== idx))} className="text-white/20 hover:text-red-400 text-xs">✕</button>}
-            </div>
-          ))}
-          <div className="flex gap-4">
-            <button onClick={() => setUrlInputs(p => [...p, ''])} className="text-xs font-black uppercase tracking-widest text-white/30 hover:text-white/60 px-4 py-2">+ Add URL</button>
-            <button onClick={loadFromUrls} className="text-xs font-black uppercase tracking-widest text-ios-blue hover:opacity-80 px-4 py-2">Load →</button>
-          </div>
-        </div>
-      </Card>
-
-      {/* ── Slide queue ── */}
+      {/* ── The Minimal Queue List ── */}
       {slides.length > 0 && (
-        <Card className="p-8 space-y-4 bg-white/5 border border-white/5 rounded-[2.5rem]">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-black text-white/90">{slides.length} Slides</h3>
-            <button onClick={() => setSlides([])} className="text-[0.65rem] font-black uppercase tracking-widest text-red-400/50 hover:text-red-400">Clear</button>
+        <div className="space-y-1 pt-4">
+          <div className="flex justify-between items-end pb-4 border-b border-white/5">
+            <span className="text-[12px] font-medium text-white/40 tracking-tight">{slides.length} slides</span>
+            <button onClick={() => setSlides([])} className="text-[12px] font-medium text-ios-blue hover:opacity-70 transition-opacity">Clear</button>
           </div>
-          <div className="space-y-3 max-h-[480px] overflow-y-auto pr-1">
-            {slides.map(slide => (
-              <div key={slide.slide_number} className="flex items-center gap-4 p-4 rounded-2xl border border-white/5">
-                {slide.preview_url && <img src={slide.preview_url} alt="" className="w-12 h-12 rounded-xl object-cover shrink-0 border border-white/10" />}
-                <div className="flex-1 min-w-0">
-                  <p className="text-[0.75rem] font-bold text-white/50 truncate">{slide.filename}</p>
-                  {slide.extracted?.headline && <p className="text-[0.65rem] text-white/30 truncate mt-0.5">"{slide.extracted.headline}"</p>}
-                  {slide.translation_draft && <p className="text-[0.65rem] text-ios-blue/60 truncate mt-0.5">→ {slide.translation_draft}</p>}
-                  {slide.error && <p className="text-[0.65rem] text-red-400/70 truncate mt-0.5">{slide.error}</p>}
+          
+          <div className="flex flex-col">
+            {slides.map((slide, idx) => (
+              <div key={slide.slide_number} className="relative py-3 group">
+                <div className="flex items-center gap-4 relative z-10 px-1">
+                  
+                  {/* Subtle Image Skeleton / Thumbnail */}
+                  <div className="w-9 h-9 shrink-0 rounded-md overflow-hidden bg-white/5">
+                    {slide.preview_url ? (
+                      <img src={slide.preview_url} alt="" className="w-full h-full object-cover opacity-60" />
+                    ) : (
+                      <div className="w-full h-full animate-pulse bg-white/10" />
+                    )}
+                  </div>
+                  
+                  {/* Text Container with crossfading values */}
+                  <div className="flex-1 min-w-0 flex flex-col justify-center">
+                    <p className="text-[13px] font-medium text-white/80 truncate font-sans tracking-tight">{slide.filename}</p>
+                    {slide.extracted?.headline && <p className="text-[11px] text-white/40 truncate mt-0.5">"{slide.extracted.headline}"</p>}
+                    {slide.translation_draft && <p className="text-[11px] text-ios-blue/80 truncate mt-0.5">{slide.translation_draft}</p>}
+                  </div>
+
+                  {/* Safari-like typography status */}
+                  <div className="shrink-0 text-right w-24">
+                    <span 
+                      className="text-[10px] font-semibold tracking-wide transition-colors duration-500" 
+                      style={{ color: getStatusColor(slide) }}
+                    >
+                      {getStatusLabel(slide)}
+                    </span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  {slide.confidence > 0 && (
-                    <span className="text-xs font-black" style={{ color: slide.confidence >= 0.92 ? '#00cb44' : slide.confidence >= 0.75 ? '#f5a623' : '#ff6b6b' }}>{Math.round(slide.confidence * 100)}%</span>
-                  )}
-                  <StatusBadge slide={slide} />
+
+                {/* Ambient ultra-thin iOS Safari Progress Line */}
+                <div className="absolute bottom-0 left-0 h-[1px] bg-transparent w-full overflow-hidden">
+                  <div 
+                    className="h-full transition-all duration-[1200ms] ease-out rounded-r-full" 
+                    style={{ width: getProgressWidth(slide), background: getStatusColor(slide), opacity: slide.status === 'done' ? 0.2 : 1 }} 
+                  />
                 </div>
               </div>
             ))}
           </div>
-        </Card>
+        </div>
       )}
 
-      {/* ── Extract CTA ── */}
-      {slides.length > 0 && phase !== 'review' && (
-        <Button id="run-extraction-btn" onClick={runExtraction} disabled={processing || !batchTitle.trim()}
-          style={{ background: 'linear-gradient(135deg,#007aff,#0040ff)', boxShadow: '0 12px 30px rgba(0,122,255,0.25)' }}
-          className="w-full py-8 text-lg font-black rounded-[2rem] text-white flex items-center justify-center gap-3">
-          {processing ? <>Processing {stats.done}/{slides.length}…</> : <>Run Vision + Auto-Translate ({slides.length} slides)</>}
-        </Button>
-      )}
+      {/* ── Action Footers ── */}
+      <div className="pt-8">
+        {slides.length > 0 && phase !== 'review' && (
+          <button 
+            onClick={runExtraction} 
+            disabled={processing || !batchTitle.trim()}
+            className="w-full py-3.5 bg-white/10 hover:bg-white/15 disabled:bg-white/5 disabled:text-white/20 text-white/90 text-[15px] font-medium rounded-xl transition-all tracking-tight backdrop-blur-md"
+          >
+            {processing ? 'Processing...' : 'Run Vision Extract'}
+          </button>
+        )}
 
-      {/* ── Publish CTA ── */}
-      {phase === 'review' && (
-        <Button id="publish-batch-btn" onClick={publishBatch} disabled={publishing}
-          style={{ background: 'linear-gradient(135deg,#00cb44,#007a28)', boxShadow: '0 12px 30px rgba(0,203,68,0.25)' }}
-          className="w-full py-10 text-xl font-black rounded-[2rem] text-white flex items-center justify-center gap-3">
-          {publishing ? 'Publishing…' : `Publish ${stats.done} Slides to Translation Queue`}
-        </Button>
-      )}
+        {phase === 'review' && (
+          <button 
+            onClick={publishBatch} 
+            disabled={publishing}
+            className="w-full py-3.5 bg-ios-blue hover:bg-[#0070e0] disabled:opacity-50 text-white text-[15px] font-medium rounded-xl transition-all tracking-tight shadow-md"
+          >
+            {publishing ? 'Publishing...' : 'Publish to Database'}
+          </button>
+        )}
+      </div>
+
     </div>
   );
 };

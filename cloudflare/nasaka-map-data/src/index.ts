@@ -61,8 +61,8 @@ async function syncMapDataFromSupabase(env: Env): Promise<void> {
   console.log('[nasaka-map-data] Starting sync from Supabase...');
 
   // Fetch map/geographic aggregate data from Supabase
-  // Adjust the table name and select columns to match your actual schema
-  const url = `${env.SUPABASE_URL}/rest/v1/iebc_counties?select=id,name,geojson,population,registered_voters&order=id.asc`;
+  // Dynamically load all safe columns via the dedicated Supabase REST API view
+  const url = `${env.SUPABASE_URL}/rest/v1/vw_iebc_offices_api?select=*&order=id.asc`;
   const response = await fetch(url, {
     headers: {
       'apikey': env.SUPABASE_ANON_KEY,

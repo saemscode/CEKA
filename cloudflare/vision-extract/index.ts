@@ -131,8 +131,17 @@ CRITICAL RULE: Do NOT rely on color or visual style. Rely ONLY on spatial hierar
   "visual_description": "one-sentence description of non-text visual elements for alt-text"
 }`;
 
+    let byteString;
+    try {
+      byteString = atob(base64Image);
+    } catch {
+      return Response.json({ error: 'Invalid base64 encoding' }, { status: 400, headers: corsHeaders });
+    }
+    const imageBytes = new Uint8Array(byteString.length);
+    for (let i = 0; i < byteString.length; i++) imageBytes[i] = byteString.charCodeAt(i);
+
     const response = await env.AI.run('@cf/meta/llama-3.2-11b-vision-instruct', {
-      image: base64Image,
+      image: [...imageBytes],
       prompt: systemPrompt,
       max_tokens: 768,
     });
