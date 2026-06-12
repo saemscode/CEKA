@@ -18,11 +18,15 @@ import { CEKALoader } from '@/components/ui/ceka-loader';
 import TermsModal from '@/components/TermsModal';
 import PrivacyModal from '@/components/PrivacyModal';
 import VolunteerOpportunitiesSection from '@/components/community/VolunteerOpportunitiesSection';
+import { useAuthModalStore } from '@/stores/useAuthModalStore';
+import { useAuth } from '@/providers/AuthProvider';
 
 const JoinCommunity = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const { language } = useLanguage();
+  const { user } = useAuth();
+  const openModal = useAuthModalStore((state) => state.openModal);
   const [searchParams] = useSearchParams();
   const [formData, setFormData] = useState({
     firstName: '',
@@ -94,6 +98,20 @@ const JoinCommunity = () => {
         title: translate("Terms Required", language),
         description: translate("Please accept the terms and conditions to continue.", language),
         variant: "destructive"
+      });
+      return;
+    }
+
+    if (!user) {
+      openModal({
+          heroIconSrc: "/context/icons 6/followed.svg",
+          title: "One More Step...",
+          description: "Continue with your Volunteer Application by joining CEKA today to submit your application, track your civic impact and unlock exclusive community updates.",
+          features: [
+              { iconSrc: "/context/icons 6/doc.svg", text: "Access opportunities in Volunteer Pool" },
+              { iconSrc: "/context/icons 6/secure.svg", text: "Monthly newsletter access" },
+              { iconSrc: "/context/icons 6/followed.svg", text: "Gain points to encourage you to get involved" }
+          ]
       });
       return;
     }

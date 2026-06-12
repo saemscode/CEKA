@@ -795,7 +795,7 @@ class LegislativeScraper:
             logger.error(f"Failed to load targets: {e}")
             return []
 
-    def scrape_all(self, max_pages: int = 15) -> List[Dict[str, Any]]:
+    def scrape_all(self, max_pages: int = 40) -> List[Dict[str, Any]]:
         logger.info("=" * 60)
         logger.info("  GO-HAM Legislative Sync Engine  (Selective Deep v5 + Remote OCR)")
         logger.info("=" * 60)
@@ -872,6 +872,10 @@ class LegislativeScraper:
                         };
                     }).filter(r => r.links.some(l => l.isPdf));
                 }""")
+
+                if not rows or len(rows) == 0:
+                    logger.info("      [Cap] Reached end of pagination. Breaking loop.")
+                    break
 
                 for row in rows:
                     pdf_link = next(l for l in row['links'] if l['isPdf'])

@@ -7,6 +7,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import Layout from '@/components/layout/Layout';
 // Lucide icons purged in favor of Icons v5 SVG collection
 
 

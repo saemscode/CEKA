@@ -36,6 +36,8 @@ interface VolunteerOpportunity {
     commitment: string;
     date: string;
     type: string;
+    category: string;
+    skills_required: string[];
     status: 'open' | 'pending' | 'approved' | 'rejected' | 'closed';
     created_at: string;
     updated_at: string;
@@ -67,6 +69,8 @@ const EMPTY_FORM: Partial<VolunteerOpportunity> = {
     commitment: 'One-time',
     date: '',
     type: 'Volunteer',
+    category: 'Local',
+    skills_required: [],
     status: 'open'
 };
 
@@ -149,6 +153,8 @@ const VolunteerManager = () => {
                         commitment: form.commitment,
                         date: form.date,
                         type: form.type,
+                        category: form.category,
+                        skills_required: form.skills_required,
                         status: form.status,
                         updated_at: new Date().toISOString()
                     })
@@ -168,6 +174,8 @@ const VolunteerManager = () => {
                         commitment: form.commitment,
                         date: form.date,
                         type: form.type,
+                        category: form.category,
+                        skills_required: form.skills_required,
                         status: form.status || 'open'
                     });
 
@@ -194,6 +202,8 @@ const VolunteerManager = () => {
             commitment: opp.commitment,
             date: opp.date,
             type: opp.type,
+            category: opp.category || 'Local',
+            skills_required: opp.skills_required || [],
             status: opp.status
         });
         setEditingId(opp.id);
@@ -405,6 +415,35 @@ const VolunteerManager = () => {
                                                         <SelectItem value="Hybrid">Hybrid</SelectItem>
                                                     </SelectContent>
                                                 </Select>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label>Category Tab (Routing)</Label>
+                                                <Select
+                                                    value={form.category || 'Local'}
+                                                    onValueChange={v => setForm({ ...form, category: v })}
+                                                >
+                                                    <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
+                                                    <SelectContent className="rounded-xl">
+                                                        <SelectItem value="Local">Local</SelectItem>
+                                                        <SelectItem value="Grassroots">Grassroots</SelectItem>
+                                                        <SelectItem value="Online">Online</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div className="space-y-2">
+                                                <Label>Skills Required (comma separated)</Label>
+                                                <Input
+                                                    value={form.skills_required?.join(', ') || ''}
+                                                    onChange={e => setForm({ 
+                                                        ...form, 
+                                                        skills_required: e.target.value.split(',').map(s => s.trim()).filter(Boolean) 
+                                                    })}
+                                                    placeholder="e.g. Communication, Data Entry, Design"
+                                                    className="rounded-xl"
+                                                />
                                             </div>
                                             <div className="space-y-2">
                                                 <Label>Status</Label>

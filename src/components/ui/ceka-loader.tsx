@@ -145,35 +145,23 @@ export const CEKALoader: React.FC<CEKALoaderProps> = ({
         }
 
         if (variant === 'ios') {
-            const segments = 12;
             return (
                 <div className={`${s.wrapper} relative flex items-center justify-center`}>
-                    {[...Array(segments)].map((_, i) => (
-                        <motion.div
-                            key={i}
-                            className="absolute bg-current rounded-full"
-                            style={{
-                                width: '10%',
-                                height: '28%',
-                                top: '36%',
-                                left: '45%',
-                                transformOrigin: 'center -100%',
-                                borderRadius: '1rem',
-                                color: i % 4 === 0 ? COLORS.green : (i % 4 === 2 ? COLORS.red : COLORS.black),
-                                opacity: 0.2
-                            }}
-                            animate={{
-                                opacity: [0.2, 1, 0.2],
-                                transform: `rotate(${i * (360 / segments)}deg) translateY(-80%)`,
-                            }}
-                            transition={{
-                                duration: 0.8,
-                                repeat: Infinity,
-                                delay: i * (0.8 / segments),
-                                ease: "linear"
-                            }}
-                        />
-                    ))}
+                    <div 
+                        className="bg-current animate-[spin_0.8s_linear_infinite]"
+                        style={{
+                            height: `${s.icon}px`,
+                            width: `${s.icon}px`,
+                            maskImage: 'url("/context/icons 6/load.svg")',
+                            WebkitMaskImage: 'url("/context/icons 6/load.svg")',
+                            maskSize: "contain",
+                            WebkitMaskSize: "contain",
+                            maskRepeat: "no-repeat",
+                            WebkitMaskRepeat: "no-repeat",
+                            maskPosition: "center",
+                            WebkitMaskPosition: "center"
+                        }}
+                    />
                 </div>
             );
         }

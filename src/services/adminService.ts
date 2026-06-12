@@ -77,12 +77,18 @@ class AdminService {
       let email = userEmail;
 
       if (!uid) {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+          this.isAdminCached = false;
+          this.lastCheckTime = now;
+          return false;
+        }
+
         const { data: { user }, error: authError } = await supabase.auth.getUser();
         
         if (authError) {
           if (authError.name === 'AbortError' && retryCount < 3) {
             console.warn(`[Admin] Auth check aborted, retrying (${retryCount + 1}/3)...`);
-            await new Promise(resolve => setTimeout(resolve, 200 * (retryCount + 1)));
             return this.isUserAdmin(userId, userEmail, retryCount + 1);
           }
           throw authError;

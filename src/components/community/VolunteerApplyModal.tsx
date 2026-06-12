@@ -12,6 +12,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Progress } from '@/components/ui/progress';
 import { translate } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useAuthModalStore } from '@/stores/useAuthModalStore';
 
 interface VolunteerApplyModalProps {
     opportunity: any;
@@ -28,26 +29,27 @@ export const VolunteerApplyModal = ({ opportunity, isOpen, onClose }: VolunteerA
     const [progress, setProgress] = useState(0);
     const { language } = useLanguage();
 
+    const openModal = useAuthModalStore((state) => state.openModal);
+
     const handleSubmit = async () => {
         if (!user) {
-            toast({ title: "Identification Required", description: "Please sign in to volunteer for the commons.", variant: "destructive" });
+            onClose(); // Optional: Close the inner volunteer modal so they aren't stacked
+            openModal({
+                heroIconSrc: "/context/icons 6/followed.svg",
+                title: "One More Step...",
+                description: "Complete your Volunteer Application by joining CEKA today to get exclusive volunteer updates & opportunities just for you",
+                features: [
+                    { iconSrc: "/context/icons 6/person.svg", text: "Access more opportunities in Volunteer Pool" },
+                    { iconSrc: "/context/icons 6/newsletter.svg", text: "Get Monthly newsletter access" },
+                    { iconSrc: "/context/icons 6/points.svg", text: "Track Your Civic Impact Points" }
+                ]
+            });
             return;
         }
 
         setSubmitting(true);
-        setProgress(10);
 
         try {
-            // Artificial 'Calming' Delay for Node Propagation
-            const progressTimer = setInterval(() => {
-                setProgress(prev => {
-                    if (prev >= 90) {
-                        clearInterval(progressTimer);
-                        return 90;
-                    }
-                    return prev + 5;
-                });
-            }, 100);
 
             const { error } = await supabase.from('volunteer_applications').insert({
                 user_id: user.id,
@@ -104,7 +106,7 @@ export const VolunteerApplyModal = ({ opportunity, isOpen, onClose }: VolunteerA
 
             setProgress(100);
             setSuccess(true);
-            toast({ title: "Application Transmitted", description: "The CEKA admin team has received your request." });
+            toast({ title: "Application Transmitted", description: "The CEKA team has received your request." });
 
             // Auto-close after 3s
             setTimeout(() => {
@@ -149,7 +151,7 @@ export const VolunteerApplyModal = ({ opportunity, isOpen, onClose }: VolunteerA
                                         <div className="h-2 w-2 rounded-full bg-kenya-green animate-pulse" />
                                         <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Requirements Check</span>
                                     </div>
-                                    <p className="text-xs font-medium">By applying, you confirm availability for: <span className="font-bold">{opportunity.commitment_type}</span></p>
+                                    <p className="text-xs font-medium">By applying, you confirm availability for: <span className="font-bold">{opportunity.commitment}</span></p>
                                 </div>
 
                                 <div className="grid gap-4 pt-2">
@@ -168,22 +170,13 @@ export const VolunteerApplyModal = ({ opportunity, isOpen, onClose }: VolunteerA
                             </div>
 
                             <DialogFooter className="flex-col gap-4 pt-4">
-                                {submitting && (
-                                    <div className="w-full space-y-2 mb-2 animate-in fade-in duration-500">
-                                        <div className="flex justify-between text-[9px] font-black uppercase tracking-tighter text-primary">
-                                            <span>Transmission in Progress...</span>
-                                            <span>{progress}%</span>
-                                        </div>
-                                        <Progress value={progress} className="h-1.5" />
-                                        <p className="text-[10px] text-muted-foreground italic text-center">Calming system nodes for secure propagation...</p>
-                                    </div>
-                                )}
+
                                 <Button
                                     onClick={handleSubmit}
                                     disabled={submitting || !motivation.trim()}
                                     className="w-full h-14 rounded-2xl bg-primary hover:bg-primary/90 font-black uppercase tracking-[0.15em] text-xs shadow-xl shadow-primary/20 active:scale-[0.98] transition-all"
                                 >
-                                    {submitting ? <CEKALoader variant="ios" size="sm" /> : 'Transmit Application'}
+                                    {submitting ? <CEKALoader variant="ios" size="sm" /> : 'Send Your Application'}
                                 </Button>
                             </DialogFooter>
                         </motion.div>
@@ -198,7 +191,7 @@ export const VolunteerApplyModal = ({ opportunity, isOpen, onClose }: VolunteerA
                                 <CheckCircle2 className="h-12 w-12 text-kenya-green" />
                             </div>
                             <h3 className="text-3xl font-black mb-3">Submission Success</h3>
-                            <p className="text-muted-foreground max-w-xs font-medium mb-10">Your application has been logged in the CEKA Audit Grid. An admin will review and respond via your registered email.</p>
+                            <p className="text-muted-foreground max-w-xs font-medium mb-10">Your application has been submitted successfully. A CEKA correspondent will review and email you within the week.</p>
 
                             <div className="flex items-center gap-2 px-6 py-3 bg-slate-100 dark:bg-white/5 rounded-2xl">
                                 <Mail className="h-4 w-4 text-primary" />

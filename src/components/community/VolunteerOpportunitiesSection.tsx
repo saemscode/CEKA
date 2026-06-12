@@ -19,8 +19,8 @@ export interface VolunteerOpportunity {
   organization: string;
   location: string;
   category: string;
-  date_time: string;
-  commitment_type: string;
+  date: string;
+  commitment: string;
   description: string;
   skills_required: string[];
   is_active: boolean;
@@ -75,7 +75,7 @@ const VolunteerOpportunitiesSection = () => {
             {opportunity.category}
           </Badge>
           <Badge variant="outline" className="bg-slate-100 dark:bg-white/5 border-none font-bold text-[9px] uppercase tracking-widest text-muted-foreground px-2.5 py-1 rounded-full">
-            {opportunity.commitment_type}
+            {opportunity.commitment}
           </Badge>
         </div>
         <h3 className="text-xl font-bold tracking-tight leading-tight mb-1">{opportunity.title}</h3>
@@ -90,7 +90,7 @@ const VolunteerOpportunitiesSection = () => {
           </div>
           <div className="flex items-center gap-3">
             <Calendar className="h-3 w-3" />
-            <span>{opportunity.date_time}</span>
+            <span>{opportunity.date}</span>
           </div>
           <div className="mt-6 flex flex-wrap gap-2">
             {opportunity.skills_required?.map((skill: string, index: number) => (

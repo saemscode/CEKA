@@ -13,6 +13,7 @@ import WelcomeTour from '@/components/tour/WelcomeTour';
 import SplashScreen from '@/components/SplashScreen';
 import { useAuth } from '@/providers/AuthProvider';
 import storageService from '@/services/storageService';
+import { GlobalActionModal } from '@/components/auth/GlobalActionModal';
 
 // Pages
 import Index from '@/pages/Index';
@@ -212,6 +213,14 @@ const AppContent = () => {
 };
 
 const App = () => {
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+
+  useEffect(() => {
+    const handleOpen = () => setAuthModalOpen(true);
+    window.addEventListener('ceka:open-auth-modal', handleOpen);
+    return () => window.removeEventListener('ceka:open-auth-modal', handleOpen);
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
@@ -219,7 +228,8 @@ const App = () => {
           <AuthProvider>
             <TooltipProvider>
               <ScrollListener>
-                <AuthModal open={false} onOpenChange={() => { }} />
+                <AuthModal open={authModalOpen} onOpenChange={setAuthModalOpen} />
+                <GlobalActionModal />
                 <AppContent />
               </ScrollListener>
             </TooltipProvider>
