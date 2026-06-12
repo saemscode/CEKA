@@ -9,9 +9,19 @@ export interface Env {
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
+    const corsHeaders = {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    };
+
+    if (request.method === 'OPTIONS') {
+      return new Response(null, { headers: corsHeaders });
+    }
+
     // 1. Method Restriction
     if (request.method !== 'POST') {
-      return new Response('Method not allowed', { status: 405 });
+      return new Response('Method not allowed', { status: 405, headers: corsHeaders });
     }
 
     // 2. Body Parsing
@@ -22,7 +32,7 @@ export default {
     };
 
     if (!source_text || !target_language) {
-      return Response.json({ error: 'source_text and target_language required' }, { status: 400 });
+      return Response.json({ error: 'source_text and target_language required' }, { status: 400, headers: corsHeaders });
     }
 
     // 3. Model Mapping
@@ -45,7 +55,7 @@ export default {
         target_language,
         skipped: true,
         reason: 'Language not supported by M2M100 model'
-      });
+      }, { headers: corsHeaders });
     }
 
     try {
@@ -61,9 +71,9 @@ export default {
         target_language,
         source_language,
         skipped: false
-      });
+      }, { headers: corsHeaders });
     } catch (error: any) {
-      return Response.json({ error: error.message }, { status: 500 });
+      return Response.json({ error: error.message }, { status: 500, headers: corsHeaders });
     }
   }
 };
