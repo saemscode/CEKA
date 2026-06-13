@@ -127,7 +127,7 @@ export const SearchEmptyState = () => {
       const updated = [term, ...stored.filter((t: string) => t !== term)].slice(0, 5);
       localStorage.setItem('ceka_recent_searches', JSON.stringify(updated));
     }
-    navigate(`/search?q=${encodeURIComponent(term)}`);
+    navigate(`/search?q=${encodeURIComponent(term)}&t=true`);
   };
 
   const handleToolClick = (tool: ToolEntry) => {

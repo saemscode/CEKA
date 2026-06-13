@@ -149,7 +149,7 @@ const VolunteerOpportunities = () => {
       <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-kenya-green/10 mb-6">
         <Heart className="h-10 w-10 text-kenya-green" />
       </div>
-      <h3 className="text-xl font-bold mb-2">No Opportunities Available</h3>
+      <h3 className="text-xl font-bold mb-2">No Opportunities Available... Yet</h3>
       <p className="text-muted-foreground mb-6 max-w-md mx-auto">
         New volunteer opportunities are added regularly. Check back soon or sign up to get notified about new opportunities.
       </p>
@@ -161,7 +161,7 @@ const VolunteerOpportunities = () => {
           </Link>
         </Button>
         <Button asChild variant="outline" className="rounded-2xl h-12 px-6">
-          <Link to="/community">
+          <Link to="/join-community">
             Join the Community
           </Link>
         </Button>

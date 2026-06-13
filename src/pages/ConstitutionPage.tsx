@@ -1,239 +1,215 @@
-import React from 'react';
+import React, { useRef } from 'react';
+import { Helmet } from 'react-helmet-async';
+import { motion, useScroll, useTransform } from 'framer-motion';
+import { 
+  FileText, 
+  Download, 
+  ChevronRight, 
+  BookOpen, 
+  Shield, 
+  Users, 
+  Info,
+  ExternalLink,
+  MessageSquare
+} from 'lucide-react';
 import { Link } from 'react-router-dom';
-import Layout from '@/components/layout/Layout';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { FileText, MessageSquare, Download, ExternalLink, BookOpen } from 'lucide-react';
-import MegaProjectCarousel from '@/components/carousel/MegaProjectCarousel';
-import MegaResources from '@/components/resources/MegaResources';
-import CommunityProfileForm from '@/components/community/CommunityProfileForm';
-import VolunteerOpportunityDialog from '@/components/volunteer/VolunteerOpportunityDialog';
+import Navbar from '@/components/layout/Navbar';
+import BottomNavbar from '@/components/layout/BottomNavbar';
 import InteractiveConstitution from '@/components/constitution/InteractiveConstitution';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
+
+const EASE_OUT_EXPO = [0.16, 1, 0.3, 1] as const;
 
 const ConstitutionPage = () => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const { scrollYProgress } = useScroll();
+  
+  // Hero Paralax
+  const heroOpacity = useTransform(scrollYProgress, [0, 0.1], [1, 0]);
+  const heroScale = useTransform(scrollYProgress, [0, 0.1], [1, 0.98]);
+
   return (
-    <Layout>
-      <div className="container py-8 md:py-12">
-        {/* Kenya-themed projects carousel */}
-        <div className="mb-10">
-          <MegaProjectCarousel
-            slides={[
-              { id: 'c1', title: 'Constitution Highlights', description: 'Explore the key chapters and the Bill of Rights.', color: 'kenya-green', ctaText: 'Learn more', onClick: () => { } },
-              { id: 'c2', title: 'How Laws Are Made', description: 'Understand the legislative process in Kenya.', color: 'kenya-red', ctaText: 'See process', onClick: () => { } },
-              { id: 'c3', title: 'Public Participation', description: 'Your voice matters in governance.', color: 'kenya-black', ctaText: 'Get involved', onClick: () => { } },
-              { id: 'c4', title: 'Civic Education Toolkit', description: 'Discover learning materials and toolkits.', color: 'kenya-white', ctaText: 'Browse resources', onClick: () => { } },
-            ]}
-          />
-        </div>
+    <>
+      <Helmet>
+        <title>Constitution Explorer — CEKA</title>
+        <meta name="description" content="Interactive guide to the Constitution of Kenya 2010. Understand your rights and the law." />
+      </Helmet>
 
-        <div className="max-w-4xl mx-auto">
-          <div className="mb-8">
-            <h1 className="text-3xl md:text-4xl font-bold mb-4">Understanding Kenya's Constitution</h1>
-            <p className="text-lg text-muted-foreground">
-              A citizen's guide to Kenya's Constitution with a focus on civic education and participation
-            </p>
-          </div>
+      <div className="min-h-screen bg-[#F5F5F7] dark:bg-[#000000] text-slate-900 dark:text-white selection:bg-kenya-green/30 px-0 md:px-0">
+        <Navbar />
 
-          <div className="bg-muted p-6 rounded-lg mb-10 flex items-center gap-4">
-            <div className="bg-white p-4 rounded-md shadow-sm">
-              <FileText className="h-12 w-12 text-kenya-green" />
+        {/* ── HERO SECTION (iOS SEMANTICS) ── */}
+        <motion.section 
+          style={{ opacity: heroOpacity, scale: heroScale }}
+          className="relative pt-32 pb-20 md:pt-48 md:pb-32 overflow-hidden flex flex-col items-center text-center px-6"
+        >
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, ease: EASE_OUT_EXPO }}
+            className="max-w-4xl mx-auto space-y-6"
+          >
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-900/5 dark:bg-white/10 backdrop-blur-md border border-slate-900/10 dark:border-white/20 text-[11px] font-bold tracking-widest uppercase text-slate-500 dark:text-slate-400">
+              <Shield className="w-3 h-3 text-kenya-green" />
+              The Supreme Law
             </div>
-            <div>
-              <h2 className="text-xl font-semibold mb-2">Constitution of Kenya, 2010</h2>
-              <p className="text-muted-foreground mb-4">
-                The full text of Kenya's Constitution, promulgated on August 27, 2010
-              </p>
-              <div className="flex gap-3">
-                <Button asChild>
-                  <a href="#" target="_blank" rel="noopener noreferrer">
-                    <Download className="mr-2 h-4 w-4" />
-                    Download PDF
-                  </a>
-                </Button>
-                <Button variant="outline" asChild>
-                  <Link to="/resources/647caa0e-6ffd-44b1-8962-4bb96ae7dfb3">
-                    <ExternalLink className="mr-2 h-4 w-4" />
-                    View Details
-                  </Link>
-                </Button>
-              </div>
-            </div>
-          </div>
+            
+            <h1 className="text-5xl md:text-8xl font-black tracking-tight leading-[0.9] text-slate-900 dark:text-white">
+              The <span className="text-kenya-green">Constitution</span><br />
+              of Kenya
+            </h1>
 
-          <Tabs defaultValue="overview" className="mb-10">
-            <TabsList className="mb-6">
-              <TabsTrigger value="overview">Overview</TabsTrigger>
-              <TabsTrigger value="civic-education">Civic Education</TabsTrigger>
-              <TabsTrigger value="framework">NCEF</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="overview" className="space-y-6">
-              <InteractiveConstitution />
-            </TabsContent>
-
-            <TabsContent value="civic-education" className="space-y-6">
-              <Card>
-                <CardContent className="pt-6">
-                  <h3 className="text-xl font-medium mb-4">Civic Education in the Constitution</h3>
-                  <p className="mb-4">
-                    Article 33 of the Constitution of Kenya recognizes the right to freedom of expression, which includes the right
-                    to seek, receive, or impart information. This forms the foundation for civic education in Kenya.
-                  </p>
-                  <p className="mb-4">
-                    Article 35 further guarantees every citizen the right of access to information held by the State and information
-                    held by another person required for the exercise or protection of any right or fundamental freedom.
-                  </p>
-                  <p>
-                    The Fourth Schedule of the Constitution, which distributes functions between the National and County governments,
-                    places the responsibility for education policy, standards, curricula, and examinations with the National government.
-                    County governments are responsible for pre-primary education, village polytechnics, and childcare facilities.
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardContent className="pt-6">
-                  <h3 className="text-xl font-medium mb-4">Public Participation as a Constitutional Principle</h3>
-                  <p className="mb-4">
-                    Article 10(2) of the Constitution establishes public participation as one of the national values and principles
-                    of governance. This principle binds all State organs, State officers, public officers, and all persons whenever
-                    they apply or interpret the Constitution, enact, apply or interpret any law, or make or implement public policy decisions.
-                  </p>
-                  <p>
-                    Various other articles, including Articles 118, 174, and 196, emphasize the importance of public participation in
-                    legislative processes, devolved governance, and county assembly procedures. This constitutional emphasis on public
-                    participation necessitates effective civic education to ensure citizens are equipped to meaningfully participate
-                    in governance.
-                  </p>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="framework" className="space-y-6">
-              <Card>
-                <CardContent className="pt-6">
-                  <h3 className="text-xl font-medium mb-4">National Civic Education Framework (NCEF)</h3>
-                  <p className="mb-4">
-                    The National Civic Education Framework is a comprehensive document that outlines how civic education should be
-                    implemented at both the County and National levels in Kenya. It was developed to ensure a structured and
-                    standardized approach to civic education across the country.
-                  </p>
-                  <div className="flex mb-4">
-                    <Button variant="outline" asChild className="mr-3">
-                      <Link to="/resources/647caa0e-6ffd-44b1-8962-4bb96ae7dfb3">
-                        <BookOpen className="mr-2 h-4 w-4" />
-                        View NCEF Document
-                      </Link>
-                    </Button>
-                    <Button variant="outline">
-                      <Download className="mr-2 h-4 w-4" />
-                      Download NCEF
-                    </Button>
-                  </div>
-                  <h4 className="font-medium mb-2">Key Components of the NCEF:</h4>
-                  <ul className="space-y-2 list-disc pl-5 mb-4">
-                    <li>Guidelines for developing civic education programs and materials</li>
-                    <li>Standards for civic education providers and facilitators</li>
-                    <li>Mechanisms for coordination between National and County governments</li>
-                    <li>Monitoring and evaluation frameworks for civic education initiatives</li>
-                    <li>Strategies for ensuring inclusivity and accessibility in civic education</li>
-                  </ul>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardContent className="pt-6">
-                  <h3 className="text-xl font-medium mb-4">Implementation at County and National Levels</h3>
-                  <div className="grid md:grid-cols-2 gap-6">
-                    <div className="border p-4 rounded-md">
-                      <h4 className="font-medium mb-2">National Level</h4>
-                      <ul className="space-y-1 list-disc pl-5">
-                        <li>Development of policy and legislative frameworks</li>
-                        <li>Coordination of nationwide civic education programs</li>
-                        <li>Setting standards and quality assurance</li>
-                        <li>Resource mobilization and allocation</li>
-                        <li>Research, monitoring, and evaluation</li>
-                      </ul>
-                    </div>
-                    <div className="border p-4 rounded-md">
-                      <h4 className="font-medium mb-2">County Level</h4>
-                      <ul className="space-y-1 list-disc pl-5">
-                        <li>Implementation of civic education programs</li>
-                        <li>Localization of content to reflect county contexts</li>
-                        <li>Community mobilization and engagement</li>
-                        <li>Coordination with grassroots organizations</li>
-                        <li>Feedback collection and reporting</li>
-                      </ul>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
-
-          {/* Combined Mega Resources section (non-destructive enhancement) */}
-          <div className="border-t pt-8">
-            <h3 className="text-xl font-semibold mb-4">Explore and Filter Resources</h3>
-            <MegaResources />
-          </div>
-
-          {/* Join discussion - existing content kept, plus community profile quick-create */}
-          <div className="bg-kenya-green/10 p-6 rounded-lg mb-8 mt-10">
-            <h3 className="text-xl font-semibold mb-4">Join the Discussion</h3>
-            <p className="mb-6">
-              Have questions about Kenya's Constitution or want to share your insights on civic education?
-              Join the conversation in our community discussion forum.
+            <p className="text-lg md:text-2xl text-slate-500 dark:text-slate-400 max-w-2xl mx-auto leading-relaxed">
+              Understand your rights, the structure of governance, and the foundations of our democracy.
             </p>
-            <div className="flex flex-col md:flex-row gap-3">
-              <Button asChild>
-                <Link to="/community">
-                  <MessageSquare className="mr-2 h-4 w-4" />
-                  Go to Discussions
-                </Link>
+
+            <div className="flex flex-wrap items-center justify-center gap-4 pt-6">
+              <Button 
+                size="lg" 
+                className="h-14 px-8 rounded-2xl bg-slate-900 dark:bg-white text-white dark:text-black hover:scale-[1.02] active:scale-[0.98] transition-all font-bold gap-2 text-base shadow-xl dark:shadow-white/5"
+              >
+                <Download className="w-5 h-5" />
+                Download Full PDF
               </Button>
-              <div className="flex-1">
-                <CommunityProfileForm />
-              </div>
+              <Button 
+                variant="outline"
+                size="lg" 
+                className="h-14 px-8 rounded-2xl border-slate-200 dark:border-white/10 bg-white/50 dark:bg-white/5 backdrop-blur-xl hover:bg-white dark:hover:bg-white/10 hover:scale-[1.02] active:scale-[0.98] transition-all font-bold gap-2 text-base"
+                onClick={() => {
+                   document.getElementById('explorer')?.scrollIntoView({ behavior: 'smooth' });
+                }}
+              >
+                Interactive Explorer
+                <ChevronRight className="w-5 h-5" />
+              </Button>
             </div>
-          </div>
+          </motion.div>
 
-          {/* Volunteer section: keep existing related resources and add submission dialog entry point */}
-          <div className="border-t pt-8">
-            <h3 className="text-xl font-semibold mb-4">Related Resources</h3>
-            <div className="grid sm:grid-cols-2 gap-4">
-              <Card>
-                <CardContent className="pt-6">
-                  <h4 className="font-medium mb-2">Guide to Devolved Government</h4>
-                  <p className="text-sm text-muted-foreground mb-3">
-                    Comprehensive document explaining Kenya's devolved system of government.
-                  </p>
-                  <Button variant="outline" size="sm" asChild>
-                    <Link to="/resources/647caa0e-6ffd-44b1-8962-4bb96ae7dfb3">View Resource</Link>
-                  </Button>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="pt-6">
-                  <h4 className="font-medium mb-2">Civil Society Engagement Handbook</h4>
-                  <p className="text-sm text-muted-foreground mb-3">
-                    A handbook for civil society organizations on effective engagement with government.
-                  </p>
-                  <Button variant="outline" size="sm" asChild>
-                    <Link to="/resources/647caa0e-6ffd-44b1-8962-4bb96ae7dfb3">View Resource</Link>
-                  </Button>
-                </CardContent>
-              </Card>
-            </div>
+          {/* Background blurred artifacts */}
+          <div className="absolute -top-24 -right-24 w-96 h-96 bg-kenya-green/10 dark:bg-kenya-green/20 blur-[120px] rounded-full pointer-events-none" />
+          <div className="absolute top-1/2 -left-24 w-64 h-64 bg-kenya-red/5 dark:bg-kenya-red/10 blur-[120px] rounded-full pointer-events-none" />
+        </motion.section>
 
-            <div className="mt-6 max-w-md">
-              <VolunteerOpportunityDialog />
-            </div>
-          </div>
-        </div>
+        {/* ── MAIN CONTENT (MINIMALISTIC) ── */}
+        <main className="relative z-10">
+          
+          {/* Section 1: Overview Cards */}
+          <section className="py-20 bg-white dark:bg-[#111111]">
+             <div className="container max-w-6xl mx-auto px-6 grid md:grid-cols-3 gap-8">
+                {[
+                  {
+                    icon: Users,
+                    title: "Bill of Rights",
+                    desc: "Chapter Four protects the fundamental freedoms and rights of every Kenyan."
+                  },
+                  {
+                    icon: Info,
+                    title: "Public Participation",
+                    desc: "Sovereign power belongs to the people, exercised through participation."
+                  },
+                  {
+                    icon: BookOpen,
+                    title: "Devolved Gov",
+                    desc: "Bringing gov services closer to you through the 47 county governments."
+                  }
+                ].map((item, i) => (
+                  <motion.div
+                    key={i}
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: i * 0.1 }}
+                    className="p-8 rounded-[2.5rem] bg-[#F5F5F7] dark:bg-white/5 border border-slate-200/50 dark:border-white/10 hover:shadow-2xl transition-all group"
+                  >
+                     <div className="w-12 h-12 rounded-2xl bg-white dark:bg-white/10 flex items-center justify-center mb-6 shadow-sm group-hover:scale-110 transition-transform">
+                        <item.icon className="w-6 h-6 text-kenya-green" />
+                     </div>
+                     <h3 className="text-xl font-bold mb-3">{item.title}</h3>
+                     <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed">{item.desc}</p>
+                  </motion.div>
+                ))}
+             </div>
+          </section>
+
+          {/* Section 2: Interactive Explorer (Target) */}
+          <section id="explorer" className="py-24 md:py-32 bg-[#F5F5F7] dark:bg-[#000000]">
+             <div className="container max-w-5xl mx-auto px-6">
+                <div className="text-center mb-16 space-y-4">
+                   <h2 className="text-4xl md:text-6xl font-black tracking-tight">Dive into the <span className="text-kenya-green">Details</span></h2>
+                   <p className="text-slate-500 dark:text-slate-400 max-w-xl mx-auto">
+                     Browse every chapter, article, and schedule. Search for specific rights or responsibilities.
+                   </p>
+                </div>
+                
+                <div className="rounded-[3rem] overflow-hidden bg-white dark:bg-[#111111] border border-slate-200 dark:border-white/10 shadow-3xl">
+                   <InteractiveConstitution />
+                </div>
+             </div>
+          </section>
+
+          {/* Section 3: Dual CTA Sections (Bilingial/About) */}
+          <section className="py-24 bg-white dark:bg-[#111111] overflow-hidden">
+             <div className="container max-w-6xl mx-auto px-6">
+                <div className="grid md:grid-cols-2 gap-12">
+                   <div className="relative p-10 md:p-16 rounded-[3rem] bg-gradient-to-br from-kenya-green to-emerald-700 text-white shadow-2xl overflow-hidden group">
+                      <div className="absolute top-0 right-0 p-8 opacity-20 transform translate-x-4 -translate-y-4 group-hover:translate-x-0 group-hover:translate-y-0 transition-transform">
+                         <BookOpen size={120} />
+                      </div>
+                      <h3 className="text-3xl md:text-4xl font-black mb-6 relative z-10">Soma Katiba<br />kwa Kiswahili</h3>
+                      <p className="text-white/80 text-lg mb-8 relative z-10 max-w-md">
+                        Toleo la Kiswahili la Katiba ya Kenya linapatikana pia ili kila raia aweze kuelewa sheria za nchi.
+                      </p>
+                      <Button className="h-14 px-8 rounded-2xl bg-white text-kenya-green hover:bg-slate-50 font-bold transition-all relative z-10">
+                        Pakua PDF ya Kiswahili
+                      </Button>
+                   </div>
+
+                   <div className="p-10 md:p-16 rounded-[3rem] bg-slate-900 text-white shadow-2xl flex flex-col justify-between">
+                      <div>
+                        <h3 className="text-3xl md:text-4xl font-black mb-6">Ask the AI Assistant</h3>
+                        <p className="text-white/60 text-lg mb-8">
+                          Have a specific question about the Constitution? Our AI assistant is grounded in the supreme law.
+                        </p>
+                      </div>
+                      <Link to="/search?q=Constitution">
+                        <Button className="h-14 px-8 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/20 font-bold transition-all w-full md:w-auto">
+                          Ask a Question
+                          <MessageSquare className="ml-2 w-5 h-5" />
+                        </Button>
+                      </Link>
+                   </div>
+                </div>
+             </div>
+          </section>
+
+        </main>
+
+        <FooterSection />
+        <BottomNavbar />
       </div>
-    </Layout>
+    </>
   );
 };
+
+const FooterSection = () => (
+  <section className="relative py-20 bg-white dark:bg-[#111111] border-t border-slate-200 dark:border-white/5">
+      <div className="container mx-auto px-6 text-center">
+          <p className="text-sm font-semibold text-slate-500 dark:text-slate-500 mb-2 uppercase tracking-widest">
+              Civic Education Kenya · Pamoja Tunaweza
+          </p>
+          <div className="flex justify-center gap-6 mb-8 mt-6">
+              {['About', 'Legislative Tracker', 'Resources', 'Community'].map(item => (
+                <Link key={item} to={`/${item.toLowerCase().replace(' ', '-')}`} className="text-sm text-slate-900 dark:text-white/60 hover:text-kenya-green transition-colors font-medium">
+                  {item}
+                </Link>
+              ))}
+          </div>
+          <p className="text-[11px] text-slate-400 dark:text-slate-600">
+              © {new Date().getFullYear()} CEKA. MIT License. Open Source Infrastructure for Kenya.
+          </p>
+      </div>
+  </section>
+);
 
 export default ConstitutionPage;

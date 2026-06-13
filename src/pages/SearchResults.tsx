@@ -1,20 +1,38 @@
 // src/pages/SearchResults.tsx
 import React, { useRef, useEffect, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  Sparkles, 
+  Search as SearchIcon, 
+  X as XIcon, 
+  SlidersHorizontal as FilterIcon, 
+  ArrowRight as ArrowRightIcon, 
+  FileText as FileTextIcon, 
+  Gavel as GavelIcon, 
+  Users as UsersIcon, 
+  Info as InfoIcon,
+  RotateCcw as HistoryIcon,
+  TrendingUp as TrendingUpIcon,
+  MessageSquare as MessageSquareIcon,
+  CheckCircle2 as PerfectMatchIcon,
+  Clock as ClockIcon,
+  MapPin as LocationIcon,
+  ChevronRight as ChevronRightIcon
+} from 'lucide-react';
 import Layout from '@/components/layout/Layout';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Card } from '@/components/ui/card';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { translate } from '@/lib/utils';
+import { translate, cn } from '@/lib/utils';
 import { useSearch } from '@/hooks/useSearch';
 import { SearchResult } from '@/lib/searchService';
 import { Skeleton } from '@/components/ui/skeleton';
+import { SearchEmptyState } from '@/components/search/SearchEmptyState';
 import FilterDrawer, { FilterState } from '@/components/search/FilterDrawer';
 import {
-  SearchIcon,
-  FilterIcon,
   SearchSquareIcon,
   SearchListIcon,
   SearchLayerIcon,
@@ -25,14 +43,37 @@ import {
   CivicGlossaryIcon,
   CarouselSlideIcon,
   DiscoveryLayerIcon,
-  PerfectMatchIcon,
-  LocationIcon,
-  ClockIcon,
-  ChevronRightIcon
+  AskCekaAiIcon,
 } from '@/components/ui/CustomIcons';
-import { SearchEmptyState } from '@/components/search/SearchEmptyState';
 
 const DEFAULT_FILTERS: FilterState = { types: [], sort: 'relevance', county: '', customFilters: [] };
+
+const TOPIC_GUIDANCE: Record<string, { desc: string; prompt: string }> = {
+  'constitution': {
+    desc: 'The supreme law of Kenya. Understand your rights and the foundations of our nation.',
+    prompt: 'Explain the Constitution of Kenya in simple terms, focusing on the Bill of Rights and how it protects citizens.'
+  },
+  'finance bill': {
+    desc: 'Track the latest tax changes and legislative proposals affecting our economy.',
+    prompt: 'Provide a simple breakdown of the latest Finance Bill, its key tax implications, and why it matters to Kenyans.'
+  },
+  'iebc': {
+    desc: 'Electoral processes and voter registration simplified.',
+    prompt: 'Explain the role of the IEBC and how voter registration works in Kenya for the next election cycle.'
+  },
+  'shambles': {
+    desc: 'Critical insights into the NHIF to SHA health insurance transition.',
+    prompt: 'Explain the transition from NHIF to SHA (Social Health Authority) and what Kenyans need to know about their health coverage now.'
+  },
+  'devolution': {
+    desc: 'How county governments work and the power of local governance in your area.',
+    prompt: 'Explain devolution in Kenya, the role of County Governments, and how citizens can participate in local decision-making.'
+  },
+  'judiciary': {
+    desc: 'Understanding our courts, the rule of law, and how to access justice.',
+    prompt: 'Explain how the Kenyan Judiciary works and the process for a citizen to seek justice in the court system.'
+  }
+};
 
 const SearchResults = () => {
   const { language } = useLanguage();
@@ -46,6 +87,7 @@ const SearchResults = () => {
   const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
   const [newChipInput, setNewChipInput] = useState('');
   const [isAddingChip, setIsAddingChip] = useState(false);
+  const [aiDisabled, setAiDisabled] = useState(() => localStorage.getItem('ceka-search-ai-disabled') === 'true');
   const newChipRef = useRef<HTMLSpanElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
@@ -59,6 +101,7 @@ const SearchResults = () => {
     return true;
   });
 
+  const navigate = useNavigate();
   const activeFilterCount = filters.types.length + filters.customFilters.length + (filters.county ? 1 : 0);
 
   // ── URL SEED — syncs ?q= changes to live search (supports trending-topic taps) ──
@@ -91,6 +134,7 @@ const SearchResults = () => {
       case 'constitution_section': return <ConstitutionSectionIcon className="w-5 h-5 text-sky-500 dark:text-sky-400" />;
       case 'civic_glossary': return <CivicGlossaryIcon className="w-5 h-5 text-teal-500 dark:text-teal-400" />;
       case 'carousel_slide': return <CarouselSlideIcon className="w-5 h-5 text-orange-500 dark:text-orange-400" />;
+      case 'ai-prompt': return <AskCekaAiIcon size={20} className="text-slate-400 dark:text-white/40" />;
       default: return <SearchSquareIcon className="w-5 h-5 text-slate-400" />;
     }
   };
@@ -99,6 +143,54 @@ const SearchResults = () => {
     if (score > 0.8) return { text: 'Perfect Match', color: 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/10' };
     if (score > 0.5) return { text: 'Closest', color: 'text-blue-600 dark:text-blue-400 bg-blue-500/10' };
     return { text: 'Related', color: 'text-slate-500 dark:text-slate-400 bg-slate-500/10' };
+  };
+
+  // ── AI Card Logic ──
+  const isTappedTopic = searchParams.get('t') === 'true';
+  const topicMatch = query ? Object.keys(TOPIC_GUIDANCE).find(k => query.toLowerCase().includes(k)) : null;
+
+  const aiCard: SearchResult | null = !isRestState && query && !aiDisabled ? {
+    id: 'ai-prompt-trigger',
+    type: 'ai-prompt' as any,
+    title: topicMatch ? `Understanding ${query.toUpperCase()}` : `Ask CEKA AI about "${query}"`,
+    description: topicMatch 
+      ? TOPIC_GUIDANCE[topicMatch].desc 
+      : `Get a neutral, AI-powered explanation of "${query}" based on Kenyan law and current affairs.`,
+    url: `/search?q=${encodeURIComponent(query)}&trigger-ai=true`,
+    category: 'Civic Assistant',
+    relevanceScore: 1.0,
+    matchScore: 100,
+    recencyScore: 100,
+    countyScore: 100,
+    tags: ['AI', 'Guide', 'Education']
+  } : null;
+
+  // Gate AI card: Full card only for tapped topics ('t=true'), otherwise it's just 'residue' (handled in list)
+  const showFullAiCard = isTappedTopic && !!topicMatch;
+  const finalDisplayResults = [...(aiCard && showFullAiCard ? [aiCard] : []), ...displayResults];
+
+  const handleAiCardClick = (searchTerm: string) => {
+    // Standard prompt as requested by user
+    const prompt = `Define ${searchTerm} given that the user wants to understand more about this topic.`;
+    const event = new CustomEvent('ceka-ai-trigger', { 
+      detail: { 
+        query: prompt,
+        autoSubmit: true 
+      } 
+    });
+    window.dispatchEvent(event);
+  };
+
+  const handleDisableAi = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    setAiDisabled(true);
+    localStorage.setItem('ceka-search-ai-disabled', 'true');
+  };
+
+  const handleEnableAi = () => {
+    setAiDisabled(false);
+    localStorage.removeItem('ceka-search-ai-disabled');
   };
 
   return (
@@ -264,6 +356,26 @@ const SearchResults = () => {
                     <PerfectMatchIcon size={18} className="text-emerald-500 dark:text-emerald-400" />
                     <span className="text-sm font-medium text-slate-500 dark:text-white/40 uppercase tracking-widest">{results.length} {translate("Matches Found", language)}</span>
                   </div>
+                  {/* Residue trigger - always available or replaces disabled recommendation */}
+                  {(aiDisabled || !aiCard) && (
+                    <motion.button
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      onClick={() => handleAiCardClick(`Explain the key facts about "${query}" in the Kenyan context.`)}
+                      className="group flex items-center gap-2 px-3 py-1.5 rounded-full border border-slate-200 dark:border-white/10 bg-white/50 dark:bg-white/5 hover:border-emerald-500/50 transition-all shadow-sm"
+                    >
+                      <AskCekaAiIcon size={14} className="text-slate-400 group-hover:text-emerald-500 transition-colors" />
+                      <span className="text-[10px] font-bold text-slate-500 dark:text-white/40 tracking-wider uppercase group-hover:text-slate-800 dark:group-hover:text-white transition-colors">Ask CEKA AI</span>
+                      {aiDisabled && (
+                        <div 
+                          onClick={(e) => { e.stopPropagation(); handleEnableAi(); }}
+                          className="ml-1 pl-2 border-l border-slate-200 dark:border-white/10 text-[9px] font-bold text-emerald-600 dark:text-emerald-400 hover:underline"
+                        >
+                          RESTORE
+                        </div>
+                      )}
+                    </motion.button>
+                  )}
                 </header>
 
                 {loading ? (
@@ -276,47 +388,78 @@ const SearchResults = () => {
                   </div>
                 ))}
               </div>
-            ) : displayResults.length > 0 ? (
+            ) : finalDisplayResults.length > 0 ? (
               <>
                 <motion.div layout className="grid gap-4">
                   <AnimatePresence mode="popLayout">
-                    {displayResults.map((result, idx) => {
+                    {finalDisplayResults.map((result, idx) => {
                       const rel = getRelevanceLabel(result.relevanceScore);
-                      return (
-                        <motion.div
-                          layout
-                          key={result.id}
-                          initial={{ opacity: 0, x: -20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          exit={{ opacity: 0, scale: 0.95 }}
-                          transition={{ delay: idx * 0.05 }}
-                        >
-                          <Link to={result.url} onClick={() => trackClick(result, idx)}>
-                            <div className="group relative bg-slate-50 dark:bg-[#1C1C1E] border border-slate-200 dark:border-white/5 rounded-2xl p-5 hover:bg-slate-100 dark:hover:bg-white/[0.03] hover:border-slate-300 dark:hover:border-white/10 transition-all overflow-hidden">
-                              {/* Bevel effect */}
-                              <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-slate-200 dark:via-white/10 to-transparent" />
+                      const isAiCard = (result.type as any) === 'ai-prompt';
 
-                              <div className="flex items-start gap-4">
-                                <div className="flex-shrink-0 p-3 bg-slate-100 dark:bg-white/5 rounded-xl border border-slate-200 dark:border-white/10 group-hover:bg-slate-200 dark:group-hover:bg-white/10 transition-colors">
-                                  {getResultIcon(result.type)}
-                                </div>
-                                <div className="flex-1 min-w-0 pr-12">
-                                  <div className="flex items-center justify-between flex-wrap gap-2 mb-1">
-                                    <span className="text-xs font-medium text-slate-400 dark:text-white/30 uppercase tracking-wider">{result.category}</span>
-                                    {!isRestState && (
-                                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${rel.color}`}>
-                                        {rel.text}
-                                      </span>
-                                    )}
-                                  </div>
-                                  <h3 className="text-lg font-semibold text-slate-800 dark:text-white/90 mb-2 truncate group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
-                                    {result.title}
-                                  </h3>
-                                  <p className="text-sm text-slate-500 dark:text-white/40 line-clamp-2 leading-relaxed mb-4">
-                                    {result.excerpt || result.description}
-                                  </p>
-                                  <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-white/5">
-                                    <div className="flex items-center flex-wrap gap-4 text-xs text-slate-400 dark:text-white/30">
+                      const cardContent = (
+                        <div className={cn(
+                          "group relative border rounded-2xl p-5 transition-all overflow-hidden",
+                          "bg-slate-50 dark:bg-[#1C1C1E] border-slate-200 dark:border-white/5 hover:bg-slate-100 dark:hover:bg-white/[0.03] hover:border-slate-300 dark:hover:border-white/10"
+                        )}>
+                          {/* Bevel effect */}
+                          <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-slate-200 dark:via-white/10 to-transparent" />
+
+                          {/* Close Button for AI Recommendation */}
+                          {isAiCard && (
+                            <button
+                              onClick={handleDisableAi}
+                              className="absolute top-4 right-4 z-20 w-8 h-8 flex items-center justify-center rounded-full bg-slate-200/50 dark:bg-white/5 text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
+                              title="Hide AI recommendations"
+                            >
+                              <XIcon size={16} />
+                            </button>
+                          )}
+
+                          <div className="flex items-start gap-4">
+                            <div className={cn(
+                              "flex-shrink-0 p-3 rounded-xl border transition-colors",
+                              "bg-slate-100 dark:bg-white/5 border-slate-200 dark:border-white/10 group-hover:bg-slate-200 dark:group-hover:bg-white/10"
+                            )}>
+                              {getResultIcon(result.type)}
+                            </div>
+                            <div className="flex-1 min-w-0 pr-12">
+                              <div className="flex items-center justify-between flex-wrap gap-2 mb-1">
+                                <span className={cn(
+                                  "text-xs font-medium uppercase tracking-wider",
+                                  "text-slate-400 dark:text-white/30"
+                                )}>
+                                  {result.category}
+                                </span>
+                                {!isRestState && (
+                                  <span className={cn(
+                                    "text-[10px] px-2 py-0.5 rounded-full font-bold uppercase",
+                                    rel.color
+                                  )}>
+                                  {isAiCard ? 'Expert AI' : rel.text}
+                                  </span>
+                                )}
+                              </div>
+                              <h3 className={cn(
+                                "text-lg font-semibold mb-2 truncate transition-colors",
+                                isAiCard 
+                                  ? "text-slate-800 dark:text-white/90"
+                                  : "text-slate-800 dark:text-white/90 group-hover:text-emerald-600 dark:group-hover:text-emerald-400"
+                              )}>
+                                {result.title}
+                              </h3>
+                              <p className={cn(
+                                "text-sm line-clamp-2 leading-relaxed mb-4",
+                                isAiCard ? "text-slate-500 dark:text-white/40" : "text-slate-500 dark:text-white/40"
+                              )}>
+                                {result.excerpt || result.description}
+                              </p>
+                              <div className={cn(
+                                "flex items-center justify-between pt-3 border-t",
+                                "border-slate-100 dark:border-white/5"
+                              )}>
+                                <div className="flex items-center flex-wrap gap-4 text-xs text-slate-400 dark:text-white/30">
+                                  {!isAiCard && (
+                                    <>
                                       <span className="flex items-center gap-1.5">
                                         <ClockIcon size={12} />
                                         {result.date ? new Date(result.date).toLocaleDateString() : 'Active'}
@@ -327,20 +470,68 @@ const SearchResults = () => {
                                           {result.county}
                                         </span>
                                       )}
-                                    </div>
-                                    <div className="text-emerald-500/0 group-hover:text-emerald-500 dark:group-hover:text-emerald-400 transition-all transform translate-x-2 group-hover:translate-x-0">
-                                      <ChevronRightIcon size={18} />
-                                    </div>
-                                  </div>
+                                    </>
+                                  )}
+                                  {isAiCard && (
+                                    <span className="text-emerald-600 dark:text-emerald-400 font-bold tracking-wide">LET'S BREAK IT DOWN →</span>
+                                  )}
+                                </div>
+                                <div className={cn(
+                                  "transition-all transform translate-x-2 group-hover:translate-x-0",
+                                  "text-emerald-500/0 group-hover:text-emerald-500 dark:group-hover:text-emerald-400"
+                                )}>
+                                  <ChevronRightIcon size={18} />
                                 </div>
                               </div>
                             </div>
-                          </Link>
+                          </div>
+                        </div>
+                      );
+
+                      return (
+                        <motion.div
+                          layout
+                          key={result.id}
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          exit={{ opacity: 0, scale: 0.95 }}
+                          transition={{ delay: idx * 0.05 }}
+                        >
+                          {isAiCard ? (
+                            <button className="w-full text-left" onClick={() => handleAiCardClick(query)}>
+                              {cardContent}
+                            </button>
+                          ) : (
+                            <Link to={result.url} onClick={() => trackClick(result, idx)}>
+                              {cardContent}
+                            </Link>
+                          )}
                         </motion.div>
                       );
                     })}
                   </AnimatePresence>
                 </motion.div>
+
+                {/* AI Residue: Small option at the bottom when not showing full card */}
+                {aiCard && !showFullAiCard && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="mt-6 p-4 rounded-2xl bg-white/5 border border-slate-200/50 dark:border-white/5 flex items-center justify-between group cursor-pointer hover:bg-white/10 transition-all"
+                    onClick={() => handleAiCardClick(query)}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-500">
+                        <AskCekaAiIcon size={18} />
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold">Ask CEKA AI about "{query}"</p>
+                        <p className="text-[10px] text-slate-500 uppercase tracking-widest leading-none mt-1">AI Assistant</p>
+                      </div>
+                    </div>
+                    <ChevronRightIcon size={16} className="text-slate-400 group-hover:text-emerald-500 transition-colors" />
+                  </motion.div>
+                )}
 
                 {/* ── Load More Button ── */}
                 {!isRestState && !loading && hasMore && (
@@ -392,7 +583,7 @@ const SearchResults = () => {
                       key={topic}
                       variant="outline"
                       className="rounded-full bg-slate-100 dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-700 dark:text-white hover:bg-emerald-500 hover:text-black hover:border-transparent transition-all"
-                      onClick={() => setQuery(topic)}
+                      onClick={() => navigate(`/search?q=${encodeURIComponent(topic)}&t=true`)}
                     >
                       {topic}
                     </Button>

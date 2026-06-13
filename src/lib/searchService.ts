@@ -420,7 +420,7 @@ class SearchService {
     const billsOr = buildOrClause(['title', 'summary']);
     const blogsOr = buildOrClause(['title', 'content']);
     const resourcesOr = buildOrClause(['title', 'description']);
-    const discussionsOr = buildOrClause(['title', 'body']);
+    const discussionsOr = buildOrClause(['title', 'content']);
     const chaptersOr = buildOrClause(['title', 'description']);
     const sectionsOr = buildOrClause(['title', 'content']);
     const articlesOr = buildOrClause(['title', 'content']);
@@ -435,7 +435,7 @@ class SearchService {
       supabase.from('bills').select('id, title, summary, category, created_at, status, slug').or(billsOr).order('created_at', { ascending: false }).range(offset, offset + limit - 1),
       supabase.from('blog_posts').select('id, title, excerpt, content, tags, created_at, slug, author').eq('status', 'published').or(blogsOr).order('created_at', { ascending: false }).range(offset, offset + limit - 1),
       supabase.from('resources').select('id, title, description, tags, county, created_at, category').or(resourcesOr).order('created_at', { ascending: false }).range(offset, offset + limit - 1),
-      db.from('discussions').select('id, title, body, tags, county, created_at').or(discussionsOr).order('created_at', { ascending: false }).range(offset, offset + limit - 1),
+      db.from('discussions').select('id, title, content, tags, county, created_at').or(discussionsOr).order('created_at', { ascending: false }).range(offset, offset + limit - 1),
       db.from('constitution_chapters').select('id, title, description, created_at').or(chaptersOr).order('created_at', { ascending: false }).range(offset, offset + limit - 1),
       db.from('constitution_sections').select('id, title, content, chapter_id, created_at').or(sectionsOr).order('created_at', { ascending: false }).range(offset, offset + limit - 1),
       db.from('constitution_articles').select('id, title, content, chapter_id, created_at').or(articlesOr).order('created_at', { ascending: false }).range(offset, offset + limit - 1),
@@ -648,7 +648,7 @@ class SearchService {
     const tagConditions = interests.map(i => `tags.cs.{"${i}"}`).join(',');
     const orConditions = tagConditions || undefined;
 
-    const [billsRes, blogsRes, resourcesRes] = await Promise.allSettled([
+    const [billsRes, blogsRes, resourcesRes, discussionsRes] = await Promise.allSettled([
       supabase.from('bills').select('id, title, summary, category, created_at, slug')
         .limit(limit),
       supabase.from('blog_posts').select('id, title, excerpt, content, tags, created_at, slug')
@@ -657,6 +657,8 @@ class SearchService {
         .limit(limit),
       supabase.from('resources').select('id, title, description, tags, county, created_at, category')
         .or(orConditions ? `${orConditions}${userProfile.county ? `,county.eq.${userProfile.county}` : ''}` : `title.neq.NULL`)
+        .limit(limit),
+      supabase.from('discussions').select('id, title, content, tags, county, created_at')
         .limit(limit),
     ]);
 
@@ -691,6 +693,15 @@ class SearchService {
           description: r.description || '', tags: r.tags || [], county: r.county,
           created_at: r.created_at,
           url: `/resources/${r.id}`, category: r.category || 'Resource',
+        };
+        all.push({ ...base, ...this.computeRelevanceScore(base, userProfile, []) });
+      });
+    }
+    if (discussionsRes.status === 'fulfilled' && discussionsRes.value.data) {
+      discussionsRes.value.data.forEach((d: any) => {
+        const base: any = {
+          id: d.id, type: 'discussion', title: d.title, description: d.content,
+          tags: d.tags || [], county: d.county, created_at: d.created_at, category: 'Community'
         };
         all.push({ ...base, ...this.computeRelevanceScore(base, userProfile, []) });
       });

@@ -11,6 +11,7 @@ import {
   X, Award, ChevronUp, ChevronDown, RefreshCw,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { cn } from '@/lib/utils';
 
 // ─── News-Microphone SVG (Stage A FAB + Stage C header) ──────────────────────
 const NewsMicIcon: React.FC<{ className?: string }> = ({ className }) => (
@@ -23,14 +24,14 @@ const NewsMicIcon: React.FC<{ className?: string }> = ({ className }) => (
 
 // ─── Kenyan Bill Legislative Stages — 8-Stage Constitutional Pipeline ────────
 const BILL_STAGES = [
-  { label: 'Gazetted',   keys: ['published', 'gazetted', 'gazette', 'introduced'] },
+  { label: 'Gazetted', keys: ['published', 'gazetted', 'gazette', 'introduced'] },
   { label: '1st Reading', keys: ['1st reading', 'first reading', '1st_reading', 'first_reading'] },
   { label: 'Public Part.', keys: ['public participation', 'public part', 'stakeholder', 'consultation'] },
   { label: '2nd Reading', keys: ['2nd reading', 'second reading', '2nd_reading', 'second_reading'] },
-  { label: 'Committee',  keys: ['committee of the whole', 'committee stage', 'committee'] },
+  { label: 'Committee', keys: ['committee of the whole', 'committee stage', 'committee'] },
   { label: '3rd Reading', keys: ['3rd reading', 'third reading', '3rd_reading', 'third_reading', 'passed'] },
-  { label: 'Assent',     keys: ['assent', 'presidential assent', 'assented', 'president'] },
-  { label: 'Act / Law',  keys: ['enacted', 'enacted into law', 'law', 'act', 'commencement'] },
+  { label: 'Assent', keys: ['assent', 'presidential assent', 'assented', 'president'] },
+  { label: 'Act / Law', keys: ['enacted', 'enacted into law', 'law', 'act', 'commencement'] },
 ];
 
 const DISCARDED_KEYS = ['withdrawn', 'dropped', 'rejected', 'lapsed', 'negatived', 'shelved'];
@@ -48,11 +49,11 @@ function getBillStageIndex(status: string): number {
 
 // Swahili Civic Level definitions wired to point thresholds
 const CIVIC_LEVELS = [
-  { min: 0,    max: 99,   level: 1, title: 'Raia',           subtitle: 'Citizen' },
-  { min: 100,  max: 499,  level: 2, title: 'Mfuatiliaji',    subtitle: 'Tracker' },
-  { min: 500,  max: 1499, level: 3, title: 'Mzalendo',       subtitle: 'Patriot' },
-  { min: 1500, max: 4999, level: 4, title: 'Mwanaharakati',  subtitle: 'Activist' },
-  { min: 5000, max: Infinity, level: 5, title: 'Shujaa',     subtitle: 'Hero' },
+  { min: 0, max: 99, level: 1, title: 'Raia', subtitle: 'Citizen' },
+  { min: 100, max: 499, level: 2, title: 'Mfuatiliaji', subtitle: 'Tracker' },
+  { min: 500, max: 1499, level: 3, title: 'Mzalendo', subtitle: 'Patriot' },
+  { min: 1500, max: 4999, level: 4, title: 'Mwanaharakati', subtitle: 'Activist' },
+  { min: 5000, max: Infinity, level: 5, title: 'Shujaa', subtitle: 'Hero' },
 ];
 
 function getCivicLevel(points: number) {
@@ -109,23 +110,20 @@ const BillTrack: React.FC<{ status: string }> = ({ status }) => {
       {BILL_STAGES.map((stage, i) => (
         <React.Fragment key={stage.label}>
           <div className="flex flex-col items-center gap-0.5" style={{ flex: i < BILL_STAGES.length - 1 ? '1 1 0' : 'none' }}>
-            <div className={`w-2 h-2 rounded-full transition-all ${
-              isTerminated ? 'bg-red-400/50'
+            <div className={`w-2 h-2 rounded-full transition-all ${isTerminated ? 'bg-red-400/50'
               : i <= active ? 'bg-kenya-green'
-              : 'bg-slate-200 dark:bg-white/10'
-            } ${i === active && !isTerminated ? 'ring-2 ring-kenya-green/30 scale-125' : ''}`} />
-            <span className={`text-[7px] text-center leading-tight max-w-[28px] truncate ${
-              isTerminated ? 'text-red-400/60'
+                : 'bg-slate-200 dark:bg-white/10'
+              } ${i === active && !isTerminated ? 'ring-2 ring-kenya-green/30 scale-125' : ''}`} />
+            <span className={`text-[7px] text-center leading-tight max-w-[28px] truncate ${isTerminated ? 'text-red-400/60'
               : i <= active ? 'text-kenya-green font-semibold'
-              : 'text-slate-400 dark:text-white/20'
-            }`}>{stage.label}</span>
+                : 'text-slate-400 dark:text-white/20'
+              }`}>{stage.label}</span>
           </div>
           {i < BILL_STAGES.length - 1 && (
-            <div className={`h-px flex-1 mb-3 transition-all ${
-              isTerminated ? 'bg-red-400/30'
+            <div className={`h-px flex-1 mb-3 transition-all ${isTerminated ? 'bg-red-400/30'
               : i < active ? 'bg-kenya-green'
-              : 'bg-slate-200 dark:bg-white/10'
-            }`} />
+                : 'bg-slate-200 dark:bg-white/10'
+              }`} />
           )}
         </React.Fragment>
       ))}
@@ -164,50 +162,103 @@ const CivicFAB: React.FC<{
   onTap: () => void;
   onHide: () => void;
 }> = ({ unreadCount, temperature, onTap, onHide }) => {
+  const [isHovering, setIsHovering] = useState(false);
+
   return (
     <motion.div
       drag="x"
       dragConstraints={{ left: 0, right: 300 }}
       dragElastic={0.1}
-      onDragEnd={(_, info) => { if (info.offset.x > 80) onHide(); }}
-      initial={{ scale: 0, opacity: 0 }}
-      animate={{ scale: 1, opacity: 1 }}
-      exit={{ scale: 0, opacity: 0 }}
-      transition={{ type: 'spring', stiffness: 400, damping: 25 }}
-      className="fixed z-40 cursor-pointer"
-      style={{ bottom: 88, right: '2rem', touchAction: 'none' }}
+      onDragEnd={(_, info) => {
+        if (info.offset.x > 80) {
+          onHide?.();
+        }
+      }}
+      className={cn(
+        "fixed pointer-events-auto z-40"
+      )}
+      style={{
+        bottom: 88,
+        right: '2rem',
+        touchAction: 'none'
+      }}
     >
-      {/* Ping ring — black, only on hot */}
-      {temperature === 'hot' && (
-        <div className="absolute inset-0 rounded-full bg-black/60 animate-ping opacity-20" />
-      )}
-
-      <motion.button
+      <div
+        className="relative group cursor-pointer"
+        onMouseEnter={() => setIsHovering(true)}
+        onMouseLeave={() => setIsHovering(false)}
         onClick={onTap}
-        whileHover={{ scale: 1.1 }}
-        whileTap={{ scale: 0.92 }}
-        transition={{ type: 'spring', stiffness: 400, damping: 20 }}
-        className="relative w-12 h-12 rounded-full flex items-center justify-center shadow-2xl shadow-black/50"
-        style={{ background: 'linear-gradient(135deg, #1a1a1a 0%, #0d0d0d 50%, #050505 100%)' }}
-        aria-label="Civic Mini-Player"
       >
-        <div className="absolute inset-1 rounded-full" style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.12) 0%, transparent 60%)' }} />
-        {/* Icon only — news-microphone on cool, bell on warm, flame on hot */}
-        {temperature === 'hot'
-          ? <Flame className="relative z-10 w-5 h-5 text-white drop-shadow" />
-          : temperature === 'warm'
-            ? <Bell className="relative z-10 w-5 h-5 text-white/90" />
-            : <NewsMicIcon className="relative z-10 w-5 h-5 text-white/80" />}
-      </motion.button>
+        <div className="relative w-48 h-12 flex items-center">
+          <div
+            className={`absolute right-12 top-0 h-12 flex items-center transition-all duration-500 ease-out ${isHovering
+              ? 'opacity-100 translate-x-0'
+              : 'opacity-0 translate-x-4 pointer-events-none'
+              }`}
+          >
+            <div
+              className={`absolute inset-0 rounded-full transition-all duration-500 ease-out ${isHovering
+                ? 'bg-black/20 backdrop-blur-sm scale-100'
+                : 'bg-black/0 backdrop-blur-none scale-75'
+                }`}
+            />
+            <span
+              className={`relative px-4 py-2 text-white font-semibold text-sm whitespace-nowrap transition-all duration-500 ease-out drop-shadow-lg ${isHovering
+                ? 'opacity-100 scale-100'
+                : 'opacity-0 scale-90'
+                }`}
+            >
+              Mini-CEKA
+            </span>
+          </div>
+          <div
+            className={`absolute right-0 w-12 h-12 rounded-full flex items-center justify-center transition-all duration-500 ease-out shadow-2xl ${isHovering
+              ? 'bg-gradient-to-br from-slate-800 via-slate-900 to-black shadow-black/50 scale-110'
+              : 'bg-gradient-to-br from-slate-900 via-black to-black shadow-black/40 scale-100'
+              }`}
+          >
+            <div className="absolute inset-1 rounded-full bg-gradient-to-br from-white/20 to-transparent" />
+            {temperature === 'hot' ? (
+              <Flame
+                className={`relative z-10 w-5 h-5 transition-all duration-300 ease-out ${isHovering
+                  ? 'scale-110 text-white drop-shadow-lg'
+                  : 'scale-100 text-white/90'
+                  }`}
+              />
+            ) : temperature === 'warm' ? (
+              <Bell
+                className={`relative z-10 w-5 h-5 transition-all duration-300 ease-out ${isHovering
+                  ? 'scale-110 text-white drop-shadow-lg'
+                  : 'scale-100 text-white/90'
+                  }`}
+              />
+            ) : (
+              <NewsMicIcon
+                className={`relative z-10 w-5 h-5 transition-all duration-300 ease-out ${isHovering
+                  ? 'scale-110 text-white drop-shadow-lg'
+                  : 'scale-100 text-white/90'
+                  }`}
+              />
+            )}
+            <div
+              className={`absolute inset-0 rounded-full bg-black/40 transition-all duration-1000 ease-out ${isHovering
+                ? 'animate-ping opacity-20'
+                : 'opacity-0'
+                }`}
+            />
+          </div>
+        </div>
 
-      {unreadCount > 0 && (
-        <motion.div
-          initial={{ scale: 0 }} animate={{ scale: 1 }}
-          className="absolute -top-1 -right-1 w-[18px] h-[18px] rounded-full bg-red-500 text-white text-[8px] font-black flex items-center justify-center shadow-lg border border-white"
-        >
-          {unreadCount > 9 ? '9+' : unreadCount}
-        </motion.div>
-      )}
+        {unreadCount > 0 && (
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            className="absolute -top-1 right-0 w-[18px] h-[18px] rounded-full bg-red-500 text-white text-[8px] font-black flex items-center justify-center shadow-lg border border-white z-20"
+          >
+            {unreadCount > 9 ? '9+' : unreadCount}
+          </motion.div>
+        )}
+      </div>
     </motion.div>
   );
 };
@@ -338,7 +389,6 @@ const MiniPlayerBar: React.FC<{
                   onClick={onExpand}
                   whileTap={{ scale: 0.85 }}
                   className="flex-1 flex items-center justify-center"
-                  style={{ paddingLeft: 5 }}
                   title="Expand"
                 >
                   <ChevronUp className="w-3.5 h-3.5 text-slate-500 dark:text-white/50" strokeWidth={2.5} />
@@ -349,7 +399,6 @@ const MiniPlayerBar: React.FC<{
                   onClick={onCollapse}
                   whileTap={{ scale: 0.85 }}
                   className="flex-1 flex items-center justify-center"
-                  style={{ paddingRight: 5 }}
                   title="Close"
                 >
                   <ChevronDown className="w-3.5 h-3.5 text-slate-500 dark:text-white/50" strokeWidth={2.5} />
@@ -517,7 +566,7 @@ const ImpactSlide: React.FC<{
   const handleShare = async () => {
     const text = `My CEKA Civic Score: ${totalPoints.toLocaleString()} pts | ${lvlData.title} (${lvlData.subtitle}) | Rank #${leaderboardRank ?? '?'} — ceka.africa`;
     if (navigator.share) {
-      await navigator.share({ title: 'My CEKA Civic Impact', text, url: 'https://ceka.africa' }).catch(() => {});
+      await navigator.share({ title: 'My CEKA Civic Impact', text, url: 'https://ceka.africa' }).catch(() => { });
     } else {
       navigator.clipboard.writeText(text);
     }
@@ -926,10 +975,7 @@ const CivicMiniPlayer: React.FC<CivicMiniPlayerProps> = ({ isHidden, onHide }) =
   const [mode, setMode] = useState<PlayerMode>('fab');
   const [slideIndex, setSlideIndex] = useState(0);
 
-  // When Layout signals hide (swipe off by user), suppress rendering entirely
-  if (isHidden) return null;
-
-  // ── Canonical data state ──────────────────────────────────────────────────
+  // Derived Swahili level — computed from points, not from DB
   const [followedBills, setFollowedBills] = useState<Bill[]>([]);
   const [upcomingEvents, setUpcomingEvents] = useState<CivicEvent[]>([]);
   const [participatedCampaigns, setParticipatedCampaigns] = useState<Campaign[]>([]);
@@ -1029,6 +1075,8 @@ const CivicMiniPlayer: React.FC<CivicMiniPlayerProps> = ({ isHidden, onHide }) =
     participatedCampaigns, userBadges, resetUnreadCount,
     unreadCount,
   };
+
+  if (isHidden) return null;
 
   return (
     <>

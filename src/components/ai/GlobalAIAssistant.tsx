@@ -39,6 +39,8 @@ const FLAGS = {
     WARN_LOW: parseInt(import.meta.env.VITE_FLAG_WARN_THRESHOLD_LOW ?? '2', 10),
 } as const;
 
+const EASE_OUT_EXPO = [0.16, 1, 0.3, 1] as const;
+
 // ============================================================================
 // RATE LIMITING
 // ============================================================================
@@ -189,6 +191,25 @@ interface GlobalAIAssistantProps {
 
 const GlobalAIAssistant: React.FC<GlobalAIAssistantProps> = ({ isHidden, onHide }) => {
     const [isOpen, setIsOpen] = useState(false);
+    const [count, setCount] = useState<number | null>(null);
+    const [cycleIndex, setCycleIndex] = useState(0);
+
+    const QUESTIONS = [
+        'What is Article 43?', 'Explain Finance Bill', 'What can I do as a citizen?',
+        'What is Chapter Six?', 'Who is the Auditor General?', 'How laws are made?',
+        'Meaning of Devolution', 'IEBC current status', 'Rights of the accused',
+        'Supreme Court role', 'Article 2 of Constitution', 'How to join community?',
+        'Public Participation role', 'What is EACC?', 'How to recall an MP?',
+        'County vs National govt', 'Sovereignty of people', 'Bill of Rights summary',
+        'National Values (Art 10)', 'Taxpayer rights in Kenya', 'Ombudsman role'
+    ];
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setCycleIndex(prev => (prev + 1) % Math.ceil(QUESTIONS.length / 3));
+        }, 8000); // Slightly slower for better readability
+        return () => clearInterval(interval);
+    }, [QUESTIONS.length]);
     const [query, setQuery] = useState('');
     const [messages, setMessages] = useState<Message[]>([]);
     const [loading, setLoading] = useState(false);
@@ -333,13 +354,12 @@ const GlobalAIAssistant: React.FC<GlobalAIAssistantProps> = ({ isHidden, onHide 
         }
     };
 
-    // Kill switch: if the feature flag disables AI entirely, render nothing
     if (!FLAGS.AI_ENABLED) return null;
-    if (shouldHide || isHidden) return null;
 
     return (
         <AnimatePresence>
-            <motion.div
+            {(shouldHide || isHidden) ? null : (
+                <motion.div
                 drag={!isOpen ? "x" : false}
                 dragConstraints={{ left: 0, right: 300 }}
                 dragElastic={0.1}
@@ -417,19 +437,30 @@ const GlobalAIAssistant: React.FC<GlobalAIAssistantProps> = ({ isHidden, onHide 
                                                 <p className="font-bold text-slate-800 dark:text-white">Your Civic Assistant</p>
                                                 <p className="text-xs text-slate-700 dark:text-gray-400 mt-1">Ask about legislation or the Constitution</p>
                                             </div>
-                                            <div className="flex flex-wrap gap-2 justify-center">
-                                                {['What is Article 43?', 'Explain Finance Bill', 'What can I do as a citizen?'].map(q => (
-                                                    <button
-                                                        key={q}
-                                                        onClick={() => {
-                                                            setQuery(q);
-                                                            handleSend(q);
-                                                        }}
-                                                        className="text-xs px-4 py-2 rounded-xl bg-white/10 dark:bg-white/5 border border-white/20 dark:border-white/10 hover:bg-kenya-green/10 hover:border-kenya-green/20 transition-all hover:scale-105 backdrop-blur-sm"
+                                            <div className="flex flex-wrap gap-2 justify-center min-h-[4rem]">
+                                                <AnimatePresence mode="wait">
+                                                    <motion.div
+                                                        key={cycleIndex}
+                                                        initial={{ opacity: 0, y: 10, filter: 'blur(4px)' }}
+                                                        animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+                                                        exit={{ opacity: 0, y: -10, filter: 'blur(4px)' }}
+                                                        transition={{ duration: 0.8, ease: EASE_OUT_EXPO }}
+                                                        className="flex flex-wrap gap-2 justify-center"
                                                     >
-                                                        {q}
-                                                    </button>
-                                                ))}
+                                                        {QUESTIONS.slice(cycleIndex * 3, (cycleIndex * 3) + 3).map(q => (
+                                                            <button
+                                                                key={q}
+                                                                onClick={() => {
+                                                                    setQuery(q);
+                                                                    handleSend(q);
+                                                                }}
+                                                                className="text-[10px] px-3 py-2 rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 hover:bg-kenya-green/10 hover:border-kenya-green/20 text-slate-700 dark:text-white/60 hover:text-kenya-green transition-all hover:scale-105 backdrop-blur-sm shadow-sm"
+                                                            >
+                                                                {q}
+                                                            </button>
+                                                        ))}
+                                                    </motion.div>
+                                                </AnimatePresence>
                                             </div>
                                         </div>
                                     )}
@@ -562,6 +593,7 @@ const GlobalAIAssistant: React.FC<GlobalAIAssistantProps> = ({ isHidden, onHide 
                     </motion.div>
                 )}
             </motion.div>
+            )}
         </AnimatePresence>
     );
 };

@@ -62,6 +62,7 @@ const Layout = ({ children, hideBottomNav, hideBackButton }: LayoutProps) => {
                 if (info.offset.x < -20) {
                   setIsAIHidden(false);
                   setIsDonationHidden(false);
+                  setIsCivicHidden(false);
                 }
               }}
               onClick={() => {
@@ -69,7 +70,7 @@ const Layout = ({ children, hideBottomNav, hideBackButton }: LayoutProps) => {
                 setIsDonationHidden(false);
                 setIsCivicHidden(false);
               }}
-              className="w-2.5 sm:w-1.5 h-20 bg-black/50 dark:bg-white/50 sm:bg-black/20 sm:dark:bg-white/20 rounded-full transition-all cursor-pointer group relative border border-black/10 dark:border-white/20 shadow-[0_0_12px_rgba(0,0,0,0.15)]"
+              className="w-3 sm:w-1.5 h-24 bg-black/80 dark:bg-white/80 sm:bg-black/20 sm:dark:bg-white/20 rounded-l-xl transition-all cursor-pointer group relative border border-black/20 dark:border-white/30 shadow-[0_0_15px_rgba(0,0,0,0.25)]"
               title="Swipe left to restore"
             >
               <div className="absolute inset-y-0 -left-5 -right-5 bg-transparent" />{/* Hitbox */}
