@@ -72,20 +72,16 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ clas
     }, []);
 
     // Setup real-time subscription
-    const notifySound = new Audio('/notif.mp3');
-    notifySound.preload = 'auto';
-
     useEffect(() => {
         fetchNotifications();
 
         const unsubscribe = notificationService.subscribeToNotifications((newNotification) => {
             setNotifications(prev => [newNotification, ...prev]);
             setUnreadCount(prev => prev + 1);
-            notifySound.play().catch(() => {});
         }, user?.id);
 
         return () => unsubscribe();
-    }, [fetchNotifications, user?.id]);
+    }, [fetchNotifications]);
 
     // Mark notification as read
     const handleMarkAsRead = async (notification: Notification, e?: React.MouseEvent) => {
@@ -258,21 +254,26 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ clas
                                         )}
 
                                         {/* Content */}
-                                        <div className="flex-1 min-w-0 pr-4">
-                                            <div className="flex justify-between items-baseline mb-0.5">
-                                                <p className={cn(
-                                                    "text-sm font-semibold text-foreground line-clamp-1",
-                                                    !notification.is_read && "text-primary"
-                                                )}>
-                                                    {notification.title}
-                                                </p>
-                                                <span className="text-[10px] text-muted-foreground whitespace-nowrap ml-2">
-                                                    {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}
-                                                </span>
-                                            </div>
-                                            <p className="text-xs text-muted-foreground/90 line-clamp-2 leading-relaxed">
+                                        <div className="flex-1 min-w-0">
+                                            <p className={cn(
+                                                "text-sm line-clamp-1",
+                                                !notification.is_read && "font-semibold"
+                                            )}>
+                                                {notification.title}
+                                            </p>
+                                            <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">
                                                 {notification.message}
                                             </p>
+                                            <div className="flex items-center gap-2 mt-1">
+                                                <span className="text-xs text-muted-foreground/70">
+                                                    {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}
+                                                </span>
+                                                {notification.source_type !== 'system' && (
+                                                    <Badge variant="outline" className="text-[10px] h-4 px-1.5 rounded-md">
+                                                        {notification.source_type.replace('_', ' ')}
+                                                    </Badge>
+                                                )}
+                                            </div>
                                         </div>
 
                                         {/* Actions */}

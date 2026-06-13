@@ -21,37 +21,62 @@ const NewsMicIcon: React.FC<{ className?: string }> = ({ className }) => (
   </svg>
 );
 
-// ─── Kenyan Bill Legislative Stages (full pipeline) ──────────────────────────
+// ─── Kenyan Bill Legislative Stages — 8-Stage Constitutional Pipeline ────────
 const BILL_STAGES = [
-  { label: '1st Reading', keys: ['1st reading', 'first reading', '1st_reading', 'FIRST READING', '1ST READING'] },
-  { label: '2nd Reading', keys: ['2nd reading', 'second reading', '2nd_reading', 'SECOND READING', '2ND READING'] },
-  { label: 'Committee', keys: ['committee', 'committee stage', 'COMMITTEE', 'COMMITTEE STAGE'] },
-  { label: '3rd Reading', keys: ['3rd reading', 'third reading', '3rd_reading', 'THIRD READING', '3RD READING'] },
-  { label: 'Senate', keys: ['senate', 'senate stage', 'SENATE', 'SENATE STAGE', 'upper house'] },
-  { label: 'Assent', keys: ['assent', 'presidential assent', 'ASSENT', 'PRESIDENTIAL ASSENT', 'assented'] },
-  { label: 'Enacted', keys: ['enacted', 'ENACTED', 'enacted into law', 'LAW', 'passed'] },
+  { label: 'Gazetted',   keys: ['published', 'gazetted', 'gazette', 'introduced'] },
+  { label: '1st Reading', keys: ['1st reading', 'first reading', '1st_reading', 'first_reading'] },
+  { label: 'Public Part.', keys: ['public participation', 'public part', 'stakeholder', 'consultation'] },
+  { label: '2nd Reading', keys: ['2nd reading', 'second reading', '2nd_reading', 'second_reading'] },
+  { label: 'Committee',  keys: ['committee of the whole', 'committee stage', 'committee'] },
+  { label: '3rd Reading', keys: ['3rd reading', 'third reading', '3rd_reading', 'third_reading', 'passed'] },
+  { label: 'Assent',     keys: ['assent', 'presidential assent', 'assented', 'president'] },
+  { label: 'Act / Law',  keys: ['enacted', 'enacted into law', 'law', 'act', 'commencement'] },
 ];
+
+const DISCARDED_KEYS = ['withdrawn', 'dropped', 'rejected', 'lapsed', 'negatived', 'shelved'];
 
 function getBillStageIndex(status: string): number {
   if (!status) return 0;
   const s = status.toLowerCase().trim();
-  for (let i = 0; i < BILL_STAGES.length; i++) {
+  // Check discarded/terminal state first
+  if (DISCARDED_KEYS.some(k => s.includes(k))) return -1; // -1 = terminated
+  for (let i = BILL_STAGES.length - 1; i >= 0; i--) {
     if (BILL_STAGES[i].keys.some(k => s.includes(k.toLowerCase()))) return i;
   }
-  return 0;
+  return 0; // default to Gazetted if unknown
+}
+
+// Swahili Civic Level definitions wired to point thresholds
+const CIVIC_LEVELS = [
+  { min: 0,    max: 99,   level: 1, title: 'Raia',           subtitle: 'Citizen' },
+  { min: 100,  max: 499,  level: 2, title: 'Mfuatiliaji',    subtitle: 'Tracker' },
+  { min: 500,  max: 1499, level: 3, title: 'Mzalendo',       subtitle: 'Patriot' },
+  { min: 1500, max: 4999, level: 4, title: 'Mwanaharakati',  subtitle: 'Activist' },
+  { min: 5000, max: Infinity, level: 5, title: 'Shujaa',     subtitle: 'Hero' },
+];
+
+function getCivicLevel(points: number) {
+  return CIVIC_LEVELS.find(l => points >= l.min && points <= l.max) || CIVIC_LEVELS[0];
+}
+
+function getRingPct(points: number) {
+  const lvl = getCivicLevel(points);
+  if (lvl.max === Infinity) return 100;
+  return Math.min(100, Math.round(((points - lvl.min) / (lvl.max - lvl.min + 1)) * 100));
 }
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-interface Bill { id: string; title: string; status: string; slug?: string; category?: string; }
+interface Bill { id: string; title: string; status: string; slug?: string; category?: string; summary?: string; }
 interface CivicEvent { id: string; title: string; event_date: string; start_time?: string; description?: string; }
 interface Campaign { id: string; title: string; description?: string; slug?: string; }
 interface TickerItem { tag: string; text: string; }
 
-// Rotating mini-bar content item (like a song track)
+// Rotating mini-bar content item
 interface MiniContent {
-  title: string;    // primary — shown like a song title
-  type: string;     // secondary — shown like artist name (e.g. 'Bill', 'Event', 'Campaign')
-  link: string;     // deeplink on tap
+  title: string;
+  type: string;
+  link: string;
+  summary?: string;
 }
 
 // ─── Player modes ─────────────────────────────────────────────────────────────
@@ -60,7 +85,7 @@ type PlayerMode = 'fab' | 'mini' | 'detail' | 'hidden';
 // ─── Slide definitions ────────────────────────────────────────────────────────
 const SLIDES = ['now', 'bills', 'calendar', 'alerts', 'impact'] as const;
 type SlideKey = typeof SLIDES[number];
-const SLIDE_LABELS: Record<SlideKey, string> = { now: 'Now', bills: 'My Bills', calendar: 'Calendar', alerts: 'Alerts', impact: 'Impact' };
+const SLIDE_LABELS: Record<SlideKey, string> = { now: 'Now', bills: 'Followed Bills', calendar: 'Calendar', alerts: 'Alerts', impact: 'Impact' };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function fmtDate(dateStr: string) {
@@ -75,22 +100,38 @@ function timeSince(iso: string) {
   return `${Math.floor(h / 24)}d ago`;
 }
 
-// ─── Bill Stage Track ─────────────────────────────────────────────────────────
+// ─── Bill Stage Track — 8-node with terminated state ─────────────────────────
 const BillTrack: React.FC<{ status: string }> = ({ status }) => {
   const active = getBillStageIndex(status);
+  const isTerminated = active === -1;
   return (
     <div className="flex items-center w-full mt-2 gap-0">
       {BILL_STAGES.map((stage, i) => (
         <React.Fragment key={stage.label}>
           <div className="flex flex-col items-center gap-0.5" style={{ flex: i < BILL_STAGES.length - 1 ? '1 1 0' : 'none' }}>
-            <div className={`w-2 h-2 rounded-full transition-all ${i <= active ? 'bg-kenya-green' : 'bg-slate-200 dark:bg-white/10'} ${i === active ? 'ring-2 ring-kenya-green/30 scale-125' : ''}`} />
-            <span className={`text-[7px] text-center leading-tight max-w-[28px] truncate ${i <= active ? 'text-kenya-green font-semibold' : 'text-slate-400 dark:text-white/20'}`}>{stage.label}</span>
+            <div className={`w-2 h-2 rounded-full transition-all ${
+              isTerminated ? 'bg-red-400/50'
+              : i <= active ? 'bg-kenya-green'
+              : 'bg-slate-200 dark:bg-white/10'
+            } ${i === active && !isTerminated ? 'ring-2 ring-kenya-green/30 scale-125' : ''}`} />
+            <span className={`text-[7px] text-center leading-tight max-w-[28px] truncate ${
+              isTerminated ? 'text-red-400/60'
+              : i <= active ? 'text-kenya-green font-semibold'
+              : 'text-slate-400 dark:text-white/20'
+            }`}>{stage.label}</span>
           </div>
           {i < BILL_STAGES.length - 1 && (
-            <div className={`h-px flex-1 mb-3 transition-all ${i < active ? 'bg-kenya-green' : 'bg-slate-200 dark:bg-white/10'}`} />
+            <div className={`h-px flex-1 mb-3 transition-all ${
+              isTerminated ? 'bg-red-400/30'
+              : i < active ? 'bg-kenya-green'
+              : 'bg-slate-200 dark:bg-white/10'
+            }`} />
           )}
         </React.Fragment>
       ))}
+      {isTerminated && (
+        <span className="ml-1 text-[7px] font-bold text-red-400 uppercase tracking-wide whitespace-nowrap">Withdrawn</span>
+      )}
     </div>
   );
 };
@@ -206,7 +247,7 @@ const MiniPlayerBar: React.FC<{
   };
 
   const tempAccentLine = { cool: 'bg-black', warm: 'bg-amber-500', hot: 'bg-red-500' }[temperature];
-  const current = contentItems[curIdx] ?? { title: 'Civic Pulse — Kenya', type: 'CEKA', link: '/' };
+  const current = contentItems[curIdx] ?? { title: 'Civic Education Kenya', type: 'CEKA', link: '/', summary: '' };
 
   return (
     <motion.div
@@ -337,7 +378,228 @@ const MiniPlayerBar: React.FC<{
   );
 };
 
-// ─── Detail Card (Stage C) ────────────────────────────────────────────────────
+// ─── FollowedBillsSlide — Accordion engine ──────────────────────────────────
+const FollowedBillsSlide: React.FC<{
+  user: any;
+  followedBills: Bill[];
+}> = ({ user, followedBills }) => {
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [showArchived, setShowArchived] = useState(false);
+  const [archived, setArchived] = useState<Set<string>>(new Set());
+  const navigate = useNavigate();
+
+  const active = followedBills.filter(b => !archived.has(b.id));
+  const archivedList = followedBills.filter(b => archived.has(b.id));
+  const displayed = showArchived ? archivedList : active;
+
+  if (!user) return (
+    <div className="flex flex-col items-center py-8 gap-3">
+      <FileText className="w-8 h-8 text-slate-300 dark:text-white/20" />
+      <p className="text-sm text-slate-500 dark:text-white/40">Sign in to track bills</p>
+      <Link to="/auth" className="px-5 py-2 text-xs font-bold rounded-full bg-kenya-green text-white">Login</Link>
+    </div>
+  );
+
+  if (followedBills.length === 0) return (
+    <div className="flex flex-col items-center py-8 gap-2">
+      <FileText className="w-7 h-7 text-slate-200 dark:text-white/10" />
+      <p className="text-xs text-slate-400 dark:text-white/30 text-center">No bills followed.<br />Browse the tracker and tap Follow.</p>
+      <Link to="/legislative-tracker" className="inline-flex items-center gap-1 text-xs text-kenya-green font-semibold mt-1">
+        Browse <img src="/chevron.svg" className="w-3 h-3 inline" alt="" />
+      </Link>
+    </div>
+  );
+
+  return (
+    <div className="space-y-2">
+      {/* Archive toggle */}
+      <div className="flex items-center justify-between mb-1">
+        <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 dark:text-white/30">
+          {showArchived ? `Archived (${archivedList.length})` : `Active (${active.length})`}
+        </p>
+        <button
+          onClick={() => { setShowArchived(s => !s); setExpandedId(null); }}
+          className="text-[9px] font-bold text-kenya-green hover:underline"
+        >
+          {showArchived ? 'View Active' : 'View Archived'}
+        </button>
+      </div>
+
+      {displayed.length === 0 && (
+        <p className="text-xs text-slate-400 dark:text-white/30 text-center py-6">
+          {showArchived ? 'No archived bills.' : 'No active bills.'}
+        </p>
+      )}
+
+      {displayed.map((bill) => {
+        const isExpanded = expandedId === bill.id;
+        return (
+          <div key={bill.id} className="rounded-xl border border-slate-100 dark:border-white/10 bg-slate-50 dark:bg-white/5 overflow-hidden">
+            <AnimatePresence mode="wait">
+              {isExpanded ? (
+                <motion.div
+                  key="expanded"
+                  initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="w-full p-3"
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-xs font-bold text-slate-800 dark:text-white flex-1 truncate pr-2">{bill.title}</p>
+                    <button
+                      onClick={() => setExpandedId(null)}
+                      className="shrink-0 p-1 rounded-full hover:bg-slate-200/60 dark:hover:bg-white/10 transition"
+                      aria-label="Collapse"
+                    >
+                      <img src="/chevron.svg" className="w-4 h-4 opacity-50" style={{ transform: 'rotate(180deg)' }} alt="collapse" />
+                    </button>
+                  </div>
+                  <span className="text-[9px] font-bold text-kenya-green bg-kenya-green/10 px-1.5 py-px rounded-full">{bill.status || 'Active'}</span>
+                  <BillTrack status={bill.status} />
+                  {bill.summary && <p className="text-[10px] text-slate-500 dark:text-white/40 mt-2 line-clamp-3">{bill.summary}</p>}
+                  <button
+                    onClick={() => navigate(`/bill/${bill.slug || bill.id}`)}
+                    className="mt-2 inline-flex items-center gap-1 text-[9px] font-bold text-kenya-green hover:underline"
+                  >
+                    Full details <img src="/chevron.svg" className="w-2.5 h-2.5" alt="" />
+                  </button>
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="mini"
+                  initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                  transition={{ duration: 0.18 }}
+                  className="flex items-stretch"
+                >
+                  <div className="flex-[2] p-3 min-w-0">
+                    <p className="text-xs font-semibold text-slate-800 dark:text-white truncate">{bill.title}</p>
+                    <span className="text-[9px] font-bold text-kenya-green bg-kenya-green/10 px-1.5 py-px rounded-full mt-1 inline-block">
+                      {bill.status?.split(' ').slice(0, 2).join(' ') || 'Active'}
+                    </span>
+                  </div>
+                  <div className="flex flex-col border-l border-slate-200/60 dark:border-white/10">
+                    <button onClick={() => setExpandedId(bill.id)} className="flex-1 flex items-center justify-center px-3 hover:bg-kenya-green/5 transition border-b border-slate-200/60 dark:border-white/10" title="Open">
+                      <span className="text-[9px] font-black text-kenya-green uppercase">Open</span>
+                    </button>
+                    <div className="flex-1 flex items-center justify-center px-3 border-b border-slate-200/60 dark:border-white/10" title="Following">
+                      <span className="text-[9px] font-black text-slate-300 dark:text-white/20 uppercase">Following</span>
+                    </div>
+                    <button
+                      onClick={() => setArchived(prev => { const n = new Set(prev); showArchived ? n.delete(bill.id) : n.add(bill.id); return n; })}
+                      className="flex-1 flex items-center justify-center px-3 hover:bg-slate-100 dark:hover:bg-white/5 transition"
+                      title={showArchived ? 'Restore' : 'Archive'}
+                    >
+                      <span className="text-[9px] font-black text-slate-400 dark:text-white/30 uppercase">{showArchived ? 'Restore' : 'Archive'}</span>
+                    </button>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
+// ─── ImpactSlide — Swahili levels, badge detail, navigator.share() ───────────
+const ImpactSlide: React.FC<{
+  user: any;
+  totalPoints: number;
+  leaderboardRank: number | null;
+  followedBills: Bill[];
+  participatedCampaigns: Campaign[];
+  userBadges: any[];
+}> = ({ user, totalPoints, leaderboardRank, followedBills, participatedCampaigns, userBadges }) => {
+  const [selectedBadge, setSelectedBadge] = useState<any | null>(null);
+  const lvlData = getCivicLevel(totalPoints);
+  const ringPct = getRingPct(totalPoints);
+
+  const handleShare = async () => {
+    const text = `My CEKA Civic Score: ${totalPoints.toLocaleString()} pts | ${lvlData.title} (${lvlData.subtitle}) | Rank #${leaderboardRank ?? '?'} — ceka.africa`;
+    if (navigator.share) {
+      await navigator.share({ title: 'My CEKA Civic Impact', text, url: 'https://ceka.africa' }).catch(() => {});
+    } else {
+      navigator.clipboard.writeText(text);
+    }
+  };
+
+  if (!user) return (
+    <div className="flex flex-col items-center py-8 gap-3">
+      <div className="w-16 h-16 rounded-full bg-slate-100 dark:bg-white/5 border-2 border-dashed border-slate-200 dark:border-white/20 flex items-center justify-center">
+        <TrendingUp className="w-7 h-7 text-slate-300 dark:text-white/20" />
+      </div>
+      <p className="text-xs text-slate-400 dark:text-white/30 text-center max-w-[180px]">Grow your civic score by tracking bills and joining campaigns.</p>
+      <Link to="/auth" className="px-5 py-2 text-xs font-bold rounded-full bg-kenya-green text-white">Get Started</Link>
+    </div>
+  );
+
+  return (
+    <div className="flex flex-col items-center">
+      <div className="relative w-24 h-24 my-2">
+        <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 100 100">
+          <circle cx="50" cy="50" r="40" fill="none" stroke="currentColor" strokeWidth="6" className="text-slate-200 dark:text-white/10" />
+          <motion.circle cx="50" cy="50" r="40" fill="none" stroke="#006B3F" strokeWidth="6" strokeLinecap="round"
+            strokeDasharray={2 * Math.PI * 40}
+            initial={{ strokeDashoffset: 2 * Math.PI * 40 }}
+            animate={{ strokeDashoffset: 2 * Math.PI * 40 - (ringPct / 100) * 2 * Math.PI * 40 }}
+            transition={{ duration: 1.2, ease: 'easeOut' }}
+          />
+        </svg>
+        <div className="absolute inset-0 flex flex-col items-center justify-center">
+          <span className="text-xl font-black text-slate-900 dark:text-white leading-none">{totalPoints.toLocaleString()}</span>
+          <span className="text-[8px] text-slate-400 dark:text-white/30 font-semibold uppercase tracking-wider">pts</span>
+        </div>
+      </div>
+      <p className="text-sm font-bold text-slate-800 dark:text-white mb-0.5">
+        {lvlData.title} <span className="text-slate-400 dark:text-white/40 font-normal text-xs">({lvlData.subtitle})</span>
+      </p>
+      {leaderboardRank && <p className="text-xs text-kenya-green mb-3">🏅 Rank #{leaderboardRank} on CEKA</p>}
+      <div className="grid grid-cols-3 gap-2 w-full mb-3">
+        {[{ v: followedBills.length, l: 'Bills' }, { v: participatedCampaigns.length, l: 'Campaigns' }, { v: userBadges.length, l: 'Badges' }].map(({ v, l }) => (
+          <div key={l} className="p-2 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/10 text-center">
+            <p className="text-lg font-black text-slate-900 dark:text-white">{v}</p>
+            <p className="text-[9px] text-slate-400 dark:text-white/30 uppercase tracking-wide">{l}</p>
+          </div>
+        ))}
+      </div>
+      {userBadges.length > 0 && (
+        <div className="w-full mb-3">
+          <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 dark:text-white/30 text-center mb-2">Earned Badges</p>
+          <div className="flex flex-wrap justify-center gap-1.5">
+            {userBadges.map((ub: any, idx: number) => {
+              const b = ub.civic_badges;
+              return (
+                <button key={idx} onClick={() => setSelectedBadge(selectedBadge?.name === b?.name ? null : b)}
+                  className={`flex items-center gap-1 px-2 py-1 rounded-full border transition ${selectedBadge?.name === b?.name ? 'bg-amber-500/20 border-amber-500/50 shadow-sm' : 'bg-amber-500/10 border-amber-500/20'} text-amber-600 dark:text-amber-300`}
+                >
+                  {b?.icon_url ? <img src={b.icon_url} alt={b.name} className="w-3 h-3 rounded object-contain" /> : <Award className="w-2.5 h-2.5" />}
+                  <span className="text-[9px] font-bold uppercase tracking-wide">{b?.name || 'Badge'}</span>
+                </button>
+              );
+            })}
+          </div>
+          <AnimatePresence>
+            {selectedBadge && (
+              <motion.div initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.18 }}
+                className="mt-2 p-3 rounded-xl bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20"
+              >
+                <p className="text-xs font-bold text-amber-700 dark:text-amber-300 mb-0.5">{selectedBadge.name}</p>
+                <p className="text-[10px] text-amber-600/80 dark:text-amber-200/60 leading-relaxed">
+                  {selectedBadge.description || 'Awarded for outstanding civic participation on CEKA.'}
+                </p>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      )}
+      <button onClick={handleShare} className="mt-1 px-5 py-2 text-[10px] font-bold rounded-full border border-kenya-green/30 text-kenya-green hover:bg-kenya-green/10 transition uppercase tracking-widest">
+        Share My Impact
+      </button>
+    </div>
+  );
+};
+
+// ─── Detail Card (Stage C) ─────────────────────────────────────────────────────────
 // Compact floating card (NOT full-width bottom sheet)
 // Music-player inspired — floats above nav, rounded all sides
 const DetailCard: React.FC<{
@@ -463,11 +725,13 @@ const DetailCard: React.FC<{
                           <div className="flex items-center gap-2 mb-2">
                             <div className={`w-1.5 h-1.5 rounded-full ${props.temperature === 'hot' ? 'bg-red-500' : 'bg-kenya-green'} animate-pulse`} />
                             <span className={`text-[10px] font-black uppercase tracking-widest ${props.temperature === 'hot' ? 'text-red-500' : 'text-kenya-green'}`}>
-                              {props.temperature === 'hot' ? 'Parliament in session' : props.temperature === 'warm' ? 'Activity' : 'Civic Pulse'}
+                              {props.temperature === 'hot' ? 'Parliament in Session' : props.temperature === 'warm' ? 'Live Updates' : 'Live Updates'}
                             </span>
                           </div>
-                          <p className="text-sm font-semibold text-slate-800 dark:text-white leading-snug">{props.latestHeadline || 'All quiet on the civic front.'}</p>
-                          <Link to="/legislative-tracker" className="inline-flex items-center gap-1 text-xs font-semibold text-kenya-green mt-2 hover:underline">View tracker <ChevronRight className="w-3 h-3" /></Link>
+                          <p className="text-sm font-semibold text-slate-800 dark:text-white leading-snug">{props.latestHeadline || 'No new updates right now.'}</p>
+                          <Link to="/legislative-tracker" className="inline-flex items-center gap-1 text-xs font-semibold text-kenya-green mt-2 hover:underline">
+                            View tracker <img src="/chevron.svg" className="w-3 h-3" alt="" />
+                          </Link>
                         </div>
                         {props.recentBills.length > 0 && (
                           <div className="space-y-2">
@@ -478,8 +742,11 @@ const DetailCard: React.FC<{
                                 to={`/bill/${bill.slug || bill.id}`}
                                 className="flex items-center justify-between gap-2 p-2 rounded-lg bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/5 hover:bg-kenya-green/5 dark:hover:bg-kenya-green/10 transition-colors"
                               >
-                                <p className="text-xs font-semibold text-slate-700 dark:text-white/80 truncate flex-1">{bill.title}</p>
-                                <span className="text-[10px] text-kenya-green font-bold shrink-0">→</span>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-xs font-semibold text-slate-700 dark:text-white/80 truncate">{bill.title}</p>
+                                  {bill.summary && <p className="text-[10px] text-slate-500 dark:text-white/40 truncate mt-0.5">{bill.summary}</p>}
+                                </div>
+                                <img src="/chevron.svg" className="w-3 h-3 shrink-0 opacity-40" alt="" />
                               </Link>
                             ))}
                           </div>
@@ -490,33 +757,12 @@ const DetailCard: React.FC<{
                       </div>
                     )}
 
-                    {/* MY BILLS */}
+                    {/* FOLLOWED BILLS */}
                     {slide === 'bills' && (
-                      <div className="space-y-2">
-                        {!props.user ? (
-                          <div className="flex flex-col items-center py-8 gap-3">
-                            <FileText className="w-8 h-8 text-slate-300 dark:text-white/20" />
-                            <p className="text-sm text-slate-500 dark:text-white/40">Sign in to track bills</p>
-                            <Link to="/auth" className="px-5 py-2 text-xs font-bold rounded-full bg-kenya-green text-white">Login</Link>
-                          </div>
-                        ) : props.followedBills.length === 0 ? (
-                          <div className="flex flex-col items-center py-8 gap-2">
-                            <FileText className="w-7 h-7 text-slate-200 dark:text-white/10" />
-                            <p className="text-xs text-slate-400 dark:text-white/30 text-center">No bills followed.<br />Browse the tracker and tap Follow.</p>
-                            <Link to="/legislative-tracker" className="text-xs text-kenya-green font-semibold mt-1">Browse →</Link>
-                          </div>
-                        ) : (
-                          props.followedBills.map((bill) => (
-                            <Link key={bill.id} to={`/bill/${bill.slug || bill.id}`} className="block p-3 rounded-xl border border-slate-100 dark:border-white/10 bg-slate-50 dark:bg-white/5 hover:border-kenya-green/30 transition">
-                              <div className="flex items-start justify-between gap-2 mb-1">
-                                <p className="text-xs font-semibold text-slate-800 dark:text-white truncate flex-1">{bill.title}</p>
-                                <span className="text-[9px] font-bold text-kenya-green bg-kenya-green/10 px-1.5 py-px rounded-full shrink-0">{bill.status?.split(' ').slice(0, 2).join(' ') || 'Active'}</span>
-                              </div>
-                              <BillTrack status={bill.status} />
-                            </Link>
-                          ))
-                        )}
-                      </div>
+                      <FollowedBillsSlide
+                        user={props.user}
+                        followedBills={props.followedBills}
+                      />
                     )}
 
                     {/* CALENDAR */}
@@ -564,7 +810,7 @@ const DetailCard: React.FC<{
                         ) : props.alerts.length === 0 && props.userNotifications.length === 0 ? (
                           <div className="flex flex-col items-center py-8 gap-2">
                             <CheckCircle className="w-7 h-7 text-slate-200 dark:text-white/10" />
-                            <p className="text-xs text-slate-400 dark:text-white/30">All clear — no new alerts.</p>
+                            <p className="text-xs text-slate-400 dark:text-white/30">No new updates right now.</p>
                           </div>
                         ) : (
                           <>
@@ -584,13 +830,23 @@ const DetailCard: React.FC<{
                             ))}
                             {props.userNotifications.map((notif: any) => {
                               const isNps = notif.metadata?.nps_type === 'signature' && !props.npsAnswered.has(notif.id);
+                              // Format source_type: bill_update → Bill Update
+                              const typeLabel = notif.source_type
+                                ? notif.source_type.split('_').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
+                                : '';
                               return (
                                 <div key={notif.id} className="p-2.5 rounded-xl border border-slate-100 dark:border-white/10 bg-slate-50 dark:bg-white/5">
-                                  <div className="flex justify-between items-start gap-2 mb-1">
-                                    <p className="text-xs font-semibold text-slate-800 dark:text-white flex-1">{notif.title}</p>
-                                    <button onClick={() => props.markNotifRead(notif.id)} className="shrink-0 opacity-40 hover:opacity-80 transition">
-                                      <X className="w-3 h-3 text-slate-500 dark:text-white/50" />
-                                    </button>
+                                  <div className="flex justify-between items-center gap-2 mb-0.5">
+                                    <div className="flex items-center gap-1.5 min-w-0">
+                                      {!notif.is_read && <div className="w-1.5 h-1.5 rounded-full bg-kenya-green shrink-0" />}
+                                      <p className={`text-xs font-semibold text-slate-800 dark:text-white truncate ${!notif.is_read ? 'text-primary' : ''}`}>{notif.title}</p>
+                                    </div>
+                                    <div className="flex items-center gap-1 shrink-0">
+                                      <span className="text-[9px] text-slate-400 dark:text-white/25 whitespace-nowrap">{new Date(notif.created_at).toLocaleString('en-KE', { dateStyle: 'short', timeStyle: 'short' })}</span>
+                                      <button onClick={() => props.markNotifRead(notif.id)} className="opacity-40 hover:opacity-80 transition">
+                                        <X className="w-3 h-3 text-slate-500 dark:text-white/50" />
+                                      </button>
+                                    </div>
                                   </div>
                                   <p className="text-[10px] text-slate-500 dark:text-white/40 line-clamp-2 mb-1.5">{notif.message}</p>
                                   {isNps && (
@@ -605,9 +861,10 @@ const DetailCard: React.FC<{
                                   )}
                                   {!isNps && notif.link && (
                                     <button onClick={() => { props.markNotifRead(notif.id); window.location.href = notif.link; }}
-                                      className="text-[9px] font-bold uppercase tracking-wide text-kenya-green hover:underline mt-1">View →</button>
+                                      className="inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-wide text-kenya-green hover:underline mt-1">
+                                      {typeLabel || 'View'} <img src="/chevron.svg" className="w-2.5 h-2.5" alt="" />
+                                    </button>
                                   )}
-                                  <p className="text-[9px] text-slate-400 dark:text-white/20 mt-1">{new Date(notif.created_at).toLocaleString('en-KE', { dateStyle: 'short', timeStyle: 'short' })}</p>
                                 </div>
                               );
                             })}
@@ -618,74 +875,14 @@ const DetailCard: React.FC<{
 
                     {/* IMPACT */}
                     {slide === 'impact' && (
-                      <div className="flex flex-col items-center">
-                        {!props.user ? (
-                          <div className="flex flex-col items-center py-8 gap-3">
-                            <div className="w-16 h-16 rounded-full bg-slate-100 dark:bg-white/5 border-2 border-dashed border-slate-200 dark:border-white/20 flex items-center justify-center">
-                              <TrendingUp className="w-7 h-7 text-slate-300 dark:text-white/20" />
-                            </div>
-                            <p className="text-xs text-slate-400 dark:text-white/30 text-center max-w-[180px]">Grow your civic score by tracking bills and joining campaigns.</p>
-                            <Link to="/auth" className="px-5 py-2 text-xs font-bold rounded-full bg-kenya-green text-white">Get Started</Link>
-                          </div>
-                        ) : (
-                          <>
-                            {/* Ring */}
-                            <div className="relative w-24 h-24 my-2">
-                              <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 100 100">
-                                <circle cx="50" cy="50" r="40" fill="none" stroke="currentColor" strokeWidth="6" className="text-slate-200 dark:text-white/10" />
-                                <motion.circle cx="50" cy="50" r="40" fill="none" stroke="#006B3F" strokeWidth="6" strokeLinecap="round"
-                                  strokeDasharray={2 * Math.PI * 40}
-                                  initial={{ strokeDashoffset: 2 * Math.PI * 40 }}
-                                  animate={{ strokeDashoffset: 2 * Math.PI * 40 - (props.ringPct / 100) * 2 * Math.PI * 40 }}
-                                  transition={{ duration: 1.2, ease: 'easeOut' }}
-                                />
-                              </svg>
-                              <div className="absolute inset-0 flex flex-col items-center justify-center">
-                                <span className="text-xl font-black text-slate-900 dark:text-white leading-none">{props.totalPoints.toLocaleString()}</span>
-                                <span className="text-[8px] text-slate-400 dark:text-white/30 font-semibold uppercase tracking-wider">pts</span>
-                              </div>
-                            </div>
-                            <p className="text-sm font-bold text-slate-800 dark:text-white mb-0.5">Level {props.civicLevel} — {props.civicTitle}</p>
-                            {props.leaderboardRank && <p className="text-xs text-kenya-green mb-3">🏅 Rank #{props.leaderboardRank} on CEKA</p>}
-
-                            <div className="grid grid-cols-3 gap-2 w-full mb-3">
-                              {[
-                                { v: props.followedBills.length, l: 'Bills' },
-                                { v: props.participatedCampaigns.length, l: 'Campaigns' },
-                                { v: props.userBadges.length, l: 'Badges' },
-                              ].map(({ v, l }) => (
-                                <div key={l} className="p-2 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/10 text-center">
-                                  <p className="text-lg font-black text-slate-900 dark:text-white">{v}</p>
-                                  <p className="text-[9px] text-slate-400 dark:text-white/30 uppercase tracking-wide">{l}</p>
-                                </div>
-                              ))}
-                            </div>
-
-                            {props.userBadges.length > 0 && (
-                              <div className="w-full">
-                                <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 dark:text-white/30 text-center mb-2">Earned Badges</p>
-                                <div className="flex flex-wrap justify-center gap-1.5">
-                                  {props.userBadges.map((ub: any, idx: number) => {
-                                    const b = ub.civic_badges;
-                                    return (
-                                      <div key={idx} title={b?.description || ''} className="flex items-center gap-1 px-2 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-300">
-                                        {b?.icon_url ? <img src={b.icon_url} alt={b.name} className="w-3 h-3 rounded object-contain" /> : <Award className="w-2.5 h-2.5" />}
-                                        <span className="text-[9px] font-bold uppercase tracking-wide">{b?.name || 'Badge'}</span>
-                                      </div>
-                                    );
-                                  })}
-                                </div>
-                              </div>
-                            )}
-                            <button
-                              onClick={() => navigator.clipboard.writeText(`My CEKA Civic Score: ${props.totalPoints} pts | Level ${props.civicLevel} ${props.civicTitle} | Rank #${props.leaderboardRank ?? '?'} — ceka.africa`)}
-                              className="mt-3 px-5 py-2 text-[10px] font-bold rounded-full border border-kenya-green/30 text-kenya-green hover:bg-kenya-green/10 transition uppercase tracking-widest"
-                            >
-                              Share My Impact
-                            </button>
-                          </>
-                        )}
-                      </div>
+                      <ImpactSlide
+                        user={props.user}
+                        totalPoints={props.totalPoints}
+                        leaderboardRank={props.leaderboardRank}
+                        followedBills={props.followedBills}
+                        participatedCampaigns={props.participatedCampaigns}
+                        userBadges={props.userBadges}
+                      />
                     )}
                   </motion.div>
                 </AnimatePresence>
@@ -738,13 +935,16 @@ const CivicMiniPlayer: React.FC<CivicMiniPlayerProps> = ({ isHidden, onHide }) =
   const [participatedCampaigns, setParticipatedCampaigns] = useState<Campaign[]>([]);
   const [recentBills, setRecentBills] = useState<Bill[]>([]);
   const [totalPoints, setTotalPoints] = useState(0);
-  const [civicLevel, setCivicLevel] = useState(1);
-  const [civicTitle, setCivicTitle] = useState('Civic Newcomer');
   const [leaderboardRank, setLeaderboardRank] = useState<number | null>(null);
   const [userBadges, setUserBadges] = useState<any[]>([]);
   const [userNotifications, setUserNotifications] = useState<any[]>([]);
   const [npsAnswered, setNpsAnswered] = useState<Set<string>>(new Set());
-  const [ringPct, setRingPct] = useState(0);
+
+  // Derived Swahili level — computed from points, not from DB
+  const swahiliLevel = getCivicLevel(totalPoints);
+  const civicLevel = swahiliLevel.level;
+  const civicTitle = swahiliLevel.title;
+  const ringPct = getRingPct(totalPoints);
 
   // ── markNotifRead (canonical) ─────────────────────────────────────────────
   const markNotifRead = useCallback(async (notifId: string) => {
@@ -763,8 +963,8 @@ const CivicMiniPlayer: React.FC<CivicMiniPlayerProps> = ({ isHidden, onHide }) =
   // ── Full canonical fetch (all 9 queries from original) ───────────────────
   const fetchPersonalData = useCallback(async () => {
     if (!user) return;
-    // 1. Bill follows
-    const { data: fD } = await supabase.from('bill_follows').select('bill_id, bills!inner(id, title, status, slug, category)').eq('user_id', user.id);
+    // 1. Bill follows (include summary)
+    const { data: fD } = await supabase.from('bill_follows').select('bill_id, bills!inner(id, title, status, slug, category, summary)').eq('user_id', user.id);
     setFollowedBills((fD?.map((f: any) => f.bills) || []) as Bill[]);
     // 2. Events
     const { data: ev } = await supabase.from('civic_events').select('id, title, event_date, start_time, description').gte('event_date', new Date().toISOString().split('T')[0]).order('event_date', { ascending: true }).limit(10);
@@ -772,28 +972,21 @@ const CivicMiniPlayer: React.FC<CivicMiniPlayerProps> = ({ isHidden, onHide }) =
     // 3. Campaigns
     const { data: cD } = await supabase.from('campaign_participants').select('campaign_id, campaigns!inner(id, title, description, slug)').eq('user_id', user.id);
     setParticipatedCampaigns((cD?.map((c: any) => c.campaigns) || []) as Campaign[]);
-    // 4. Recent bills
-    const { data: rB } = await (supabase as any).from('bills').select('id, title, status, slug').order('updated_at', { ascending: false }).limit(3);
+    // 4. Recent bills (include summary)
+    const { data: rB } = await (supabase as any).from('bills').select('id, title, status, slug, summary').order('updated_at', { ascending: false }).limit(3);
     setRecentBills((rB || []) as Bill[]);
-    // 5. user_points (CANONICAL)
-    const { data: pR } = await (supabase as any).from('user_points').select('total_points, current_level').eq('user_id', user.id).single();
-    const pts = pR?.total_points || 0; const lvl = pR?.current_level || 1;
-    setTotalPoints(pts); setCivicLevel(lvl);
-    // 6. level_config (CANONICAL)
-    const { data: lR } = await (supabase as any).from('level_config').select('level, min_points, title').order('level', { ascending: true });
-    if (lR?.length) {
-      const cur = lR.find((r: any) => r.level === lvl); const nxt = lR.find((r: any) => r.level === lvl + 1);
-      if (cur) setCivicTitle(cur.title);
-      setRingPct(cur && nxt ? Math.min(100, Math.round(((pts - cur.min_points) / (nxt.min_points - cur.min_points)) * 100)) : 100);
-    }
-    // 7. leaderboard rank (CANONICAL)
+    // 5. user_points (CANONICAL — only points, no level)
+    const { data: pR } = await (supabase as any).from('user_points').select('total_points').eq('user_id', user.id).single();
+    const pts = pR?.total_points || 0;
+    setTotalPoints(pts);
+    // 6. leaderboard rank (CANONICAL)
     const { data: rk } = await (supabase as any).from('leaderboard').select('user_id, rank').eq('user_id', user.id).single();
     setLeaderboardRank(rk?.rank || null);
     // 8. user_badges + civic_badges (CANONICAL)
     const { data: bD } = await (supabase as any).from('user_badges').select('awarded_at, civic_badges(name, description, icon_url, category)').eq('user_id', user.id);
     setUserBadges(bD || []);
     // 9. user_notifications unread (CANONICAL)
-    const { data: nf } = await (supabase as any).from('user_notifications').select('id, title, message, is_read, link, category, priority, created_at, metadata').eq('user_id', user.id).eq('is_read', false).order('created_at', { ascending: false }).limit(20);
+    const { data: nf } = await (supabase as any).from('user_notifications').select('id, title, message, is_read, link, category, priority, created_at, metadata, source_type').eq('user_id', user.id).eq('is_read', false).order('created_at', { ascending: false }).limit(20);
     setUserNotifications(nf || []);
   }, [user]);
 

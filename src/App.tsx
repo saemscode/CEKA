@@ -193,6 +193,7 @@ const AppContent = () => {
         <Route path="/about" element={<About />} />
         <Route path="/translate" element={<TranslatePage />} />
         <Route path="/visual-insights" element={<Navigate to="/pieces" replace />} />
+        <Route path="/account" element={<Navigate to="/settings/account" replace />} />
         <Route path="/document/:id" element={<DocumentViewerPage />} />
         <Route path="/thumbnail-demo" element={<ThumbnailDemo />} />
         <Route path="/privacy" element={<PrivacyPolicy />} />

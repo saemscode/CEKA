@@ -1108,6 +1108,7 @@ const TranslatePage = () => {
   ];
 
   return (
+    <Layout>
     <div className="min-h-screen pt-20 pb-16 px-4" style={{ background: '#060914' }}>
       <CekaLatticeBackground />
       <div className="max-w-5xl mx-auto space-y-10 animate-fade-in" style={{ position: 'relative', zIndex: 1 }}>
@@ -1204,6 +1205,7 @@ const TranslatePage = () => {
         )}
       </div>
     </div>
+    </Layout>
   );
 };
 

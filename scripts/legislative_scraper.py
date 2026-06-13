@@ -874,7 +874,7 @@ class LegislativeScraper:
                 }""")
 
                 if not rows or len(rows) == 0:
-                    logger.info("      [Cap] Reached end of pagination. Breaking loop.")
+                    logger.info(f"      [Cap] No rows on page {page_num + 1}. Reached end of pagination. Breaking.")
                     break
 
                 for row in rows:

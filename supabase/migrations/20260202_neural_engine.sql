@@ -44,13 +44,32 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 -- 5. NOTIFICATION TRIGGER
 -- Notify users when a followed bill's status changes
 CREATE OR REPLACE FUNCTION public.notify_bill_status_change() RETURNS trigger AS $$
+DECLARE
+    v_follower record;
 BEGIN
     -- Log status history
-    INSERT INTO public.bill_status_history (bill_id, old_status, new_status, metadata)
-    VALUES (NEW.id, OLD.status, NEW.status, jsonb_build_object('source', 'internal'));
+    INSERT INTO public.bill_status_history (bill_id, old_status, new_status)
+    VALUES (NEW.id, OLD.status, NEW.status);
 
-    -- NOTE: Notification logic has been moved to 20260610151501_notification_system_extensions.sql
-    -- to prevent duplicate/triple firing on stage shifts.
+    -- Only notify if status actually changed
+    IF OLD.status IS DISTINCT FROM NEW.status THEN
+        FOR v_follower IN 
+            SELECT user_id FROM public.bill_follows WHERE bill_id = NEW.id
+        LOOP
+            PERFORM public.create_notification(
+                v_follower.user_id,
+                'bill_update',
+                NEW.id,
+                NULL, -- System action
+                'Bill Movement: ' || NEW.title,
+                'The bill has moved from ' || COALESCE(OLD.status, 'Initial') || ' to ' || NEW.status || '.',
+                '/bill/' || NEW.id,
+                NULL,
+                'high',
+                jsonb_build_object('old_status', OLD.status, 'new_status', NEW.status)
+            );
+        END LOOP;
+    END IF;
     
     RETURN NEW;
 END;
