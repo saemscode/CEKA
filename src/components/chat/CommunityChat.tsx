@@ -91,7 +91,7 @@ const CommunityChat = () => {
     const topSentinelRef = useRef<HTMLDivElement>(null);
     const isInitialLoad = useRef(true);
 
-    // Fetch dynamic rooms from sovereign table
+    // Fetch dynamic rooms from chat_rooms table
     const fetchRooms = useCallback(async () => {
         const { data, error } = await supabase
             .from('chat_rooms')
@@ -137,7 +137,6 @@ const CommunityChat = () => {
         setFetchError(false);
 
         try {
-            // Simple query without FK join to avoid PGRST200 errors
             let query = supabase
                 .from('chat_messages')
                 .select('*')
@@ -159,7 +158,6 @@ const CommunityChat = () => {
             }
 
             if (data) {
-                // Fetch profile data separately for each unique user_id
                 const userIds = [...new Set(data.map(m => m.user_id))];
                 const { data: profiles } = await supabase
                     .from('profiles')
@@ -168,7 +166,7 @@ const CommunityChat = () => {
 
                 const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
 
-                const messagesWithProfiles = data.map(m => ({
+                const messagesWithProfiles: ChatMessage[] = data.map(m => ({
                     ...m,
                     profile: profileMap.get(m.user_id) || null
                 }));
@@ -180,89 +178,100 @@ const CommunityChat = () => {
         } catch (err) {
             console.error('Fetch error:', err);
             setFetchError(true);
-            setHasMoreOlder(false); // Kill scroll to prevent spam
+            setHasMoreOlder(false);
         } finally {
             setLoading(false);
             setLoadingOlder(false);
         }
     }, []);
 
-
     const handleJoinRoom = async (roomId: string) => {
         if (!user) return;
         setActiveRoom(roomId);
-        // Register room join status
-        await supabase.from('user_rooms' as any).upsert({
-            user_id: user.id,
-            room_id: roomId,
-            last_read_at: new Date().toISOString()
-        }, { onConflict: 'user_id,room_id' });
+        setSelectedPeer(null);
+        setIsPrivate(false);
 
-        toast({ title: `Joined ${rooms.find(r => r.id === roomId)?.name}`, description: 'Your session is now synchronized.' });
+        // Upsert membership
+        try {
+            await (supabase.from('chat_room_members' as any) as any).upsert({
+                user_id: user.id,
+                room_id: roomId,
+                last_read_at: new Date().toISOString()
+            }, { onConflict: 'user_id,room_id' });
+        } catch (err) {
+            console.error('Failed to upsert chat_room_members:', err);
+        }
+
+        toast({ title: `Joined ${rooms.find(r => r.id === roomId)?.name || 'room'}`, description: 'Your session is now synchronized.' });
     };
 
-    // Handle Room Switching & Initial Load
+    // Initial fetch for rooms & audits
     useEffect(() => {
         fetchRooms();
         fetchAudits();
     }, [fetchRooms, fetchAudits]);
 
+    // Select initial room when rooms are loaded
     useEffect(() => {
-        if (!session || !user) return;
+        if (rooms.length > 0 && !activeRoom) {
+            const preferred = params.get('room') || 'general';
+            const exists = rooms.find(r => r.id === preferred);
+            setActiveRoom(exists ? exists.id : rooms[0].id);
+        }
+    }, [rooms, activeRoom, params]);
 
-        let targetRoom = 'voter-hub';
-
-        // Virtual DM handling: if a peer is selected, generate deterministic ID
-        if (isPrivate && selectedPeer) {
-            const ids = [user.id, selectedPeer.id].sort();
-            targetRoom = `vault:${ids[0]}:${ids[1]}`;
-            setActiveRoom(targetRoom);
-        } else {
-            targetRoom = params.get('room') || 'general';
-            if (activeRoom !== targetRoom) {
-                setActiveRoom(targetRoom);
-                // Only show guide if the user hasn't seen it for this room in this session
-                if (!hasSeenGuide[targetRoom]) {
-                    setShowGuide(true);
-                }
+    // Fetch messages when active room changes
+    useEffect(() => {
+        if (activeRoom && session) {
+            fetchMessages(activeRoom);
+            isInitialLoad.current = true;
+            if (!hasSeenGuide[activeRoom]) {
+                setShowGuide(true);
             }
         }
+    }, [activeRoom, session, fetchMessages, hasSeenGuide]);
 
-        fetchMessages(targetRoom);
-        isInitialLoad.current = true;
-    }, [activeRoom, session, user, fetchMessages, isPrivate, selectedPeer, params]);
-
-    // Ensure selected room exists in metadata
+    // Handle private room creation
     useEffect(() => {
-        if (isPrivate && selectedPeer && !rooms.find(r => r.id === activeRoom)) {
-            const virtualRoom: Room = {
-                id: activeRoom,
-                name: `Secure: ${selectedPeer.full_name || 'Member'}`,
-                type: 'direct'
-            };
-            setRooms(prev => [...prev.filter(r => r.type !== 'direct'), virtualRoom]);
-        }
-    }, [activeRoom, isPrivate, selectedPeer, rooms]);
+        if (!isPrivate || !selectedPeer || !user) return;
+        const ids = [user.id, selectedPeer.id].sort();
+        const roomId = `vault:${ids[0]}:${ids[1]}`;
+        setActiveRoom(roomId);
 
-    // Handle incoming source bridge or blog synchronization
+        if (!rooms.find(r => r.id === roomId)) {
+            setRooms(prev => [...prev.filter(r => r.type !== 'direct'), { id: roomId, name: `Private: ${selectedPeer.full_name || 'Member'}`, type: 'direct' }]);
+        }
+
+        // Ensure both users are members of the private room
+        void (async () => {
+            try {
+                await (supabase.from('chat_room_members' as any) as any).upsert([
+                    { user_id: user.id, room_id: roomId, joined_at: new Date().toISOString() },
+                    { user_id: selectedPeer.id, room_id: roomId, joined_at: new Date().toISOString() }
+                ], { onConflict: 'user_id,room_id' });
+            } catch (e) {
+                console.error('Private room membership upsert failed:', e);
+            }
+        })();
+    }, [isPrivate, selectedPeer, user, rooms]);
+
+    // Source bridge sync
     useEffect(() => {
         const source = params.get('source');
         const title = params.get('title');
-        const content = params.get('content'); // New: Sync content from blog reply
-
+        const content = params.get('content');
         if (source && title && !isInitialLoad.current) {
             const initialText = content
-                ? `[Discourse Sync] "${decodeURIComponent(content)}" - Ref: ${decodeURIComponent(title)}`
-                : `[Ref: ${decodeURIComponent(title)}] I have thoughts on this development... `;
-
+                ? `[Shared] "${decodeURIComponent(content)}" - Ref: ${decodeURIComponent(title)}`
+                : `[Ref: ${decodeURIComponent(title)}] I have thoughts on this... `;
             setNewMessage(initialText);
-            toast({ title: 'Assembly Synced', description: 'Continuing the discourse from the field.' });
+            toast({ title: 'Synced', description: 'Continuing the discussion from the post.' });
         }
     }, [params, toast]);
 
-    // Subscribe to Realtime messages for current room
+    // Realtime subscription for new messages in active room
     useEffect(() => {
-        if (!session) return;
+        if (!session || !activeRoom) return;
 
         const channel = supabase
             .channel(`chat:${activeRoom}`)
@@ -272,7 +281,7 @@ const CommunityChat = () => {
                 table: 'chat_messages',
                 filter: `room_id=eq.${activeRoom}`
             }, async (payload) => {
-                if (payload.new.parent_id) return; // Ignore replies in main feed
+                if (payload.new.parent_id) return;
 
                 const { data: profile } = await supabase
                     .from('profiles')
@@ -284,6 +293,7 @@ const CommunityChat = () => {
                     ...(payload.new as unknown as ChatMessage),
                     profile
                 };
+
                 setMessages(prev => {
                     if (prev.find(m => m.id === msgWithProfile.id)) return prev;
                     return [...prev, msgWithProfile];
@@ -292,15 +302,11 @@ const CommunityChat = () => {
             .subscribe();
 
         return () => {
-            setTimeout(() => {
-                try {
-                    supabase.removeChannel(channel).catch(() => { });
-                } catch (e) { }
-            }, 200);
+            supabase.removeChannel(channel).catch(() => { });
         };
     }, [activeRoom, session]);
 
-    // Presence tracking for online members
+    // Presence tracking
     useEffect(() => {
         if (!session || !user) return;
         const presenceChannel = supabase.channel('community_presence');
@@ -321,7 +327,7 @@ const CommunityChat = () => {
                     const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).maybeSingle();
                     await presenceChannel.track({
                         id: user.id,
-                        full_name: profile?.full_name || 'Anonymous Citizen',
+                        full_name: profile?.full_name || 'Anonymous',
                         avatar_url: profile?.avatar_url,
                         online_at: new Date().toISOString()
                     });
@@ -329,15 +335,11 @@ const CommunityChat = () => {
             });
 
         return () => {
-            setTimeout(() => {
-                try {
-                    supabase.removeChannel(presenceChannel).catch(() => { });
-                } catch (e) { }
-            }, 200);
+            supabase.removeChannel(presenceChannel).catch(() => { });
         };
     }, [session, user]);
 
-    // Infinite Scroll Handler (Intersection Observer)
+    // Infinite scroll observer
     useEffect(() => {
         if (!topSentinelRef.current || loadingOlder || !hasMoreOlder || fetchError) return;
 
@@ -350,29 +352,24 @@ const CommunityChat = () => {
 
         observer.observe(topSentinelRef.current);
         return () => observer.disconnect();
-    }, [messages, loadingOlder, hasMoreOlder, activeRoom, fetchMessages]);
+    }, [messages, loadingOlder, hasMoreOlder, activeRoom, fetchMessages, fetchError]);
 
-    // Auto-scroll logic (Instagram-style)
+    // Auto‑scroll logic
     useEffect(() => {
         if (!scrollRef.current) return;
         const { scrollHeight, clientHeight, scrollTop } = scrollRef.current;
-
-        // Auto-scroll to bottom on initial load or if user is already near bottom
         if (isInitialLoad.current || scrollHeight - clientHeight - scrollTop < 300) {
             scrollRef.current.scrollTop = scrollHeight;
             isInitialLoad.current = false;
         }
     }, [messages]);
 
-    // Handle Input with Mentions
+    // Input handling with mentions
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const val = e.target.value;
         setNewMessage(val);
 
-        const lastChar = val.slice(-1);
-        const words = val.split(' ');
-        const lastWord = words[words.length - 1];
-
+        const lastWord = val.split(' ').pop() || '';
         if (lastWord.startsWith('@')) {
             setMentionTrigger('@');
             setMentionQuery(lastWord.slice(1));
@@ -386,7 +383,7 @@ const CommunityChat = () => {
 
     const insertMention = (item: any) => {
         const words = newMessage.split(' ');
-        words[words.length - 1] = mentionTrigger + (item.username || item.name) + ' ';
+        words[words.length - 1] = (mentionTrigger || '') + (item.username || item.name) + ' ';
         setNewMessage(words.join(' '));
         setMentionTrigger(null);
     };
@@ -397,7 +394,7 @@ const CommunityChat = () => {
 
         setSending(true);
         const content = newMessage.trim();
-        setNewMessage(''); // Optimistically clear
+        setNewMessage('');
 
         const { error } = await supabase.from('chat_messages').insert({
             user_id: user.id,
@@ -407,7 +404,7 @@ const CommunityChat = () => {
 
         if (error) {
             setNewMessage(content);
-            toast({ title: 'Send Failed', description: 'Message cached locally. Please retry.', variant: 'destructive' });
+            toast({ title: 'Send Failed', description: 'Message not sent. Please retry.', variant: 'destructive' });
         }
         setSending(false);
     };
@@ -419,16 +416,23 @@ const CommunityChat = () => {
         return format(date, 'MMM d, HH:mm');
     };
 
-    if (!session) return (
-        <Card className="h-[700px] flex flex-col items-center justify-center border-none shadow-2xl rounded-[40px] bg-white/50 backdrop-blur-3xl animate-in fade-in zoom-in-95 duration-500">
-            <div className="bg-primary/10 p-6 rounded-[32px] mb-8 shadow-inner"><MessageCircle className="h-16 w-16 text-primary" /></div>
-            <h3 className="text-2xl font-bold mb-3 tracking-tight">Join the Community</h3>
-            <p className="text-muted-foreground text-center mb-8 max-w-sm px-4">Sign in to chat and connect with others.</p>
-            <Button asChild size="lg" className="rounded-2xl px-12 h-14 text-lg font-bold shadow-xl">
-                <Link to="/auth">Sign In</Link>
-            </Button>
-        </Card>
-    );
+    const handleCreateRoom = async () => {
+        if (!newRoomName.trim() || !user) return;
+        const roomId = newRoomName.trim().toLowerCase().replace(/\s+/g, '-');
+        const { error } = await supabase.from('chat_rooms').insert({
+            id: roomId,
+            name: newRoomName.trim(),
+            room_type: 'public',
+        });
+        if (error) {
+            toast({ title: 'Error', description: 'Could not create room', variant: 'destructive' });
+        } else {
+            setNewRoomName('');
+            setCreateRoomOpen(false);
+            await handleJoinRoom(roomId);
+            fetchRooms();
+        }
+    };
 
     const handleCloseGuide = () => {
         setShowGuide(false);
@@ -454,24 +458,18 @@ const CommunityChat = () => {
         }
     };
 
-    const handleCreateRoom = async () => {
-        if (!newRoomName.trim() || !user) return;
-        const roomId = newRoomName.trim().toLowerCase().replace(/\s+/g, '-');
-        const { error } = await supabase.from('chat_rooms').insert({
-            id: roomId,
-            name: newRoomName.trim(),
-            room_type: 'public',
-        });
-        if (error) {
-            toast({ title: 'Error', description: 'Could not create room', variant: 'destructive' });
-        } else {
-            toast({ title: 'Room created', description: `Chat in #${newRoomName.trim()} is now live.` });
-            setNewRoomName('');
-            setCreateRoomOpen(false);
-            setActiveRoom(roomId);
-            fetchRooms();
-        }
-    };
+    if (!session) {
+        return (
+            <Card className="h-[700px] flex flex-col items-center justify-center border-none shadow-2xl rounded-[40px] bg-white/50 backdrop-blur-3xl animate-in fade-in zoom-in-95 duration-500">
+                <div className="bg-primary/10 p-6 rounded-[32px] mb-8 shadow-inner"><MessageCircle className="h-16 w-16 text-primary" /></div>
+                <h3 className="text-2xl font-bold mb-3 tracking-tight">Join the Community</h3>
+                <p className="text-muted-foreground text-center mb-8 max-w-sm px-4">Sign in to chat and connect with others.</p>
+                <Button asChild size="lg" className="rounded-2xl px-12 h-14 text-lg font-bold shadow-xl">
+                    <Link to="/auth">Sign In</Link>
+                </Button>
+            </Card>
+        );
+    }
 
     return (
         <div className="grid lg:grid-cols-12 gap-6 h-[800px] font-sans">
@@ -492,12 +490,11 @@ const CommunityChat = () => {
                     </div>
                 </CardHeader>
                 <CardContent className="flex-1 p-2 space-y-1">
-                    {/* Public Rooms */}
                     {!isPrivate ? (
                         rooms.map(room => (
                             <button
                                 key={room.id}
-                                onClick={() => { setActiveRoom(room.id); setSelectedPeer(null); setIsPrivate(false); }}
+                                onClick={() => handleJoinRoom(room.id)}
                                 className={cn(
                                     "w-full flex items-center gap-3 p-3.5 rounded-[20px] transition-all duration-300",
                                     activeRoom === room.id && !isPrivate
@@ -524,7 +521,7 @@ const CommunityChat = () => {
                             <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() => setIsPrivate(false)}
+                                onClick={() => { setIsPrivate(false); setActiveRoom(params.get('room') || 'general'); }}
                                 className="rounded-xl w-full text-[10px] font-bold"
                             >
                                 Back to Public Chat
@@ -606,19 +603,18 @@ const CommunityChat = () => {
                                         transition={{ type: "spring", damping: 20, stiffness: 100 }}
                                         id={`message-${message.id}`}
                                         className={cn(
-                                            "group flex gap-3 transition-all duration-500 mx-4 mb-6",
+                                            "group flex gap-3 transition-all duration-500 mb-6",
                                             isOwn ? "flex-row-reverse" : "flex-row",
-                                            isHighlighted && "bg-primary/5 -mx-10 px-10 py-4 border-y border-primary/10 shadow-inner"
+                                            isHighlighted && "bg-primary/5 -mx-6 px-6 py-4 border-y border-primary/10 shadow-inner"
                                         )}
                                     >
-                                        {/* Avatar Column */}
                                         <div className="w-10 shrink-0 mt-1">
                                             {showAvatar ? (
                                                 <div className="relative group">
                                                     <Avatar className="h-10 w-10 rounded-[16px] shadow-ios-soft border-2 border-white dark:border-white/10 ring-1 ring-black/5 transition-transform group-hover:scale-110 duration-300">
                                                         <AvatarImage src={message.profile?.avatar_url || ''} />
                                                         <AvatarFallback className="bg-slate-100 dark:bg-white/5 font-black text-[10px] text-primary">
-                                                            {message.profile?.full_name?.charAt(0) || 'C'}
+                                                            {message.profile?.full_name?.charAt(0) || '?'}
                                                         </AvatarFallback>
                                                     </Avatar>
                                                     <div className="absolute -bottom-1 -right-1 h-3.5 w-3.5 bg-green-500 border-2 border-white dark:border-[#1C1C1E] rounded-full" />
@@ -628,7 +624,6 @@ const CommunityChat = () => {
                                             )}
                                         </div>
 
-                                        {/* Content Column */}
                                         <div className={cn("flex-1 flex flex-col space-y-1", isOwn ? "items-end" : "items-start")}>
                                             {showAvatar && (
                                                 <div className={cn(
@@ -645,18 +640,15 @@ const CommunityChat = () => {
                                             )}
 
                                             <div className={cn(
-                                                "relative px-6 py-3 rounded-[22px] max-w-[85%] text-sm leading-relaxed shadow-ios-soft transition-all duration-300 group-hover:shadow-ios-low",
+                                                "relative px-4.5 py-3 rounded-[22px] max-w-[85%] text-sm leading-relaxed shadow-ios-soft transition-all duration-300 group-hover:shadow-ios-low",
                                                 isOwn
                                                     ? "bg-primary text-white rounded-tr-[4px] font-medium selection:bg-white/20 selection:text-white"
                                                     : "bg-slate-100 dark:bg-white/5 text-slate-800 dark:text-slate-200 rounded-tl-[4px] border border-white/50 dark:border-white/5"
                                             )}>
                                                 <p className="whitespace-pre-wrap break-words font-medium tracking-tight">{message.content}</p>
-
-                                                {/* Interaction Logging Component (Silent) */}
                                                 <InteractionLogger targetId={message.id} targetType="message" metadata={{ room_id: activeRoom }} />
                                             </div>
 
-                                            {/* Social Layer - Perfectly aligned with bubble edge */}
                                             <div className={cn("flex flex-col gap-1 w-full max-w-[85%] mt-1", isOwn ? "items-end" : "items-start")}>
                                                 <ChatReactions messageId={message.id} />
                                                 <ChatReplies messageId={message.id} room_id={activeRoom} />
@@ -698,7 +690,6 @@ const CommunityChat = () => {
 
             {/* Right Sidebar: Audits & Online */}
             <div className="hidden lg:flex lg:col-span-3 flex-col gap-6 h-full overflow-hidden">
-                {/* The Peoples Auditor - Active Audits */}
                 <Card className="flex flex-col flex-1 border-none shadow-ios-low rounded-[32px] overflow-hidden bg-primary/5 dark:bg-primary/10 backdrop-blur-xl border-l-4 border-primary/20 max-h-[400px]">
                     <CardHeader className="pb-4 pt-6">
                         <CardTitle className="text-sm font-bold uppercase tracking-[0.2em] text-primary flex items-center gap-2">
@@ -745,7 +736,6 @@ const CommunityChat = () => {
                     </CardContent>
                 </Card>
 
-                {/* Polls Tab */}
                 <Card className="flex flex-col flex-1 border-none shadow-ios-low rounded-[32px] overflow-hidden bg-white/60 dark:bg-black/20 backdrop-blur-xl relative">
                     <CardHeader className="p-6 border-b border-slate-100 dark:border-white/5 flex flex-row items-center justify-between">
                         <CardTitle className="text-sm font-bold uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2">
@@ -759,7 +749,6 @@ const CommunityChat = () => {
                     </CardContent>
                 </Card>
 
-                {/* Online Users Sidebar */}
                 <Card className="flex flex-col flex-1 border-none shadow-ios-low rounded-[32px] overflow-hidden bg-white/60 dark:bg-black/40 backdrop-blur-xl">
                     <CardHeader className="pb-4 pt-6">
                         <CardTitle className="text-sm font-bold uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2">
@@ -786,7 +775,7 @@ const CommunityChat = () => {
                                     <div className="relative">
                                         <Avatar className="h-10 w-10 rounded-[14px] shadow-sm border-2 border-white dark:border-black/40 ring-1 ring-slate-200/50">
                                             <AvatarImage src={u.avatar_url || undefined} />
-                                            <AvatarFallback className="text-[10px] bg-slate-100 font-bold">{u.full_name?.charAt(0) || 'C'}</AvatarFallback>
+                                            <AvatarFallback className="text-[10px] bg-slate-100 font-bold">{u.full_name?.charAt(0) || '?'}</AvatarFallback>
                                         </Avatar>
                                         <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-black ring-1 ring-black/10" />
                                     </div>
@@ -812,7 +801,7 @@ const CommunityChat = () => {
                 roomName={rooms.find(r => r.id === activeRoom)?.name || 'Chat'}
             />
 
-            {/* ── Create Room Dialog ──────────────────────────────────────── */}
+            {/* Create Room Dialog */}
             <Dialog open={createRoomOpen} onOpenChange={setCreateRoomOpen}>
                 <DialogContent className="sm:max-w-sm rounded-3xl">
                     <DialogHeader>
