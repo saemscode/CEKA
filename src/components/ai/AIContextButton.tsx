@@ -1,5 +1,5 @@
 import React from 'react';
-import { Sparkles } from 'lucide-react';
+import { SummaryIcon } from '@/components/ui/CustomIcons';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -36,7 +36,7 @@ const AIContextButton = ({ label, context, className, variant = 'premium', size 
                     className
                 )}
             >
-                <Sparkles className="h-4 w-4 animate-pulse" />
+                <SummaryIcon size={16} />
                 {label}
             </Button>
         );
@@ -49,7 +49,7 @@ const AIContextButton = ({ label, context, className, variant = 'premium', size 
             onClick={handleClick}
             className={cn("gap-2 font-bold", className)}
         >
-            <Sparkles className="h-4 w-4" />
+            <SummaryIcon size={16} />
             {label}
         </Button>
     );

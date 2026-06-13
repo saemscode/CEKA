@@ -26,6 +26,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { BillFollowButton } from '@/components/legislative/BillFollowButton';
 import { CEKALoader } from '@/components/ui/ceka-loader';
 import FeaturedLegislationCarousel from '@/components/legislative/FeaturedLegislationCarousel';
+import { Deep2Icon } from '@/components/ui/CustomIcons';
 import AIContextButton from '@/components/ai/AIContextButton';
 import { motion, AnimatePresence } from 'framer-motion';
 import { billService, getBillIdentifier } from '@/services/billService';
@@ -945,7 +946,8 @@ const LegislativeTracker = () => {
                                         className="h-full px-5 rounded-none text-xs font-black uppercase tracking-widest text-kenya-green hover:bg-kenya-green/5 transition-colors"
                                       >
                                         <Link to={`/bill/${getBillIdentifier(bill)}`}>
-                                          Deep ↗
+                                          <Deep2Icon size={16} />
+                                          Deep
                                         </Link>
                                       </Button>
                                     </div>

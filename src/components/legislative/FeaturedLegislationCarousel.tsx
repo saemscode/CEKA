@@ -6,7 +6,7 @@ import { Link } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { TrendingUp, ArrowRight, ChevronLeft, ChevronRight, Sparkles } from 'lucide-react';
+import { TrendingUp, ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { BillFollowButton } from './BillFollowButton';
 import { getBillIdentifier } from '@/services/billService';
@@ -129,7 +129,7 @@ const FeaturedLegislationCarousel: React.FC<FeaturedLegislationCarouselProps> = 
                         variant="outline"
                         size="icon"
                         onClick={scrollPrev}
-                        className="h-9 w-9 rounded-xl border-slate-200 dark:border-white/10 hover:bg-kenya-green/10 hover:border-kenya-green/30 transition-all"
+                        className="h-9 w-9 rounded-xl border-slate-200 dark:border-white/10 hover:bg-kenya-green/10 hover:border-kenya-green/30 transition-all font-bold"
                     >
                         <ChevronLeft className="h-4 w-4" />
                     </Button>
@@ -137,7 +137,7 @@ const FeaturedLegislationCarousel: React.FC<FeaturedLegislationCarouselProps> = 
                         variant="outline"
                         size="icon"
                         onClick={scrollNext}
-                        className="h-9 w-9 rounded-xl border-slate-200 dark:border-white/10 hover:bg-kenya-green/10 hover:border-kenya-green/30 transition-all"
+                        className="h-9 w-9 rounded-xl border-slate-200 dark:border-white/10 hover:bg-kenya-green/10 hover:border-kenya-green/30 transition-all font-bold"
                     >
                         <ChevronRight className="h-4 w-4" />
                     </Button>

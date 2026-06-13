@@ -7,6 +7,7 @@ import { useAuth } from '@/providers/AuthProvider';
 import { useToast } from '@/components/ui/use-toast';
 import { cn } from '@/lib/utils';
 import { useAuthModalStore } from '@/stores/useAuthModalStore';
+import { FollowButton2Icon, FollowedIcon } from '@/components/ui/CustomIcons';
 
 interface BillFollowButtonProps {
   billId: string;
@@ -88,27 +89,14 @@ export function BillFollowButton({
         {/* 2. Hidden on mobile (xs:hidden) for [Follow Only] */}
         {/* 3. Re-appears on ultra-thin defaults (flex) for [Icon Only] */}
         <div className={cn(
-          "relative shrink-0 transition-transform flex xs:hidden sm:flex",
+          "relative shrink-0 transition-transform flex items-center justify-center",
           isFollowing && "scale-110"
         )}>
-          <div 
-            className={cn(
-              "h-4 w-4 transition-all duration-300",
-              isFollowing ? "bg-kenya-green drop-shadow-sm" : "bg-slate-900 dark:bg-white"
-            )}
-            style={{
-              maskImage: `url("${isFollowing ? '/context/icons 6/followed.svg' : '/context/icons 6/follow-button2.svg'}")`,
-              WebkitMaskImage: `url("${isFollowing ? '/context/icons 6/followed.svg' : '/context/icons 6/follow-button2.svg'}")`,
-              maskSize: "contain",
-              WebkitMaskSize: "contain",
-              maskRepeat: "no-repeat",
-              WebkitMaskRepeat: "no-repeat",
-              maskPosition: "center",
-              WebkitMaskPosition: "center"
-            }}
-            role="img"
-            aria-label={isFollowing ? "Following" : "Follow"}
-          />
+          {isFollowing ? (
+            <FollowedIcon size={16} className="text-white drop-shadow-sm" />
+          ) : (
+            <FollowButton2Icon size={16} className="text-slate-900 dark:text-white" />
+          )}
         </div>
 
         {/* The Cascading Label Container */}

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Calendar, ChevronRight, EyeIcon, Users, Tag, Clock, Share2 } from 'lucide-react';
+import { Calendar } from 'lucide-react';
 import { motion, Variants } from 'framer-motion';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -9,6 +9,15 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { translate, cn } from '@/lib/utils';
 import { billService, Bill, getBillIdentifier } from '@/services/billService';
 import { CEKACardSkeleton } from '@/components/ui/ceka-loader';
+import { BillFollowButton } from '@/components/legislative/BillFollowButton';
+import { 
+  EyeIcon, 
+  TagIcon, 
+  CalendarIcon, 
+  UsersIcon, 
+  ClockIcon, 
+  ChevronRightIcon 
+} from '@/components/ui/CustomIcons';
 
 // Status color mapping
 const getStatusColor = (status: string) => {
@@ -143,7 +152,7 @@ const FeaturedLegislation = () => {
           <Link to="/legislative-tracker">
             <Button variant="outline" className="rounded-full border-black/10 dark:border-white/10 hover:bg-kenya-green hover:text-white hover:border-kenya-green transition-all duration-300 px-6 font-bold group">
               {translate('View all legislation', language)}
-              <ChevronRight className="h-4 w-4 ml-2 group-hover:translate-x-1 transition-transform" />
+              <ChevronRightIcon className="h-4 w-4 ml-2 group-hover:translate-x-1 transition-transform" />
             </Button>
           </Link>
         </div>
@@ -168,7 +177,7 @@ const FeaturedLegislation = () => {
                       {translate(bill.status, language)}
                     </Badge>
                     <div className="flex items-center gap-1.5 text-slate-400 dark:text-slate-500 text-[11px] font-bold">
-                      <Clock className="h-3.5 w-3.5" />
+                      <ClockIcon className="h-3.5 w-3.5" />
                       {getTimeRemaining(bill.date)}
                     </div>
                   </div>
@@ -186,14 +195,14 @@ const FeaturedLegislation = () => {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="p-3 rounded-2xl bg-slate-50 dark:bg-white/5 border border-black/5 dark:border-white/5">
                       <div className="flex items-center gap-2 mb-1">
-                        <Tag className="h-3.5 w-3.5 text-kenya-green" />
+                        <TagIcon className="h-3.5 w-3.5 text-kenya-green" />
                         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Sector</span>
                       </div>
                       <p className="text-xs font-bold truncate text-slate-700 dark:text-slate-300">{bill.category}</p>
                     </div>
                     <div className="p-3 rounded-2xl bg-slate-50 dark:bg-white/5 border border-black/5 dark:border-white/5">
                       <div className="flex items-center gap-2 mb-1">
-                        <Calendar className="h-3.5 w-3.5 text-kenya-red" />
+                        <CalendarIcon className="h-3.5 w-3.5 text-kenya-red" />
                         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Date</span>
                       </div>
                       <p className="text-xs font-bold truncate text-slate-700 dark:text-slate-300">
@@ -205,7 +214,7 @@ const FeaturedLegislation = () => {
                     </div>
                     <div className="col-span-2 p-3 rounded-2xl bg-slate-50 dark:bg-white/5 border border-black/5 dark:border-white/5">
                       <div className="flex items-center gap-2 mb-1">
-                        <Users className="h-3.5 w-3.5 text-kenya-green" />
+                        <UsersIcon className="h-3.5 w-3.5 text-kenya-green" />
                         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Sponsorship</span>
                       </div>
                       <p className="text-xs font-bold truncate text-slate-700 dark:text-slate-300">
@@ -217,13 +226,18 @@ const FeaturedLegislation = () => {
                 <CardFooter className="pt-2 pb-6 flex gap-3 mt-auto">
                   <Button asChild className="flex-1 rounded-2xl h-11 bg-kenya-green hover:bg-kenya-green/90 text-white font-bold shadow-lg shadow-kenya-green/20 group/btn">
                     <Link to={`/bill/${getBillIdentifier(bill)}#memoranda`} className="flex items-center justify-center">
-                      <EyeIcon className="h-4 w-4 mr-2 group-hover/btn:scale-110 transition-transform" />
-                      {translate('View Details', language)}
+                      <span className="mr-2 text-white font-bold">{translate('Track This Bill', language)}</span>
+                      <EyeIcon size={18} className="text-white group-hover/btn:scale-110 transition-transform" />
                     </Link>
                   </Button>
-                  <Button variant="outline" size="icon" className="h-11 w-11 rounded-2xl border-black/10 dark:border-white/10 hover:bg-slate-100 dark:hover:bg-white/10 transition-colors">
-                    <Share2 className="h-4 w-4" />
-                  </Button>
+                  
+                  <BillFollowButton 
+                    billId={bill.id} 
+                    billTitle={bill.title}
+                    showCount={true}
+                    size="lg"
+                    className="h-11 w-11 rounded-2xl"
+                  />
                 </CardFooter>
 
                 {/* Subtle Gradient Shine */}
