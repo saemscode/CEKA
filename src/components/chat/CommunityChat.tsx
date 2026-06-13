@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/componen
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
-import { Send, MessageCircle, Users, Hash, Shield, Search, MoreVertical, Paperclip, ChevronLeft, Radio } from 'lucide-react';
+import { Send, MessageCircle, Users, Hash, Shield, Search, MoreVertical, Paperclip, ChevronLeft, Radio, Plus } from 'lucide-react';
 import { format, isToday, isYesterday } from 'date-fns';
 import { useToast } from '@/components/ui/use-toast';
 import { Link, useSearchParams } from 'react-router-dom';
@@ -19,6 +19,15 @@ import SidebarPolls from './SidebarPolls';
 import { InteractionLogger } from './InteractionLogger';
 import { MentionSuggestions } from './MentionSuggestions';
 import { PromptInputBox } from './PromptInputBox';
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogFooter,
+    DialogClose,
+} from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import {
     Empty,
@@ -56,10 +65,10 @@ const PAGE_SIZE = 30;
 const CommunityChat = () => {
     const { session, user } = useAuth();
     const { toast } = useToast();
-    const [params] = useSearchParams();
+    const [params, setSearchParams] = useSearchParams();
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [rooms, setRooms] = useState<Room[]>([]);
-    const [activeRoom, setActiveRoom] = useState<string>(params.get('room') || 'voter-hub');
+    const [activeRoom, setActiveRoom] = useState<string>('');
     const [newMessage, setNewMessage] = useState('');
     const [loading, setLoading] = useState(true);
     const [loadingOlder, setLoadingOlder] = useState(false);
@@ -75,6 +84,8 @@ const CommunityChat = () => {
     const [activeAudits, setActiveAudits] = useState<any[]>([]);
     const [showGuide, setShowGuide] = useState(false);
     const [hasSeenGuide, setHasSeenGuide] = useState<Record<string, boolean>>({});
+    const [createRoomOpen, setCreateRoomOpen] = useState(false);
+    const [newRoomName, setNewRoomName] = useState('');
 
     const scrollRef = useRef<HTMLDivElement>(null);
     const topSentinelRef = useRef<HTMLDivElement>(null);
@@ -83,15 +94,15 @@ const CommunityChat = () => {
     // Fetch dynamic rooms from sovereign table
     const fetchRooms = useCallback(async () => {
         const { data, error } = await supabase
-            .from('public_rooms')
+            .from('chat_rooms')
             .select('*')
-            .eq('is_active', true);
+            .order('created_at', { ascending: false });
 
         if (!error && data) {
             setRooms(data.map((r: any) => ({
                 id: r.id,
                 name: r.name,
-                type: 'public'
+                type: r.room_type || 'public'
             })));
         }
     }, []);
@@ -101,12 +112,12 @@ const CommunityChat = () => {
         const { data, error } = await supabase
             .from('peoples_audits' as any)
             .select(`
-                id,
-                bill_id,
-                bills(title),
-                votes_for,
-                votes_against
-            `)
+        id,
+        bill_id,
+        bills(title),
+        votes_for,
+        votes_against
+      `)
             .limit(2);
 
         if (!error && data) {
@@ -207,7 +218,7 @@ const CommunityChat = () => {
             targetRoom = `vault:${ids[0]}:${ids[1]}`;
             setActiveRoom(targetRoom);
         } else {
-            targetRoom = params.get('room') || 'voter-hub';
+            targetRoom = params.get('room') || 'general';
             if (activeRoom !== targetRoom) {
                 setActiveRoom(targetRoom);
                 // Only show guide if the user hasn't seen it for this room in this session
@@ -269,7 +280,10 @@ const CommunityChat = () => {
                     .eq('id', payload.new.user_id)
                     .single();
 
-                const msgWithProfile = { ...payload.new, profile } as any;
+                const msgWithProfile: ChatMessage = {
+                    ...(payload.new as unknown as ChatMessage),
+                    profile
+                };
                 setMessages(prev => {
                     if (prev.find(m => m.id === msgWithProfile.id)) return prev;
                     return [...prev, msgWithProfile];
@@ -408,10 +422,10 @@ const CommunityChat = () => {
     if (!session) return (
         <Card className="h-[700px] flex flex-col items-center justify-center border-none shadow-2xl rounded-[40px] bg-white/50 backdrop-blur-3xl animate-in fade-in zoom-in-95 duration-500">
             <div className="bg-primary/10 p-6 rounded-[32px] mb-8 shadow-inner"><MessageCircle className="h-16 w-16 text-primary" /></div>
-            <h3 className="text-2xl font-bold mb-3 tracking-tight">Active Citizenship Starts Here</h3>
-            <p className="text-muted-foreground text-center mb-8 max-w-sm px-4">Sign in to join the conversation and contribute to Kenya's civic journey.</p>
+            <h3 className="text-2xl font-bold mb-3 tracking-tight">Join the Community</h3>
+            <p className="text-muted-foreground text-center mb-8 max-w-sm px-4">Sign in to chat and connect with others.</p>
             <Button asChild size="lg" className="rounded-2xl px-12 h-14 text-lg font-bold shadow-xl">
-                <Link to="/auth">Authenticate with CEKA</Link>
+                <Link to="/auth">Sign In</Link>
             </Button>
         </Card>
     );
@@ -440,16 +454,42 @@ const CommunityChat = () => {
         }
     };
 
+    const handleCreateRoom = async () => {
+        if (!newRoomName.trim() || !user) return;
+        const roomId = newRoomName.trim().toLowerCase().replace(/\s+/g, '-');
+        const { error } = await supabase.from('chat_rooms').insert({
+            id: roomId,
+            name: newRoomName.trim(),
+            room_type: 'public',
+        });
+        if (error) {
+            toast({ title: 'Error', description: 'Could not create room', variant: 'destructive' });
+        } else {
+            toast({ title: 'Room created', description: `Chat in #${newRoomName.trim()} is now live.` });
+            setNewRoomName('');
+            setCreateRoomOpen(false);
+            setActiveRoom(roomId);
+            fetchRooms();
+        }
+    };
+
     return (
         <div className="grid lg:grid-cols-12 gap-6 h-[800px] font-sans">
 
             {/* Sidebar (Rooms) */}
             <Card className="lg:col-span-3 flex flex-col border-none shadow-ios-low rounded-[32px] overflow-hidden bg-white/60 dark:bg-black/40 backdrop-blur-xl">
                 <CardHeader className="pb-4 pt-6">
-                    <CardTitle className="text-sm font-bold uppercase tracking-[0.2em] text-muted-foreground flex items-center justify-between">
-                        Rooms
-                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full"><Search className="h-4 w-4" /></Button>
-                    </CardTitle>
+                    <div className="flex items-center justify-between">
+                        <CardTitle className="text-sm font-bold uppercase tracking-[0.2em] text-muted-foreground">
+                            Rooms
+                        </CardTitle>
+                        <div className="flex items-center gap-1">
+                            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={() => setCreateRoomOpen(true)}>
+                                <Plus className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full"><Search className="h-4 w-4" /></Button>
+                        </div>
+                    </div>
                 </CardHeader>
                 <CardContent className="flex-1 p-2 space-y-1">
                     {/* Public Rooms */}
@@ -473,21 +513,21 @@ const CommunityChat = () => {
                                 </div>
                                 <div className="flex-1 text-left">
                                     <p className="text-sm font-bold truncate">{room.name}</p>
-                                    <p className={cn("text-[10px]", activeRoom === room.id && !isPrivate ? "text-white/60" : "text-muted-foreground")}>Public Assembly</p>
+                                    <p className={cn("text-[10px]", activeRoom === room.id && !isPrivate ? "text-white/60" : "text-muted-foreground")}>Public Room</p>
                                 </div>
                             </button>
                         ))
                     ) : (
                         <div className="p-4 text-center space-y-4">
                             <Shield className="h-10 w-10 text-primary mx-auto opacity-20" />
-                            <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Secure Active Storage</p>
+                            <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Private Chat</p>
                             <Button
                                 variant="outline"
                                 size="sm"
                                 onClick={() => setIsPrivate(false)}
                                 className="rounded-xl w-full text-[10px] font-bold"
                             >
-                                Exit to Community Chat
+                                Back to Public Chat
                             </Button>
                         </div>
                     )}
@@ -507,14 +547,14 @@ const CommunityChat = () => {
                         </div>
                         <div>
                             <h2 className="font-bold text-lg leading-tight">
-                                {isPrivate ? `Direct: ${selectedPeer?.full_name || 'Citizen'}` : (rooms.find(r => r.id === activeRoom)?.name || 'Assembly')}
+                                {isPrivate ? `Private: ${selectedPeer?.full_name || 'Citizen'}` : (rooms.find(r => r.id === activeRoom)?.name || 'Chat')}
                             </h2>
                             <p className={cn(
                                 "text-[10px] font-bold uppercase tracking-widest flex items-center gap-1.5",
                                 isPrivate ? "text-amber-500" : "text-green-500"
                             )}>
                                 <span className={cn("w-1.5 h-1.5 rounded-full animate-pulse", isPrivate ? "bg-amber-500" : "bg-green-500")} />
-                                {isPrivate ? 'E2E Cloud Encrypted' : `${onlineUsers.length} active now`}
+                                {isPrivate ? 'Private & Secure' : `${onlineUsers.length} online`}
                             </p>
                         </div>
                     </div>
@@ -539,15 +579,14 @@ const CommunityChat = () => {
                                     <EmptyMedia variant="icon" className="bg-primary/10">
                                         <Hash className="h-8 w-8 text-primary" />
                                     </EmptyMedia>
-                                    <EmptyTitle>The Floor is Yours</EmptyTitle>
+                                    <EmptyTitle>Start the conversation</EmptyTitle>
                                     <EmptyDescription>
-                                        Initiate the discourse in {rooms.find(r => r.id === activeRoom)?.name}.
-                                        Your voice is the heartbeat of the assembly.
+                                        Be the first to talk in {rooms.find(r => r.id === activeRoom)?.name}.
                                     </EmptyDescription>
                                 </EmptyHeader>
                                 <EmptyContent>
                                     <Button onClick={() => (document.querySelector('input') as any)?.focus()} variant="outline" className="rounded-2xl">
-                                        Open Floor
+                                        Write a message
                                     </Button>
                                 </EmptyContent>
                             </Empty>
@@ -597,7 +636,7 @@ const CommunityChat = () => {
                                                     isOwn ? "flex-row-reverse" : "flex-row"
                                                 )}>
                                                     <span className="text-[11px] font-black text-slate-900 dark:text-slate-100 uppercase tracking-widest opacity-80">
-                                                        {message.profile?.full_name || 'Anonymous Citizen'}
+                                                        {message.profile?.full_name || 'Anonymous'}
                                                     </span>
                                                     <span className="text-[9px] text-muted-foreground/50 font-black uppercase tracking-tighter">
                                                         {formatMessageDate(message.created_at)}
@@ -647,11 +686,11 @@ const CommunityChat = () => {
                         <PromptInputBox
                             onSend={handleSendMessage}
                             isLoading={sending}
-                            placeholder={`Message ${rooms.find(r => r.id === activeRoom)?.name || 'the Assembly'}...`}
+                            placeholder={`Message ${rooms.find(r => r.id === activeRoom)?.name || 'the chat'}...`}
                             disabled={!user}
                         />
                         <p className="mt-3 text-[10px] text-center text-muted-foreground/50 font-medium uppercase tracking-[0.15em]">
-                            Authorized conversation • End-to-end synchronized
+                            Messages are synced in real‑time
                         </p>
                     </div>
                 </CardFooter>
@@ -664,7 +703,7 @@ const CommunityChat = () => {
                     <CardHeader className="pb-4 pt-6">
                         <CardTitle className="text-sm font-bold uppercase tracking-[0.2em] text-primary flex items-center gap-2">
                             <Radio className="h-4 w-4 animate-pulse" />
-                            Active Audits
+                            Live Votes
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="flex-1 p-4 space-y-4 overflow-y-auto">
@@ -674,7 +713,7 @@ const CommunityChat = () => {
                                     <p className="text-xs font-bold leading-tight">{audit.bills?.title}</p>
                                     <div className="space-y-2">
                                         <div className="flex justify-between text-[8px] font-black uppercase tracking-widest text-muted-foreground mb-1">
-                                            <span>Sovereign Will</span>
+                                            <span>Public Opinion</span>
                                             <span>{Math.round((audit.votes_against / ((audit.votes_for + audit.votes_against) || 1)) * 100)}% Rejection</span>
                                         </div>
                                         <div className="h-1.5 w-full bg-slate-200 dark:bg-white/10 rounded-full overflow-hidden flex">
@@ -689,7 +728,7 @@ const CommunityChat = () => {
                                         </div>
                                         <div className="flex gap-2">
                                             <Button size="sm" variant="outline" className="flex-1 rounded-xl text-[9px] font-bold h-7 border-slate-200">
-                                                Audit Deep Dive
+                                                View Details
                                             </Button>
                                         </div>
                                     </div>
@@ -697,11 +736,11 @@ const CommunityChat = () => {
                             ))
                         ) : (
                             <div className="p-4 rounded-2xl bg-white/40 dark:bg-black/20 text-center py-8">
-                                <p className="text-[10px] font-bold text-muted-foreground">Monitoring legislative perimeter...</p>
+                                <p className="text-[10px] font-bold text-muted-foreground">No live polls</p>
                             </div>
                         )}
                         <Button variant="ghost" asChild className="w-full rounded-xl h-10 text-[10px] font-bold uppercase tracking-widest text-primary hover:bg-primary/10">
-                            <Link to="/audit">View All Audits</Link>
+                            <Link to="/audit">View All</Link>
                         </Button>
                     </CardContent>
                 </Card>
@@ -731,7 +770,7 @@ const CommunityChat = () => {
                         {onlineUsers.length === 0 ? (
                             <div className="flex-1 flex flex-col min-w-0 max-h-screen relative">
                                 <div className="flex flex-col items-center justify-center h-40">
-                                    <CEKALoader variant="scanning" size="md" text="Synchronizing Intelligence..." />
+                                    <CEKALoader variant="scanning" size="md" text="Loading..." />
                                 </div>
                             </div>
                         ) : (
@@ -753,7 +792,7 @@ const CommunityChat = () => {
                                     </div>
                                     <div className="flex-1 text-left">
                                         <p className="text-sm font-bold truncate group-hover:text-primary transition-colors">{u.full_name || 'Anonymous'}</p>
-                                        <p className="text-[10px] text-muted-foreground/60 font-medium">Citizen Online</p>
+                                        <p className="text-[10px] text-muted-foreground/60 font-medium">Online</p>
                                     </div>
                                 </button>
                             ))
@@ -761,16 +800,43 @@ const CommunityChat = () => {
                     </CardContent>
                     <div className="p-6 border-t border-slate-100 dark:border-white/5">
                         <Button variant="outline" className="w-full rounded-2xl h-11 text-xs font-bold uppercase tracking-widest gap-2">
-                            <Shield className="h-3.5 w-3.5" /> Direct Messages
+                            <Shield className="h-3.5 w-3.5" /> Private Chat
                         </Button>
                     </div>
                 </Card>
             </div>
+
             <JoinRoomGuide
                 isOpen={showGuide}
                 onClose={handleCloseGuide}
-                roomName={rooms.find(r => r.id === activeRoom)?.name || 'Assembly'}
+                roomName={rooms.find(r => r.id === activeRoom)?.name || 'Chat'}
             />
+
+            {/* ── Create Room Dialog ──────────────────────────────────────── */}
+            <Dialog open={createRoomOpen} onOpenChange={setCreateRoomOpen}>
+                <DialogContent className="sm:max-w-sm rounded-3xl">
+                    <DialogHeader>
+                        <DialogTitle>New Room</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4 py-2">
+                        <Label htmlFor="new-room-name">Name</Label>
+                        <Input
+                            id="new-room-name"
+                            value={newRoomName}
+                            onChange={e => setNewRoomName(e.target.value)}
+                            placeholder="e.g. Finance Bill 2026"
+                        />
+                    </div>
+                    <DialogFooter>
+                        <DialogClose asChild>
+                            <Button variant="ghost">Cancel</Button>
+                        </DialogClose>
+                        <Button onClick={handleCreateRoom} disabled={!newRoomName.trim()}>
+                            Create Room
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 };

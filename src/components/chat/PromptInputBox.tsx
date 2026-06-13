@@ -119,7 +119,7 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
     const uploadInputRef = useRef<HTMLInputElement>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-    const defaultPlaceholder = translate('Type your message...', language);
+    const defaultPlaceholder = translate('Type a message...', language);
 
     const isImageFile = (file: File) => file.type.startsWith('image/');
 
@@ -317,7 +317,7 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
                     <Paperclip className="h-4 w-4" />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent side="top">{translate('Attach image', language)}</TooltipContent>
+                <TooltipContent side="top">Add image</TooltipContent>
               </Tooltip>
 
               <input
@@ -349,7 +349,7 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
                     <Globe className="h-4 w-4" />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent side="top">{translate('Web search', language)}</TooltipContent>
+                <TooltipContent side="top">Search web</TooltipContent>
               </Tooltip>
 
               {/* Voice Recording Toggle */}
@@ -374,7 +374,7 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent side="top">
-                  {isRecording ? translate('Stop recording', language) : translate('Voice message', language)}
+                  {isRecording ? 'Stop recording' : 'Record voice'}
                 </TooltipContent>
               </Tooltip>
             </div>
@@ -401,14 +401,14 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
                   )}
                 </Button>
               </TooltipTrigger>
-              <TooltipContent side="top">{translate('Send message', language)}</TooltipContent>
+              <TooltipContent side="top">Send</TooltipContent>
             </Tooltip>
           </div>
 
           {/* Image Preview Dialog */}
           <Dialog open={!!selectedImage} onOpenChange={() => setSelectedImage(null)}>
             <DialogContent className="max-w-[90vw] md:max-w-[800px] p-0 border-none bg-transparent">
-              <DialogTitle className="sr-only">{translate('Image Preview', language)}</DialogTitle>
+              <DialogTitle className="sr-only">Image Preview</DialogTitle>
               {selectedImage && (
                 <motion.div
                   initial={{ opacity: 0, scale: 0.95 }}

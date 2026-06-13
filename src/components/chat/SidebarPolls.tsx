@@ -106,7 +106,7 @@ const SidebarPolls = () => {
         if (!user) {
             toast({
                 title: 'Authentication Required',
-                description: 'You must be a verified citizen to influence the audit.',
+                description: 'Sign in to participate in polls.',
                 variant: 'destructive'
             });
             return;
@@ -126,13 +126,13 @@ const SidebarPolls = () => {
 
             toast({
                 title: 'Vote Cast',
-                description: 'Your voice has been synchronized with the collective will.',
+                description: 'Your voice has been counted.',
             });
 
             fetchActivePolls();
         } catch (err: any) {
             toast({
-                title: 'Synchronization Error',
+                title: 'Error',
                 description: err.message,
                 variant: 'destructive'
             });
@@ -144,7 +144,7 @@ const SidebarPolls = () => {
     if (loading) {
         return (
             <div className="flex flex-col items-center justify-center py-10">
-                <CEKALoader variant="ios" size="sm" text="Syncing Pulse..." />
+                <CEKALoader variant="ios" size="sm" text="Loading..." />
             </div>
         );
     }
@@ -153,8 +153,8 @@ const SidebarPolls = () => {
         return (
             <div className="p-4 rounded-2xl bg-white/40 dark:bg-black/20 text-center py-8">
                 <Award className="h-8 w-8 mx-auto mb-2 text-muted-foreground opacity-20" />
-                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">No Active Audits</p>
-                <p className="text-[9px] text-muted-foreground/60 mt-1">The floor is settled.</p>
+                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">No live polls</p>
+                <p className="text-[9px] text-muted-foreground/60 mt-1">Check back later.</p>
             </div>
         );
     }
@@ -221,10 +221,10 @@ const SidebarPolls = () => {
                     </div>
 
                     <div className="flex justify-between items-center text-[8px] font-black uppercase tracking-widest text-muted-foreground/60 border-t border-slate-100 dark:border-white/5 pt-3">
-                        <span>{poll.total_votes} Total Audits</span>
+                        <span>{poll.total_votes} Votes</span>
                         {poll.user_voted_option_id && (
                             <span className="text-kenya-green flex items-center gap-1">
-                                <Shield className="h-2 w-2" /> Verified Participation
+                                <Shield className="h-2 w-2" /> Voted
                             </span>
                         )}
                     </div>

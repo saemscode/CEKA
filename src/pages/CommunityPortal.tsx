@@ -205,7 +205,7 @@ const CommunityPortal = () => {
   if (loading) return (
     <Layout>
       <div className="container py-24 flex flex-col items-center justify-center min-h-[60vh]">
-        <CEKALoader variant="scanning" size="lg" text="Synchronizing Sovereign Pulse..." />
+        <CEKALoader variant="scanning" size="lg" text="Loading community..." />
       </div>
     </Layout>
   );
@@ -216,7 +216,7 @@ const CommunityPortal = () => {
         <div className="max-w-4xl mx-auto mb-12">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
             <h1 className="text-4xl md:text-5xl font-black mb-4 tracking-tighter text-slate-900 dark:text-white">
-              Sovereign <span className="text-primary">Assembly</span>
+              Community <span className="text-primary">Hub</span>
             </h1>
             <p className="text-xl text-slate-600 dark:text-slate-400 font-medium leading-relaxed">
               {translate('Join the heartbeat of Kenyan civic participation. Real-time updates, policy tracker, and community voices as we move towards 2027.', language)}
@@ -229,10 +229,10 @@ const CommunityPortal = () => {
             <div className="overflow-x-auto no-scrollbar pb-4 -mx-4 px-4 sm:mx-0 sm:px-0">
               <TabsList className="bg-slate-100 dark:bg-white/5 p-1.5 rounded-[24px] inline-flex h-14 shadow-inner min-w-max sm:min-w-0">
                 <TabsTrigger value="chat" className="rounded-2xl px-6 sm:px-8 h-full data-[state=active]:bg-white dark:data-[state=active]:bg-[#1C1C1E] data-[state=active]:shadow-lg gap-2 font-bold whitespace-nowrap">
-                  <MessageCircle className="h-4 w-4" /> CEKA Chat
+                  <MessageCircle className="h-4 w-4" /> Chat
                 </TabsTrigger>
                 <TabsTrigger value="discussions" className="rounded-2xl px-6 sm:px-8 h-full data-[state=active]:bg-white dark:data-[state=active]:bg-[#1C1C1E] data-[state=active]:shadow-lg font-bold whitespace-nowrap">
-                  CEKA Threads
+                  Discussions
                 </TabsTrigger>
                 <TabsTrigger value="campaigns" className="rounded-2xl px-6 sm:px-8 h-full data-[state=active]:bg-white dark:data-[state=active]:bg-[#1C1C1E] data-[state=active]:shadow-lg font-bold whitespace-nowrap">
                   {translate('Campaigns', language)}
@@ -248,7 +248,7 @@ const CommunityPortal = () => {
               {/* Live Stats */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {[
-                  { label: 'Total Threads', val: analytics.totalDiscussions, icon: MessageSquare, color: 'text-primary' },
+                  { label: 'Total Discussions', val: analytics.totalDiscussions, icon: MessageSquare, color: 'text-primary' },
                   { label: 'Citizens', val: analytics.activeUsers, icon: Users, color: 'text-kenya-green' },
                   { label: 'Live Actions', val: analytics.todayActivity, icon: Zap, color: 'text-gold' }
                 ].map((stat) => (
@@ -273,7 +273,7 @@ const CommunityPortal = () => {
                   <Input
                     id="portal-search"
                     name="q"
-                    placeholder={translate("Query threads or documents...", language)}
+                    placeholder={translate("Search discussions or documents...", language)}
                     className="h-14 pl-12 pr-6 rounded-2xl bg-white dark:bg-black/40 border-none shadow-sm text-base"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
@@ -317,7 +317,7 @@ const CommunityPortal = () => {
                       </DialogHeader>
                       <div className="space-y-4 py-4">
                         <div className="space-y-2">
-                          <Label htmlFor="thread-title" className="font-bold text-xs">Thread Title *</Label>
+                          <Label htmlFor="thread-title" className="font-bold text-xs">Title *</Label>
                           <Input
                             id="thread-title"
                             value={newThread.title}
@@ -332,7 +332,7 @@ const CommunityPortal = () => {
                             id="thread-desc"
                             value={newThread.description}
                             onChange={(e) => setNewThread(prev => ({ ...prev, description: e.target.value }))}
-                            placeholder="Provide context for the discussion..."
+                            placeholder="Provide context..."
                             className="rounded-xl min-h-[80px]"
                           />
                         </div>
@@ -357,7 +357,7 @@ const CommunityPortal = () => {
                           disabled={creatingThread}
                           className="rounded-xl bg-primary hover:bg-primary/90 font-bold"
                         >
-                          {creatingThread ? 'Creating...' : 'Create Thread'}
+                          {creatingThread ? 'Creating...' : 'Create Discussion'}
                         </Button>
                       </DialogFooter>
                     </DialogContent>
@@ -373,12 +373,12 @@ const CommunityPortal = () => {
                       <EmptyMedia variant="icon" className="bg-primary/10">
                         <MessageSquare className="h-8 w-8 text-primary" />
                       </EmptyMedia>
-                      <EmptyTitle>{translate('Quiet in the assembly.', language)}</EmptyTitle>
-                      <EmptyDescription>{translate('Be the first to ignite the discourse for the 2027 engine.', language)}</EmptyDescription>
+                      <EmptyTitle>Quiet in the discussions.</EmptyTitle>
+                      <EmptyDescription>Be the first to start a conversation.</EmptyDescription>
                     </EmptyHeader>
                     <EmptyContent>
                       <Button onClick={() => setThreadDialogOpen(true)} variant="outline" className="rounded-2xl border-primary/20">
-                        <Plus className="mr-2 h-4 w-4" /> {translate('Start Discussion', language)}
+                        <Plus className="mr-2 h-4 w-4" /> Start Discussion
                       </Button>
                     </EmptyContent>
                   </Empty>
@@ -392,7 +392,7 @@ const CommunityPortal = () => {
                             <AvatarFallback className="bg-slate-100 font-bold">{discussion.profile?.full_name?.charAt(0)}</AvatarFallback>
                           </Avatar>
                           <div>
-                            <p className="font-bold text-sm">{discussion.profile?.full_name || 'Anonymous Citizen'}</p>
+                            <p className="font-bold text-sm">{discussion.profile?.full_name || 'Anonymous'}</p>
                             <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">
                               Sync: {new Date(discussion.last_activity_at || discussion.created_at).toLocaleDateString()}
                             </p>
@@ -411,7 +411,7 @@ const CommunityPortal = () => {
                           </h3>
                         </Link>
                         <p className="text-muted-foreground text-sm line-clamp-2 leading-relaxed">
-                          {discussion.description || 'No description provided for this thread.'}
+                          {discussion.description || 'No description.'}
                         </p>
                       </CardContent>
                       <CardFooter className="pt-4 border-t border-slate-50 dark:border-white/5 flex justify-between">
@@ -427,7 +427,7 @@ const CommunityPortal = () => {
                         </div>
                         <Button variant="ghost" size="sm" asChild className="rounded-xl font-bold gap-2 text-primary hover:bg-primary/5">
                           <Link to={`/community?tab=chat&room=general&m=${discussion.source_message_id}`}>
-                            Open in Live Chat <ArrowRight className="h-3.5 w-3.5" />
+                            Open in Chat <ArrowRight className="h-3.5 w-3.5" />
                           </Link>
                         </Button>
                       </CardFooter>
@@ -444,16 +444,16 @@ const CommunityPortal = () => {
                   <Dialog open={campaignDialogOpen} onOpenChange={setCampaignDialogOpen}>
                     <DialogTrigger asChild>
                       <Button className="rounded-2xl bg-kenya-green hover:bg-kenya-green/90 font-bold shadow-xl shadow-kenya-green/20 gap-2">
-                        <Plus className="h-5 w-5" /> Launch New Campaign
+                        <Plus className="h-5 w-5" /> Launch Campaign
                       </Button>
                     </DialogTrigger>
                     <DialogContent className="sm:max-w-lg rounded-3xl border-border/50 shadow-ios-high">
                       <DialogHeader>
-                        <DialogTitle className="text-xl font-bold">Launch Civic Campaign</DialogTitle>
+                        <DialogTitle className="text-xl font-bold">Launch Campaign</DialogTitle>
                       </DialogHeader>
                       <div className="space-y-4 py-4">
                         <div className="space-y-2">
-                          <Label htmlFor="campaign-title" className="font-bold text-xs">Campaign Title *</Label>
+                          <Label htmlFor="campaign-title" className="font-bold text-xs">Title *</Label>
                           <Input
                             id="campaign-title"
                             value={newCampaign.title}
@@ -507,8 +507,8 @@ const CommunityPortal = () => {
                       <EmptyMedia variant="icon" className="bg-kenya-green/10">
                         <Megaphone className="h-8 w-8 text-kenya-green" />
                       </EmptyMedia>
-                      <EmptyTitle>{translate('No Active Campaigns', language)}</EmptyTitle>
-                      <EmptyDescription>{translate('Civic campaigns will appear here as they\'re launched. Stay tuned for movements that drive change.', language)}</EmptyDescription>
+                      <EmptyTitle>No active campaigns</EmptyTitle>
+                      <EmptyDescription>Campaigns will appear here once launched.</EmptyDescription>
                     </EmptyHeader>
                     <EmptyContent>
                       <Button asChild variant="outline" className="rounded-2xl border-kenya-green/20">
@@ -530,8 +530,8 @@ const CommunityPortal = () => {
                         <div className="flex items-center gap-4 bg-slate-50 dark:bg-white/5 p-4 rounded-3xl">
                           <div className="bg-white dark:bg-black/40 h-10 w-10 flex items-center justify-center rounded-xl shadow-sm"><HandHelping className="h-5 w-5 text-kenya-green" /></div>
                           <div>
-                            <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Force Multiplier</p>
-                            <p className="font-black text-lg">{campaign.participants_count || 0} Citizens Activated</p>
+                            <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Supporters</p>
+                            <p className="font-black text-lg">{campaign.participants_count || 0} Citizens</p>
                           </div>
                         </div>
                       </CardContent>

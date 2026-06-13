@@ -42,19 +42,19 @@ export const MentionSuggestions = ({ query, trigger, onSelect, onClose }: Mentio
                         .or(`full_name.ilike.%${query}%,username.ilike.%${query}%`)
                         .limit(5);
 
-                    setResults(users?.map(u => ({ 
-                        id: u.id, 
+                    setResults(users?.map(u => ({
+                        id: u.id,
                         full_name: u.full_name,
                         username: u.username,
                         avatar_url: u.avatar_url,
-                        type: 'user', 
-                        icon: User 
+                        type: 'person',
+                        icon: User
                     })) || []);
                 } else if (trigger === '/') {
                     // Search Commands and Resources
                     const internalCommands: MentionItem[] = [
-                        { id: 'poll', name: 'Create Poll', description: 'Start a community poll', type: 'command', icon: Zap },
-                        { id: 'link', name: 'Link Resource', description: 'Embed a file or doc', type: 'command', icon: FileText }
+                        { id: 'poll', name: 'Create Poll', description: 'Start a community poll', type: 'action', icon: Zap },
+                        { id: 'link', name: 'Link Resource', description: 'Embed a file or doc', type: 'action', icon: FileText }
                     ];
 
                     // Search resources instead of campaigns
@@ -66,11 +66,11 @@ export const MentionSuggestions = ({ query, trigger, onSelect, onClose }: Mentio
 
                     const combined: MentionItem[] = [
                         ...internalCommands.filter(c => c.name?.toLowerCase().includes(query.toLowerCase())),
-                        ...(resources?.map(r => ({ 
-                            id: r.id, 
-                            name: r.title, 
-                            type: 'resource', 
-                            icon: Hash 
+                        ...(resources?.map(r => ({
+                            id: r.id,
+                            name: r.title,
+                            type: 'resource',
+                            icon: Hash
                         })) || [])
                     ];
 
@@ -118,7 +118,7 @@ export const MentionSuggestions = ({ query, trigger, onSelect, onClose }: Mentio
             <Card className="border-none shadow-[0_8px_32px_rgba(0,0,0,0.12)] rounded-[24px] overflow-hidden bg-white/90 dark:bg-[#1C1C1E]/90 backdrop-blur-3xl border border-white/20 dark:border-white/10">
                 <CardContent className="p-1.5 space-y-1">
                     {loading && results.length === 0 ? (
-                        <div className="p-4 text-center text-xs text-muted-foreground animate-pulse">Searching the CEKA ecosystem...</div>
+                        <div className="p-4 text-center text-xs text-muted-foreground animate-pulse">Searching...</div>
                     ) : (
                         results.map((item, idx) => {
                             const IconComponent = item.icon;

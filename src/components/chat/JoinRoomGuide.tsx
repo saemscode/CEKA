@@ -53,10 +53,10 @@ const JoinRoomGuide = ({ roomName, isOpen, onClose }: JoinRoomGuideProps) => {
 
                             <div className="space-y-2">
                                 <h3 className="text-2xl font-black tracking-tight leading-tight">
-                                    {translate('Entering', language)} <span className="text-primary">{roomName}</span>
+                                    Joining <span className="text-primary">{roomName}</span>
                                 </h3>
                                 <p className="text-sm text-muted-foreground font-medium leading-relaxed">
-                                    {translate('This is a space for verified civic discourse. Your contributions here drive the national engine.', language)}
+                                    {translate('This is a space for respectful discussions. Your contributions help drive the community.', language)}
                                 </p>
                             </div>
 
@@ -64,22 +64,22 @@ const JoinRoomGuide = ({ roomName, isOpen, onClose }: JoinRoomGuideProps) => {
                                 <div className="flex gap-4 items-start">
                                     <div className="mt-1 h-2 w-2 rounded-full bg-kenya-green" />
                                     <div>
-                                        <p className="text-xs font-black uppercase tracking-widest leading-none mb-1">Live Intelligence</p>
-                                        <p className="text-[11px] text-muted-foreground font-medium">Messages are indexed for legislative audits and pulse reporting.</p>
+                                        <p className="text-xs font-black uppercase tracking-widest leading-none mb-1">Real‑time updates</p>
+                                        <p className="text-[11px] text-muted-foreground font-medium">Messages appear instantly for everyone in the room.</p>
                                     </div>
                                 </div>
                                 <div className="flex gap-4 items-start">
                                     <div className="mt-1 h-2 w-2 rounded-full bg-primary" />
                                     <div>
-                                        <p className="text-xs font-black uppercase tracking-widest leading-none mb-1">Direct Action</p>
-                                        <p className="text-[11px] text-muted-foreground font-medium">Use @ mentions to tag bills or officials for automated notification.</p>
+                                        <p className="text-xs font-black uppercase tracking-widest leading-none mb-1">Take action</p>
+                                        <p className="text-[11px] text-muted-foreground font-medium">Use @ to tag topics or people for quick attention.</p>
                                     </div>
                                 </div>
                                 <div className="flex gap-4 items-start">
                                     <div className="mt-1 h-2 w-2 rounded-full bg-gold" />
                                     <div>
-                                        <p className="text-xs font-black uppercase tracking-widest leading-none mb-1">Mutual Respect</p>
-                                        <p className="text-[11px] text-muted-foreground font-medium">Adhere to the Code of Discourse. Hostile activity triggers quarantine.</p>
+                                        <p className="text-xs font-black uppercase tracking-widest leading-none mb-1">Respect each other</p>
+                                        <p className="text-[11px] text-muted-foreground font-medium">Follow community guidelines. Hostile messages will be removed.</p>
                                     </div>
                                 </div>
                             </div>
@@ -88,7 +88,7 @@ const JoinRoomGuide = ({ roomName, isOpen, onClose }: JoinRoomGuideProps) => {
                                 onClick={onClose}
                                 className="w-full h-14 rounded-2xl bg-primary hover:bg-primary/90 text-white font-black uppercase tracking-widest text-xs shadow-xl shadow-primary/20 group"
                             >
-                                {translate('Enter Assembly', language)}
+                                {translate('Join Room', language)}
                                 <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
                             </Button>
                         </div>
