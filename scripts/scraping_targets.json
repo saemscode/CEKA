@@ -5,14 +5,16 @@
             "url": "https://www.parliament.go.ke/the-national-assembly/house-business/bills",
             "selector": "a[href$='.pdf']",
             "type": "bills",
-            "freq": "daily_0400_eat"
+            "freq": "daily_0400_eat",
+            "parliament_value": null
         },
         {
             "name": "Senate Bills",
             "url": "https://www.parliament.go.ke/the-senate/house-business/bills",
             "selector": "a[href$='.pdf']",
             "type": "bills",
-            "freq": "daily_0400_eat"
+            "freq": "daily_0400_eat",
+            "parliament_value": null
         },
         {
             "name": "National Assembly Order Papers",
