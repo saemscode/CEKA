@@ -606,9 +606,9 @@ const CommunityChat = () => {
                                         transition={{ type: "spring", damping: 20, stiffness: 100 }}
                                         id={`message-${message.id}`}
                                         className={cn(
-                                            "group flex gap-3 transition-all duration-500 mb-6",
+                                            "group flex gap-3 transition-all duration-500 mx-4 mb-6",
                                             isOwn ? "flex-row-reverse" : "flex-row",
-                                            isHighlighted && "bg-primary/5 -mx-6 px-6 py-4 border-y border-primary/10 shadow-inner"
+                                            isHighlighted && "bg-primary/5 -mx-10 px-10 py-4 border-y border-primary/10 shadow-inner"
                                         )}
                                     >
                                         {/* Avatar Column */}
@@ -645,7 +645,7 @@ const CommunityChat = () => {
                                             )}
 
                                             <div className={cn(
-                                                "relative px-4.5 py-3 rounded-[22px] max-w-[85%] text-sm leading-relaxed shadow-ios-soft transition-all duration-300 group-hover:shadow-ios-low",
+                                                "relative px-6 py-3 rounded-[22px] max-w-[85%] text-sm leading-relaxed shadow-ios-soft transition-all duration-300 group-hover:shadow-ios-low",
                                                 isOwn
                                                     ? "bg-primary text-white rounded-tr-[4px] font-medium selection:bg-white/20 selection:text-white"
                                                     : "bg-slate-100 dark:bg-white/5 text-slate-800 dark:text-slate-200 rounded-tl-[4px] border border-white/50 dark:border-white/5"
