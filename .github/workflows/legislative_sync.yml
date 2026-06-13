@@ -35,6 +35,9 @@ on:
 jobs:
   sync:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
 
     env:
       # ── Supabase ───────────────────────────────────────────────────────────
@@ -64,6 +67,14 @@ jobs:
       SCRAPINGROBOT_API_KEY: ${{ secrets.SCRAPINGROBOT_API_KEY }}
       SCRAPINGDOG_API_KEY: ${{ secrets.SCRAPINGDOG_API_KEY }}
       SERPAPI_API_KEY: ${{ secrets.SERPAPI_API_KEY }}
+
+      # ── New Proxy Orchestration ──────────────────────────────────────────
+      BRIGHTDATA_PROXY_URL: ${{ secrets.BRIGHTDATA_PROXY_URL }}
+      BRIGHTDATA_MONTHLY_LIMIT: ${{ secrets.BRIGHTDATA_MONTHLY_LIMIT }}
+      SCRAPERAPI_KEY: ${{ secrets.SCRAPERAPI_KEY }}
+      SCRAPERAPI_MONTHLY_LIMIT: ${{ secrets.SCRAPERAPI_MONTHLY_LIMIT }}
+      SCRAPERAPI_FIRST_MONTH_BONUS: ${{ secrets.SCRAPERAPI_FIRST_MONTH_BONUS }}
+      WEBSHARE_PROXIES: ${{ secrets.WEBSHARE_PROXIES }}
 
     steps:
       - name: Checkout repository
@@ -192,6 +203,17 @@ jobs:
           echo "- **Time (UTC):** $(date -u)" >> $GITHUB_STEP_SUMMARY
           echo "- **News Sync:** $RUN_NEWS" >> $GITHUB_STEP_SUMMARY
           echo "- **Triggered by:** ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
+
+      - name: Persist Proxy Usage and Scraped Data
+        if: always()
+        run: |
+          git config --global user.name "ceka-intelligence-bot"
+          git config --global user.email "bot@ceka.online"
+          git add scripts/proxy_usage.json
+          # Capture any new processed data JSONs as well
+          git add scripts/processed_data/legislative/*.json
+          git commit -m "chore: update proxy usage & legislative data [skip ci]" || echo "No changes to commit"
+          git push
 
       - name: Upload Intelligence Logs
         if: always()
