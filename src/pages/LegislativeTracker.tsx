@@ -27,6 +27,7 @@ import { BillFollowButton } from '@/components/legislative/BillFollowButton';
 import { CEKALoader } from '@/components/ui/ceka-loader';
 import FeaturedLegislationCarousel from '@/components/legislative/FeaturedLegislationCarousel';
 import { Deep2Icon } from '@/components/ui/CustomIcons';
+import { DownloadIcon } from '@/components/ui/CustomIcons';
 import AIContextButton from '@/components/ai/AIContextButton';
 import { motion, AnimatePresence } from 'framer-motion';
 import { billService, getBillIdentifier } from '@/services/billService';
@@ -927,7 +928,7 @@ const LegislativeTracker = () => {
                                         className="h-12 px-6 rounded-2xl border-slate-200 dark:border-white/10 font-black text-xs uppercase tracking-widest"
                                       >
                                         Download PDF
-                                        <BookOpen className="ml-2 h-4 w-4" />
+                                        <DownloadIcon className="h-6 w-6" />
                                       </Button>
                                     )}
 
