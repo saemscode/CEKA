@@ -7,9 +7,10 @@ import re
 import io
 import threading
 import base64
+import random
 from datetime import datetime, timezone
 from typing import List, Dict, Any, Optional, Tuple
-from urllib.parse import urljoin, unquote
+from urllib.parse import urljoin, unquote, urlparse
 from pathlib import Path
 
 # ---------------------------------------------------------------------------
@@ -617,6 +618,169 @@ class RemoteOCREngine:
         }
 
 
+class ProxyPool:
+    def __init__(self):
+        self.proxies = []          # list of proxy dicts
+        self.usage_counts = self.load_usage_counts()
+        self.health_status = {}    # proxy url -> (last_ok, last_check)
+        self.lock = threading.Lock()
+        self.last_webshare_refresh = 0.0
+        self.load_proxies()
+        
+    def load_proxies(self):
+        """Load all proxy sources from env vars."""
+        # 1. Bright Data (single proxy)
+        bright_url = os.getenv("BRIGHTDATA_PROXY_URL")
+        if bright_url:
+            self.proxies.append({
+                "url": bright_url,
+                "type": "brightdata",
+                "priority": 1,
+                "limit": int(os.getenv("BRIGHTDATA_MONTHLY_LIMIT", 5000))
+            })
+        
+        # 2. ScraperAPI (special proxy type)
+        scraper_key = os.getenv("SCRAPERAPI_KEY")
+        if scraper_key:
+            self.proxies.append({
+                "type": "scraperapi",
+                "api_key": scraper_key,
+                "priority": 2,
+                "limit": int(os.getenv("SCRAPERAPI_MONTHLY_LIMIT", 1000)) + int(os.getenv("SCRAPERAPI_FIRST_MONTH_BONUS", 5000))
+            })
+        
+        # 3. Webshare static list
+        webshare_list = os.getenv("WEBSHARE_PROXIES", "")
+        for item in webshare_list.split(","):
+            if ":" in item:
+                parts = item.split(":")
+                if len(parts) == 4:
+                    ip, port, user, pwd = parts
+                    proxy_url = f"http://{user}:{pwd}@{ip}:{port}"
+                    self.proxies.append({
+                        "url": proxy_url,
+                        "type": "webshare",
+                        "priority": 3,
+                        "limit": None
+                    })
+        
+        # Shuffle to avoid always using first proxy
+        random.shuffle(self.proxies)
+        self._initial_health_check()
+    
+    def _initial_health_check(self):
+        """Test all proxies at startup, sort by health."""
+        for proxy in self.proxies:
+            if "url" in proxy:
+                self._test_proxy(proxy["url"])
+        # Sort by primary health then priority
+        self.proxies.sort(key=lambda p: (
+            p.get("priority", 99),
+            0 if self.health_status.get(p.get("url", ""), {}).get("healthy", False) else 1
+        ))
+    
+    def _test_proxy(self, proxy_url):
+        """Return True if proxy works."""
+        test_url = os.getenv("PROXY_HEALTH_CHECK_URL", "https://api.ipify.org")
+        timeout = int(os.getenv("PROXY_HEALTH_TIMEOUT", 10))
+        try:
+            proxies = {"http": proxy_url, "https": proxy_url}
+            start = time.time()
+            r = requests.get(test_url, proxies=proxies, timeout=timeout, verify=False)
+            elapsed = time.time() - start
+            if r.status_code == 200:
+                self.health_status[proxy_url] = {"healthy": True, "latency": elapsed, "last_check": time.time()}
+                return True
+        except Exception:
+            pass
+        self.health_status[proxy_url] = {"healthy": False, "last_check": time.time()}
+        return False
+    
+    def refresh_webshare_proxies(self):
+        """Periodically fetch fresh Webshare list (if API provided)."""
+        refresh_url = os.getenv("WEBSHARE_REFRESH_URL")
+        interval_hours = int(os.getenv("WEBSHARE_REFRESH_INTERVAL_HOURS", 24))
+        now = time.time()
+        if refresh_url and (now - self.last_webshare_refresh > interval_hours * 3600):
+            try:
+                r = requests.get(refresh_url, timeout=30)
+                if r.status_code == 200:
+                    new_list = r.text.strip().split("\n")
+                    new_proxies = []
+                    for line in new_list:
+                        parts = line.split(":")
+                        if len(parts) >= 4:
+                            ip, port, user, pwd = parts[0], parts[1], parts[2], parts[3]
+                            proxy_url = f"http://{user}:{pwd}@{ip}:{port}"
+                            new_proxies.append({
+                                "url": proxy_url,
+                                "type": "webshare",
+                                "priority": 3
+                            })
+                    with self.lock:
+                        self.proxies = [p for p in self.proxies if p.get("type") != "webshare"]
+                        self.proxies.extend(new_proxies)
+                    self.last_webshare_refresh = now
+                    logger.info(f"Refreshed Webshare proxies: {len(new_proxies)}")
+            except Exception as e:
+                logger.warning(f"Webshare refresh failed: {e}")
+    
+    def get_proxy(self):
+        """Return a working proxy dict. Respects usage limits."""
+        self.refresh_webshare_proxies()
+        
+        available = []
+        for p in self.proxies:
+            limit = p.get("limit")
+            used = self.usage_counts.get(p.get("type"), 0)
+            if limit is None or used < limit:
+                available.append(p)
+        
+        for p in available:
+            if "url" in p:
+                if not self.health_status.get(p["url"], {}).get("healthy", False):
+                    if not self._test_proxy(p["url"]):
+                        p["skip"] = True
+        
+        available = [p for p in available if not p.get("skip")]
+        if not available:
+            logger.error("No healthy proxies with remaining quota!")
+            return None
+        
+        best = min(available, key=lambda p: p.get("priority", 99))
+        if best.get("limit") is not None:
+            self.usage_counts[best["type"]] = self.usage_counts.get(best["type"], 0) + 1
+        return best
+    
+    def report_failure(self, proxy):
+        """Mark a proxy as failed."""
+        if proxy and "url" in proxy:
+            self.health_status[proxy["url"]] = {"healthy": False, "last_check": time.time()}
+            proxy["priority"] = 999
+
+    def load_usage_counts(self):
+        try:
+            fpath = os.path.join(os.path.dirname(os.path.abspath(__file__)), "proxy_usage.json")
+            if os.path.exists(fpath):
+                with open(fpath, "r") as f:
+                    data = json.load(f)
+                    # Reset check: if month changed, return empty
+                    last_reset = data.get("last_reset_month", "")
+                    curr_month = datetime.now().strftime("%Y-%m")
+                    if last_reset != curr_month:
+                        return {"last_reset_month": curr_month}
+                    return data
+        except Exception: pass
+        return {"last_reset_month": datetime.now().strftime("%Y-%m")}
+
+    def save_usage_counts(self):
+        try:
+            fpath = os.path.join(os.path.dirname(os.path.abspath(__file__)), "proxy_usage.json")
+            with open(fpath, "w") as f:
+                json.dump(self.usage_counts, f)
+        except Exception: pass
+
+
 # ===================================================================
 #  BillStructuralExtractor  –  Structural Breadcrumb Engine
 # ===================================================================
@@ -781,6 +945,7 @@ class LegislativeScraper:
                 logger.warning(f"B2 Vault init failed (non-fatal): {e}")
         
         self.orchestrator = MultiLLMOrchestrator() if ORCHESTRATOR_OK else None
+        self.proxy_pool = ProxyPool() # Auto-loads from env and proxy_usage.json
         if TESSERACT_OK:
             # Attempt to locate tesseract on Windows if not in PATH
             tess_path = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
@@ -807,14 +972,27 @@ class LegislativeScraper:
             return []
 
         with sync_playwright() as p:
-            browser = p.chromium.launch(
-                headless=self.headless,
-                args=[
+            launch_opts = {
+                "headless": self.headless,
+                "args": [
                     "--disable-blink-features=AutomationControlled",
                     "--disable-dev-shm-usage",
                     "--no-sandbox",
                 ]
-            )
+            }
+            # Add Proxy if available from pool
+            proxy_info = self.proxy_pool.get_proxy()
+            if proxy_info and "url" in proxy_info:
+                from urllib.parse import urlparse
+                parsed = urlparse(proxy_info["url"])
+                launch_opts["proxy"] = {
+                    "server": f"{parsed.scheme}://{parsed.hostname}:{parsed.port}",
+                    "username": parsed.username,
+                    "password": parsed.password
+                }
+                logger.info(f"Using proxy: {proxy_info['type']}")
+
+            browser = p.chromium.launch(**launch_opts)
             ctx = browser.new_context(
                 user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
                 extra_http_headers={
@@ -849,9 +1027,16 @@ class LegislativeScraper:
 
     def _scrape_bills(self, page, target: dict, max_pages: int):
         base_url = target['url']
+        parl_val = target.get('parliament_value') # Can be None, int, str from config
 
         for page_num in range(max_pages):
-            page_url = f"{base_url}?title=%20&field_parliament_value=2026&page={page_num}"
+            # Parametrized filter to capture all sessions unless specified
+            params = {"title": " ", "page": page_num}
+            if parl_val is not None:
+                params["field_parliament_value"] = str(parl_val)
+            
+            qs = "&".join(f"{k}={v}" for k, v in params.items())
+            page_url = f"{base_url}?{qs}"
             logger.info(f"  Page {page_num + 1}: {page_url}")
 
             try:
@@ -966,7 +1151,7 @@ class LegislativeScraper:
                 if len(doc) > 0:
                     page0 = doc[0]
                     pix = page0.get_pixmap(matrix=fitz.Matrix(2, 2))
-                    img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
+                    img = Image.frombytes("RGB", (pix.width, pix.height), pix.samples)
                     text = pytesseract.image_to_string(img)
                     if text.strip():
                         method = "local_tesseract"
@@ -1042,6 +1227,9 @@ class LegislativeScraper:
             extracted_via = f"local:{method}"
         else:
             extracted_via = "html_fallback" if html_metadata else "none"
+
+        # Update persistent usage after processing
+        self.proxy_pool.save_usage_counts()
 
         # --- B2 Vault: Mirror PDF to Backblaze ---
         b2_url = None
@@ -1551,43 +1739,53 @@ Return EXACTLY a JSON object with these keys:
         return "All Portfolios"
 
     def _download_pdf(self, url: str, page=None) -> Optional[bytes]:
-        """Download a PDF, with PDF magic byte validation and Playwright fallback."""
+        """Download a PDF with multi-layer proxy support and automatic fallback."""
         pdf_bytes = None
+        
+        # 1. Acquire Proxy from Pool
+        proxy = self.proxy_pool.get_proxy()
 
-        # Method 1: Direct HTTP request
-        if REQUESTS_OK:
+        # Method 1 & 3: Requests/Webshare via proxy URL
+        if proxy and "url" in proxy and REQUESTS_OK:
             try:
-                r = requests.get(url, timeout=30, allow_redirects=True, verify=False)
+                proxies = {"http": proxy["url"], "https": proxy["url"]}
+                r = requests.get(url, timeout=30, allow_redirects=True, verify=False, proxies=proxies)
                 if r.content[:5] == b"%PDF-":
-                    pdf_bytes = r.content
-                    logger.info(f"      [DL] PDF downloaded via requests: {len(pdf_bytes)} bytes")
-                    return pdf_bytes
+                    logger.info(f"      [DL] PDF downloaded via proxy ({proxy['type']}): {len(r.content)} bytes")
+                    return r.content
                 else:
-                    logger.info(f"      [DL] URL returned non-PDF content (Content-Type: {r.headers.get('Content-Type', 'unknown')}). Trying Playwright...")
+                    logger.info(f"      [DL] Proxy {proxy['type']} returned non-PDF content.")
+                    self.proxy_pool.report_failure(proxy)
             except Exception as e:
-                logger.warning(f"      [DL] requests.get failed: {e}. Trying Playwright...")
+                logger.warning(f"      [DL] Proxy {proxy['type']} failed: {e}")
+                self.proxy_pool.report_failure(proxy)
 
-        # Method 2: Playwright-based download (uses browser session cookies)
+        # Method 2: ScraperAPI direct PDF fallback
+        if proxy and proxy["type"] == "scraperapi":
+            api_key = proxy.get("api_key")
+            payload = {"api_key": api_key, "url": url, "retry_404": "true"}
+            try:
+                r = requests.get("https://api.scraperapi.com/", params=payload, timeout=90)
+                if r.status_code == 200 and r.content[:5] == b"%PDF-":
+                    logger.info(f"      [DL] PDF downloaded via ScraperAPI: {len(r.content)} bytes")
+                    return r.content
+                else:
+                    logger.warning("      [DL] ScraperAPI failed to retrieve valid PDF binary.")
+            except Exception as e:
+                logger.warning(f"      [DL] ScraperAPI request failed: {e}")
+
+        # Method 4: Playwright-based download (uses browser session cookies)
         if page:
             try:
-                with page.context.expect_event("page") as page_info:
-                    page.evaluate(f"window.open('{url}')")
-                new_page = page_info.value
-                new_page.wait_for_load_state("load")
-                # Try to get the response body
-                response = new_page.goto(url, wait_until="load", timeout=30000)
-                if response:
-                    body = response.body()
-                    if body[:5] == b"%PDF-":
-                        pdf_bytes = body
-                        logger.info(f"      [DL] PDF downloaded via Playwright response: {len(pdf_bytes)} bytes")
-                new_page.close()
-                if pdf_bytes:
-                    return pdf_bytes
-            except Exception:
-                pass
+                # Use Playwright's request API to fetch with browser cookies
+                api_response = page.context.request.get(url)
+                body = api_response.body()
+                if body[:5] == b"%PDF-":
+                    logger.info(f"      [DL] PDF downloaded via Playwright API request: {len(body)} bytes")
+                    return body
+            except Exception as e:
+                logger.warning(f"      [DL] Playwright API request failed: {e}")
 
-            # Method 3: Playwright download event handler
             try:
                 with page.expect_download(timeout=30000) as download_info:
                     page.evaluate(f"""() => {{
@@ -1606,33 +1804,19 @@ Return EXACTLY a JSON object with these keys:
                     if pdf_bytes and pdf_bytes[:5] == b"%PDF-":
                         logger.info(f"      [DL] PDF downloaded via Playwright download: {len(pdf_bytes)} bytes")
                         return pdf_bytes
-                    pdf_bytes = None
             except Exception as e:
                 logger.warning(f"      [DL] Playwright download failed: {e}")
-
-            # Method 4: Use Playwright's request API to fetch with browser cookies
-            try:
-                api_response = page.context.request.get(url)
-                body = api_response.body()
-                if body[:5] == b"%PDF-":
-                    pdf_bytes = body
-                    logger.info(f"      [DL] PDF downloaded via Playwright API request: {len(pdf_bytes)} bytes")
-                    return pdf_bytes
-            except Exception as e:
-                logger.warning(f"      [DL] Playwright API request failed: {e}")
 
         # Method 5: Agentic Hunter (Manus API Fallback)
         if not pdf_bytes and self.orchestrator:
             logger.info(f"      [DL] TRIGERING MANUS AGENT FALLBACK for: {url}")
             goal = f"Download the primary legislative PDF for the Bill at this URL: {url}. Ensure it is a valid PDF binary."
             manus_result = self.orchestrator.call_manus_agent(goal)
-            if manus_result:
-                # Manus might return a URL or base64. Assuming URL for now.
+            if manus_result and manus_result.startswith("http"):
                 try:
-                    if manus_result.startswith("http"):
-                        r = requests.get(manus_result, timeout=30)
-                        if r.content[:5] == b"%PDF-":
-                            return r.content
+                    r = requests.get(manus_result, timeout=30)
+                    if r.content[:5] == b"%PDF-":
+                        return r.content
                 except:
                     pass
 
