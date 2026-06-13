@@ -512,7 +512,7 @@ const CommunityPortal = () => {
                     </EmptyHeader>
                     <EmptyContent>
                       <Button asChild variant="outline" className="rounded-2xl border-kenya-green/20">
-                        <Link to="/join-community">{translate('Join Community', language)}</Link>
+                        <Link to="/join-community?tab=join-community">{translate('Join Community', language)}</Link>
                       </Button>
                     </EmptyContent>
                   </Empty>

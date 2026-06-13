@@ -110,7 +110,7 @@ const Navbar = React.forwardRef<HTMLElement, NavbarProps>(({ isFixed }, ref) => 
         { name: translate('Community Hub', language), path: '/community', description: translate('Connect and discuss civic matters with other citizens.', language) },
         { name: translate('Translation Hub', language), path: '/translate', description: translate('Help translate civic education into Kenyan local languages.', language) },
         { name: translate('Events Calendar', language), path: '/calendar', description: translate('What\'s happening in civic space', language) },
-        { name: translate('Volunteer', language), path: '/join-community', description: translate('Find opportunities to make a difference.', language) }
+        { name: translate('Volunteer', language), path: '/join-community?tab=volunteer', description: translate('Find opportunities to make a difference.', language) }
       ]
     },
     {

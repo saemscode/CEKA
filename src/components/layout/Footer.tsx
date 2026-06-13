@@ -40,7 +40,7 @@ const Footer = () => {
           <ul className="space-y-4 text-sm font-medium">
             <li><Link to="/community" className="hover:text-primary transition-colors">{translate('Community', language)}</Link></li>
             <li><Link to="/calendar" className="hover:text-primary transition-colors">{translate('Calendar', language)}</Link></li>
-            <li><Link to="/join-community" className="hover:text-primary transition-colors">{translate('Volunteer', language)}</Link></li>
+            <li><Link to="/join-community?tab=volunteer" className="hover:text-primary transition-colors">{translate('Volunteer', language)}</Link></li>
             <li><Link to="/shambles" className="hover:text-primary transition-colors">SHAmbles Tracker</Link></li>
           </ul>
         </div>

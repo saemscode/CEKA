@@ -120,7 +120,7 @@ const Hero = () => {
                   </motion.div>
                 </Link>
 
-                <Link to="/join-community" onClick={() => handleCardInteraction('volunteer')}>
+                <Link to="/join-community?tab=volunteer" onClick={() => handleCardInteraction('volunteer')}>
                   <motion.div
                     className="kenyan-card-accent p-5 space-y-3 animate-fade-in cursor-pointer"
                     style={{ animationDelay: '0.3s' }}

@@ -106,7 +106,7 @@ const VolunteerOpportunitiesSection = () => {
           onClick={() => setSelectedOpp(opportunity)}
           className="w-full h-12 rounded-2xl bg-primary hover:bg-primary/90 font-black uppercase tracking-widest text-[10px] shadow-xl shadow-primary/20 active:scale-95 transition-all"
         >
-          {translate("Initiate Application", language)}
+          {translate("Submit Application", language)}
         </Button>
       </CardFooter>
     </Card>

@@ -225,8 +225,9 @@ const JoinCommunity = () => {
     }
   ];
 
-  // Check if user is coming from a volunteer application link
-  const activeTab = searchParams.get('apply') ? 'volunteer' : 'join';
+  // Determine active tab from URL parameter
+  const tabParam = searchParams.get('tab');
+  const activeTab = tabParam === 'volunteer' ? 'volunteer' : 'join';
 
   return (
     <Layout>

@@ -7,6 +7,7 @@ import GlobalAIAssistant from '@/components/ai/GlobalAIAssistant';
 import InAppBrowserBanner from '@/components/ui/InAppBrowserBanner';
 import MaintenanceBanner from '@/components/MaintenanceBanner';
 import CivicMiniPlayer from '@/components/civic/CivicMiniPlayer';
+import { NasakaSidebarWidget } from '@/components/promo/NasakaAd';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useMaintenanceScroll } from '@/hooks/useMaintenanceScroll';
 
@@ -109,6 +110,8 @@ const Layout = ({ children, hideBottomNav, hideBackButton }: LayoutProps) => {
         isHidden={isCivicHidden}
         onHide={() => setIsCivicHidden(true)}
       />
+
+      <NasakaSidebarWidget dwellDelayMs={30000} />
     </div>
   );
 };

@@ -228,7 +228,7 @@ export function BlogSidebar() {
       description: translate("Connect with fellow civic educators", language),
       icon: <Users className="h-4 w-4" />,
       action: translate("Join", language),
-      link: "/join-community",
+      link: "/join-community?tab=join-community",
       color: "bg-primary"
     },
     {
@@ -280,7 +280,7 @@ export function BlogSidebar() {
       return;
     }
 
-    navigate(`/join-community?email=${encodeURIComponent(email.trim())}`);
+    navigate(`/join-community?email=${encodeURIComponent(email.trim())}&tab=join-community`);
   };
 
   return (

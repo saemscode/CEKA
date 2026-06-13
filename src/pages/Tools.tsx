@@ -24,6 +24,7 @@ import { Badge } from '@/components/ui/badge';
 import Navbar from '@/components/layout/Navbar';
 import BottomNavbar from '@/components/layout/BottomNavbar';
 import { CEKALoader } from '@/components/ui/ceka-loader';
+import { NasakaToolsCard } from '@/components/promo/NasakaAd';
 import { cn } from '@/lib/utils';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -712,6 +713,15 @@ const Tools = () => {
 
                 {/* Hero */}
                 <HeroSection />
+
+                {/* Spotlight Tool */}
+                <section className="container mx-auto px-6 mb-12">
+                   <div className="flex items-center gap-2 mb-4">
+                      <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
+                      <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">App Spotlight</span>
+                   </div>
+                   <NasakaToolsCard />
+                </section>
 
                 {/* Tool Sections */}
                 {TOOLS.map((tool, index) => (

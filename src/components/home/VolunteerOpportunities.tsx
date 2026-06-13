@@ -161,7 +161,7 @@ const VolunteerOpportunities = () => {
           </Link>
         </Button>
         <Button asChild variant="outline" className="rounded-2xl h-12 px-6">
-          <Link to="/join-community">
+          <Link to="/join-community?tab=join-community">
             Join the Community
           </Link>
         </Button>

@@ -1,0 +1,380 @@
+/**
+ * NasakaAd.tsx
+ * CEKA High-Fidelity Promo System — Nasaka IEBC Office Finder
+ * 
+ * Placements:
+ *   - <NasakaFeedBanner />: Premium glassmorphic banner for home feed.
+ *   - <NasakaSidebarWidget />: Contextual floating widget with dwell trigger.
+ *   - <NasakaToolsCard />: Standard directory card for tools section.
+ * 
+ * Features:
+ *   - Deep iOS-inspired glassmorphism (backdrop-blur-3xl).
+ *   - High-definition inline SVG globe and branding.
+ *   - Smart frequency capping (7-day window).
+ *   - Fully responsive and accessible.
+ */
+
+import React, { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
+import { cn } from '@/lib/utils';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CONFIG & PERSISTENCE
+// ─────────────────────────────────────────────────────────────────────────────
+
+const NASAKA_KEY = "nasaka_ad_dismissed_at";
+const AD_REFRESH_INTERVAL_MS = 3 * 60 * 1000; // 3 Minute Reset
+const PLAY_STORE_URL = "https://play.google.com/store/apps/details?id=com.nasaka.app&hl=en";
+
+const shouldShowAd = (): boolean => {
+  if (typeof window === "undefined") return false;
+  const stored = localStorage.getItem(NASAKA_KEY);
+  if (!stored) return true;
+  return Date.now() - parseInt(stored, 10) > AD_REFRESH_INTERVAL_MS;
+};
+
+const dismissAd = () => {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(NASAKA_KEY, Date.now().toString());
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// BRAND ASSETS (Official High-Fidelity SVGs)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Official Nasaka IEBC Logo Component */
+const NasakaLogo = ({ size = 48, className }: { size?: number; className?: string }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 1080 1080"
+    fill="none"
+    className={className}
+    xmlns="http://www.w3.org/2000/svg"
+    preserveAspectRatio="xMidYMid meet"
+  >
+    <g transform="translate(0,1080) scale(0.1,-0.1)" fill="white">
+      <path d="M5135 9223 c-559 -49 -1092 -260 -1555 -616 -117 -90 -384 -351 -477 -467 -290 -360 -500 -803 -593 -1250 -72 -351 -79 -741 -19 -1089 104 -604 429 -1261 949 -1922 103 -132 1951 -2309 1959 -2308 7 0 1719 2051 1854 2219 560 701 899 1332 1026 1905 50 227 56 288 56 580 0 294 -7 370 -52 595 -254 1267 -1318 2228 -2601 2350 -98 9 -453 11 -547 3z m575 -638 c250 -35 478 -104 692 -208 249 -122 436 -255 633 -452 356 -355 580 -799 657 -1299 31 -204 31 -519 0 -701 -86 -502 -308 -938 -653 -1284 -439 -438 -1025 -681 -1644 -681 -864 0 -1643 471 -2055 1243 -176 330 -261 685 -261 1092 0 476 126 888 394 1290 116 173 289 364 453 497 427 348 970 536 1514 523 85 -2 207 -11 270 -20z" />
+      <path d="M5250 7760 c-597 -83 -1055 -488 -1213 -1070 -30 -112 -31 -122 -31 -330 -1 -172 3 -232 17 -300 125 -583 579 -1025 1157 -1125 126 -22 354 -22 485 0 575 96 1033 540 1161 1125 15 67 19 127 19 280 0 209 -10 279 -61 443 l-26 80 -119 -119 -120 -120 16 -88 c69 -397 -86 -810 -399 -1065 -134 -109 -267 -175 -450 -224 -69 -18 -108 -21 -266 -21 -159 0 -196 3 -265 21 -164 45 -307 116 -427 212 -214 170 -351 396 -409 673 -30 148 -23 372 16 503 36 121 74 211 125 292 206 327 541 524 920 540 296 12 569 -85 790 -283 l63 -56 106 107 106 106 -65 60 c-181 166 -432 292 -685 344 -94 19 -352 28 -445 15z" />
+      <path d="M6780 7494 c-30 -8 -78 -29 -107 -46 -32 -20 -258 -238 -614 -594 l-563 -564 -196 195 c-170 169 -206 199 -266 227 -66 31 -75 33 -184 33 -105 0 -120 -2 -170 -27 -30 -15 -71 -41 -90 -57 l-35 -30 450 -450 c442 -443 451 -451 490 -451 39 0 49 9 867 827 l827 827 -20 22 c-31 33 -127 80 -187 93 -70 15 -135 13 -202 -5z" />
+    </g>
+  </svg>
+);
+
+/** Civic Background Lattice using ed-stuff assets */
+const CivicBackgroundLattice = ({ className }: { className?: string }) => (
+  <div className={cn("absolute inset-0 overflow-hidden opacity-10 pointer-events-none", className)}>
+    {/* ed-stuff-2 elements */}
+    <svg viewBox="0 0 48 48" className="absolute top-0 right-0 w-64 h-64 text-blue-500 transform translate-x-1/4 -translate-y-1/4">
+      <path d="M12.288,23.452h1.803c-0.298,0.203-0.582,0.431-0.842,0.691c-1.091,1.091-1.691,2.546-1.691,4.097  c0,3.191,2.597,5.788,5.788,5.788h2.378v1.587c0,0.226,0.152,0.424,0.371,0.483c0.218,0.06,0.449-0.037,0.563-0.233l1.894-3.281  l1.894,3.29c0.091,0.158,0.258,0.251,0.434,0.251c0.043,0,0.086-0.005,0.129-0.017c0.219-0.058,0.371-0.256,0.371-0.483v-1.597H41  c0.276,0,0.5-0.224,0.5-0.5v-1.609c0-0.104-0.039-0.195-0.093-0.274c-0.006-0.009-0.004-0.021-0.01-0.03  c-0.745-0.973-1.139-2.14-1.139-3.375s0.394-2.402,1.139-3.375c0.007-0.009,0.004-0.021,0.01-0.03  c0.054-0.08,0.093-0.171,0.093-0.274v-1.609c0-0.276-0.224-0.5-0.5-0.5h-4.558v-1.109c0-0.01-0.005-0.019-0.006-0.029  c-0.001-0.021-0.008-0.038-0.012-0.058c-0.012-0.067-0.036-0.126-0.071-0.181c-0.007-0.011-0.006-0.025-0.014-0.036  c-0.745-0.973-1.139-2.14-1.139-3.375s0.394-2.402,1.139-3.375c0.008-0.011,0.007-0.025,0.014-0.036  c0.036-0.055,0.059-0.114,0.071-0.181c0.004-0.02,0.011-0.038,0.012-0.058c0.001-0.01,0.006-0.019,0.006-0.029v-1.609  c0-0.276-0.224-0.5-0.5-0.5H12.288c-1.551,0-3.006,0.601-4.097,1.691S6.5,16.112,6.5,17.664C6.5,20.855,9.097,23.452,12.288,23.452z" fill="currentColor" />
+    </svg>
+    {/* edagain paths as repeating pattern */}
+    <svg viewBox="0 0 32 32" className="absolute bottom-0 left-0 w-48 h-48 text-indigo-500 transform -translate-x-1/4 translate-y-1/4 opacity-40">
+      <path d="M15,29V8c0-1.7-1.3-3-3-3H3C1.9,5,1,5.9,1,7v17c0,1.1,0.9,2,2,2h9C13.7,26,15,27.3,15,29L15,29" fill="currentColor" />
+      <path d="M17,29V8c0-1.7,1.3-3,3-3h9c1.1,0,2,0.9,2,2v17c0,1.1-0.9,2-2,2h-9C18.3,26,17,27.3,17,29L17,29" fill="currentColor" />
+    </svg>
+    {/* edtena paths */}
+    <svg viewBox="0 0 32 32" className="absolute top-1/2 left-1/3 w-32 h-32 text-blue-400 rotate-12">
+      <path d="M27,3H11C9.3,3,8,4.8,8,7v14H7c-1.7,0-3,1.8-3,4s1.3,4,3,4h16c1.7,0,3-1.8,3-4V8h3c0.6,0,1-0.4,1-1C30,4.8,28.7,3,27,3z" fill="currentColor" />
+    </svg>
+  </div>
+);
+
+const IconX = ({ className }: { className?: string }) => (
+  <svg viewBox="0 0 24 24" fill="none" className={className} xmlns="http://www.w3.org/2000/svg">
+    <path d="M8.46445 15.5354L15.5355 8.46436" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M8.46446 8.46458L15.5355 15.5356" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
+const IconDownload = ({ className }: { className?: string }) => (
+  <svg viewBox="0 0 24 24" fill="none" className={className} xmlns="http://www.w3.org/2000/svg">
+    <path fillRule="evenodd" clipRule="evenodd" d="M9.163 2.819C9 3.139 9 3.559 9 4.4V11H7.803c-.883 0-1.325 0-1.534.176a.75.75 0 0 0-.266.62c.017.274.322.593.931 1.232l4.198 4.401c.302.318.453.476.63.535a.749.749 0 0 0 .476 0c.177-.059.328-.217.63-.535l4.198-4.4c.61-.64.914-.96.93-1.233a.75.75 0 0 0-.265-.62C17.522 11 17.081 11 16.197 11H15V4.4c0-.84 0-1.26-.164-1.581a1.5 1.5 0 0 0-.655-.656C13.861 2 13.441 2 12.6 2h-1.2c-.84 0-1.26 0-1.581.163a1.5 1.5 0 0 0-.656.656zM5 21a1 1 0 0 0 1 1h12a1 1 0 1 0 0-2H6a1 1 0 0 0-1 1z" fill="currentColor" />
+  </svg>
+);
+
+const IconHand = ({ className }: { className?: string }) => (
+  <svg viewBox="0 0 305.301 305.301" fill="none" className={className} xmlns="http://www.w3.org/2000/svg">
+    <g fill="currentColor">
+      <path d="M122.582,89.702V67.625c-3.082-5.201-4.86-11.262-4.86-17.734c0-19.239,15.652-34.892,34.892-34.892
+        c19.24,0,34.893,15.652,34.893,34.892c0,6.288-1.68,12.186-4.602,17.287v13.449c2.673,0.186,5.25,0.727,7.688,1.567
+        c7.421-8.712,11.914-19.99,11.914-32.303C202.507,22.381,180.125,0,152.614,0s-49.892,22.381-49.892,49.892
+        C102.723,66.135,110.529,80.586,122.582,89.702z"/>
+      <path d="M68.248,155.474c0-19.239,15.652-34.892,34.892-34.892c7.193,0,13.883,2.188,19.443,5.933v-16.988
+        c-5.978-2.539-12.549-3.945-19.443-3.945c-27.511,0-49.892,22.381-49.892,49.892c0,27.511,22.381,49.892,49.892,49.892
+        c1.242,0,2.47-0.061,3.69-0.151L94.379,189.25C79.367,185.354,68.248,171.688,68.248,155.474z"/>
+      <path d="M242.769,261.926h-90.64c-5.126,0-9.282,4.156-9.282,9.282v24.81c0,5.126,4.156,9.282,9.282,9.282h90.64
+        c5.126,0,9.282-4.156,9.282-9.282v-24.81C252.051,266.082,247.895,261.926,242.769,261.926z"/>
+      <path d="M144.34,228.918c7.44,11.082,19.893,17.745,33.191,17.745h29.677c24.135,0,44.131-19.28,44.811-43.582c0,0,0-0.007,0-0.01
+        c0.046-1.117,0.032,2.909,0.032-20.832v-47.266c0-8.373-6.788-15.161-15.161-15.161c-5.337,0-10.171,2.815-12.888,7.205v-4.93
+        c0-8.304-6.704-15.16-15.194-15.16c-5.214,0.011-10.082,2.727-12.851,7.198c0,0-0.002,0.003-0.003,0.004
+        c0,0.001-0.001,0.001-0.001,0.001l0-3.414c0-8.373-6.788-15.161-15.161-15.161c-0.011,0-0.022,0.001-0.033,0.001
+        c-5.151,0.011-10.051,2.679-12.85,7.195c-0.001,0.002-0.003,0.004-0.004,0.007c0-9.585,0-35.975,0-45.865
+        c0-8.373-6.788-15.161-15.161-15.161c-8.373,0-15.161,6.788-15.161,15.161v114.056v0l-17.001-21.798
+        c-4.966-6.363-14.362-7.939-21.279-2.631c-6.608,5.154-7.776,14.684-2.631,21.279c6.207,7.959,42.405,54.371,47.666,61.117
+        L144.34,228.918z"/>
+    </g>
+  </svg>
+);
+
+const IconGlobe = ({ className }: { className?: string }) => (
+  <svg viewBox="0 0 100 100" fill="none" className={className} xmlns="http://www.w3.org/2000/svg">
+    <path d="M50 0C22.404 0 0 22.404 0 50s22.404 50 50 50c27.546 0 49.911-22.324 49.992-49.852A1.5 1.5 0 0 0 100 50a1.5 1.5 0 0 0-.006-.133C99.922 22.332 77.552 0 50 0zm0 3c2.776 0 5.49.254 8.133.715c.638 1.396 4.103 1.696.43 1.451c-1.416 2.02-7.019-2.123-10.75.047c-1.119 1.576-8.2 3.272-5.54 5.828c3.787-.687-.417-.067-.304 1.813c-1.936.67-4.686 3.87-4.647.595c-.48-2.398 2.162-4.607-2.115-2.81c-.235 1.306-6.674 3.82-3.453 4.398c3.387-1.7-1.353 2.698 2.59.963c-2.691 1.22-.65 2.551-1.885 5.24c-4.353-2.035-6.359 1.822-7.27 5.52c1.032.097 1.382.636 1.282 1.28c.522.051 1.26.123 1.593.153c2.183-.167 4.193-1.598 5.235-3.683c2.483-1.893 4.515-2.98 7.523-2.838c-1.443-.245-3.368 6.082-.443 3.687c-1.258-5.365 5.58.518 4.082.551c-2.513.372-3.32 1.016-1.156 2.83c1.507 1.147 2.433-4.392 4.275-3.427c-.245-1.055-4.553-4.45-3.916-4.272c.147.041.557.274 1.342.768c3.546 1.116 2.965 5.69 6.185 7.298c2.24 2.913 5.706-1.689 8.155-.293c.084 1.922 2.252 1.727 2.168-.332c2.445 1.872-.26 6.487-3.655 4.641c-3.224 1.858-7.833-4.413-9.785.344c-.87 2.244-3.849-1.737-5.082-1.822c-4.305.477-.172-4.208-3.154-4.71c-3.843-.033-7.797 1.58-11.498 1.34c-2.013.619-3.276 1.445-4.479 2.188c-1.155 1.724-3.425 2.954-5.76 6.254c-.428.66-1.172 1.478-2.058 2.47c-1.212 4.123-2.697 8.25-2.463 12.54c2.643 2.788 3.263 9.522 8.455 8.988c3.43 1.772 6.028-1.288 9.244-.26c.593 3.341 6.865 1.95 5.174 5.295c-1.765 3.996 3.393 5.923 4.236 9.56c2.202 3.636-3.322 7.426 1.114 10.555c2.456 4.07 5.302 10.253 11.18 7.848c4.573-.293 7.37-4.15 10.226-6.781c-.259-4.826 8.459-4.3 6.508-10.436c-1.15-.724.072-3.625-.56-4.652c.654-1.345 2.958-5.176 5.187-7.051c3.417-2.65 4.85-6.796 5.978-10.807c-.698-3.373-2.29-.072-4.318-.215c-5.396 2.001.127-2.32 2.158-3.55c2.866-1.689 5.654-4.57 6.285-7.64c2.656-2.87-6.413-5.658-.715-4.72c3.603-.703 5.451-1.131 6.373 2.319c3.53 1.396 3.249 7.793 5.237 11.277c1.03-1.27.618-.283 1.056 1.244c1.15-3.297-1.273-8.61-.52-12.896A47.197 47.197 0 0 1 97 50c0 25.975-21.025 47-47 47S3 75.975 3 50C3 29.806 15.71 12.61 33.57 5.953c1.734-.496 3.47-.987 5.168-1.588A47.152 47.152 0 0 1 50 3zm10.293 1.143c.499.11 1 .218 1.492.345c-.114.755-.748.287-1.492-.345zM35.168 6.219c-1.148.021-2.457.447-2.117 1.511c.63.232 1.285.06 1.902-.091c2.902-.808 1.691-1.448.215-1.42zm14.113 3.758c1.528-.225.085 4.183-2.281 3.046c-3.878.401.584-.245.725-2.025c.694-.67 1.204-.97 1.556-1.021zm21.49 8.728c.29.035.378.388-.023 1.229c-.327 1.078 4.93 4.569 4.604 6.793c-4.668 1.225-1.75-3.326-4.79-4.252c-3.337-1.105-.66-3.873.21-3.77zm-13.539.873c1.734 2.323 4.44.501 6.967 2.387c3.092 3.12-4.874-.41-6.258 1.389c-4.131 1.271-2.103-2.51-.709-3.776zM16.836 33.754c-.294-.044-.535.16-.748.99c.71.037 1.24.117 1.621.238l.232-.718c-.443-.16-.803-.465-1.105-.51zm58.379.508c.68 2.359 5.965 1.985 4.685 4.195l-.603.426c-1.032-.675-5.325-3.52-4.082-4.621zM62.678 37.29c2.438 1.663 4.185 5.07 5.744 7.74c2.142 1.524 2.21 3.973 3.6 5.899c-.568.72-1.678-.593-1.905-1.06c-1.857-1.299-3.39-4.6-4.703-7.237c-.825-1.828-2.838-3.495-2.736-5.342zm14.586 38.904c-.222-.015-.56.245-1.037.899c-3.443 2.537-6.176 5.556-6.38 9.91c2.385 1.084 4.406-3.285 5.688-4.81c1.469-.711 2.689-5.934 1.729-5.999z" fill="currentColor" />
+  </svg>
+);
+
+const IconTick = ({ className }: { className?: string }) => (
+  <svg viewBox="0 0 24 24" fill="none" className={className} xmlns="http://www.w3.org/2000/svg">
+    <path d="M12 2C6.49 2 2 6.49 2 12C2 17.51 6.49 22 12 22C17.51 22 22 17.51 22 12C22 6.49 17.51 2 12 2ZM16.78 9.7L11.11 15.37C10.97 15.51 10.78 15.59 10.58 15.59C10.38 15.59 10.19 15.51 10.05 15.37L7.22 12.54C6.93 12.25 6.93 11.77 7.22 11.48C7.51 11.19 7.99 11.19 8.28 11.48L10.58 13.78L15.72 8.64C16.01 8.35 16.49 8.35 16.78 8.64Z" fill="currentColor" />
+  </svg>
+);
+
+const IconArrowLocation = ({ className }: { className?: string }) => (
+  <svg viewBox="0 0 24 24" fill="none" className={className} xmlns="http://www.w3.org/2000/svg">
+    <path d="M5.36328 12.0523C4.01081 11.5711 3.33457 11.3304 3.13309 10.9655C2.95849 10.6492 2.95032 10.2673 3.11124 9.94388C3.29694 9.57063 3.96228 9.30132 5.29295 8.76272L17.8356 3.68594C19.1461 3.15547 19.8014 2.89024 20.2154 3.02623C20.5747 3.14427 20.8565 3.42608 20.9746 3.7854C21.1106 4.19937 20.8453 4.85465 20.3149 6.16521L15.2381 18.7078C14.6995 20.0385 14.4302 20.7039 14.0569 20.8896C13.7335 21.0505 13.3516 21.0423 13.0353 20.8677C12.6704 20.6662 12.4297 19.99 11.9485 18.6375L10.4751 14.4967C10.3815 14.2336 10.3347 14.102 10.2582 13.9922C10.1905 13.8948 10.106 13.8103 10.0086 13.7426C9.89876 13.6661 9.76719 13.6193 9.50407 13.5257L5.36328 12.0523Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
+const IconArrowRight = ({ className }: { className?: string }) => (
+  <svg viewBox="0 0 24 24" fill="none" className={className} xmlns="http://www.w3.org/2000/svg">
+    <path d="M14.1427 15.9621L4.49746 20.835C2.19099 18.6331L5.34302 12.7294Z" fill="currentColor" />
+    <path opacity="0.5" d="M15.5332 15.3904L21.0066 13.4728L11.458 7.24008L15.5332 15.3904Z" fill="currentColor" />
+  </svg>
+);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// COMPONENTS
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Illustrative App Screenshot Frame */
+const MockupFrame = ({ title, type }: { title: string; type: 'map' | 'search' | 'list' }) => (
+  <div className="flex-1 min-w-[80px] aspect-[9/16] bg-slate-950 rounded-lg border border-white/10 overflow-hidden flex flex-col relative group">
+    <div className="h-1 bg-white/20 w-1/3 mx-auto mt-1 rounded-full" />
+    <div className="flex-1 p-1.5 space-y-1.5">
+      {type === 'map' && (
+        <div className="h-full w-full bg-blue-500/10 rounded flex items-center justify-center relative overflow-hidden">
+          <IconGlobe className="w-8 h-8 text-blue-500/20" />
+          <div className="absolute top-1/2 left-1/3 w-2 h-2 bg-blue-500 rounded-full shadow-[0_0_8px_#3b82f6]" />
+        </div>
+      )}
+      {type === 'search' && (
+        <div className="space-y-1.5 pt-2">
+          <div className="h-2 w-full bg-white/10 rounded" />
+          <div className="h-6 w-full bg-blue-500/10 rounded border border-blue-500/20" />
+          <div className="h-2 w-2/3 bg-white/5 rounded" />
+        </div>
+      )}
+      {type === 'list' && (
+        <div className="space-y-1.5 pt-4">
+          {[1, 2, 3].map(i => (
+            <div key={i} className="h-4 w-full bg-white/5 rounded border border-white/5 flex items-center px-1">
+              <div className="w-1.5 h-1.5 rounded-full bg-green-500/40" />
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+    <div className="absolute inset-x-0 bottom-0 py-1 bg-black/80 backdrop-blur-sm text-[8px] text-center font-bold text-white/40 uppercase tracking-widest">
+      {title}
+    </div>
+  </div>
+);
+
+/** PLACEMENT 1: Feed Banner Card */
+export const NasakaFeedBanner: React.FC = () => {
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    setIsVisible(shouldShowAd());
+  }, []);
+
+  const handleDismiss = () => {
+    dismissAd();
+    setIsVisible(false);
+  };
+
+  if (!isVisible) return null;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="relative w-full overflow-hidden rounded-[32px] border border-slate-200/50 dark:border-white/10 bg-white/40 dark:bg-slate-950/40 p-6 shadow-ios-high backdrop-blur-3xl"
+    >
+      {/* Background Decor */}
+      <CivicBackgroundLattice className="opacity-[0.03]" />
+
+      <div className="relative z-10 flex flex-col md:flex-row gap-8">
+        {/* Ad Info */}
+        <div className="flex-1 space-y-4">
+          <div className="flex items-center gap-2">
+            <span className="rounded-full bg-blue-500/10 border border-blue-500/20 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-widest text-[#1A6BFF]">
+              CEKA
+            </span>
+            <div className="h-1 w-1 rounded-full bg-slate-300 dark:bg-white/20" />
+            <span className="text-[10px] font-black text-slate-500 dark:text-white/40 uppercase tracking-widest">Official Partner</span>
+          </div>
+
+          <div className="flex items-start gap-4">
+            <div className="h-16 w-16 shrink-0 rounded-2xl bg-[#1A6BFF] p-2.5 shadow-lg ring-1 ring-white/10 transition-transform duration-500 group-hover:scale-105">
+              <NasakaLogo className="h-full w-full text-white" />
+            </div>
+            <div>
+              <h3 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
+                Find your <span className="text-[#1A6BFF]">IEBC Office</span> in seconds
+              </h3>
+              <p className="mt-1 text-sm text-slate-600 dark:text-slate-400 leading-relaxed max-w-md">
+                Fast, simple, and hassle-free access to all 290 constituencies and 47 county offices.
+                Works offline, tailored for Kenyan citizens.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap gap-3 py-2">
+            {[
+              { icon: IconArrowLocation, label: "290 Offices" },
+              { icon: IconGlobe, label: "47 Counties" },
+              { icon: IconTick, label: "Free Forever" }
+            ].map((stat, i) => (
+              <div key={i} className="flex items-center gap-2 rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-200/50 dark:border-white/5 px-3 py-1.5 backdrop-blur-sm">
+                <stat.icon className="w-3.5 h-3.5 text-[#1A6BFF]" />
+                <span className="text-xs font-black text-slate-600 dark:text-white/70 uppercase tracking-tight">{stat.label}</span>
+              </div>
+            ))}
+          </div>
+
+          <div className="flex items-center gap-4 pt-2">
+            <a
+              href={PLAY_STORE_URL}
+              target="_blank"
+              rel="noopener"
+              className="group relative flex items-center justify-center gap-2 rounded-2xl bg-[#1A6BFF] px-6 py-3.5 text-[11px] font-black uppercase tracking-widest text-white transition-all hover:bg-[#1A6BFF]/90 hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-blue-600/20"
+            >
+              <IconDownload className="w-4 h-4" />
+              Download on Play Store
+            </a>
+          </div>
+        </div>
+
+        {/* Mockups */}
+        <div className="hidden lg:flex w-72 gap-3 shrink-0">
+          <MockupFrame title="Map View" type="map" />
+          <MockupFrame title="Search" type="search" />
+          <MockupFrame title="Results" type="list" />
+        </div>
+      </div>
+
+      {/* Dismiss */}
+      <button
+        onClick={handleDismiss}
+        className="absolute top-4 right-4 p-2.5 rounded-full bg-slate-100/50 dark:bg-white/5 border border-slate-200/50 dark:border-white/10 hover:bg-slate-200/50 dark:hover:bg-white/10 text-slate-400 dark:text-white/40 hover:text-slate-600 dark:hover:text-white transition-all shadow-sm"
+      >
+        <IconX className="w-4 h-4" />
+      </button>
+    </motion.div>
+  );
+};
+
+/** PLACEMENT 2: Sidebar Floating Widget */
+export const NasakaSidebarWidget: React.FC<{ dwellDelayMs?: number }> = ({ dwellDelayMs = 30000 }) => {
+  const [shouldRender, setShouldRender] = useState(false);
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    if (!shouldShowAd()) return;
+
+    const timer = setTimeout(() => {
+      setShouldRender(true);
+      setTimeout(() => setIsVisible(true), 100);
+    }, dwellDelayMs);
+
+    return () => clearTimeout(timer);
+  }, [dwellDelayMs]);
+
+  const handleDismiss = () => {
+    dismissAd();
+    setIsVisible(false);
+    setTimeout(() => setShouldRender(false), 500);
+  };
+
+  if (!shouldRender) return null;
+
+  return (
+    <div className={cn(
+      "fixed bottom-24 left-8 z-[5000] w-64 transition-all duration-700 ease-[cubic-bezier(0.34,1.56,0.64,1)]",
+      isVisible ? "translate-x-0 opacity-100" : "-translate-x-full opacity-0"
+    )}>
+      <div className="relative overflow-hidden rounded-[28px] border border-slate-200/50 dark:border-white/10 bg-white/60 dark:bg-slate-900/40 p-5 shadow-ios-high backdrop-blur-3xl">
+        <CivicBackgroundLattice className="opacity-[0.05]" />
+
+        <button
+          onClick={handleDismiss}
+          className="absolute top-3 right-3 p-2 rounded-full hover:bg-slate-100 dark:hover:bg-white/5 text-slate-400 dark:text-white/30 transition-all border border-slate-200 dark:border-white/5"
+        >
+          <IconX className="w-3 h-3" />
+        </button>
+
+        <div className="space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 flex items-center justify-center rounded-xl bg-[#1A6BFF] shadow-lg ring-1 ring-white/10">
+              <NasakaLogo size={24} />
+            </div>
+            <div>
+              <p className="text-[9px] font-black uppercase tracking-widest text-[#1A6BFF]">Download Today</p>
+              <h4 className="font-bold text-slate-900 dark:text-white tracking-tight leading-none">Nasaka IEBC</h4>
+            </div>
+          </div>
+
+          <p className="text-[11px] font-bold leading-relaxed text-slate-600 dark:text-slate-400">
+            Never get lost finding an office. Get all official contact details in one app.
+          </p>
+
+          <a
+            href={PLAY_STORE_URL}
+            target="_blank"
+            rel="noopener"
+            className="flex items-center justify-center gap-2 w-full rounded-2xl bg-[#1A6BFF] py-3 text-[10px] font-black uppercase tracking-widest text-white transition-all hover:bg-[#1A6BFF]/90 shadow-lg shadow-blue-600/10"
+          >
+            <IconHand className="w-5 h-5" />
+            Install Nasaka
+          </a>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/** PLACEMENT 3: Tools Directory Card */
+export const NasakaToolsCard: React.FC = () => (
+  <div className="group relative overflow-hidden rounded-2xl border border-slate-200 dark:border-white/5 bg-white dark:bg-slate-900/20 p-5 transition-all hover:border-blue-500/30">
+    <div className="absolute left-0 top-0 h-full w-1.5 bg-blue-500" />
+
+    <div className="flex items-center gap-5">
+      <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-[#1A6BFF] p-2 transition-transform group-hover:scale-105">
+        <NasakaLogo className="h-full w-full" />
+      </div>
+
+      <div className="flex-1">
+        <div className="flex items-center gap-2 mb-1">
+          <span className="text-[9px] font-black uppercase tracking-widest text-blue-500 px-1.5 py-0.5 bg-blue-500/10 rounded">CEKA Tool</span>
+        </div>
+        <h4 className="text-sm font-bold text-slate-900 dark:text-white leading-none">
+          Nasaka — IEBC Office Finder
+        </h4>
+        <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400 leading-tight">
+          Locate and contact voter registration centres across Kenya. Offline support.
+        </p>
+      </div>
+
+      <a
+        href={PLAY_STORE_URL}
+        target="_blank"
+        rel="noopener"
+        className="flex h-10 items-center gap-2 rounded-xl bg-blue-600/10 border border-white/5 px-4 text-[10px] font-black uppercase tracking-widest text-[#1A6BFF] transition-all hover:bg-[#1A6BFF] hover:text-white"
+      >
+        <IconArrowRight className="w-3 h-3" />
+        Get It
+      </a>
+    </div>
+  </div>
+);

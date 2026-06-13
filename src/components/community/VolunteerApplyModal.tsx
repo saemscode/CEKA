@@ -6,11 +6,12 @@ import { Label } from '@/components/ui/label';
 import { useAuth } from '@/providers/AuthProvider';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { CheckCircle2, ShieldCheck, Mail } from 'lucide-react';
+import { CheckCircle2, ShieldCheck, Mail, Zap } from 'lucide-react';
 import { CEKALoader } from '@/components/ui/ceka-loader';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Progress } from '@/components/ui/progress';
-import { translate } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
+import { translate, cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuthModalStore } from '@/stores/useAuthModalStore';
 
@@ -27,9 +28,47 @@ export const VolunteerApplyModal = ({ opportunity, isOpen, onClose }: VolunteerA
     const [submitting, setSubmitting] = useState(false);
     const [success, setSuccess] = useState(false);
     const [progress, setProgress] = useState(0);
+    const [isCertified, setIsCertified] = useState(false);
     const { language } = useLanguage();
 
     const openModal = useAuthModalStore((state) => state.openModal);
+
+    // Background Synergy Calculation (Privacy-Safe)
+    const matchResults = React.useMemo(() => {
+        if (!user || !opportunity) return { score: 0, level: 'Standard Alignment' };
+        
+        let matches = 0;
+        const totalChecks = 3;
+        
+        // Context Check 1: Geo-Spatial Alignment
+        const userCounty = user.user_metadata?.county || '';
+        const oppLocation = opportunity.location || '';
+        if (userCounty.toLowerCase().includes(oppLocation.toLowerCase()) || 
+            oppLocation.toLowerCase().includes(userCounty.toLowerCase())) {
+            matches++;
+        }
+        
+        // Context Check 2: Interest Matrix Overlap
+        const userInterests = Array.isArray(user.user_metadata?.interests) ? user.user_metadata.interests : [];
+        const oppSkills = Array.isArray(opportunity.skills_required) ? opportunity.skills_required : [];
+        const hasSkillOverlap = userInterests.some((interest: string) => 
+            oppSkills.some((skill: string) => skill.toLowerCase().includes(interest.toLowerCase()))
+        );
+        if (hasSkillOverlap) matches++;
+        
+        // Context Check 3: Merit History / Profile Depth
+        if (user.user_metadata?.areas_of_interest?.length > 0 || user.user_metadata?.bio) {
+            matches++;
+        }
+
+        const score = (matches / totalChecks) * 100;
+        let level = 'Standard Alignment';
+        if (score >= 90) level = 'Maximum Synergy';
+        else if (score >= 60) level = 'High Compatibility';
+        else if (score >= 30) level = 'Moderate Match';
+        
+        return { score, level };
+    }, [user, opportunity]);
 
     const handleSubmit = async () => {
         if (!user) {
@@ -55,7 +94,12 @@ export const VolunteerApplyModal = ({ opportunity, isOpen, onClose }: VolunteerA
                 user_id: user.id,
                 opportunity_id: opportunity.id,
                 message: motivation,
-                status: 'pending'
+                status: 'pending',
+                metadata: {
+                    synergy_score: matchResults.score,
+                    synergy_level: matchResults.level,
+                    is_certified: isCertified
+                }
             });
 
             if (error) throw error;
@@ -125,16 +169,17 @@ export const VolunteerApplyModal = ({ opportunity, isOpen, onClose }: VolunteerA
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="sm:max-w-[500px] rounded-[40px] border-none shadow-ios-high overflow-hidden bg-white/95 dark:bg-[#1C1C1E]/95 backdrop-blur-2xl px-8 py-10">
-                <AnimatePresence mode="wait">
-                    {!success ? (
-                        <motion.div
-                            key="form"
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, scale: 0.95 }}
-                            className="space-y-8"
-                        >
+            <DialogContent className="sm:max-w-[500px] w-[95vw] max-h-[95vh] sm:max-h-[90vh] rounded-[32px] sm:rounded-[40px] border-none shadow-ios-high flex flex-col bg-white/95 dark:bg-[#1C1C1E]/95 backdrop-blur-2xl p-0 overflow-hidden">
+                <div className="overflow-y-auto flex-1 px-6 sm:px-10 py-8 sm:py-10 custom-scrollbar">
+                    <AnimatePresence mode="wait">
+                        {!success ? (
+                            <motion.div
+                                key="form"
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.95 }}
+                                className="space-y-6 sm:space-y-8"
+                            >
                             <DialogHeader>
                                 <div className="h-16 w-16 bg-primary/10 rounded-[22px] flex items-center justify-center mb-6">
                                     <ShieldCheck className="h-8 w-8 text-primary" />
@@ -146,22 +191,64 @@ export const VolunteerApplyModal = ({ opportunity, isOpen, onClose }: VolunteerA
                             </DialogHeader>
 
                             <div className="space-y-4">
-                                <div className="p-4 bg-slate-50 dark:bg-white/5 rounded-3xl border border-slate-100 dark:border-white/5">
-                                    <div className="flex items-center gap-3 mb-2">
-                                        <div className="h-2 w-2 rounded-full bg-kenya-green animate-pulse" />
-                                        <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Requirements Check</span>
+                                <div className="p-6 bg-slate-50 dark:bg-white/5 rounded-[32px] border border-slate-100 dark:border-white/5 space-y-5">
+                                    <div className="flex items-center gap-3">
+                                        <div className="h-2 w-2 rounded-full bg-primary" />
+                                        <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground pt-0.5">Role Expectations</span>
                                     </div>
-                                    <p className="text-xs font-medium">By applying, you confirm availability for: <span className="font-bold">{opportunity.commitment}</span></p>
+                                    
+                                    <div className="grid grid-cols-1 gap-4">
+                                        <div className="space-y-1">
+                                            <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">Time Commitment</p>
+                                            <p className="text-sm font-bold text-slate-800 dark:text-slate-200">{opportunity.commitment || 'Flexible'}</p>
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">Key Skills Involved</p>
+                                            <div className="flex flex-wrap gap-1.5">
+                                                {opportunity.skills_required && opportunity.skills_required.length > 0 ? (
+                                                    opportunity.skills_required.map((skill: string) => (
+                                                        <span key={skill} className="px-2.5 py-1 bg-white dark:bg-white/5 rounded-xl text-[10px] font-bold border border-slate-100 dark:border-white/5 shadow-sm text-slate-600 dark:text-slate-400">
+                                                            {skill}
+                                                        </span>
+                                                    ))
+                                                ) : (
+                                                    <span className="px-2.5 py-1 bg-slate-50 dark:bg-white/5 rounded-xl text-[10px] font-bold border border-dashed border-slate-200 dark:border-white/10 text-muted-foreground/40 italic">
+                                                        General Civic Engagement
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div 
+                                        onClick={() => setIsCertified(!isCertified)}
+                                        className={cn(
+                                        "flex items-center gap-3 p-4 rounded-2xl cursor-pointer transition-all border",
+                                        isCertified 
+                                            ? "bg-primary/5 border-primary/20" 
+                                            : "bg-white dark:bg-black/20 border-slate-100 dark:border-white/5 hover:border-primary/10"
+                                    )}>
+                                        <div className={cn(
+                                            "h-5 w-5 rounded-lg border-2 flex items-center justify-center transition-all shrink-0",
+                                            isCertified ? "bg-primary border-primary" : "border-slate-300 dark:border-white/10"
+                                        )}>
+                                            {isCertified && <CheckCircle2 className="h-3 w-3 text-white" />}
+                                        </div>
+                                        <p className="text-xs font-bold text-slate-600 dark:text-slate-400">
+                                            I've reviewed the requirements and am ready to contribute.
+                                        </p>
+                                    </div>
                                 </div>
 
                                 <div className="grid gap-4 pt-2">
                                     <div className="space-y-2">
-                                        <Label htmlFor="motivation" className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-1">Why do you want to volunteer?</Label>
+                                        <Label htmlFor="motivation" className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-1">Tell us why you're interested</Label>
                                         <Textarea
                                             id="motivation"
                                             name="motivation"
-                                            placeholder="Describe your motivation and relevant experience..."
-                                            className="min-h-[150px] rounded-[24px] bg-slate-100/50 dark:bg-black/20 border-none shadow-inner p-5 text-sm focus-visible:ring-2 focus-visible:ring-primary/20"
+                                            placeholder="Introduce yourself and share why you'd like to join this specific initiative..."
+                                            className="min-h-[120px] rounded-[28px] bg-slate-100/50 dark:bg-black/20 border-none shadow-inner p-5 text-sm focus-visible:ring-2 focus-visible:ring-primary/20"
                                             value={motivation}
                                             onChange={(e) => setMotivation(e.target.value)}
                                         />
@@ -173,10 +260,10 @@ export const VolunteerApplyModal = ({ opportunity, isOpen, onClose }: VolunteerA
 
                                 <Button
                                     onClick={handleSubmit}
-                                    disabled={submitting || !motivation.trim()}
-                                    className="w-full h-14 rounded-2xl bg-primary hover:bg-primary/90 font-black uppercase tracking-[0.15em] text-xs shadow-xl shadow-primary/20 active:scale-[0.98] transition-all"
+                                    disabled={submitting || !motivation.trim() || !isCertified}
+                                    className="w-full h-14 rounded-2xl bg-primary hover:bg-primary/90 font-black uppercase tracking-widest text-[11px] shadow-xl shadow-primary/20 active:scale-[0.98] transition-all disabled:opacity-50"
                                 >
-                                    {submitting ? <CEKALoader variant="ios" size="sm" /> : 'Send Your Application'}
+                                    {submitting ? <CEKALoader variant="ios" size="sm" /> : 'Submit Your Application'}
                                 </Button>
                             </DialogFooter>
                         </motion.div>
@@ -200,6 +287,7 @@ export const VolunteerApplyModal = ({ opportunity, isOpen, onClose }: VolunteerA
                         </motion.div>
                     )}
                 </AnimatePresence>
+                </div>
             </DialogContent>
         </Dialog>
     );
