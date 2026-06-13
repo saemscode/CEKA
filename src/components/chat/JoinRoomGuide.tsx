@@ -1,4 +1,5 @@
 import React from 'react';
+import ReactDOM from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import {
@@ -17,14 +18,14 @@ interface JoinRoomGuideProps {
 const JoinRoomGuide = ({ roomName, isOpen, onClose }: JoinRoomGuideProps) => {
     const { language } = useLanguage();
 
-    return (
+    return ReactDOM.createPortal(
         <AnimatePresence>
             {isOpen && (
                 <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    className="absolute inset-0 z-50 flex items-center justify-center p-6 bg-white/40 dark:bg-black/60 backdrop-blur-md rounded-[32px] overflow-hidden"
+                    className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-white/40 dark:bg-black/60 backdrop-blur-md overflow-hidden"
                 >
                     <motion.div
                         initial={{ scale: 0.9, opacity: 0, y: 20 }}
@@ -95,7 +96,8 @@ const JoinRoomGuide = ({ roomName, isOpen, onClose }: JoinRoomGuideProps) => {
                     </motion.div>
                 </motion.div>
             )}
-        </AnimatePresence>
+        </AnimatePresence>,
+        document.body
     );
 };
 
