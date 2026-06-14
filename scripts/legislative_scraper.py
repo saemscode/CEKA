@@ -912,9 +912,6 @@ class LegislativeScraper:
         lower = html.lower()
         return any(sig.lower() in lower for sig in cf_signatures)
 
-    # ================================================================
-    #  FIXED: Wait for real content (table with rows, not .views-row)
-    # ================================================================
     def _wait_for_real_content(self, page, timeout_ms: int = 15000) -> bool:
         """Wait until real content (a table with rows) appears, not a Cloudflare challenge."""
         deadline = time.time() + timeout_ms / 1000
@@ -1007,9 +1004,9 @@ class LegislativeScraper:
         logger.info("[Browser] Stealth init script injected.")
         return browser, context
 
-    # ================================================================
-    #  FIXED: _scrape_bills – targets the table, uses ?title=&page=
-    # ================================================================
+    # -------------------------------------------------------------------
+    #  _scrape_bills – FINAL FIXED VERSION
+    # -------------------------------------------------------------------
     def _scrape_bills(self, page, target: dict, max_pages: int):
         base_url = target["url"].rstrip("/")
         if "?" in base_url:
@@ -1034,44 +1031,32 @@ class LegislativeScraper:
                         break
                     continue
 
-                # Identical page guard
-                current_html = page.content()
-                current_hash = hashlib.md5(current_html.encode()).hexdigest()
-                if current_hash == prev_page_hash:
-                    logger.info(f"  [Cap] Page {page_num + 1} identical to previous – end.")
-                    break
-                prev_page_hash = current_hash
+                # Wait an extra second for any JS-lazy-loaded content
+                page.wait_for_timeout(2000)
 
-                # Extract rows from the bills table
+                # Simple, reliable extraction: find all rows in the main table
                 rows = page.evaluate("""() => {
-                    // Find the table that contains bills
-                    let billTable = null;
+                    // Find the first table that contains at least one PDF link
                     const tables = document.querySelectorAll('table');
+                    let targetTable = null;
                     for (const table of tables) {
-                        const pdfLinks = table.querySelectorAll('a[href$=".pdf"]');
-                        if (pdfLinks.length >= 3) {
-                            billTable = table;
-                            break;
-                        }
-                        // Also check thead for 'Bill' text
-                        const headerText = table.innerText.slice(0, 200).toLowerCase();
-                        if (headerText.includes('bill') && pdfLinks.length > 0) {
-                            billTable = table;
+                        if (table.querySelector('a[href$=".pdf"]')) {
+                            targetTable = table;
                             break;
                         }
                     }
-                    if (!billTable) return [];
+                    if (!targetTable) return [];
 
-                    const rows = billTable.querySelectorAll('tbody tr, tr');
+                    // Get all rows in the table body or direct children
+                    const rows = targetTable.querySelectorAll('tbody tr, tr');
                     const results = [];
                     for (const row of rows) {
                         const pdfLink = row.querySelector('a[href$=".pdf"]');
                         if (!pdfLink) continue;
-                        const detailLink = row.querySelector('a:not([href$=".pdf"])');
                         results.push({
                             pdfHref: pdfLink.href,
                             pdfText: pdfLink.textContent.trim(),
-                            detailHref: detailLink ? detailLink.href : null,
+                            detailHref: null,   // no node page in this table
                             rowText: row.innerText.trim().substring(0, 300)
                         });
                     }
@@ -1153,7 +1138,7 @@ class LegislativeScraper:
                     break
 
     # -------------------------------------------------------------------
-    #  scrape_all – uses stealth browser and proxy pool (unchanged)
+    #  scrape_all – uses stealth browser and proxy pool
     # -------------------------------------------------------------------
     def scrape_all(self, max_pages: int = 40) -> List[Dict[str, Any]]:
         logger.info("=" * 60)
@@ -1204,7 +1189,7 @@ class LegislativeScraper:
         return self.data
 
     # -------------------------------------------------------------------
-    #  The rest of the original methods (unchanged, but kept for completeness)
+    #  The rest of the original methods (unchanged)
     #  - _load_targets, _deep_process_bill, _distill_bill_content,
     #    _ocr_page_screenshots, _scrape_bill_detail_page,
     #    _extract_text_cascade, _parse_bill_text, _scrape_standard_docs,
@@ -1861,5 +1846,5 @@ Return EXACTLY a JSON object with these keys:
 
 if __name__ == "__main__":
     scraper = LegislativeScraper(headless=True)
-    scraper.scrape_all(max_pages=40)   # you can change max_pages as needed
+    scraper.scrape_all(max_pages=40)
     scraper.save_data()
