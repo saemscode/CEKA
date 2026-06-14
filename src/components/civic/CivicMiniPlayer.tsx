@@ -5,6 +5,7 @@ import { useCivicPlayerStore } from '@/stores/useCivicPlayerStore';
 import { useCivicPlayerData } from '@/hooks/useCivicPlayerData';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
+import { Deep2Icon, SearchIcon, NewspaperIcon, EyeIcon, ExternalLinkIcon } from '@/components/ui/CustomIcons';
 import {
   Bell, ChevronLeft, ChevronRight, Flame, Calendar,
   FileText, TrendingUp, CheckCircle, Clock,
@@ -454,7 +455,8 @@ const FollowedBillsSlide: React.FC<{
       <FileText className="w-7 h-7 text-slate-200 dark:text-white/10" />
       <p className="text-xs text-slate-400 dark:text-white/30 text-center">No bills followed.<br />Browse the tracker and tap Follow.</p>
       <Link to="/legislative-tracker" className="inline-flex items-center gap-1 text-xs text-kenya-green font-semibold mt-1">
-        Browse <img src="/chevron.svg" className="w-3 h-3 inline" alt="" />
+        Browse
+        <SearchIcon className="w-3 h-3 inline" />
       </Link>
     </div>
   );
@@ -499,7 +501,7 @@ const FollowedBillsSlide: React.FC<{
                       className="shrink-0 p-1 rounded-full hover:bg-slate-200/60 dark:hover:bg-white/10 transition"
                       aria-label="Collapse"
                     >
-                      <img src="/chevron.svg" className="w-4 h-4 opacity-50" style={{ transform: 'rotate(180deg)' }} alt="collapse" />
+                      <NewspaperIcon className="w-4 h-4 opacity-50" style={{ transform: 'rotate(180deg)' }} />
                     </button>
                   </div>
                   <span className="text-[9px] font-bold text-kenya-green bg-kenya-green/10 px-1.5 py-px rounded-full">{bill.status || 'Active'}</span>
@@ -509,7 +511,8 @@ const FollowedBillsSlide: React.FC<{
                     onClick={() => navigate(`/bill/${bill.slug || bill.id}`)}
                     className="mt-2 inline-flex items-center gap-1 text-[9px] font-bold text-kenya-green hover:underline"
                   >
-                    Full details <img src="/chevron.svg" className="w-2.5 h-2.5" alt="" />
+                    Full details
+                    <Deep2Icon className="w-2.5 h-2.5" />
                   </button>
                 </motion.div>
               ) : (
@@ -779,7 +782,8 @@ const DetailCard: React.FC<{
                           </div>
                           <p className="text-sm font-semibold text-slate-800 dark:text-white leading-snug">{props.latestHeadline || 'No new updates right now.'}</p>
                           <Link to="/legislative-tracker" className="inline-flex items-center gap-1 text-xs font-semibold text-kenya-green mt-2 hover:underline">
-                            View tracker <img src="/chevron.svg" className="w-3 h-3" alt="" />
+                            View tracker
+                            <EyeIcon className="w-3 h-3" />
                           </Link>
                         </div>
                         {props.recentBills.length > 0 && (
@@ -795,7 +799,7 @@ const DetailCard: React.FC<{
                                   <p className="text-xs font-semibold text-slate-700 dark:text-white/80 truncate">{bill.title}</p>
                                   {bill.summary && <p className="text-[10px] text-slate-500 dark:text-white/40 truncate mt-0.5">{bill.summary}</p>}
                                 </div>
-                                <img src="/chevron.svg" className="w-3 h-3 shrink-0 opacity-40" alt="" />
+                                <ExternalLinkIcon className="w-3 h-3 shrink-0 opacity-40" />
                               </Link>
                             ))}
                           </div>
@@ -911,7 +915,7 @@ const DetailCard: React.FC<{
                                   {!isNps && notif.link && (
                                     <button onClick={() => { props.markNotifRead(notif.id); window.location.href = notif.link; }}
                                       className="inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-wide text-kenya-green hover:underline mt-1">
-                                      {typeLabel || 'View'} <img src="/chevron.svg" className="w-2.5 h-2.5" alt="" />
+                                      {typeLabel || 'View'} <EyeIcon className="w-2.5 h-2.5" />
                                     </button>
                                   )}
                                 </div>
