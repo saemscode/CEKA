@@ -39,7 +39,7 @@ const DonationWidget: React.FC<DonationWidgetProps> = ({ onTimedOut, isVisible: 
   const [hasTimedOut, setHasTimedOut] = useState(false);
   const [opacity, setOpacity] = useState(1);
   const [redirecting, setRedirecting] = useState(false);
-  
+
   const widgetMountTimeRef = useRef<number>(Date.now());
   const visibilityTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const timeoutTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -97,7 +97,7 @@ const DonationWidget: React.FC<DonationWidgetProps> = ({ onTimedOut, isVisible: 
     visibilityTimerRef.current = setTimeout(() => {
       setIsVisible(true);
     }, 5000);
-    
+
     timeoutTimerRef.current = setTimeout(() => {
       if (!isExpanded) {
         setIsVisible(false);
@@ -105,7 +105,7 @@ const DonationWidget: React.FC<DonationWidgetProps> = ({ onTimedOut, isVisible: 
         if (onTimedOut) onTimedOut();
       }
     }, MAX_WIDGET_DISPLAY_TIME);
-    
+
     return clearTimers;
   }, [isExpanded, onTimedOut, controlledVisibility]);
 
@@ -127,7 +127,7 @@ const DonationWidget: React.FC<DonationWidgetProps> = ({ onTimedOut, isVisible: 
       description: "You will be taken to ZenLipa for M-Pesa processing",
       duration: 2500,
     });
-    
+
     setTimeout(() => {
       window.open('https://zenlipa.co.ke/me/civic-education-kenya', '_blank', 'noopener,noreferrer');
       setRedirecting(false);
@@ -137,23 +137,23 @@ const DonationWidget: React.FC<DonationWidgetProps> = ({ onTimedOut, isVisible: 
   if (hasTimedOut || !isVisible) return null;
 
   return (
-  <div
-    data-donation-trigger
-    className="fixed z-30 transition-all duration-500 ease-out"
-    style={{
-      zIndex: 30,
-      opacity,
-      bottom: `${offsetY}px`,
-      ...(isExpanded ? {
-        top: '50%',
-        bottom: 'auto',
-        left: '50%',
-        transform: 'translate(-50%, -50%)'
-      } : {
-        right: '2rem',
-      })
-    }}
-  >
+    <div
+      data-donation-trigger
+      className="fixed z-30 transition-all duration-500 ease-out"
+      style={{
+        zIndex: 30,
+        opacity,
+        bottom: `${offsetY}px`,
+        ...(isExpanded ? {
+          top: '50%',
+          bottom: 'auto',
+          left: '50%',
+          transform: 'translate(-50%, -50%)'
+        } : {
+          right: '2rem',
+        })
+      }}
+    >
       {!isExpanded ? (
         <div
           className="relative group cursor-pointer"
@@ -162,51 +162,45 @@ const DonationWidget: React.FC<DonationWidgetProps> = ({ onTimedOut, isVisible: 
           onClick={handleExpand}
         >
           <div className="relative w-48 h-12 flex items-center">
-            <div 
-              className={`absolute right-12 top-0 h-12 flex items-center transition-all duration-500 ease-out ${
-                isHovering 
-                  ? 'opacity-100 translate-x-0' 
+            <div
+              className={`absolute right-12 top-0 h-12 flex items-center transition-all duration-500 ease-out ${isHovering
+                  ? 'opacity-100 translate-x-0'
                   : 'opacity-0 translate-x-4 pointer-events-none'
-              }`}
-            >
-              <div 
-                className={`absolute inset-0 rounded-full transition-all duration-500 ease-out ${
-                  isHovering 
-                    ? 'bg-black/20 backdrop-blur-sm scale-100' 
-                    : 'bg-black/0 backdrop-blur-none scale-75'
-                }`} 
-              />
-              <span 
-                className={`relative px-4 py-2 text-white font-semibold text-sm whitespace-nowrap transition-all duration-500 ease-out drop-shadow-lg ${
-                  isHovering 
-                    ? 'opacity-100 scale-100' 
-                    : 'opacity-0 scale-90'
                 }`}
+            >
+              <div
+                className={`absolute inset-0 rounded-full transition-all duration-500 ease-out ${isHovering
+                    ? 'bg-black/20 backdrop-blur-sm scale-100'
+                    : 'bg-black/0 backdrop-blur-none scale-75'
+                  }`}
+              />
+              <span
+                className={`relative px-4 py-2 text-white font-semibold text-sm whitespace-nowrap transition-all duration-500 ease-out drop-shadow-lg ${isHovering
+                    ? 'opacity-100 scale-100'
+                    : 'opacity-0 scale-90'
+                  }`}
               >
                 Support Us
               </span>
             </div>
-            <div 
-              className={`absolute right-0 w-12 h-12 rounded-full flex items-center justify-center transition-all duration-500 ease-out shadow-2xl ${
-                isHovering
+            <div
+              className={`absolute right-0 w-12 h-12 rounded-full flex items-center justify-center transition-all duration-500 ease-out shadow-2xl ${isHovering
                   ? 'bg-gradient-to-br from-red-400 via-red-500 to-red-600 shadow-red-500/50 scale-110'
                   : 'bg-gradient-to-br from-red-500 via-red-600 to-red-700 shadow-red-600/40 scale-100'
-              }`}
+                }`}
             >
               <div className="absolute inset-1 rounded-full bg-gradient-to-br from-red-300/30 to-transparent" />
-              <Heart 
-                className={`relative z-10 transition-all duration-300 ease-out ${
-                  isHovering 
-                    ? 'h-6 w-6 text-white drop-shadow-lg' 
+              <Heart
+                className={`relative z-10 transition-all duration-300 ease-out ${isHovering
+                    ? 'h-6 w-6 text-white drop-shadow-lg'
                     : 'h-5 w-5 text-white/90'
-                }`} 
+                  }`}
               />
-              <div 
-                className={`absolute inset-0 rounded-full bg-red-400 transition-all duration-1000 ease-out ${
-                  isHovering 
-                    ? 'animate-ping opacity-20' 
+              <div
+                className={`absolute inset-0 rounded-full bg-red-400 transition-all duration-1000 ease-out ${isHovering
+                    ? 'animate-ping opacity-20'
                     : 'opacity-0'
-                }`} 
+                  }`}
               />
             </div>
           </div>
@@ -239,12 +233,12 @@ const DonationWidget: React.FC<DonationWidgetProps> = ({ onTimedOut, isVisible: 
             </div>
           </div>
           <div className="p-4">
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4 leading-relaxed">
+            <p className="text-sm text-gray-800 dark:text-gray-200 mb-4 leading-relaxed font-medium">
               Your support helps us continue our mission of civic education in Kenya.
             </p>
             <div className="space-y-3">
               {DONATION_OPTIONS.map((option, index) => (
-                <div 
+                <div
                   key={option.name}
                   className="group relative p-4 rounded-xl flex items-center justify-between hover:bg-white/10 dark:hover:bg-gray-800/10 transition-all duration-300 border border-white/10 dark:border-gray-700/10 backdrop-blur-sm"
                   style={{ animationDelay: `${index * 100}ms` }}
@@ -256,18 +250,19 @@ const DonationWidget: React.FC<DonationWidgetProps> = ({ onTimedOut, isVisible: 
                     </div>
                     <div>
                       <p className="font-semibold text-sm text-gray-900 dark:text-white mb-1">{option.name}</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">{option.description}</p>
+                      <p className="text-xs text-gray-700 dark:text-gray-300">
+                        {option.description}
+                      </p>
                     </div>
                   </div>
                   {option.name === 'M-Pesa' ? (
                     <button
                       onClick={handleMpesaRedirect}
                       disabled={redirecting}
-                      className={`relative z-10 px-4 py-2 text-sm rounded-lg flex items-center backdrop-blur-sm transition-all duration-300 shadow-lg ${
-                        redirecting
+                      className={`relative z-10 px-4 py-2 text-sm rounded-lg flex items-center backdrop-blur-sm transition-all duration-300 shadow-lg ${redirecting
                           ? 'bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed'
-                          : 'bg-white/10 dark:bg-gray-800/10 hover:bg-white/20 dark:hover:bg-gray-700/20 text-gray-700 dark:text-gray-300 hover:scale-105'
-                      }`}
+                          : 'bg-white/10 dark:bg-gray-800/10 hover:bg-white/20 dark:hover:bg-gray-700/20 text-gray-800 dark:text-gray-200 hover:scale-105'
+                        }`}
                     >
                       {redirecting ? (
                         <span className="flex items-center">
@@ -284,9 +279,9 @@ const DonationWidget: React.FC<DonationWidgetProps> = ({ onTimedOut, isVisible: 
                   ) : (
                     <a
                       href={option.url}
-                      target="_blank" 
+                      target="_blank"
                       rel="noopener noreferrer"
-                      className="relative z-10 px-4 py-2 text-sm rounded-lg flex items-center bg-white/10 dark:bg-gray-800/10 hover:bg-white/20 dark:hover:bg-gray-700/20 backdrop-blur-sm transition-all duration-300 text-gray-700 dark:text-gray-300 hover:scale-105 shadow-lg"
+                      className="relative z-10 px-4 py-2 text-sm rounded-lg flex items-center bg-white/10 dark:bg-gray-800/10 hover:bg-white/20 dark:hover:bg-gray-700/20 backdrop-blur-sm transition-all duration-300 text-gray-800 dark:text-gray-200 hover:scale-105 shadow-lg"
                     >
                       <span className="mr-2">Visit</span>
                       <ExternalLink className="h-3 w-3" />

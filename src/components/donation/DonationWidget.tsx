@@ -3,6 +3,7 @@ import { X, Gift, Copy, ExternalLink, CreditCard } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { PenNewSquareIcon } from '@/components/ui/CustomIcons';
 
 declare global {
   interface Window {
@@ -44,7 +45,6 @@ interface DonationWidgetProps {
   isVisible?: boolean;
   offsetY?: number;
   onClose?: () => void;
-  // HIDING MECHANICS ONLY
   isHidden?: boolean;
   onHide?: () => void;
 }
@@ -63,7 +63,6 @@ const DonationWidget: React.FC<DonationWidgetProps> = ({
   const [hasTimedOut, setHasTimedOut] = useState(false);
   const [opacity, setOpacity] = useState(1);
 
-  // Paystack & Tiered State
   const [amount, setAmount] = useState<number | string>(500);
   const [isCustom, setIsCustom] = useState(false);
   const [isPaying, setIsPaying] = useState(false);
@@ -220,214 +219,234 @@ const DonationWidget: React.FC<DonationWidgetProps> = ({
     <AnimatePresence>
       {(hasTimedOut || !isVisible || isHidden) ? null : (
         <motion.div
-        drag={!isExpanded ? "x" : false}
-        dragConstraints={{ left: 0, right: 300 }}
-        dragElastic={0.1}
-        onDragEnd={(_, info) => {
-          if (!isExpanded && info.offset.x > 80) {
-            onHide?.();
-          }
-        }}
-        data-donation-trigger
-        className={cn(
-          "fixed pointer-events-auto",
-          isExpanded ? "inset-0 flex items-center justify-center z-[9999]" : "z-40"
-        )}
-        style={{
-          opacity,
-          touchAction: 'none',
-          ...(isExpanded ? {
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0
-          } : {
-            bottom: `${offsetY}px`,
-            right: '2rem'
-          })
-        }}
-      >
-        {!isExpanded ? (
-          <div
-            className="relative group cursor-pointer"
-            onMouseEnter={handleMouseEnter}
-            onMouseLeave={handleMouseLeave}
-            onClick={handleExpand}
-          >
-            <div className="relative w-48 h-12 flex items-center">
-              <div
-                className={`absolute right-12 top-0 h-12 flex items-center transition-all duration-500 ease-out ${isHovering
-                  ? 'opacity-100 translate-x-0'
-                  : 'opacity-0 translate-x-4 pointer-events-none'
-                  }`}
-              >
+          drag={!isExpanded ? "x" : false}
+          dragConstraints={{ left: 0, right: 300 }}
+          dragElastic={0.1}
+          onDragEnd={(_, info) => {
+            if (!isExpanded && info.offset.x > 80) {
+              onHide?.();
+            }
+          }}
+          data-donation-trigger
+          className={cn(
+            "fixed pointer-events-auto",
+            isExpanded ? "inset-0 flex items-center justify-center z-[9999]" : "z-40"
+          )}
+          style={{
+            opacity,
+            touchAction: 'none',
+            ...(isExpanded ? {
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0
+            } : {
+              bottom: `${offsetY}px`,
+              right: '2rem'
+            })
+          }}
+        >
+          {!isExpanded ? (
+            <div
+              className="relative group cursor-pointer"
+              onMouseEnter={handleMouseEnter}
+              onMouseLeave={handleMouseLeave}
+              onClick={handleExpand}
+            >
+              <div className="relative w-48 h-12 flex items-center">
                 <div
-                  className={`absolute inset-0 rounded-full transition-all duration-500 ease-out ${isHovering
-                    ? 'bg-black/20 backdrop-blur-sm scale-100'
-                    : 'bg-black/0 backdrop-blur-none scale-75'
-                    }`}
-                />
-                <span
-                  className={`relative px-4 py-2 text-white font-semibold text-sm whitespace-nowrap transition-all duration-500 ease-out drop-shadow-lg ${isHovering
-                    ? 'opacity-100 scale-100'
-                    : 'opacity-0 scale-90'
+                  className={`absolute right-12 top-0 h-12 flex items-center transition-all duration-500 ease-out ${isHovering
+                    ? 'opacity-100 translate-x-0'
+                    : 'opacity-0 translate-x-4 pointer-events-none'
                     }`}
                 >
-                  Support Us
-                </span>
-              </div>
-              <div
-                className={`absolute right-0 w-12 h-12 rounded-full flex items-center justify-center transition-all duration-500 ease-out shadow-2xl ${isHovering
-                  ? 'bg-gradient-to-br from-red-400 via-red-500 to-red-600 shadow-red-500/50 scale-110'
-                  : 'bg-gradient-to-br from-red-500 via-red-600 to-red-700 shadow-red-600/40 scale-100'
-                  }`}
-              >
-                <div className="absolute inset-1 rounded-full bg-gradient-to-br from-red-300/30 to-transparent" />
-                <HeartDonationIcon
-                  className={`relative z-10 w-6 h-6 transition-all duration-300 ease-out ${isHovering
-                    ? 'scale-110 text-white drop-shadow-lg translate-y-[1px]'
-                    : 'scale-100 text-white/90 translate-y-[1px]'
-                    }`}
-                />
-                <div
-                  className={`absolute inset-0 rounded-full bg-red-400 transition-all duration-1000 ease-out ${isHovering
-                    ? 'animate-ping opacity-20'
-                    : 'opacity-0'
-                    }`}
-                />
-              </div>
-            </div>
-          </div>
-        ) : (
-          <>
-            {/* Dimming Backdrop */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={handleCollapse}
-              className="absolute inset-0 bg-black/40 backdrop-blur-sm z-[-1]"
-            />
-            <div className="w-80 max-h-[90vh] flex flex-col bg-white/10 dark:bg-gray-900/10 backdrop-blur-xl border border-white/20 dark:border-gray-700/20 rounded-2xl shadow-2xl overflow-hidden glass-card">
-              <div className="bg-gradient-to-r from-kenya-green/20 to-kenya-green/10 p-4 border-b border-white/10 dark:border-gray-700/10">
-                <div className="flex justify-between items-center">
-                  <h3 className="font-bold text-lg flex items-center text-gray-900 dark:text-white tracking-tight">
-                    <div className="relative mr-3">
-                      <Gift className="h-6 w-6 text-kenya-green drop-shadow-sm" />
-                      <div className="absolute inset-0 bg-kenya-green/30 blur-sm rounded-full" />
-                    </div>
-                    Support Mission
-                  </h3>
-                  <button
-                    className="relative group rounded-full p-2 hover:bg-white/10 dark:hover:bg-gray-800/10 transition-all duration-300 backdrop-blur-sm"
-                    onClick={handleCollapse}
+                  <div
+                    className={`absolute inset-0 rounded-full transition-all duration-500 ease-out ${isHovering
+                      ? 'bg-black/20 backdrop-blur-sm scale-100'
+                      : 'bg-black/0 backdrop-blur-none scale-75'
+                      }`}
+                  />
+                  <span
+                    className={`relative px-4 py-2 text-white font-semibold text-sm whitespace-nowrap transition-all duration-500 ease-out drop-shadow-lg ${isHovering
+                      ? 'opacity-100 scale-100'
+                      : 'opacity-0 scale-90'
+                      }`}
                   >
-                    <X className="h-4 w-4 text-gray-700 dark:text-gray-400 group-hover:text-kenya-red/70 transition-colors" />
-                  </button>
+                    Support Us
+                  </span>
+                </div>
+                <div
+                  className={`absolute right-0 w-12 h-12 rounded-full flex items-center justify-center transition-all duration-500 ease-out shadow-2xl ${isHovering
+                    ? 'bg-gradient-to-br from-red-400 via-red-500 to-red-600 shadow-red-500/50 scale-110'
+                    : 'bg-gradient-to-br from-red-500 via-red-600 to-red-700 shadow-red-600/40 scale-100'
+                    }`}
+                >
+                  <div className="absolute inset-1 rounded-full bg-gradient-to-br from-red-300/30 to-transparent" />
+                  <HeartDonationIcon
+                    className={`relative z-10 w-6 h-6 transition-all duration-300 ease-out ${isHovering
+                      ? 'scale-110 text-white drop-shadow-lg translate-y-[1px]'
+                      : 'scale-100 text-white/90 translate-y-[1px]'
+                      }`}
+                  />
+                  <div
+                    className={`absolute inset-0 rounded-full bg-red-400 transition-all duration-1000 ease-out ${isHovering
+                      ? 'animate-ping opacity-20'
+                      : 'opacity-0'
+                      }`}
+                  />
                 </div>
               </div>
+            </div>
+          ) : (
+            <>
+              {/* Dimming Backdrop */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={handleCollapse}
+                className="absolute inset-0 bg-black/40 backdrop-blur-sm z-[-1]"
+              />
+              <div className="w-80 max-h-[90vh] flex flex-col bg-white/10 dark:bg-gray-900/10 backdrop-blur-xl border border-white/20 dark:border-gray-700/20 rounded-2xl shadow-2xl overflow-hidden glass-card">
+                <div className="bg-gradient-to-r from-kenya-green/20 to-kenya-green/10 p-4 border-b border-white/10 dark:border-gray-700/10">
+                  <div className="flex justify-between items-center">
+                    <h3 className="font-bold text-lg flex items-center text-gray-900 dark:text-white tracking-tight">
+                      <div className="relative mr-3">
+                        <Gift className="h-6 w-6 text-kenya-green drop-shadow-sm" />
+                        <div className="absolute inset-0 bg-kenya-green/30 blur-sm rounded-full" />
+                      </div>
+                      Support Mission
+                    </h3>
+                    <button
+                      className="relative group rounded-full p-2 hover:bg-white/10 dark:hover:bg-gray-800/10 transition-all duration-300 backdrop-blur-sm"
+                      onClick={handleCollapse}
+                    >
+                      <X className="h-4 w-4 text-gray-700 dark:text-gray-400 group-hover:text-kenya-red/70 transition-colors" />
+                    </button>
+                  </div>
+                </div>
 
-              <div className="p-4 overflow-y-auto space-y-4">
-                <div className="space-y-4">
-                  <div className="flex items-center gap-3 px-3 py-2 bg-kenya-green/5 border border-kenya-green/10 rounded-xl">
-                    <img src="/icons/check-box-svgrepo-com.svg" className="w-4 h-4 invert-0 dark:invert opacity-50" alt="" />
-                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-700 dark:text-slate-300">100% Secure via Paystack</span>
+                <div className="p-4 overflow-y-auto space-y-4">
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-3 px-3 py-2 bg-kenya-green/5 border border-kenya-green/10 rounded-xl">
+                      <img src="/icons/check-box-svgrepo-com.svg" className="w-4 h-4 invert-0 dark:invert opacity-50" alt="" />
+                      <span className="text-[10px] font-black uppercase tracking-widest text-slate-700 dark:text-slate-300">100% Secure via Paystack</span>
+                    </div>
+
+                    {/* Amount selection grid - faster hover transitions & faded unselected amounts */}
+                    <div className="grid grid-cols-2 gap-3">
+                      {[100, 200, 500, 1000].map(val => (
+                        <button
+                          key={val}
+                          onClick={() => { setAmount(val); setIsCustom(false); }}
+                          className={cn(
+                            "h-16 rounded-xl border relative overflow-hidden transition-all duration-150 ease-out",
+                            "hover:scale-[1.02] hover:shadow-md hover:bg-white/10 dark:hover:bg-white/5 active:scale-[0.98]",
+                            amount === val && !isCustom
+                              ? "border-kenya-green bg-kenya-green/10 shadow-lg ring-1 ring-kenya-green/50"
+                              : "border-white/10 bg-white/5 hover:border-kenya-green/30"
+                          )}
+                        >
+                          <div className="flex flex-col items-center justify-center h-full text-center">
+                            <span className={cn(
+                              "text-sm font-black transition-all duration-150",
+                              amount === val && !isCustom
+                                ? "text-white"                     // Selected amount = bright white
+                                : "text-gray-600 dark:text-gray-300" // Unselected amount = faded gray (both light/dark)
+                            )}>
+                              KES {val}
+                            </span>
+                            <span className={cn(
+                              "text-[8px] font-black uppercase tracking-widest transition-all duration-150",
+                              amount === val && !isCustom
+                                ? "text-kenya-green/90"               // Selected label = green
+                                : "text-gray-600 dark:text-gray-300"
+                            )}>
+                              Support Tier
+                            </span>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+
+                    <button
+                      onClick={() => setIsCustom(!isCustom)}
+                      className={`w-full py-3 rounded-xl border font-black text-[10px] uppercase tracking-widest transition-all duration-150 flex items-center justify-center gap-2 ${isCustom ? 'border-kenya-green bg-kenya-green/10 text-kenya-green' : 'border-slate-400/20 dark:border-white/10 bg-white/5 text-gray-800 dark:text-gray-200 hover:bg-white/10'}`}
+                    >
+                      <PenNewSquareIcon className="w-4 h-4" />
+                      {isCustom ? 'Use Fixed Amounts' : 'Write Your Own Amount'}
+                    </button>
+
+                    {isCustom && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="relative group"
+                      >
+                        <input
+                          type="number"
+                          value={amount}
+                          onChange={e => setAmount(e.target.value)}
+                          className="w-full h-14 px-4 bg-white/5 border border-kenya-green/20 focus:border-kenya-green outline-none rounded-xl text-2xl font-black text-center text-kenya-green transition-all"
+                          placeholder="0"
+                          autoFocus
+                        />
+                        <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-black uppercase tracking-widest text-gray-700 dark:text-gray-300">KES</div>
+                      </motion.div>
+                    )}
+
+                    <button
+                      onClick={handlePaystackDonate}
+                      disabled={isPaying}
+                      className="w-full py-4 rounded-xl font-black uppercase text-xs tracking-[0.2em] bg-kenya-green hover:bg-[#0ead36] text-white transition-all shadow-xl shadow-kenya-green/20 flex items-center justify-center gap-3 active:scale-95 disabled:opacity-50"
+                    >
+                      <img src="/icons/wallet-money-svgrepo-com.svg" className="w-5 h-5 invert dark:invert-0" alt="" />
+                      {isPaying ? 'Processing...' : `Donate KES ${amount}`}
+                    </button>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3">
-                    {[100, 200, 500, 1000].map(val => (
-                      <button
-                        key={val}
-                        onClick={() => { setAmount(val); setIsCustom(false); }}
-                        className={`h-16 rounded-xl border relative overflow-hidden transition-all duration-300 group ${amount === val && !isCustom ? 'border-kenya-green bg-kenya-green/10 shadow-lg' : 'border-white/10 bg-white/5 hover:border-kenya-green/30'}`}
+                  <div className="relative py-4 flex items-center gap-4">
+                    <div className="flex-1 h-px bg-white/10" />
+                    <span className="text-[9px] font-black uppercase tracking-widest text-gray-800 dark:text-gray-300 whitespace-nowrap">Or Direct Transfer</span>
+                    <div className="flex-1 h-px bg-white/10" />
+                  </div>
+
+                  <div className="space-y-3">
+                    {DONATION_OPTIONS.filter(o => o.name === 'M-Pesa').map((option) => (
+                      <div
+                        key={option.name}
+                        className="group relative p-4 rounded-xl flex items-center justify-between hover:bg-white/10 transition-all duration-300 border border-white/10 backdrop-blur-sm cursor-pointer"
+                        onClick={handleMpesa}
                       >
-                        <div className="flex flex-col items-center justify-center h-full text-center">
-                          <span className={`text-sm font-black transition-all ${amount === val && !isCustom ? 'text-kenya-green' : 'text-slate-700 dark:text-slate-200 group-hover:text-kenya-green'}`}>
-                            KES {val}
-                          </span>
-                          <span className={`text-[8px] font-black uppercase tracking-widest transition-all ${amount === val && !isCustom ? 'text-kenya-green/60' : 'text-slate-500/70 dark:text-slate-400/70'}`}>Support Tier</span>
+                        <div className="flex items-center relative z-10">
+                          <div className="text-2xl mr-4 transition-transform duration-300 group-hover:scale-110">
+                            {option.icon}
+                          </div>
+                          <div>
+                            <p className="font-bold text-xs text-gray-900 dark:text-white mb-0.5">{option.name} Manual</p>
+                            <p className="text-[10px] text-gray-700 dark:text-gray-300 font-bold">{option.description}</p>
+                          </div>
                         </div>
-                      </button>
+                        <button
+                          className="relative z-10 px-3 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg bg-white/10 hover:bg-white/20 transition-all text-gray-800 dark:text-gray-200"
+                        >
+                          Copy
+                        </button>
+                      </div>
                     ))}
                   </div>
 
                   <button
-                    onClick={() => setIsCustom(!isCustom)}
-                    className={`w-full py-3 rounded-xl border font-black text-[10px] uppercase tracking-widest transition-all ${isCustom ? 'border-kenya-green bg-kenya-green/10 text-kenya-green' : 'border-slate-400/20 dark:border-white/10 bg-white/5 text-slate-700 dark:text-slate-300 hover:bg-white/10'}`}
+                    className="w-full py-3 rounded-xl font-black text-[10px] uppercase tracking-widest text-gray-700 dark:text-gray-400 hover:text-kenya-red/50 dark:hover:text-kenya-red/50 transition-all duration-150"
+                    onClick={handleCollapse}
                   >
-                    {isCustom ? 'Use Fixed Amounts' : 'Write Your Own Amount'}
-                  </button>
-
-                  {isCustom && (
-                    <motion.div
-                      initial={{ opacity: 0, y: -10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="relative group "
-                    >
-                      <input
-                        type="number"
-                        value={amount}
-                        onChange={e => setAmount(e.target.value)}
-                        className="w-full h-14 px-4 bg-white/5 border border-kenya-green/20 focus:border-kenya-green outline-none rounded-xl text-2xl font-black text-center text-kenya-green transition-all"
-                        placeholder="0"
-                        autoFocus
-                      />
-                      <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-black uppercase tracking-widest opacity-20">KES</div>
-                    </motion.div>
-                  )}
-
-                  <button
-                    onClick={handlePaystackDonate}
-                    disabled={isPaying}
-                    className="w-full py-4 rounded-xl font-black uppercase text-xs tracking-[0.2em] bg-kenya-green hover:bg-[#0ead36] text-white transition-all shadow-xl shadow-kenya-green/20 flex items-center justify-center gap-3 active:scale-95 disabled:opacity-50"
-                  >
-                    <img src="/icons/wallet-money-svgrepo-com.svg" className="w-5 h-5 invert dark:invert-0" alt="" />
-                    {isPaying ? 'Processing...' : `Donate KES ${amount}`}
+                    Maybe Later
                   </button>
                 </div>
-
-                <div className="relative py-4 flex items-center gap-4">
-                  <div className="flex-1 h-px bg-white/10" />
-                  <span className="text-[9px] font-black uppercase tracking-widest text-slate-600 dark:text-slate-400 whitespace-nowrap">Or Direct Transfer</span>
-                  <div className="flex-1 h-px bg-white/10" />
-                </div>
-
-                <div className="space-y-3">
-                  {DONATION_OPTIONS.filter(o => o.name === 'M-Pesa').map((option) => (
-                    <div
-                      key={option.name}
-                      className="group relative p-4 rounded-xl flex items-center justify-between hover:bg-white/10 transition-all duration-300 border border-white/10 backdrop-blur-sm cursor-pointer"
-                      onClick={handleMpesa}
-                    >
-                      <div className="flex items-center relative z-10">
-                        <div className="text-2xl mr-4 transition-transform duration-300 group-hover:scale-110">
-                          {option.icon}
-                        </div>
-                        <div>
-                          <p className="font-bold text-xs text-slate-800 dark:text-white mb-0.5">{option.name} Manual</p>
-                          <p className="text-[10px] text-slate-600 dark:text-slate-300 font-bold">{option.description}</p>
-                        </div>
-                      </div>
-                      <button
-                        className="relative z-10 px-3 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg bg-white/10 hover:bg-white/20 transition-all text-gray-700 dark:text-gray-300"
-                      >
-                        Copy
-                      </button>
-                    </div>
-                  ))}
-                </div>
-
-                <button
-                  className="w-full py-3 rounded-xl font-black text-[10px] uppercase tracking-widest text-slate-600 dark:text-slate-400 hover:text-kenya-red dark:hover:text-kenya-red transition-all"
-                  onClick={handleCollapse}
-                >
-                  Maybe Later
-                </button>
               </div>
-            </div>
-          </>
-        )}
-      </motion.div>
+            </>
+          )}
+        </motion.div>
       )}
     </AnimatePresence>
   );
