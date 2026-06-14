@@ -1,7 +1,9 @@
 import os
+import sys
 import json
 import logging
 import re
+import argparse
 from datetime import datetime
 from typing import List, Dict, Any, Optional
 from supabase import create_client, Client
@@ -18,7 +20,6 @@ def get_supabase_client() -> Client:
 
 
 def normalize_title(title: str) -> str:
-    """Normalize title for similarity comparison (Version Detection)."""
     t = title.lower()
     t = re.sub(r'\b(the|bill|no|of|copy|amendment|senate|national|assembly|gazette)\b', '', t)
     t = re.sub(r'\b20\d{2}\b', '', t)
@@ -27,7 +28,6 @@ def normalize_title(title: str) -> str:
 
 
 def find_existing_bill(supabase: Client, item: Dict, v2_supported: bool) -> Optional[Dict[str, Any]]:
-    """Lookup existing bill using Bill No or Similarity Logic."""
     bill_no = item.get("bill_no")
     title = item.get("title", "")
     normalized = normalize_title(title)
@@ -91,7 +91,6 @@ def record_scrape_run(supabase: Client, stats: Dict[str, int], source: str):
 
 
 def check_schema_support(supabase: Client):
-    """Check if bills table has bill_no column (v2)."""
     try:
         supabase.table("bills").select("bill_no").limit(1).execute()
         return True
@@ -99,21 +98,27 @@ def check_schema_support(supabase: Client):
         return False
 
 
-def sync_data(output_dir="processed_data/legislative"):
+def sync_data(input_file: Optional[str] = None, output_dir: str = "processed_data/legislative"):
     load_env()
     supabase = get_supabase_client()
 
-    if not os.path.exists(output_dir):
-        logging.error(f"❌ Hub directory missing: {output_dir}")
-        return
+    # If a specific file is provided, use it
+    if input_file:
+        if not os.path.exists(input_file):
+            logging.error(f"❌ Specified file not found: {input_file}")
+            return
+        latest_file = input_file
+    else:
+        if not os.path.exists(output_dir):
+            logging.error(f"❌ Hub directory missing: {output_dir}")
+            return
+        files = [f for f in os.listdir(output_dir) if f.startswith('legislation_sync_') and f.endswith('.json')]
+        if not files:
+            logging.warning("⚠️ No fresh neural data hub files found.")
+            return
+        files.sort()
+        latest_file = os.path.join(output_dir, files[-1])
 
-    files = [f for f in os.listdir(output_dir) if f.startswith('legislation_sync_') and f.endswith('.json')]
-    if not files:
-        logging.warning("⚠️ No fresh neural data hub files found.")
-        return
-
-    files.sort()
-    latest_file = os.path.join(output_dir, files[-1])
     logging.info(f"🚀 Ingesting Brain Dump: {latest_file}")
 
     with open(latest_file, 'r', encoding='utf-8') as f:
@@ -128,7 +133,6 @@ def sync_data(output_dir="processed_data/legislative"):
         try:
             category = item.get("category")
 
-            # --- Order Papers (separate table) ---
             if category == "Order Paper":
                 if not v2_supported:
                     continue
@@ -144,10 +148,8 @@ def sync_data(output_dir="processed_data/legislative"):
                 stats["order_papers"] += 1
                 continue
 
-            # --- Bills ---
             existing = find_existing_bill(supabase, item, v2_supported)
 
-            # Build update data – only columns that exist in schema (see bills table)
             new_data = {
                 "title": item.get("title"),
                 "sponsor": item.get("sponsor"),
@@ -162,14 +164,12 @@ def sync_data(output_dir="processed_data/legislative"):
                 "updated_at": datetime.now().isoformat()
             }
 
-            # Optional v2 fields
             if v2_supported:
                 if item.get("bill_no"):
                     new_data["bill_no"] = item.get("bill_no")
                 if item.get("session_year"):
                     new_data["session_year"] = item.get("session_year")
 
-            # JSONB fields
             if item.get("ai_concerns"):
                 new_data["ai_concerns"] = item.get("ai_concerns")
             if item.get("constitutional_section"):
@@ -188,12 +188,9 @@ def sync_data(output_dir="processed_data/legislative"):
                 new_data["stages"] = item.get("stages")
             if item.get("house"):
                 new_data["house"] = item.get("house")
-
-            # Sponsor title (exists in schema)
             if item.get("sponsor_title"):
                 new_data["sponsor_title"] = item.get("sponsor_title")
 
-            # History and status lock handling
             if existing and v2_supported:
                 history = existing.get("history") or []
                 if not isinstance(history, list):
@@ -220,7 +217,6 @@ def sync_data(output_dir="processed_data/legislative"):
                 logging.info(f"✨ New Bill: {item['title']}")
                 if not new_data.get("status"):
                     new_data["status"] = "Published" if item.get("category") != "Documentation" else "Ingested"
-                # Insert using upsert on title (unique constraint)
                 supabase.table("bills").upsert(new_data, on_conflict="title").execute()
                 stats["bills"] += 1
 
@@ -233,4 +229,7 @@ def sync_data(output_dir="processed_data/legislative"):
 
 
 if __name__ == "__main__":
-    sync_data()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--file", help="Specific JSON file to upload (full path)", default=None)
+    args = parser.parse_args()
+    sync_data(input_file=args.file)

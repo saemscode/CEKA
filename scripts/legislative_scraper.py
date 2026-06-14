@@ -1041,31 +1041,24 @@ class LegislativeScraper:
 
                 # Simple, reliable extraction: find all rows in the main table
                 rows = page.evaluate("""() => {
-                    // Find the first table that contains at least one PDF link
-                    const tables = document.querySelectorAll('table');
-                    let targetTable = null;
-                    for (const table of tables) {
-                        if (table.querySelector('a[href$=".pdf"]')) {
-                            targetTable = table;
-                            break;
+                    const allTables = document.querySelectorAll('table');
+                    let allRows = [];
+                    for (const table of allTables) {
+                        // Only consider tables that have at least one PDF link
+                        if (table.querySelectorAll('a[href$=".pdf"]').length === 0) continue;
+                        const rows = table.querySelectorAll('tbody tr, tr');
+                        for (const row of rows) {
+                            const pdfLink = row.querySelector('a[href$=".pdf"]');
+                            if (!pdfLink) continue;
+                            allRows.push({
+                                pdfHref: pdfLink.href,
+                                pdfText: pdfLink.textContent.trim(),
+                                detailHref: null,
+                                rowText: row.innerText.trim().substring(0, 300)
+                            });
                         }
                     }
-                    if (!targetTable) return [];
-
-                    // Get all rows in the table body or direct children
-                    const rows = targetTable.querySelectorAll('tbody tr, tr');
-                    const results = [];
-                    for (const row of rows) {
-                        const pdfLink = row.querySelector('a[href$=".pdf"]');
-                        if (!pdfLink) continue;
-                        results.push({
-                            pdfHref: pdfLink.href,
-                            pdfText: pdfLink.textContent.trim(),
-                            detailHref: null,   // no node page in this table
-                            rowText: row.innerText.trim().substring(0, 300)
-                        });
-                    }
-                    return results;
+                    return allRows;
                 }""")
 
                 if not rows or len(rows) == 0:

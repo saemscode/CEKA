@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { 
-  NavHomeIcon, 
-  NavFilesIcon, 
-  NavSearchIcon, 
-  NavCommentIcon, 
-  NavProfileIcon 
+import {
+  NavHomeIcon,
+  NavFilesIcon,
+  NavSearchIcon,
+  NavCommentIcon,
+  NavProfileIcon
 } from '@/components/ui/CustomIcons';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -17,17 +17,17 @@ const BottomNavbar = () => {
   const { language } = useLanguage();
   const { session } = useAuth();
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
-  
+
   // Update window width on resize
   useEffect(() => {
     const handleResize = () => {
       setWindowWidth(window.innerWidth);
     };
-    
+
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
-  
+
   const navItems = [
     {
       name: 'Home',
@@ -35,8 +35,8 @@ const BottomNavbar = () => {
       icon: <NavHomeIcon />
     },
     {
-      name: 'Resources',
-      path: '/resources',
+      name: 'Bills',
+      path: '/legislative-tracker',
       icon: <NavFilesIcon />
     },
     {
@@ -47,7 +47,7 @@ const BottomNavbar = () => {
     },
     {
       name: 'Community',
-      path: '/blog',
+      path: '/community',
       icon: <NavCommentIcon />
     },
     {
@@ -56,7 +56,7 @@ const BottomNavbar = () => {
       icon: <NavProfileIcon />
     }
   ];
-  
+
   const getTextSize = () => {
     if (windowWidth < 360) return "text-[10px]";
     return "text-[11px]";
@@ -66,8 +66,8 @@ const BottomNavbar = () => {
     <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/80 dark:bg-black/80 backdrop-blur-2xl border-t border-border/50 shadow-[0_-5px_20px_rgba(0,0,0,0.05)] w-full max-w-full overflow-visible pb-safe">
       <nav className="flex justify-around items-end h-16 px-2 relative">
         {navItems.map((item) => {
-          const isActive = 
-            location.pathname === item.path || 
+          const isActive =
+            location.pathname === item.path ||
             (item.path !== '/' && location.pathname.includes(item.path)) ||
             (item.path === '/profile/settings' && location.pathname.startsWith('/profile'));
 
@@ -84,25 +84,25 @@ const BottomNavbar = () => {
               </Link>
             );
           }
-            
+
           return (
             <Link
               key={item.path}
               to={item.path}
               className={cn(
                 "flex flex-col items-center justify-center flex-1 h-full pb-2 transition-all duration-300",
-                isActive 
-                  ? "text-primary scale-105" 
+                isActive
+                  ? "text-primary scale-105"
                   : "text-muted-foreground/70 hover:text-primary transition-colors"
               )}
             >
               <div className="flex flex-col items-center">
-                {React.cloneElement(item.icon as React.ReactElement, { 
+                {React.cloneElement(item.icon as React.ReactElement, {
                   size: 22,
                   className: cn("transition-all", isActive && "filter drop-shadow-[0_0_8px_rgba(34,197,94,0.3)]")
                 })}
                 <span className={cn(
-                  getTextSize(), 
+                  getTextSize(),
                   "mt-1 font-medium tracking-tight transition-all",
                   isActive ? "opacity-100" : "opacity-80"
                 )}>

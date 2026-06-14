@@ -571,6 +571,34 @@ Return EXACTLY this JSON object. No markdown. No preamble. Raw JSON only:
 
         return int(new_mentions_count)
 
+    # ================================================================
+    #  NEW: Added missing run_full_scan method
+    # ================================================================
+    def run_full_scan(self):
+        """Main entry point: fetch all active bills, scrape news, and discover new topics."""
+        if not PLAYWRIGHT_OK:
+            logger.error("Playwright not installed — cannot run news intelligence.")
+            return
+        bills = self.get_active_bills()
+        if not bills:
+            logger.info("No active bills found. Nothing to scan.")
+            return
+        
+        total_mentions = 0
+        with sync_playwright() as p:
+            browser = p.chromium.launch(headless=True)
+            ctx = browser.new_context()
+            page = ctx.new_page()
+            for bill in bills:
+                try:
+                    new_mentions = self.run_for_bill(page, bill)
+                    total_mentions += new_mentions
+                except Exception as e:
+                    logger.error(f"Error processing bill {bill.get('id')}: {e}")
+            browser.close()
+        
+        logger.info(f"News intelligence scan complete. New mentions: {total_mentions}")
+
 CIVIC_KEYWORDS = [
     # Legislature & Law
     "Bill", "Act", "Parliament", "Senate", "National Assembly", "County Assembly",
@@ -762,7 +790,7 @@ class TrendingTopicDiscovery:
     def run_full_scan(self):
         """Main entry point: fetch all active bills, scrape news, and discover new topics."""
         if not PLAYWRIGHT_OK: return
-        bills = self.get_active_bills()
+        bills = self.engine.get_active_bills()
         
         # 1. Legislative Scan (Legacy Logic)
         total: int = 0
@@ -772,7 +800,7 @@ class TrendingTopicDiscovery:
             page = ctx.new_page()
             for bill in bills:
                 try:
-                    res_count: int = int(self.run_for_bill(page, bill))
+                    res_count: int = int(self.engine.run_for_bill(page, bill))
                     total = int(total + res_count)
                 except Exception: pass
             
@@ -783,8 +811,8 @@ class TrendingTopicDiscovery:
             browser.close()
 
         # Improvement 9: Release Lock
-        if self.supabase:
-            self.supabase.table("pipeline_locks").delete().eq("lock_type", "news_intelligence").execute()
+        if self.engine.supabase:
+            self.engine.supabase.table("pipeline_locks").delete().eq("lock_type", "news_intelligence").execute()
             
         logger.info(f"Complete. New mentions: {total}")
 
