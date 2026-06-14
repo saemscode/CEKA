@@ -209,11 +209,14 @@ jobs:
         run: |
           git config --global user.name "ceka-intelligence-bot"
           git config --global user.email "bot@ceka.online"
-          git add scripts/proxy_usage.json
-          # Capture any new processed data JSONs as well
-          git add scripts/processed_data/legislative/*.json
+          # Ensure the target directory exists (git add on a non‑existent directory fails)
+          mkdir -p scripts/processed_data/legislative
+          # Add files – ignore errors if no files match the wildcard
+          git add scripts/proxy_usage.json || true
+          git add scripts/processed_data/legislative/*.json || true
+          # Commit only if there are changes; ignore empty commit error
           git commit -m "chore: update proxy usage & legislative data [skip ci]" || echo "No changes to commit"
-          git push
+          git push || echo "Push failed (maybe nothing to push or auth issue)"
 
       - name: Upload Intelligence Logs
         if: always()
@@ -224,3 +227,4 @@ jobs:
             scripts/*.log
             scripts/processed_data/
           retention-days: 14
+          if-no-files-found: warn
