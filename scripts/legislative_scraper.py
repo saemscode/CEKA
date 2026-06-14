@@ -912,8 +912,11 @@ class LegislativeScraper:
         lower = html.lower()
         return any(sig.lower() in lower for sig in cf_signatures)
 
+    # ================================================================
+    #  FIXED: Wait for real content (table with rows, not .views-row)
+    # ================================================================
     def _wait_for_real_content(self, page, timeout_ms: int = 15000) -> bool:
-        """Wait until real content (table or PDF links) appears, not a Cloudflare challenge."""
+        """Wait until real content (a table with rows) appears, not a Cloudflare challenge."""
         deadline = time.time() + timeout_ms / 1000
         while time.time() < deadline:
             html = page.content()
@@ -921,16 +924,16 @@ class LegislativeScraper:
                 logger.warning("  [CF] Challenge page detected. Waiting 3s for JS resolution...")
                 time.sleep(3)
                 continue
-            # Check for table rows with PDF links (real content)
+            # Look for a table that has at least one row or any PDF links
             has_content = page.evaluate("""() => {
                 const table = document.querySelector('table');
-                if (table && table.querySelectorAll('a[href$=".pdf"]').length > 0) return true;
+                if (table && table.querySelectorAll('tr').length > 1) return true;
                 return document.querySelectorAll('a[href$=".pdf"]').length > 0;
             }""")
             if has_content:
                 return True
             time.sleep(1)
-        # If no CF detected but no content either, assume real (empty) page
+        # If no CF detected but still no content, assume real (empty) page
         html = page.content()
         if not self._is_cloudflare_challenge(html):
             return True
@@ -1004,9 +1007,9 @@ class LegislativeScraper:
         logger.info("[Browser] Stealth init script injected.")
         return browser, context
 
-    # -------------------------------------------------------------------
-    #  _scrape_bills – CORRECTED for table structure, no ?title=
-    # -------------------------------------------------------------------
+    # ================================================================
+    #  FIXED: _scrape_bills – targets the table, uses ?title=&page=
+    # ================================================================
     def _scrape_bills(self, page, target: dict, max_pages: int):
         base_url = target["url"].rstrip("/")
         if "?" in base_url:
@@ -1016,11 +1019,8 @@ class LegislativeScraper:
         consecutive_empty = 0
 
         for page_num in range(max_pages):
-            # Construct URL: no extra parameters except page number
-            if page_num == 0:
-                page_url = base_url
-            else:
-                page_url = f"{base_url}?page={page_num}"
+            # Always include empty title= to satisfy Drupal Views
+            page_url = f"{base_url}?title=&page={page_num}"
             logger.info(f"  Page {page_num + 1}: {page_url}")
 
             try:
@@ -1031,40 +1031,42 @@ class LegislativeScraper:
                     logger.error(f"  [CF] Cloudflare block on page {page_num + 1}. Skipping.")
                     consecutive_empty += 1
                     if consecutive_empty >= 2:
-                        logger.error("  [CF] Two consecutive CF blocks. Stopping pagination.")
                         break
                     continue
 
-                # Identical page guard (hash)
+                # Identical page guard
                 current_html = page.content()
                 current_hash = hashlib.md5(current_html.encode()).hexdigest()
                 if current_hash == prev_page_hash:
-                    logger.info(f"  [Cap] Page {page_num + 1} identical to previous – end of pagination.")
+                    logger.info(f"  [Cap] Page {page_num + 1} identical to previous – end.")
                     break
                 prev_page_hash = current_hash
 
-                # Extract rows from the table (the site uses <table> structure)
+                # Extract rows from the bills table
                 rows = page.evaluate("""() => {
-                    const results = [];
-                    // Find the main table – usually the first table with many PDF links
-                    const tables = document.querySelectorAll('table');
+                    // Find the table that contains bills
                     let billTable = null;
+                    const tables = document.querySelectorAll('table');
                     for (const table of tables) {
-                        if (table.querySelectorAll('a[href$=".pdf"]').length > 2) {
+                        const pdfLinks = table.querySelectorAll('a[href$=".pdf"]');
+                        if (pdfLinks.length >= 3) {
+                            billTable = table;
+                            break;
+                        }
+                        // Also check thead for 'Bill' text
+                        const headerText = table.innerText.slice(0, 200).toLowerCase();
+                        if (headerText.includes('bill') && pdfLinks.length > 0) {
                             billTable = table;
                             break;
                         }
                     }
-                    if (!billTable) return results;
+                    if (!billTable) return [];
 
-                    const seen = new Set();
                     const rows = billTable.querySelectorAll('tbody tr, tr');
+                    const results = [];
                     for (const row of rows) {
                         const pdfLink = row.querySelector('a[href$=".pdf"]');
                         if (!pdfLink) continue;
-                        if (seen.has(pdfLink.href)) continue;
-                        seen.add(pdfLink.href);
-
                         const detailLink = row.querySelector('a:not([href$=".pdf"])');
                         results.push({
                             pdfHref: pdfLink.href,
@@ -1099,7 +1101,6 @@ class LegislativeScraper:
                     if not title:
                         continue
 
-                    # Normalised dedup
                     slug_key = self._normalise_title_key(title)
                     if slug_key in self.seen_titles:
                         logger.debug(f"    [Dup] Skipping known: {title}")
@@ -1133,7 +1134,7 @@ class LegislativeScraper:
                             "created_at": datetime.now(timezone.utc).isoformat(),
                         })
 
-                # Pagination check: look for "next" link
+                # Pagination check
                 has_next = page.evaluate("""() => {
                     const next = document.querySelector('li.pager-next a, a[rel="next"], .pager__item--next a, li.next a');
                     return next !== null;
@@ -1142,7 +1143,6 @@ class LegislativeScraper:
                     logger.info(f"  [Cap] No next-page link after page {page_num + 1}. Pagination done.")
                     break
 
-                # Random jitter to reduce bot fingerprint
                 time.sleep(0.5 + (page_num % 3) * 0.3)
 
             except Exception as e:
@@ -1153,7 +1153,7 @@ class LegislativeScraper:
                     break
 
     # -------------------------------------------------------------------
-    #  scrape_all – uses stealth browser and proxy pool
+    #  scrape_all – uses stealth browser and proxy pool (unchanged)
     # -------------------------------------------------------------------
     def scrape_all(self, max_pages: int = 40) -> List[Dict[str, Any]]:
         logger.info("=" * 60)
