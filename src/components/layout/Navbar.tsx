@@ -36,6 +36,7 @@ import SearchSuggestion from '@/components/SearchSuggestion';
 import AuthModal from '@/components/auth/AuthModal';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { NotificationDropdown } from '@/components/notifications/NotificationDropdown';
+import { SearchIcon } from '@/components/ui/CustomIcons'; // ✅ Import the custom search icon
 
 // Icon mapping for menu items
 const getItemIcon = (path: string) => {
@@ -143,7 +144,7 @@ const Navbar = React.forwardRef<HTMLElement, NavbarProps>(({ isFixed }, ref) => 
           transition: 'transform 0.32s cubic-bezier(0.23, 1, 0.32, 1), background 0.3s, padding 0.3s, top 0.32s'
         }}
       >
-        <div className="container mx-auto px-6 flex items-center justify-between">
+        <div className="w-full px-4 md:px-6 flex items-center justify-between">
           <Logo className="h-8 w-auto z-50" />
 
           {/* Desktop Navigation Menu - Hover-enabled */}
@@ -188,7 +189,16 @@ const Navbar = React.forwardRef<HTMLElement, NavbarProps>(({ isFixed }, ref) => 
           </NavigationMenu>
 
           <div className="flex items-center gap-3">
+            {/* Mobile search icon – visible only below sm breakpoint */}
+            <Link to="/search" className="sm:hidden">
+              <Button variant="ghost" size="icon" className="h-10 w-10 rounded-2xl bg-slate-100 dark:bg-white/5">
+                <SearchIcon className="h-5 w-5" />
+              </Button>
+            </Link>
+
+            {/* Desktop search bar */}
             <div className="hidden sm:block"><SearchSuggestion className="w-80" /></div>
+
             <ThemeToggle />
 
             <NotificationDropdown className="mr-1" />
@@ -202,24 +212,24 @@ const Navbar = React.forwardRef<HTMLElement, NavbarProps>(({ isFixed }, ref) => 
                       <AvatarFallback className="bg-primary text-white text-[10px] font-bold">{user?.email?.charAt(0).toUpperCase()}</AvatarFallback>
                     </Avatar>
                     {profile?.verification_status && profile.verification_status !== 'unverified' && (
-                        <div className="absolute -bottom-1 -right-1 bg-white rounded-full">
-                           <Shield className="w-3.5 h-3.5 text-blue-500" fill="currentColor" />
-                        </div>
+                      <div className="absolute -bottom-1 -right-1 bg-white rounded-full">
+                        <Shield className="w-3.5 h-3.5 text-blue-500" fill="currentColor" />
+                      </div>
                     )}
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56 p-2 rounded-[24px] bg-white/95 dark:bg-[#1C1C1E]/95 backdrop-blur-3xl border-none shadow-2xl mt-2">
                   <DropdownMenuLabel className="px-3 pt-3 flex flex-col gap-1">
-                     <span className="text-[10px] uppercase tracking-widest text-muted-foreground">Identity</span>
-                     <div className="flex items-center gap-1.5 mt-1">
-                        <span className="text-sm font-bold text-slate-800 dark:text-white truncate">{user?.user_metadata?.full_name || user?.email?.split('@')[0]}</span>
-                        {profile?.verification_status === 'official_org' && <Badge variant="secondary" className="text-[9px] bg-blue-500/10 text-blue-600 dark:text-blue-400 py-0 h-4">Official</Badge>}
-                        {profile?.verification_status === 'ceka_partner' && <Badge variant="secondary" className="text-[9px] bg-amber-500/10 text-amber-600 dark:text-amber-400 py-0 h-4">Verified</Badge>}
-                     </div>
-                     <p className="text-xs text-kenya-green font-bold flex items-center gap-1">
-                         <div className="w-2 h-2 rounded-full mb-[1px] bg-kenya-green shadow-[0_0_8px_rgba(56,161,105,0.8)]" />
-                         {profile?.civic_credits || 0} Civic Credits
-                     </p>
+                    <span className="text-[10px] uppercase tracking-widest text-muted-foreground">Identity</span>
+                    <div className="flex items-center gap-1.5 mt-1">
+                      <span className="text-sm font-bold text-slate-800 dark:text-white truncate">{user?.user_metadata?.full_name || user?.email?.split('@')[0]}</span>
+                      {profile?.verification_status === 'official_org' && <Badge variant="secondary" className="text-[9px] bg-blue-500/10 text-blue-600 dark:text-blue-400 py-0 h-4">Official</Badge>}
+                      {profile?.verification_status === 'ceka_partner' && <Badge variant="secondary" className="text-[9px] bg-amber-500/10 text-amber-600 dark:text-amber-400 py-0 h-4">Verified</Badge>}
+                    </div>
+                    <p className="text-xs text-kenya-green font-bold flex items-center gap-1">
+                      <div className="w-2 h-2 rounded-full mb-[1px] bg-kenya-green shadow-[0_0_8px_rgba(56,161,105,0.8)]" />
+                      {profile?.civic_credits || 0} Civic Credits
+                    </p>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator className="bg-slate-100 dark:bg-white/5 my-2" />
                   <DropdownMenuItem asChild><Link to="/settings/account" className="rounded-xl p-3 cursor-pointer">Profile</Link></DropdownMenuItem>
@@ -308,4 +318,3 @@ const Navbar = React.forwardRef<HTMLElement, NavbarProps>(({ isFixed }, ref) => 
 });
 
 export default Navbar;
-

@@ -167,7 +167,7 @@ const Index = () => {
           />
         </div>
         <FeaturedLegislation />
-        
+
         <section className="container mx-auto py-8">
           <NasakaFeedBanner />
         </section>
