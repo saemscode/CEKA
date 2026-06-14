@@ -183,6 +183,16 @@ class MultiLLMOrchestrator:
         if not self.api_keys["groq"]: return None
         try:
             from groq import Groq
+
+            # Groq free-tier TPM cap: 12,000 tokens/min for llama-3.3-70b-versatile.
+            # System prompt + JSON scaffolding consumes ~500 tokens.
+            # Remaining budget: 11,500 tokens ≈ 46,000 characters at ~4 chars/token.
+            # Truncate at the last newline before that boundary (sentence-aware).
+            GROQ_CHAR_LIMIT = 46_000
+            if len(prompt) > GROQ_CHAR_LIMIT:
+                cut = prompt.rfind("\n", 0, GROQ_CHAR_LIMIT)
+                prompt = prompt[: cut if cut != -1 else GROQ_CHAR_LIMIT]
+
             client = Groq(api_key=self.api_keys["groq"])
             messages = []
             if system_prompt:

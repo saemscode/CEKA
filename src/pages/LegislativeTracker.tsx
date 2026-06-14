@@ -55,6 +55,7 @@ interface Bill {
   neural_summary?: string | null;
   text_content?: string | null;
   pdf_url?: string | null;
+  b2_url?: string | null;           // ✅ ADDED: Backblaze path for secure download
   follow_count?: number;
   tabloid_summary?: string | null;
   bill_no?: string | null;
@@ -921,10 +922,11 @@ const LegislativeTracker = () => {
                                   </div>
 
                                   <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 w-full sm:w-auto">
-                                    {bill.pdf_url && (
+                                    {/* ✅ FIXED: Use b2_url (Backblaze) if available, else fallback to pdf_url */}
+                                    {(bill.b2_url || bill.pdf_url) && (
                                       <Button
                                         variant="outline"
-                                        onClick={() => vaultService.openDocument(bill.pdf_url!)}
+                                        onClick={() => vaultService.openDocument(bill.b2_url || bill.pdf_url!)}
                                         className="h-12 px-6 rounded-2xl border-slate-200 dark:border-white/10 font-black text-xs uppercase tracking-widest"
                                       >
                                         Download PDF
