@@ -8,6 +8,7 @@ import io
 import threading
 import base64
 import random
+import hashlib
 from datetime import datetime, timezone
 from typing import List, Dict, Any, Optional, Tuple
 from urllib.parse import urljoin, unquote, urlparse
@@ -27,7 +28,7 @@ except ImportError:
 # Stage Detector Integration
 # ---------------------------------------------------------------------------
 try:
-    from stage_detector import detect_stage_from_text, extract_date_from_order_paper, normalize_stage_label # Added normalize_stage_label
+    from stage_detector import detect_stage_from_text, extract_date_from_order_paper, normalize_stage_label
     STAGE_DETECTOR_OK = True
 except ImportError:
     STAGE_DETECTOR_OK = False
@@ -50,6 +51,16 @@ try:
 except ImportError:
     TESSERACT_OK = False
     logging.getLogger(__name__).warning("pytesseract or PIL not installed – local OCR fallback disabled.")
+
+# ---------------------------------------------------------------------------
+# Playwright Stealth (optional)
+# ---------------------------------------------------------------------------
+try:
+    from playwright_stealth import stealth_sync
+    STEALTH_OK = True
+except ImportError:
+    STEALTH_OK = False
+    logging.getLogger(__name__).warning("playwright-stealth not installed – Cloudflare risk elevated.")
 
 # ---------------------------------------------------------------------------
 # Logging setup (UTF-8 safe for Windows)
@@ -203,11 +214,9 @@ class RemoteOCREngine:
         # Pre-trim large PDFs to maximize page extraction within 1MB free-tier limit
         if file_size > self.MAX_FILE_SIZE_BYTES:
             logger.info(f"      [OCR] PDF {file_size / 1024:.0f}KB exceeds 1MB free-tier limit. Adapting...")
-            # Try to get as much as possible (usually first 3-5 pages depending on density)
             pdf_bytes = self._extract_first_pages(pdf_bytes, max_pages=5)
             file_size = len(pdf_bytes)
             
-            # If still over 1MB, progressively drop pages until it fits
             for pages in [4, 3, 2, 1]:
                 if file_size <= self.MAX_FILE_SIZE_BYTES:
                     break
@@ -260,31 +269,23 @@ class RemoteOCREngine:
         Attempt OCR via OCR.space with Engine 2 → Engine 1 cascade.
         Sends the PDF as a file upload (or URL if file is too large).
         """
-        # Try Engine 2 first (better for special chars, legislative docs)
         result = self._call_ocr_space(pdf_bytes, pdf_url, engine=2)
         if result and self._passes_quality_gate(result.get("text", ""), title):
             result["notes"] = "OCR.space Engine 2 succeeded."
             return result
 
-        # Engine 2 failed or low quality → swap to Engine 1
         logger.info("      [OCR.space] Engine 2 insufficient, swapping to Engine 1...")
         result_e1 = self._call_ocr_space(pdf_bytes, pdf_url, engine=1)
         if result_e1 and result_e1.get("text", "").strip():
-            # Use whichever produced more text
             if result and len(result.get("text", "")) > len(result_e1.get("text", "")):
                 result["notes"] = "OCR.space Engine 2 produced more text than Engine 1."
                 return result
             result_e1["notes"] = "OCR.space fallback to Engine 1."
             return result_e1
 
-        # Return whatever we got (might be partial)
         return result
 
     def _call_ocr_space(self, pdf_bytes: bytes, pdf_url: str, engine: int) -> Optional[Dict[str, Any]]:
-        """
-        Single call to OCR.space POST endpoint with retry logic.
-        Enforces daily quota and concurrency limits.
-        """
         if self._is_quota_exhausted():
             logger.warning("      [OCR.space] Daily quota exhausted (500/day).")
             self.metrics["ocr_requests_quota_exhausted"] += 1
@@ -292,13 +293,11 @@ class RemoteOCREngine:
 
         self.metrics["ocr_requests_total"] += 1
 
-        # File size check – if over 5MB, try URL method if available
         use_url = len(pdf_bytes) > self.MAX_FILE_SIZE_BYTES and pdf_url
         if len(pdf_bytes) > self.MAX_FILE_SIZE_BYTES and not pdf_url:
             logger.warning("      [OCR.space] File exceeds 5MB and no URL available. Sending first 3 pages.")
             pdf_bytes = self._extract_first_pages(pdf_bytes, max_pages=3)
 
-        # Build request
         headers = {"apikey": self.ocr_space_key}
         data = {
             "language": "eng",
@@ -315,7 +314,7 @@ class RemoteOCREngine:
             return None
 
         try:
-            for attempt in range(3):  # 3 retries with exponential backoff
+            for attempt in range(3):
                 try:
                     if use_url:
                         data["url"] = pdf_url
@@ -365,7 +364,6 @@ class RemoteOCREngine:
             self._ocr_space_semaphore.release()
 
     def _parse_ocr_space_response(self, resp_json: dict, engine: int) -> Optional[Dict[str, Any]]:
-        """Parse and validate the OCR.space JSON response."""
         if resp_json.get("IsErroredOnProcessing", True):
             error_msg = resp_json.get("ErrorMessage", "Unknown error")
             logger.warning(f"      [OCR.space] Processing error: {error_msg}")
@@ -378,7 +376,6 @@ class RemoteOCREngine:
             self.metrics["ocr_requests_failed"] += 1
             return None
 
-        # Aggregate text from all pages
         all_text = []
         pages_processed = []
         for i, pr in enumerate(parsed_results):
@@ -408,7 +405,7 @@ class RemoteOCREngine:
             "source": "ocr.space",
             "engine": engine,
             "pages": pages_processed,
-            "confidence_estimate": None,  # OCR.space free doesn't return confidence
+            "confidence_estimate": None,
             "notes": "",
             "metadata": {
                 "ocr_processing_time_ms": processing_time,
@@ -422,10 +419,6 @@ class RemoteOCREngine:
     #  Cloudmersive Implementation
     # -------------------------------------------------------------------
     def _try_cloudmersive(self, pdf_bytes: bytes, pdf_url: str, title: str) -> Optional[Dict[str, Any]]:
-        """
-        Attempt OCR via Cloudmersive as a secondary fallback.
-        Uses /ocr/pdf/toText for PDF files.
-        """
         self.metrics["ocr_cloudmersive_total"] += 1
 
         headers = {
@@ -477,7 +470,6 @@ class RemoteOCREngine:
         return None
 
     def _parse_cloudmersive_response(self, resp_json: dict) -> Optional[Dict[str, Any]]:
-        """Parse and validate the Cloudmersive JSON response."""
         if not resp_json.get("Successful", False):
             logger.warning("      [Cloudmersive] OCR processing failed.")
             self.metrics["ocr_cloudmersive_failed"] += 1
@@ -529,10 +521,6 @@ class RemoteOCREngine:
     #  Quality Gates
     # -------------------------------------------------------------------
     def _passes_quality_gate(self, text: str, title: str = "") -> bool:
-        """
-        Validates OCR output quality.
-        Accepts if text length >= MIN_TEXT_LENGTH OR contains key legislative tokens.
-        """
         if not text or not text.strip():
             return False
 
@@ -540,13 +528,11 @@ class RemoteOCREngine:
         if text_len >= self.MIN_TEXT_LENGTH:
             return True
 
-        # Check for legislative tokens even if text is short
         text_upper = text.upper()
         for token in self.QUALITY_TOKENS:
             if token.upper() in text_upper:
                 return True
 
-        # Check if title appears in text
         if title and title.lower()[:20] in text.lower():
             return True
 
@@ -556,7 +542,6 @@ class RemoteOCREngine:
     #  Quota Management
     # -------------------------------------------------------------------
     def _is_quota_exhausted(self) -> bool:
-        """Check if the daily OCR.space free-tier quota (500/day) is exhausted."""
         with self._daily_counter_lock:
             today = datetime.now(timezone.utc).date()
             if today != self._daily_counter_date:
@@ -565,7 +550,6 @@ class RemoteOCREngine:
             return self._daily_counter >= self.OCR_SPACE_DAILY_LIMIT
 
     def _increment_daily_counter(self):
-        """Increment the daily request counter (thread-safe)."""
         with self._daily_counter_lock:
             today = datetime.now(timezone.utc).date()
             if today != self._daily_counter_date:
@@ -577,7 +561,6 @@ class RemoteOCREngine:
     #  Utility: Extract first N pages from PDF
     # -------------------------------------------------------------------
     def _extract_first_pages(self, pdf_bytes: bytes, max_pages: int = 3) -> bytes:
-        """Extract the first N pages from a PDF to stay within free-tier limits."""
         if FITZ_OK:
             try:
                 doc = fitz.open(stream=pdf_bytes, filetype="pdf")
@@ -599,7 +582,6 @@ class RemoteOCREngine:
     #  Audit & Metrics
     # -------------------------------------------------------------------
     def _record_audit(self, source: str, file_size: int, elapsed_ms: int, success: bool):
-        """Record an audit entry for the OCR request."""
         self._audit_log.append({
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "source": source,
@@ -610,7 +592,6 @@ class RemoteOCREngine:
         })
 
     def get_metrics(self) -> Dict[str, Any]:
-        """Return current metrics snapshot."""
         return {
             **self.metrics,
             "daily_requests_used": self._daily_counter,
@@ -618,18 +599,20 @@ class RemoteOCREngine:
         }
 
 
+# ===================================================================
+#  ProxyPool – Multi-provider with fallback and credit tracking
+# ===================================================================
 class ProxyPool:
     def __init__(self):
-        self.proxies = []          # list of proxy dicts
-        self.usage_counts = self.load_usage_counts()
-        self.health_status = {}    # proxy url -> (last_ok, last_check)
+        self.proxies = []
+        self.usage_counts = self._load_usage_counts()
+        self.health_status = {}
         self.lock = threading.Lock()
         self.last_webshare_refresh = 0.0
-        self.load_proxies()
+        self._load_proxies()
         
-    def load_proxies(self):
-        """Load all proxy sources from env vars."""
-        # 1. Bright Data (single proxy)
+    def _load_proxies(self):
+        # Bright Data
         bright_url = os.getenv("BRIGHTDATA_PROXY_URL")
         if bright_url:
             self.proxies.append({
@@ -639,17 +622,19 @@ class ProxyPool:
                 "limit": int(os.getenv("BRIGHTDATA_MONTHLY_LIMIT", 5000))
             })
         
-        # 2. ScraperAPI (special proxy type)
+        # ScraperAPI
         scraper_key = os.getenv("SCRAPERAPI_KEY")
         if scraper_key:
+            bonus = int(os.getenv("SCRAPERAPI_FIRST_MONTH_BONUS", 5000))
+            limit = int(os.getenv("SCRAPERAPI_MONTHLY_LIMIT", 1000)) + bonus
             self.proxies.append({
                 "type": "scraperapi",
                 "api_key": scraper_key,
                 "priority": 2,
-                "limit": int(os.getenv("SCRAPERAPI_MONTHLY_LIMIT", 1000)) + int(os.getenv("SCRAPERAPI_FIRST_MONTH_BONUS", 5000))
+                "limit": limit
             })
         
-        # 3. Webshare static list
+        # Webshare static list
         webshare_list = os.getenv("WEBSHARE_PROXIES", "")
         for item in webshare_list.split(","):
             if ":" in item:
@@ -664,23 +649,19 @@ class ProxyPool:
                         "limit": None
                     })
         
-        # Shuffle to avoid always using first proxy
         random.shuffle(self.proxies)
         self._initial_health_check()
     
     def _initial_health_check(self):
-        """Test all proxies at startup, sort by health."""
         for proxy in self.proxies:
             if "url" in proxy:
                 self._test_proxy(proxy["url"])
-        # Sort by primary health then priority
         self.proxies.sort(key=lambda p: (
             p.get("priority", 99),
             0 if self.health_status.get(p.get("url", ""), {}).get("healthy", False) else 1
         ))
     
     def _test_proxy(self, proxy_url):
-        """Return True if proxy works."""
         test_url = os.getenv("PROXY_HEALTH_CHECK_URL", "https://api.ipify.org")
         timeout = int(os.getenv("PROXY_HEALTH_TIMEOUT", 10))
         try:
@@ -697,7 +678,6 @@ class ProxyPool:
         return False
     
     def refresh_webshare_proxies(self):
-        """Periodically fetch fresh Webshare list (if API provided)."""
         refresh_url = os.getenv("WEBSHARE_REFRESH_URL")
         interval_hours = int(os.getenv("WEBSHARE_REFRESH_INTERVAL_HOURS", 24))
         now = time.time()
@@ -726,7 +706,6 @@ class ProxyPool:
                 logger.warning(f"Webshare refresh failed: {e}")
     
     def get_proxy(self):
-        """Return a working proxy dict. Respects usage limits."""
         self.refresh_webshare_proxies()
         
         available = []
@@ -753,24 +732,23 @@ class ProxyPool:
         return best
     
     def report_failure(self, proxy):
-        """Mark a proxy as failed."""
         if proxy and "url" in proxy:
             self.health_status[proxy["url"]] = {"healthy": False, "last_check": time.time()}
             proxy["priority"] = 999
 
-    def load_usage_counts(self):
+    def _load_usage_counts(self):
         try:
             fpath = os.path.join(os.path.dirname(os.path.abspath(__file__)), "proxy_usage.json")
             if os.path.exists(fpath):
                 with open(fpath, "r") as f:
                     data = json.load(f)
-                    # Reset check: if month changed, return empty
                     last_reset = data.get("last_reset_month", "")
                     curr_month = datetime.now().strftime("%Y-%m")
                     if last_reset != curr_month:
                         return {"last_reset_month": curr_month}
                     return data
-        except Exception: pass
+        except Exception:
+            pass
         return {"last_reset_month": datetime.now().strftime("%Y-%m")}
 
     def save_usage_counts(self):
@@ -778,26 +756,20 @@ class ProxyPool:
             fpath = os.path.join(os.path.dirname(os.path.abspath(__file__)), "proxy_usage.json")
             with open(fpath, "w") as f:
                 json.dump(self.usage_counts, f)
-        except Exception: pass
+        except Exception:
+            pass
 
 
 # ===================================================================
 #  BillStructuralExtractor  –  Structural Breadcrumb Engine
 # ===================================================================
 class BillStructuralExtractor:
-    """
-    Implements the 'Structural Breadcrumb Strategy' for Kenyan Bills.
-    Navigates PDF architecture to find Sponsors and constitutional metadata.
-    """
-
-    # --- Structural Anchors ---
     ANCHOR_MEMORANDUM = "MEMORANDUM OF OBJECTS AND REASONS"
     ANCHOR_ARTICLE_114 = "Article 114 of the Constitution"
     ANCHOR_COUNTY_GOVTS = "concerns County Governments"
     ANCHOR_ENACTED = "ENACTED by the Parliament of Kenya"
     ANCHOR_REFERENCE = "which it is proposed to amend"
 
-    # --- Regex Patterns ---
     DATE_PATTERNS = [
         re.compile(r'[Dd]ated\s+the\s+(\d{1,2}(?:st|nd|rd|th)?)\s+([A-Z][a-z]+),?\s+(\d{4})'),
         re.compile(r'DATED\s+THE\s+(\d+)\s+DAY\s+OF\s+([A-Z]+)\s+(\d{4})', re.I)
@@ -813,7 +785,6 @@ class BillStructuralExtractor:
 
     @staticmethod
     def extract_all(pdf_bytes: bytes, title: str) -> Dict[str, Any]:
-        """Entry point for structural extraction."""
         result = {
             "bill_type": "Principal",
             "sponsor_name": None,
@@ -833,19 +804,16 @@ class BillStructuralExtractor:
 
         try:
             doc = fitz.open(stream=pdf_bytes, filetype="pdf")
-            
-            # Layer 1: Native TOC
             toc = doc.get_toc()
             memo_page = -1
             if toc:
                 result["has_toc"] = True
                 for entry in toc:
                     if "MEMORANDUM" in entry[1].upper():
-                        memo_page = entry[2] - 1 # 0-indexed
+                        memo_page = entry[2] - 1
                         result["structural_method"] = "native_toc"
                         break
 
-            # Layer 2: Skeleton Scan for anchors if TOC failed
             if memo_page == -1:
                 for i in range(len(doc)):
                     page_text = doc[i].get_text()
@@ -854,30 +822,28 @@ class BillStructuralExtractor:
                         result["structural_method"] = "skeleton_scan"
                         break
             
-            # Layer 3: Extraction from identified page
             if memo_page != -1:
-                # Get text from memo page and the next one (memos can span multiple pages)
                 end_page = min(memo_page + 2, len(doc))
                 memo_text = ""
                 for i in range(memo_page, end_page):
                     memo_text += doc[i].get_text()
 
-                # --- 1. Money Bill Status ---
                 if BillStructuralExtractor.ANCHOR_ARTICLE_114 in memo_text:
                     m = BillStructuralExtractor.MONEY_BILL_PATTERNS[0].search(memo_text)
                     nm = BillStructuralExtractor.MONEY_BILL_PATTERNS[1].search(memo_text)
-                    if nm: result["is_money_bill"] = False
-                    elif m: result["is_money_bill"] = True
+                    if nm:
+                        result["is_money_bill"] = False
+                    elif m:
+                        result["is_money_bill"] = True
 
-                # --- 2. County Govts Status ---
                 if BillStructuralExtractor.ANCHOR_COUNTY_GOVTS in memo_text:
                     m = BillStructuralExtractor.COUNTY_GOVT_PATTERNS[0].search(memo_text)
                     nm = BillStructuralExtractor.COUNTY_GOVT_PATTERNS[1].search(memo_text)
-                    if nm: result["concerns_counties"] = False
-                    elif m: result["concerns_counties"] = True
+                    if nm:
+                        result["concerns_counties"] = False
+                    elif m:
+                        result["concerns_counties"] = True
 
-                # --- 3. Sponsor & Date ---
-                # Find date anchor
                 date_match = None
                 for pat in BillStructuralExtractor.DATE_PATTERNS:
                     date_match = pat.search(memo_text)
@@ -886,16 +852,11 @@ class BillStructuralExtractor:
                 
                 if date_match:
                     result["date_signed"] = date_match.group(0)
-                    # The name is usually the next line (ALL CAPS)
-                    # We take the 500 characters following the date
                     after_date = memo_text[date_match.end():date_match.end()+500]
                     lines = [line.strip() for line in after_date.split('\n') if line.strip()]
-                    
                     for line in lines:
-                        # Sponsor name is usually ALL CAPS and at least 5 chars
                         if line.isupper() and len(line) > 5:
                             result["sponsor_name"] = line
-                            # Check next line for title
                             idx = lines.index(line)
                             if idx + 1 < len(lines):
                                 result["sponsor_title"] = lines[idx+1]
@@ -909,25 +870,9 @@ class BillStructuralExtractor:
 
 
 # ===================================================================
-#  LegislativeScraper  –  Selective Deep Extraction Engine
+#  LegislativeScraper – with all fixes (Cloudflare, selectors, proxy pool, stealth)
 # ===================================================================
 class LegislativeScraper:
-    """
-    Production-grade legislative scraper for the Kenyan Parliament website.
-
-    Extraction logic:
-      1. Scrape listing page for PDF links and metadata.
-      2. For Bills:
-         a. Attempt cascading PDF text extraction (PyMuPDF -> PyPDF2 -> pdfplumber).
-         b. If PDF is scanned (no text), trigger Remote OCR (OCR.space → Cloudmersive).
-         c. If remote OCR also fails, selectively visit the Bill's detail page (node)
-            to extract HTML-based summary and description.
-      3. For Non-Bill Docs: Scrape as-is (no deep parsing).
-
-    This route uses OCR.space free plan; daily quota 500/day; for high-volume use
-    upgrade to PRO or configure secondary provider (Cloudmersive).
-    """
-
     def __init__(self, headless: bool = True):
         script_dir = os.path.dirname(os.path.abspath(__file__))
         self.targets_file = os.path.join(script_dir, "scraping_targets.json")
@@ -945,24 +890,298 @@ class LegislativeScraper:
                 logger.warning(f"B2 Vault init failed (non-fatal): {e}")
         
         self.orchestrator = MultiLLMOrchestrator() if ORCHESTRATOR_OK else None
-        self.proxy_pool = ProxyPool() # Auto-loads from env and proxy_usage.json
+        self.proxy_pool = ProxyPool()
         if TESSERACT_OK:
-            # Attempt to locate tesseract on Windows if not in PATH
             tess_path = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
             if os.path.exists(tess_path):
                 pytesseract.pytesseract.tesseract_cmd = tess_path
 
-    def _load_targets(self) -> list:
-        try:
-            with open(self.targets_file, 'r', encoding='utf-8') as f:
-                return json.load(f).get("targets", [])
-        except Exception as e:
-            logger.error(f"Failed to load targets: {e}")
-            return []
+    # -------------------------------------------------------------------
+    #  Helpers for Cloudflare and content validation
+    # -------------------------------------------------------------------
+    @staticmethod
+    def _is_cloudflare_challenge(html: str) -> bool:
+        cf_signatures = [
+            "cf-browser-verification", "challenge-platform",
+            "Checking if the site connection is secure",
+            "Enable JavaScript and cookies to continue",
+            "cf_clearance", "jschl-answer", "Just a moment",
+            "DDoS protection by Cloudflare", "cloudflare-nginx",
+            "attention required"
+        ]
+        lower = html.lower()
+        return any(sig.lower() in lower for sig in cf_signatures)
 
+    def _wait_for_real_content(self, page, timeout_ms: int = 15000) -> bool:
+        deadline = time.time() + timeout_ms / 1000
+        while time.time() < deadline:
+            html = page.content()
+            if self._is_cloudflare_challenge(html):
+                logger.warning("  [CF] Challenge page detected. Waiting 3s for JS resolution...")
+                time.sleep(3)
+                continue
+            has_content = page.evaluate("""() => {
+                return (
+                    document.querySelectorAll('.views-row').length > 0 ||
+                    document.querySelectorAll('a[href$=".pdf"]').length > 0 ||
+                    document.querySelector('.view-bills') !== null
+                );
+            }""")
+            if has_content:
+                return True
+            time.sleep(1)
+        html = page.content()
+        if not self._is_cloudflare_challenge(html):
+            return True
+        logger.error("  [CF] Challenge page persisted — Cloudflare not bypassed.")
+        return False
+
+    @staticmethod
+    def _normalise_title_key(raw: str) -> str:
+        t = re.sub(r'\.(pdf|docx?|html?)$', '', raw, flags=re.I)
+        t = re.sub(r'[^a-z0-9\s]', ' ', t.lower())
+        t = re.sub(r'\s+', ' ', t).strip()
+        return t
+
+    # -------------------------------------------------------------------
+    #  Stealth browser builder (with optional proxy)
+    # -------------------------------------------------------------------
+    def _build_stealth_browser(self, playwright):
+        launch_opts = {
+            "headless": self.headless,
+            "args": [
+                "--disable-blink-features=AutomationControlled",
+                "--disable-dev-shm-usage",
+                "--no-sandbox",
+                "--disable-web-security",
+                "--disable-features=IsolateOrigins,site-per-process",
+                "--lang=en-US,en",
+            ]
+        }
+        # Get proxy from pool if available
+        proxy_info = self.proxy_pool.get_proxy()
+        if proxy_info and "url" in proxy_info:
+            parsed = urlparse(proxy_info["url"])
+            launch_opts["proxy"] = {
+                "server": f"{parsed.scheme}://{parsed.hostname}:{parsed.port}",
+                "username": parsed.username,
+                "password": parsed.password
+            }
+            logger.info(f"[Browser] Using proxy: {proxy_info['type']}")
+        else:
+            logger.info("[Browser] No proxy – direct connection.")
+
+        browser = playwright.chromium.launch(**launch_opts)
+
+        ctx_args = {
+            "user_agent": (
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                "AppleWebKit/537.36 (KHTML, like Gecko) "
+                "Chrome/124.0.0.0 Safari/537.36"
+            ),
+            "viewport": {"width": 1366, "height": 768},
+            "extra_http_headers": {
+                "Accept-Language": "en-US,en;q=0.9",
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+                "Accept-Encoding": "gzip, deflate, br",
+                "DNT": "1",
+                "Connection": "keep-alive",
+                "Upgrade-Insecure-Requests": "1",
+            },
+            "java_script_enabled": True,
+            "bypass_csp": True,
+        }
+        context = browser.new_context(**ctx_args)
+
+        # Stealth init script (even if playwright-stealth not installed)
+        context.add_init_script("""
+            Object.defineProperty(navigator, 'webdriver', {get: () => undefined});
+            Object.defineProperty(navigator, 'plugins', {get: () => [1,2,3,4,5]});
+            Object.defineProperty(navigator, 'languages', {get: () => ['en-US','en']});
+            window.chrome = {runtime: {}};
+        """)
+        logger.info("[Browser] Stealth init script injected.")
+        return browser, context
+
+    # -------------------------------------------------------------------
+    #  _scrape_bills – the fixed version
+    # -------------------------------------------------------------------
+    def _scrape_bills(self, page, target: dict, max_pages: int):
+        base_url = target["url"].rstrip("/")
+        if "?" in base_url:
+            base_url = base_url.split("?")[0]
+
+        prev_page_hash = None
+        consecutive_empty = 0
+
+        for page_num in range(max_pages):
+            # Removed hardcoded field_parliament_value – uses default current parliament
+            page_url = f"{base_url}?title=&page={page_num}"
+            logger.info(f"  Page {page_num + 1}: {page_url}")
+
+            try:
+                page.goto(page_url, wait_until="domcontentloaded", timeout=60000)
+
+                # Cloudflare guard
+                if not self._wait_for_real_content(page, timeout_ms=20000):
+                    logger.error(f"  [CF] Cloudflare block on page {page_num + 1}. Skipping.")
+                    consecutive_empty += 1
+                    if consecutive_empty >= 2:
+                        logger.error("  [CF] Two consecutive CF blocks. Stopping pagination.")
+                        break
+                    continue
+
+                # Identical page guard (hash)
+                current_html = page.content()
+                current_hash = hashlib.md5(current_html.encode()).hexdigest()
+                if current_hash == prev_page_hash:
+                    logger.info(f"  [Cap] Page {page_num + 1} identical to previous – end of pagination.")
+                    break
+                prev_page_hash = current_hash
+
+                # Two‑pass row extractor
+                rows = page.evaluate("""() => {
+                    const results = [];
+                    const seen = new Set();
+
+                    // Pass 1: Drupal Views rows
+                    const viewsRows = document.querySelectorAll('.views-row');
+                    viewsRows.forEach(row => {
+                        const allLinks = Array.from(row.querySelectorAll('a[href]'));
+                        const pdfLinks = allLinks.filter(a =>
+                            a.href.toLowerCase().endsWith('.pdf') ||
+                            a.href.toLowerCase().includes('/sites/default/files/')
+                        );
+                        const nodeLinks = allLinks.filter(a =>
+                            a.href.includes('/node/') && !a.href.toLowerCase().endsWith('.pdf')
+                        );
+                        if (pdfLinks.length === 0) return;
+
+                        const pdfLink = pdfLinks[0];
+                        if (seen.has(pdfLink.href)) return;
+                        seen.add(pdfLink.href);
+
+                        results.push({
+                            pdfHref: pdfLink.href,
+                            pdfText: pdfLink.textContent.trim(),
+                            detailHref: nodeLinks.length > 0 ? nodeLinks[0].href : null,
+                            rowText: row.innerText.trim().substring(0, 300),
+                            pass: 1
+                        });
+                    });
+
+                    // Pass 2: Direct PDF sweep if no rows found
+                    if (results.length === 0) {
+                        const allPdfLinks = document.querySelectorAll('a[href$=".pdf"]');
+                        allPdfLinks.forEach(a => {
+                            if (seen.has(a.href)) return;
+                            const href = a.href.toLowerCase();
+                            if (
+                                href.includes('/sites/default/files/') ||
+                                href.includes('/bills/') ||
+                                a.textContent.toLowerCase().includes('bill')
+                            ) {
+                                seen.add(a.href);
+                                results.push({
+                                    pdfHref: a.href,
+                                    pdfText: a.textContent.trim(),
+                                    detailHref: null,
+                                    rowText: a.closest('tr, li, div') ?
+                                        a.closest('tr, li, div').innerText.trim().substring(0, 300) : '',
+                                    pass: 2
+                                });
+                            }
+                        });
+                    }
+                    return results;
+                }""")
+
+                if not rows or len(rows) == 0:
+                    consecutive_empty += 1
+                    logger.info(f"  [Cap] No bill rows on page {page_num + 1} (consecutive empty: {consecutive_empty}).")
+                    if consecutive_empty >= 2:
+                        break
+                    continue
+
+                consecutive_empty = 0
+                logger.info(f"  Found {len(rows)} bill rows on page {page_num + 1}")
+
+                for row in rows:
+                    pdf_href = row.get("pdfHref", "")
+                    pdf_text = row.get("pdfText", "")
+                    detail_href = row.get("detailHref")
+
+                    if not pdf_href:
+                        continue
+
+                    raw_title = pdf_text or self._title_from_url(pdf_href)
+                    title = self._clean_title(raw_title)
+                    if not title:
+                        continue
+
+                    # Normalised dedup
+                    slug_key = self._normalise_title_key(title)
+                    if slug_key in self.seen_titles:
+                        logger.debug(f"    [Dup] Skipping known: {title}")
+                        continue
+                    self.seen_titles.add(slug_key)
+
+                    if not self._is_bill_document(title):
+                        self.data.append(self._build_non_bill_record(title, pdf_href, target))
+                        logger.info(f"    [DOC] {title}")
+                        continue
+
+                    try:
+                        record = self._deep_process_bill(page, title, pdf_href, detail_href, target)
+                        self.data.append(record)
+                        logger.info(f"    [BILL] {title}")
+                    except Exception as e:
+                        logger.error(f"    [BILL] Deep process failed for '{title}': {e}")
+                        self.data.append({
+                            "title": title,
+                            "url": pdf_href,
+                            "pdf_url": pdf_href,
+                            "source": target["name"],
+                            "status": "PUBLISHED",
+                            "date": datetime.now().strftime("%Y-%m-%d"),
+                            "session_year": int(self._extract_year(title) or datetime.now().year),
+                            "metadata": {
+                                "scraped_at": datetime.now(timezone.utc).isoformat(),
+                                "extraction_method": "fallback_minimal",
+                                "error": str(e),
+                            },
+                            "created_at": datetime.now(timezone.utc).isoformat(),
+                        })
+
+                # Pagination check
+                has_next = page.evaluate("""() => {
+                    return !!(
+                        document.querySelector('li.pager-next a') ||
+                        document.querySelector('a[rel="next"]') ||
+                        document.querySelector('.pager__item--next a') ||
+                        document.querySelector('li.next a')
+                    );
+                }""")
+                if not has_next:
+                    logger.info(f"  [Cap] No next-page link after page {page_num + 1}. Pagination done.")
+                    break
+
+                # Random jitter to reduce bot fingerprint
+                time.sleep(0.5 + (page_num % 3) * 0.3)
+
+            except Exception as e:
+                logger.error(f"  Page {page_num + 1} error: {e}")
+                consecutive_empty += 1
+                if consecutive_empty >= 3:
+                    logger.error("  Three consecutive errors. Stopping pagination.")
+                    break
+
+    # -------------------------------------------------------------------
+    #  scrape_all – uses stealth browser and proxy pool
+    # -------------------------------------------------------------------
     def scrape_all(self, max_pages: int = 40) -> List[Dict[str, Any]]:
         logger.info("=" * 60)
-        logger.info("  GO-HAM Legislative Sync Engine  (Selective Deep v5 + Remote OCR)")
+        logger.info("  Legislative Sync Engine  (Stealth + CF-hardened + ProxyPool)")
         logger.info("=" * 60)
 
         try:
@@ -972,35 +1191,16 @@ class LegislativeScraper:
             return []
 
         with sync_playwright() as p:
-            launch_opts = {
-                "headless": self.headless,
-                "args": [
-                    "--disable-blink-features=AutomationControlled",
-                    "--disable-dev-shm-usage",
-                    "--no-sandbox",
-                ]
-            }
-            # Add Proxy if available from pool
-            proxy_info = self.proxy_pool.get_proxy()
-            if proxy_info and "url" in proxy_info:
-                from urllib.parse import urlparse
-                parsed = urlparse(proxy_info["url"])
-                launch_opts["proxy"] = {
-                    "server": f"{parsed.scheme}://{parsed.hostname}:{parsed.port}",
-                    "username": parsed.username,
-                    "password": parsed.password
-                }
-                logger.info(f"Using proxy: {proxy_info['type']}")
-
-            browser = p.chromium.launch(**launch_opts)
-            ctx = browser.new_context(
-                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
-                extra_http_headers={
-                    "Accept-Language": "en-US,en;q=0.9",
-                    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-                }
-            )
+            browser, ctx = self._build_stealth_browser(p)
             page = ctx.new_page()
+
+            # Apply playwright-stealth if available
+            if STEALTH_OK:
+                try:
+                    stealth_sync(page)
+                    logger.info("[Stealth] playwright-stealth applied to page.")
+                except Exception as e:
+                    logger.warning(f"[Stealth] stealth_sync failed (non-fatal): {e}")
 
             for target in self.targets:
                 logger.info(f"\n>>> Syncing: {target['name']}")
@@ -1014,79 +1214,35 @@ class LegislativeScraper:
 
             browser.close()
 
-        # Log OCR metrics at end of run
+        # Save proxy usage stats
+        self.proxy_pool.save_usage_counts()
+
+        # Log OCR metrics
         metrics = self.ocr_engine.get_metrics()
-        logger.info(f"\n--- OCR Metrics ---")
+        logger.info("\n--- OCR Metrics ---")
         logger.info(f"  OCR.space requests: {metrics['ocr_requests_total']} (failed: {metrics['ocr_requests_failed']}, quota exhausted: {metrics['ocr_requests_quota_exhausted']})")
         logger.info(f"  Cloudmersive requests: {metrics['ocr_cloudmersive_total']} (failed: {metrics['ocr_cloudmersive_failed']})")
         logger.info(f"  Daily quota remaining: {metrics['daily_requests_remaining']}/{self.ocr_engine.OCR_SPACE_DAILY_LIMIT}")
         logger.info(f"  Total OCR processing time: {metrics['total_processing_time_ms']}ms")
-
         logger.info(f"\nSync complete – {len(self.data)} items scraped")
         return self.data
 
-    def _scrape_bills(self, page, target: dict, max_pages: int):
-        base_url = target['url']
-        parl_val = target.get('parliament_value') # Can be None, int, str from config
-
-        for page_num in range(max_pages):
-            # Parametrized filter to capture all sessions unless specified
-            params = {"title": " ", "page": page_num}
-            if parl_val is not None:
-                params["field_parliament_value"] = str(parl_val)
-            
-            qs = "&".join(f"{k}={v}" for k, v in params.items())
-            page_url = f"{base_url}?{qs}"
-            logger.info(f"  Page {page_num + 1}: {page_url}")
-
-            try:
-                page.goto(page_url, wait_until="networkidle", timeout=60000)
-                
-                # Extract potential bill rows with detail links
-                rows = page.evaluate("""() => {
-                    const rowSelector = '.views-row, tr:has(a)';
-                    return Array.from(document.querySelectorAll(rowSelector)).map(row => {
-                        const links = Array.from(row.querySelectorAll('a')).map(a => ({
-                            text: a.textContent.trim(),
-                            href: a.href,
-                            isPdf: a.href.toLowerCase().endsWith('.pdf')
-                        }));
-                        return {
-                            rowText: row.innerText.trim(),
-                            links: links
-                        };
-                    }).filter(r => r.links.some(l => l.isPdf));
-                }""")
-
-                if not rows or len(rows) == 0:
-                    logger.info(f"      [Cap] No rows on page {page_num + 1}. Reached end of pagination. Breaking.")
-                    break
-
-                for row in rows:
-                    pdf_link = next(l for l in row['links'] if l['isPdf'])
-                    detail_link = next((l for l in row['links'] if not l['isPdf'] and 'node/' in l['href']), None)
-                    
-                    raw_title = pdf_link['text'] or self._title_from_url(pdf_link['href'])
-                    title = self._clean_title(raw_title)
-                    
-                    if not title or title in self.seen_titles: continue
-                    self.seen_titles.add(title)
-                    
-                    if not self._is_bill_document(title):
-                        self.data.append(self._build_non_bill_record(title, pdf_link['href'], target))
-                        continue
-
-                    # Deep Process Bill
-                    record = self._deep_process_bill(page, title, pdf_link['href'], detail_link['href'] if detail_link else None, target)
-                    self.data.append(record)
-                    logger.info(f"    [BILL] {title}")
-
-                if not page.query_selector('li.pager-next a, a[rel="next"]'): break
-                time.sleep(0.5)
-
-            except Exception as e:
-                logger.error(f"  Page {page_num} error: {e}")
-                break
+    # -------------------------------------------------------------------
+    #  The rest of the original methods (unchanged)
+    #  - _load_targets, _deep_process_bill, _distill_bill_content,
+    #    _ocr_page_screenshots, _scrape_bill_detail_page,
+    #    _extract_text_cascade, _parse_bill_text, _scrape_standard_docs,
+    #    _build_non_bill_record, _is_bill_document, _clean_title,
+    #    _title_from_url, _extract_year, _extract_bill_no,
+    #    _infer_status_from_text, _infer_category, _download_pdf, save_data
+    # -------------------------------------------------------------------
+    def _load_targets(self) -> list:
+        try:
+            with open(self.targets_file, 'r', encoding='utf-8') as f:
+                return json.load(f).get("targets", [])
+        except Exception as e:
+            logger.error(f"Failed to load targets: {e}")
+            return []
 
     def _deep_process_bill(self, page, title, pdf_url, detail_url, target) -> dict:
         """Cascading extraction: PDF Text -> Remote OCR -> Screenshot OCR -> HTML Metadata Fallback."""
@@ -1102,7 +1258,6 @@ class LegislativeScraper:
             if not text.strip():
                 is_scanned = True
         else:
-            # PDF URL returned HTML (not a real PDF file)
             is_scanned = True
         
         # 2. Secondary: Remote OCR Fallback on real PDF bytes
@@ -1112,7 +1267,7 @@ class LegislativeScraper:
             if ocr_result["text"].strip():
                 text = ocr_result["text"]
                 method = f"remote_ocr:{ocr_result['source']}:engine_{ocr_result['engine']}"
-                is_scanned = False  # We got text via OCR!
+                is_scanned = False
                 ocr_metadata = {
                     "ocr_source": ocr_result["source"],
                     "ocr_engine": ocr_result["engine"],
@@ -1124,7 +1279,7 @@ class LegislativeScraper:
             else:
                 logger.warning(f"      [OCR] PDF-based OCR failed for: {title}")
 
-        # 3. Screenshot-based OCR: Navigate to the bill page, capture screenshots, OCR them
+        # 3. Screenshot-based OCR
         if is_scanned and (pdf_url or detail_url):
             target_url = detail_url or pdf_url
             logger.info(f"      [OCR] Attempting screenshot-based OCR on: {target_url}")
@@ -1138,15 +1293,14 @@ class LegislativeScraper:
             else:
                 logger.warning(f"      [OCR] Screenshot OCR also failed for: {title}")
 
-        # 4. Tertiary: If still no text, fetch HTML metadata from detail page
+        # 4. HTML metadata fallback
         html_metadata = {}
         if is_scanned and detail_url:
             html_metadata = self._scrape_bill_detail_page(page, detail_url)
         
-        # 5. Deep local OCR as a last resort on first page
+        # 5. Local Tesseract last resort
         if is_scanned and not text.strip() and pdf_bytes and TESSERACT_OK:
             try:
-                # Convert first page to image and run tesseract
                 doc = fitz.open(stream=pdf_bytes, filetype="pdf")
                 if len(doc) > 0:
                     page0 = doc[0]
@@ -1161,7 +1315,7 @@ class LegislativeScraper:
             except Exception as e:
                 logger.warning(f"      [OCR] Local Tesseract failed: {e}")
 
-        # 6. Parse and Merge (High Fidelity Distillation)
+        # 6. Multi-LLM distillation
         intel = {}
         if text.strip() and self.orchestrator:
             logger.info(f"      [INTEL] Running Multi-LLM Distillation for: {title}")
@@ -1169,7 +1323,7 @@ class LegislativeScraper:
             if intel:
                 logger.info(f"      [INTEL] Distillation SUCCESS for: {title}")
 
-        # 7. Structural Extraction (The Breadcrumb Strategy)
+        # 7. Structural extraction
         structural_data = {}
         if pdf_bytes:
             logger.info(f"      [Structural] Running breadcrumb analysis for: {title}")
@@ -1177,33 +1331,20 @@ class LegislativeScraper:
             if structural_data.get("sponsor_name"):
                 logger.info(f"      [Structural] Found Sponsor: {structural_data['sponsor_name']}")
 
-        # Legacy Parse (Maintain for safety/preservation)
         parsed_pdf = self._parse_bill_text(text) if text.strip() else {}
         
-        # Final fields - Prioritize Structural > Intelligence > Parsed
         sponsor = structural_data.get('sponsor_name') or intel.get('sponsor') or parsed_pdf.get('sponsor') or html_metadata.get('sponsor') or "Government"
         sponsor_title = structural_data.get('sponsor_title')
         status = intel.get('status') or html_metadata.get('status') or self._infer_status_from_text(text, title)
         
-        # --- TWO-LAYER PRE-PUBLICATION (Draft) Check ---
-        # Layer A: Metadata check (Missing Gazette/Bill No)
-        # Layer B: Visual keyword check (DRAFT/PROPOSED)
         has_bill_no = structural_data.get("bill_no") or self._extract_bill_no(text or title)
         is_draft_keywords = re.search(r'\b(DRAFT|PROPOSED\s+BILL|FOR\s+CONSULTATION)\b', (title + " " + (text or "")[:2000]).upper())
-        
         if not has_bill_no or is_draft_keywords:
-            # If we have no bill number or explicit draft keywords, it's PRE-PUBLICATION
-            logging.info(f"    ⚠️ Draft detected (Metadata: {bool(has_bill_no)}, Keywords: {bool(is_draft_keywords)}). Flagging PRE-PUBLICATION.")
+            logger.info(f"    ⚠️ Draft detected (Metadata: {bool(has_bill_no)}, Keywords: {bool(is_draft_keywords)}). Flagging PRE-PUBLICATION.")
             status = "PRE-PUBLICATION"
 
-        # FIX: Ensure status is never null for any record type
         if not status:
-            if target.get('type') == 'bills':
-                status = "PUBLISHED"
-            else:
-                status = "Ingested"
-        
-        # Final Canonical Normalization
+            status = "PUBLISHED" if target.get('type') == 'bills' else "Ingested"
         if STAGE_DETECTOR_OK:
             status = normalize_stage_label(status)
 
@@ -1228,10 +1369,6 @@ class LegislativeScraper:
         else:
             extracted_via = "html_fallback" if html_metadata else "none"
 
-        # Update persistent usage after processing
-        self.proxy_pool.save_usage_counts()
-
-        # --- B2 Vault: Mirror PDF to Backblaze ---
         b2_url = None
         if self.b2_vault and pdf_bytes:
             safe_title = re.sub(r'[^a-zA-Z0-9_\-]', '_', title)[:80]
@@ -1246,7 +1383,6 @@ class LegislativeScraper:
             except Exception as e:
                 logger.warning(f"      [B2] Upload failed (non-fatal): {e}")
 
-        # --- Date: extract real date from text if possible ---
         real_date = parsed_pdf.get('date') or html_metadata.get('date')
         if not real_date and text.strip() and STAGE_DETECTOR_OK:
             real_date = extract_date_from_order_paper(text)
@@ -1291,9 +1427,8 @@ class LegislativeScraper:
         }
 
     def _distill_bill_content(self, text: str, title: str) -> Dict[str, Any]:
-        """Use Multi-LLM Orchestrator to extract structured intelligence from bill text."""
-        if not self.orchestrator: return {}
-        
+        if not self.orchestrator:
+            return {}
         system_prompt = """You are a senior legislative analyst for the Parliament of Kenya.
 Extract high-fidelity intelligence from the provided Bill text.
 Return EXACTLY a JSON object with these keys:
@@ -1306,9 +1441,7 @@ Return EXACTLY a JSON object with these keys:
   "tabloid_summary": "Catchy 3-sentence summary in plain English for a general audience",
   "status": "Current legislative status if explicitly stated in text (e.g. Published, First Reading, Second Reading)"
 }"""
-
         prompt = f"Bill Title: {title}\n\nDocument Text:\n{text[:20000]}\n\nFinal Output (JSON):"
-        
         try:
             return self.orchestrator.get_structured_intelligence(prompt, system_prompt)
         except Exception as e:
@@ -1316,50 +1449,31 @@ Return EXACTLY a JSON object with these keys:
             return {}
 
     def _ocr_page_screenshots(self, page, url: str, title: str) -> Tuple[str, dict]:
-        """
-        Navigate to a bill's page, capture full-page screenshots, and OCR them.
-        Used when the parliament site serves HTML instead of a downloadable PDF.
-        Returns (text, metadata_dict).
-        """
         if not self.ocr_engine.ocr_space_key:
             return "", {}
-
         try:
             dp = page.context.new_page()
             dp.goto(url, wait_until="domcontentloaded", timeout=30000)
-            time.sleep(1)  # Let page render
-
-            # Get the main content area height to determine how many screenshots
+            time.sleep(1)
             viewport_height = dp.viewport_size["height"]
             page_height = dp.evaluate("document.body.scrollHeight")
             max_screenshots = min(3, max(1, page_height // viewport_height + 1))
-
             all_text = []
             pages_processed = []
-
             for i in range(max_screenshots):
-                # Scroll to position
                 scroll_y = i * viewport_height
                 dp.evaluate(f"window.scrollTo(0, {scroll_y})")
                 time.sleep(0.3)
-
-                # Capture screenshot as PNG bytes
                 screenshot_bytes = dp.screenshot(type="png")
-
                 if len(screenshot_bytes) > self.ocr_engine.MAX_FILE_SIZE_BYTES:
-                    logger.warning(f"      [Screenshot OCR] Screenshot {i+1} exceeds 1MB ({len(screenshot_bytes)} bytes), skipping.")
+                    logger.warning(f"      [Screenshot OCR] Screenshot {i+1} exceeds 1MB, skipping.")
                     continue
-
-                # Send to OCR.space
                 if self.ocr_engine._is_quota_exhausted():
                     logger.warning("      [Screenshot OCR] OCR.space daily quota exhausted.")
                     break
-
                 try:
-                    # Encode as base64 for OCR.space
                     b64_data = base64.b64encode(screenshot_bytes).decode('utf-8')
                     b64_string = f"data:image/png;base64,{b64_data}"
-
                     response = requests.post(
                         self.ocr_engine.OCR_SPACE_ENDPOINT,
                         headers={"apikey": self.ocr_engine.ocr_space_key},
@@ -1374,14 +1488,15 @@ Return EXACTLY a JSON object with these keys:
                     )
                     self.ocr_engine._increment_daily_counter()
                     self.ocr_engine.metrics["ocr_requests_total"] += 1
-
                     rj = response.json()
                     if not rj.get("IsErroredOnProcessing", True):
                         for pr in rj.get("ParsedResults", []):
                             exit_code = pr.get("FileParseExitCode")
                             if isinstance(exit_code, str):
-                                try: exit_code = int(exit_code)
-                                except: exit_code = -1
+                                try:
+                                    exit_code = int(exit_code)
+                                except:
+                                    exit_code = -1
                             if exit_code == 1:
                                 pt = pr.get("ParsedText", "")
                                 if pt.strip():
@@ -1392,13 +1507,10 @@ Return EXACTLY a JSON object with these keys:
                         err = rj.get("ErrorMessage", "Unknown")
                         logger.warning(f"      [Screenshot OCR] Page {i+1} error: {err}")
                         self.ocr_engine.metrics["ocr_requests_failed"] += 1
-
                 except Exception as e:
                     logger.warning(f"      [Screenshot OCR] Request failed for page {i+1}: {e}")
                     self.ocr_engine.metrics["ocr_requests_failed"] += 1
-
             dp.close()
-
             combined = "\n".join(all_text).strip()
             meta = {
                 "ocr_source": "ocr.space",
@@ -1408,27 +1520,23 @@ Return EXACTLY a JSON object with these keys:
                 "ocr_notes": f"Screenshot-based OCR on {len(pages_processed)} viewport captures",
             }
             return combined, meta
-
         except Exception as e:
             logger.warning(f"      [Screenshot OCR] Failed: {e}")
             return "", {}
 
     def _scrape_bill_detail_page(self, page, url) -> dict:
-        """Visit the bill's node page for HTML metadata."""
         try:
             logger.info(f"      [Fallback] Scraped Detail Page: {url}")
             dp = page.context.new_page()
             dp.goto(url, wait_until="domcontentloaded", timeout=30000)
             data = dp.evaluate("""() => {
                 const results = {};
-                // Look for common metadata labels
                 document.querySelectorAll('tr, .field').forEach(el => {
                     const text = el.innerText.toLowerCase();
                     if (text.includes('sponsor')) results.sponsor = el.innerText.split(':').pop().trim();
                     if (text.includes('status') || text.includes('stage')) results.status = el.innerText.split(':').pop().trim();
                     if (text.includes('date')) results.date = el.innerText.split(':').pop().trim();
                 });
-                // Look for summary/digest
                 const digest = document.querySelector('.field-name-field-bill-digest, .content, #block-system-main');
                 if (digest) results.summary = digest.innerText.trim().substring(0, 3000);
                 return results;
@@ -1440,46 +1548,41 @@ Return EXACTLY a JSON object with these keys:
             return {}
 
     def _extract_text_cascade(self, pdf_bytes: bytes) -> Tuple[str, Optional[str]]:
-        # PyMuPDF
         if FITZ_OK:
             try:
                 doc = fitz.open(stream=pdf_bytes, filetype="pdf")
                 text = "\n".join(p.get_text() for p in doc)
                 doc.close()
-                if text.strip(): return text, "pymupdf"
-            except: pass
-        # PyPDF2
+                if text.strip():
+                    return text, "pymupdf"
+            except:
+                pass
         if PYPDF2_OK:
             try:
                 reader = PdfReader(io.BytesIO(pdf_bytes))
                 text = "\n".join(p.extract_text() or "" for p in reader.pages)
-                if text.strip(): return text, "pypdf2"
-            except: pass
-        # pdfplumber
+                if text.strip():
+                    return text, "pypdf2"
+            except:
+                pass
         if PDFPLUMBER_OK:
             try:
                 with pdfplumber.open(io.BytesIO(pdf_bytes)) as pdf:
                     text = "\n".join(p.extract_text() or "" for p in pdf.pages)
-                    if text.strip(): return text, "pdfplumber"
-            except: pass
+                    if text.strip():
+                        return text, "pdfplumber"
+            except:
+                pass
         return "", None
 
     def _parse_bill_text(self, text: str) -> dict:
         result = {}
-
-        # --- Summary extraction (cascading patterns) ---
         summary_patterns = [
-            # Pattern 1: MEMORANDUM OF OBJECTS AND REASONS (most common)
             re.compile(r'MEMORANDUM\s+OF\s+OBJECTS\s+AND\s+REASONS(.*?)(?:$|Dated\s+the|\Z)', re.S | re.I),
-            # Pattern 2: OBJECTS AND REASONS
             re.compile(r'OBJECTS\s+AND\s+REASONS(.*?)(?:$|Dated\s+the|\Z)', re.S | re.I),
-            # Pattern 3: OBJECTS OF THE BILL
             re.compile(r'OBJECTS\s+OF\s+THE\s+BILL(.*?)(?:PART\s+I|ENACTED|Dated|\Z)', re.S | re.I),
-            # Pattern 4: STATEMENT OF JUSTIFICATION
             re.compile(r'STATEMENT\s+OF\s+(?:THE\s+)?JUSTIFICATION(.*?)(?:$|Dated|\Z)', re.S | re.I),
-            # Pattern 5: PURPOSE OF THE BILL
             re.compile(r'PURPOSE\s+OF\s+THE\s+BILL(.*?)(?:PART\s+I|ENACTED|Dated|\Z)', re.S | re.I),
-            # Pattern 6: ARRANGEMENT OF CLAUSES (fall back to clause listing)
             re.compile(r'ARRANGEMENT\s+OF\s+CLAUSES(.*?)(?:A\s+Bill\s+for|PART\s+I|\Z)', re.S | re.I),
         ]
         for pat in summary_patterns:
@@ -1489,16 +1592,10 @@ Return EXACTLY a JSON object with these keys:
                 if len(extracted) > 30:
                     result['summary'] = extracted[:3000]
                     break
-
-        # --- Description extraction (cascading patterns) ---
         desc_patterns = [
-            # Pattern 1: "A Bill for AN ACT of Parliament to..."
             re.compile(r'(A\s+Bill\s+for\s+AN\s+ACT\s+of\s+Parliament\s+to.*?)(?:ENACTED|PART\s+I|BE\s+IT\s+ENACTED)', re.S | re.I),
-            # Pattern 2: "AN ACT of Parliament to..."
             re.compile(r'(AN\s+ACT\s+of\s+Parliament\s+to.*?)(?:ENACTED|PART\s+I|BE\s+IT\s+ENACTED)', re.S | re.I),
-            # Pattern 3: "An Act to..." (shorter form)
             re.compile(r'(An\s+Act\s+to.*?)(?:ENACTED|PART\s+I|BE\s+IT\s+ENACTED)', re.S | re.I),
-            # Pattern 4: Long title after bill number
             re.compile(r'Bill\s+No\.?\s*\d+.*?\n(.*?)(?:PART\s+I|ARRANGEMENT)', re.S | re.I),
         ]
         for pat in desc_patterns:
@@ -1508,11 +1605,7 @@ Return EXACTLY a JSON object with these keys:
                 if len(extracted) > 20:
                     result['description'] = extracted[:2000]
                     break
-
-        # --- Sponsor extraction (Structural Priority) ---
         sponsor = None
-        
-        # Phase 1: Header/Cover Search (High Signal)
         header_text = text[:3000]
         header_patterns = [
             re.compile(r'Sponsored\s+by\s+(?:the\s+)?(?:Hon\.?\s+)?([\w\s,]+?)(?:\s*,\s*MP|\s*,\s*M\.?P\.?|\n|$)', re.I),
@@ -1526,41 +1619,25 @@ Return EXACTLY a JSON object with these keys:
                 if 3 < len(extracted) < 150 and "means" not in extracted.lower():
                     sponsor = extracted
                     break
-        
-        # Phase 2: Memorandum Search (Truth Layer) - ENTIRE TEXT SCAN
         if not sponsor:
-            # The Memorandum can appear anywhere (middle/end)
             memo_match = re.search(r'MEMORANDUM\s+OF\s+OBJECTS\s+AND\s+REASONS', text, re.I)
             if memo_match:
                 memo_idx = memo_match.start()
-                # Targeted Windowing: 3,000 characters from the marker
                 memo_block = text[memo_idx : memo_idx + 3500]
-                
-                # Logic: Ignore everything until 'Dated'
                 dated_match = re.search(r'Dated\s+the', memo_block, re.I)
                 if dated_match:
                     signature_block = memo_block[dated_match.start():]
-                    # Capture name immediately following the date and preceding the title
-                    # Pattern: Dated ... 2026. [Name], [Title]
-                    # We use a broad name capture then filter
                     sig_pat = re.compile(r'Dated.*?202\d\.?\s*\n?\s*([\w\s,.]+?)\s*,\s*(?:Member\s+of\s+Parliament|Senator|Leader\s+of\s+the\s+Majority|Chairperson|Cabinet\s+Secretary)', re.S | re.I)
                     sm = sig_pat.search(signature_block)
                     if sm:
                         name = sm.group(1).strip()
-                        # Clean up "Hon." and leading/trailing whitespace
                         name = re.sub(r'^(?:the\s+)?(?:Hon\.?\s+)', '', name, flags=re.I).strip()
-                        # Disqualify Interpretation Clauses (Definition zones)
-                        # If the name is followed by 'means' within 5 words, it's a definition.
                         context_after = signature_block[sm.end() : sm.end() + 100].lower()
                         is_interpretation = "means" in context_after and len(context_after.split("means")[0].split()) < 5
-                        
                         if 3 < len(name) < 100 and not is_interpretation:
                             sponsor = name
-
         if sponsor:
             result['sponsor'] = sponsor
-
-        # --- Date extraction from text ---
         date_patterns = [
             re.compile(r'Dated\s+the\s+(\d{1,2})\s*(?:st|nd|rd|th)?\s+(January|February|March|April|May|June|July|August|September|October|November|December)\s*,?\s*(\d{4})', re.I),
             re.compile(r'(\d{1,2})\s*(?:st|nd|rd|th)?\s+(January|February|March|April|May|June|July|August|September|October|November|December)\s*,?\s*(\d{4})', re.I),
@@ -1582,7 +1659,6 @@ Return EXACTLY a JSON object with these keys:
                         break
                 except (ValueError, IndexError):
                     pass
-
         return result
 
     def _scrape_standard_docs(self, page, target):
@@ -1594,7 +1670,8 @@ Return EXACTLY a JSON object with these keys:
             }));
         }""", target.get('selector'))
         for l in links:
-            if not l['text'] or l['text'] in self.seen_titles: continue
+            if not l['text'] or l['text'] in self.seen_titles:
+                continue
             self.seen_titles.add(l['text'])
             self.data.append(self._build_non_bill_record(l['text'], l['href'], target))
             logger.info(f"    [DOC] {l['text']}")
@@ -1606,11 +1683,10 @@ Return EXACTLY a JSON object with these keys:
             "source": target['name'],
             "category": "Documentation",
             "date": datetime.now().strftime("%Y-%m-%d"),
-            "status": "Ingested", # FIX: Set status for non-bill docs
+            "status": "Ingested",
             "document_type": "doc"
         }
 
-    # --- Hardened Bill Classification ---
     _BILL_BLOCKLIST = (
         'hansard', 'order paper', 'questions',
         'notice of motion', 'petitions', 'committee report',
@@ -1619,7 +1695,6 @@ Return EXACTLY a JSON object with these keys:
         'business paper', 'progress report', 'standing orders',
         'procedural motion', 'government statement',
         'swearing in', 'obituary', 'tributes',
-        # Removed 'bill digest' and 'bill tracker' as they are now truth sources
     )
     _BILL_REQUIRED_PATTERN = re.compile(
         r'\b(bill|bills|amendment\s+bill|finance\s+bill|appropriation\s+bill|supply\s+bill)\b',
@@ -1628,10 +1703,8 @@ Return EXACTLY a JSON object with these keys:
 
     def _is_bill_document(self, title: str) -> bool:
         t = title.lower()
-        # Must contain a valid bill pattern
         if not self._BILL_REQUIRED_PATTERN.search(t):
             return False
-        # Must not match any blocklisted document type
         for kw in self._BILL_BLOCKLIST:
             if kw in t:
                 return False
@@ -1642,29 +1715,20 @@ Return EXACTLY a JSON object with these keys:
         return re.sub(r'\s+', ' ', t)
 
     def _title_from_url(self, url: str) -> str:
-        return unquote(url.split('/')[-1]).replace('.pdf','')
+        return unquote(url.split('/')[-1]).replace('.pdf', '')
 
     def _extract_year(self, text: str) -> Optional[str]:
         m = re.search(r'(202[2-9])', text)
         return m.group(0) if m else None
 
     def _extract_bill_no(self, text: str) -> str:
-        # Multi-House Bill Number Logic: Captures Senate, National Assembly, NA prefixes
         m = re.search(r'(?:Senate|National\s+Assembly|NA|SENATE)\s*(?:Bills?)\s+No\.?\s*(\d+)', text, re.I)
         if not m:
-            # Fallback to standard Bill No pattern with plural support
             m = re.search(r'\bBills?\s+No\.?\s*(\d+)', text, re.I)
-        
         return f"No. {m.group(1)}" if m else ""
 
     def _infer_status_from_text(self, text: str, title: str) -> str:
-        """
-        High-fidelity status inference using a Stage Stamp Dictionary.
-        Scans for physical stamps and Hansard markers first.
-        """
         t = (title.lower() + " " + text.lower())
-        
-        # 1. EXHAUSTIVE STAMP DICTIONARY (12+ STAGES) - 2026 FORMATS
         STAMP_DICT = {
             "ASSENT": [
                 re.compile(r'PRESIDENTIAL\s+ASSENT\s+ON\s+(\d{1,2}\s+[A-Z]{3}\s+202[4-9])', re.I),
@@ -1713,39 +1777,31 @@ Return EXACTLY a JSON object with these keys:
                 re.compile(r'BILL\s+DIES', re.I)
             ]
         }
-
         for stage, patterns in STAMP_DICT.items():
             for pat in patterns:
                 if pat.search(text):
                     return stage
-
-        # 2. Layered detection fallback
         if STAGE_DETECTOR_OK:
             detected = detect_stage_from_text(text, title)
-            if detected: return normalize_stage_label(detected)
-
-        # 3. Simple Keyword Fallback
-        # GUARD: 'assent' alone is NOT enough — every bill contains it in boilerplate
-        # ('enacted by the parliament', 'commencement'). Require 'presidential assent' phrase.
-        if 'presidential assent' in t or 'signed into law' in t: return "ASSENT"
+            if detected:
+                return normalize_stage_label(detected)
+        if 'presidential assent' in t or 'signed into law' in t:
+            return "ASSENT"
         if 'reading' in t:
-            if 'third' in t: return "3RD READING"
-            if 'second' in t: return "2ND READING"
+            if 'third' in t:
+                return "3RD READING"
+            if 'second' in t:
+                return "2ND READING"
             return "1ST READING"
-
         return "PUBLISHED"
 
     def _infer_category(self, title: str) -> str:
         return "All Portfolios"
 
     def _download_pdf(self, url: str, page=None) -> Optional[bytes]:
-        """Download a PDF with multi-layer proxy support and automatic fallback."""
         pdf_bytes = None
-        
-        # 1. Acquire Proxy from Pool
         proxy = self.proxy_pool.get_proxy()
 
-        # Method 1 & 3: Requests/Webshare via proxy URL
         if proxy and "url" in proxy and REQUESTS_OK:
             try:
                 proxies = {"http": proxy["url"], "https": proxy["url"]}
@@ -1760,7 +1816,6 @@ Return EXACTLY a JSON object with these keys:
                 logger.warning(f"      [DL] Proxy {proxy['type']} failed: {e}")
                 self.proxy_pool.report_failure(proxy)
 
-        # Method 2: ScraperAPI direct PDF fallback
         if proxy and proxy["type"] == "scraperapi":
             api_key = proxy.get("api_key")
             payload = {"api_key": api_key, "url": url, "retry_404": "true"}
@@ -1774,10 +1829,8 @@ Return EXACTLY a JSON object with these keys:
             except Exception as e:
                 logger.warning(f"      [DL] ScraperAPI request failed: {e}")
 
-        # Method 4: Playwright-based download (uses browser session cookies)
         if page:
             try:
-                # Use Playwright's request API to fetch with browser cookies
                 api_response = page.context.request.get(url)
                 body = api_response.body()
                 if body[:5] == b"%PDF-":
@@ -1807,7 +1860,6 @@ Return EXACTLY a JSON object with these keys:
             except Exception as e:
                 logger.warning(f"      [DL] Playwright download failed: {e}")
 
-        # Method 5: Agentic Hunter (Manus API Fallback)
         if not pdf_bytes and self.orchestrator:
             logger.info(f"      [DL] TRIGERING MANUS AGENT FALLBACK for: {url}")
             goal = f"Download the primary legislative PDF for the Bill at this URL: {url}. Ensure it is a valid PDF binary."
@@ -1830,7 +1882,8 @@ Return EXACTLY a JSON object with these keys:
             json.dump(self.data, f, indent=2, ensure_ascii=False)
         logger.info(f"Saved to {fpath}")
 
+
 if __name__ == "__main__":
     scraper = LegislativeScraper(headless=True)
-    scraper.scrape_all(max_pages=2)
+    scraper.scrape_all(max_pages=40)   # you can change max_pages as needed
     scraper.save_data()
