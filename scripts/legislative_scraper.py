@@ -322,7 +322,8 @@ class RemoteOCREngine:
                             self.OCR_SPACE_ENDPOINT,
                             headers=headers,
                             data=data,
-                            timeout=120
+                            timeout=120,
+                            verify=False   # SSL fix
                         )
                     else:
                         files = {"file": ("document.pdf", io.BytesIO(pdf_bytes), "application/pdf")}
@@ -331,7 +332,8 @@ class RemoteOCREngine:
                             headers=headers,
                             data=data,
                             files=files,
-                            timeout=120
+                            timeout=120,
+                            verify=False   # SSL fix
                         )
 
                     if response.status_code == 429:
@@ -435,7 +437,8 @@ class RemoteOCREngine:
                     self.CLOUDMERSIVE_ENDPOINT,
                     headers=headers,
                     files=files,
-                    timeout=180
+                    timeout=180,
+                    verify=False   # SSL fix
                 )
 
                 if response.status_code == 429:
@@ -683,7 +686,7 @@ class ProxyPool:
         now = time.time()
         if refresh_url and (now - self.last_webshare_refresh > interval_hours * 3600):
             try:
-                r = requests.get(refresh_url, timeout=30)
+                r = requests.get(refresh_url, timeout=30, verify=False)   # SSL fix
                 if r.status_code == 200:
                     new_list = r.text.strip().split("\n")
                     new_proxies = []
@@ -957,6 +960,7 @@ class LegislativeScraper:
                 "--disable-web-security",
                 "--disable-features=IsolateOrigins,site-per-process",
                 "--lang=en-US,en",
+                "--ignore-certificate-errors",   # SSL fix
             ]
         }
         # Get proxy from pool if available
@@ -991,6 +995,7 @@ class LegislativeScraper:
             },
             "java_script_enabled": True,
             "bypass_csp": True,
+            "ignore_https_errors": True,   # SSL fix
         }
         context = browser.new_context(**ctx_args)
 
@@ -1450,7 +1455,8 @@ Return EXACTLY a JSON object with these keys:
                             "scale": "true",
                             "OCREngine": "1",
                         },
-                        timeout=120
+                        timeout=120,
+                        verify=False   # SSL fix
                     )
                     self.ocr_engine._increment_daily_counter()
                     self.ocr_engine.metrics["ocr_requests_total"] += 1
@@ -1786,7 +1792,7 @@ Return EXACTLY a JSON object with these keys:
             api_key = proxy.get("api_key")
             payload = {"api_key": api_key, "url": url, "retry_404": "true"}
             try:
-                r = requests.get("https://api.scraperapi.com/", params=payload, timeout=90)
+                r = requests.get("https://api.scraperapi.com/", params=payload, timeout=90, verify=False)   # SSL fix
                 if r.status_code == 200 and r.content[:5] == b"%PDF-":
                     logger.info(f"      [DL] PDF downloaded via ScraperAPI: {len(r.content)} bytes")
                     return r.content
@@ -1832,7 +1838,7 @@ Return EXACTLY a JSON object with these keys:
             manus_result = self.orchestrator.call_manus_agent(goal)
             if manus_result and manus_result.startswith("http"):
                 try:
-                    r = requests.get(manus_result, timeout=30)
+                    r = requests.get(manus_result, timeout=30, verify=False)   # SSL fix
                     if r.content[:5] == b"%PDF-":
                         return r.content
                 except:
@@ -1853,4 +1859,3 @@ if __name__ == "__main__":
     scraper = LegislativeScraper(headless=True)
     scraper.scrape_all(max_pages=40)
     scraper.save_data()
-    

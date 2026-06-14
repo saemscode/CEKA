@@ -4,9 +4,13 @@ import io
 import json
 import time
 import logging
+import urllib3
 from datetime import datetime, timezone
 from typing import List, Dict, Any, Optional, Tuple
 from pathlib import Path
+
+# Disable SSL warnings
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 # ---------------------------------------------------------------------------
 # Load environment variables from .env if python-dotenv is available
@@ -583,10 +587,11 @@ class StageDetector:
         with sync_playwright() as p:
             browser = p.chromium.launch(
                 headless=True,
-                args=["--disable-blink-features=AutomationControlled"]
+                args=["--disable-blink-features=AutomationControlled", "--ignore-certificate-errors"]   # SSL fix
             )
             ctx = browser.new_context(
-                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+                ignore_https_errors=True   # SSL fix
             )
             page = ctx.new_page()
 
@@ -616,7 +621,7 @@ class StageDetector:
                         pdf_text = ""
                         if req_lib:
                             try:
-                                r = req_lib.get(pdf_url, timeout=30, allow_redirects=True)
+                                r = req_lib.get(pdf_url, timeout=30, allow_redirects=True, verify=False)   # SSL fix
                                 if r.content[:5] == b"%PDF-":
                                     if FITZ_OK:
                                         try:
