@@ -95,7 +95,8 @@ We welcome all collaborators — **developers, designers, educators, civic advoc
 
 1. **Fork the repository**
    ```bash
-   git fork https://github.com/CivicEdKenyaApp/CEKA.git
+   git clone https://github.com/CivicEdKenyaApp/CEKA.git
+   cd CEKA
    ```
 
 2. **Create a feature branch**

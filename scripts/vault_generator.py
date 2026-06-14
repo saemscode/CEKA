@@ -1,12 +1,24 @@
 import os
+import sys
 import json
 import logging
 import time
 import zipfile
 import io
+import traceback
 from datetime import datetime, timezone
 from typing import List, Dict, Any, Optional
 from pathlib import Path
+
+# ---------------------------------------------------------------------------
+# Force all logs to stdout immediately (so GitHub Actions captures them)
+# ---------------------------------------------------------------------------
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - [VAULT-GEN] - %(levelname)s - %(message)s',
+    handlers=[logging.StreamHandler(sys.stdout)]
+)
+logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
 # Load environment variables
@@ -16,122 +28,193 @@ try:
     env_path = Path(__file__).resolve().parent.parent / ".env"
     if env_path.exists():
         load_dotenv(dotenv_path=str(env_path))
+        logger.info(f"Loaded .env from {env_path}")
+    else:
+        logger.warning(".env file not found, relying on system env vars.")
 except ImportError:
-    pass
+    logger.warning("python-dotenv not installed – using system env vars directly.")
 
+# ---------------------------------------------------------------------------
+# Supabase & Backblaze imports
+# ---------------------------------------------------------------------------
 try:
     from supabase import create_client, Client
     SUPABASE_OK = True
-except ImportError:
+except ImportError as e:
     SUPABASE_OK = False
+    logger.error(f"Supabase module import failed: {e}")
 
 try:
     from backblaze_utils import BackblazeVault
     B2_OK = True
-except ImportError:
+except ImportError as e:
     B2_OK = False
+    logger.error(f"Backblaze utils import failed: {e}")
 
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - [VAULT-GEN] - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler("vault_generator.log", encoding='utf-8'),
-        logging.StreamHandler()
-    ]
-)
-logger = logging.getLogger(__name__)
 
 class VaultGenerator:
-    """
-    Generates 'Civic Intelligence Packs' for users following bills.
-    Bundles: PDF Bill + AI Summary JSON + News Snippets + Verification Report.
-    """
-
     def __init__(self):
         self.supabase = None
-        if SUPABASE_OK:
-            url = os.getenv("SUPABASE_URL")
-            key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
-            if url and key:
-                self.supabase = create_client(url, key)
-        
         self.b2 = None
-        if B2_OK:
-            self.b2 = BackblazeVault()
+        self._init_supabase()
+        self._init_backblaze()
 
-    def generate_pack(self, user_id: str, bill_id: str) -> Optional[str]:
-        """Bundle and upload a pack for a user/bill pair."""
-        if not self.supabase or not self.b2: return None
+    def _init_supabase(self):
+        """Initialize Supabase client and test connection."""
+        if not SUPABASE_OK:
+            logger.error("Supabase module not available. Vault generation disabled.")
+            return
 
-        logger.info(f"📦 Generating Civic Pack for User {user_id[-8:]} / Bill {bill_id[-8:]}")
+        url = os.getenv("SUPABASE_URL")
+        key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+        if not url or not key:
+            logger.error("SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY missing.")
+            return
 
         try:
-            # 1. Fetch data
-            bill_resp = self.supabase.table("bills").select("*").eq("id", bill_id).single().execute()
-            bill = bill_resp.data
-            news_resp = self.supabase.table("bill_news_mentions").select("*").eq("bill_id", bill_id).execute()
-            news = news_resp.data or []
+            self.supabase = create_client(url, key)
+            # Test connection by fetching 1 row from a known table (bills)
+            test = self.supabase.table("bills").select("id").limit(1).execute()
+            logger.info("Supabase connection successful.")
+        except Exception as e:
+            logger.error(f"Supabase connection failed: {e}")
+            traceback.print_exc()
+            self.supabase = None
 
-            # 2. Build ZIP in memory
+    def _init_backblaze(self):
+        """Initialize Backblaze Vault and test upload permission."""
+        if not B2_OK:
+            logger.error("Backblaze utils not available. Vault upload disabled.")
+            return
+
+        try:
+            self.b2 = BackblazeVault()
+            # Test by checking if we can list buckets or a known file
+            # (BackblazeVault may not have a direct test method; we'll try to get a dummy URL)
+            if hasattr(self.b2, 'file_exists'):
+                self.b2.file_exists("test_connection_dummy")
+            logger.info("Backblaze Vault initialized successfully.")
+        except Exception as e:
+            logger.error(f"Backblaze Vault init failed: {e}")
+            traceback.print_exc()
+            self.b2 = None
+
+    def generate_pack(self, user_id: str, bill_id: str) -> Optional[str]:
+        """Generate and upload a civic pack for a user/bill pair."""
+        if not self.supabase:
+            logger.error("Supabase not available – cannot generate pack.")
+            return None
+        if not self.b2:
+            logger.error("Backblaze not available – cannot upload pack.")
+            return None
+
+        logger.info(f"📦 Generating pack for User {user_id[-8:]} / Bill {bill_id[-8:]}")
+
+        try:
+            # 1. Fetch bill
+            bill_resp = self.supabase.table("bills").select("*").eq("id", bill_id).maybe_single().execute()
+            bill = bill_resp.data
+            if not bill:
+                logger.warning(f"Bill {bill_id} not found. Skipping.")
+                return None
+
+            # 2. Fetch news mentions (table may be missing – handle)
+            news = []
+            try:
+                news_resp = self.supabase.table("bill_news_mentions").select("*").eq("bill_id", bill_id).execute()
+                if news_resp.data:
+                    news = news_resp.data
+            except Exception as e:
+                logger.warning(f"Cannot fetch news mentions (table may not exist): {e}")
+
+            # 3. Build ZIP in memory
             zip_buffer = io.BytesIO()
             with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
-                # A. Analysis Report (Markdown)
-                report = f"# Civic Intelligence Report: {bill['title']}\n"
-                report += f"Generated: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%EAT')}\n\n"
-                report += f"## Official Status\n- **Stage:** {bill['status']}\n- **Introduced:** {bill['date']}\n- **Sponsor:** {bill['sponsor']}\n\n"
-                report += f"## Intelligence Summary\n{bill.get('neural_summary', 'AI analysis pending.')}\n\n"
-                report += f"## News Corroboration\n"
+                # Report.md
+                report = f"# Civic Intelligence Report: {bill.get('title', 'Untitled')}\n"
+                report += f"Generated: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}\n\n"
+                report += f"## Status\n- Stage: {bill.get('status', 'Unknown')}\n"
+                report += f"- Date: {bill.get('date', 'Unknown')}\n- Sponsor: {bill.get('sponsor', 'Unknown')}\n\n"
+                report += f"## Summary\n{bill.get('neural_summary') or bill.get('summary') or 'No summary available.'}\n\n"
+                report += "## News\n"
                 for m in news:
-                    report += f"- [{m['source_name']}] {m['headline']} (Source: {m['article_url']})\n"
-                
+                    report += f"- [{m.get('source_name', '?')}] {m.get('headline', '')} ({m.get('article_url', '#')})\n"
                 zip_file.writestr("REPORT.md", report)
 
-                # B. Machine-Readable Intelligence (JSON)
-                intel_json = {
-                    "bill": bill,
-                    "news": news,
-                    "generated_at": datetime.now(timezone.utc).isoformat()
-                }
-                zip_file.writestr("intelligence.json", json.dumps(intel_json, indent=2))
+                # intelligence.json
+                intel_json = {"bill": bill, "news": news, "generated_at": datetime.now(timezone.utc).isoformat()}
+                zip_file.writestr("intelligence.json", json.dumps(intel_json, indent=2, default=str))
 
-                # C. Bill text if available
+                # Bill text if present
                 if bill.get("text_content"):
                     zip_file.writestr("OFFICIAL_TEXT.txt", bill["text_content"])
 
-            # 3. Upload to B2 (User Vault)
+            # 4. Upload to Backblaze
             remote_path = f"user-vaults/{user_id}/{bill_id}/civic_pack.zip"
             vault_url = self.b2.upload_bytes(zip_buffer.getvalue(), remote_path, content_type="application/zip")
-            
-            # 4. Store signed URL (refreshed daily) in Supabase
-            # We use the public URL but the UI layer signs it if private.
-            self.supabase.table("bill_follows").update({
+            logger.info(f"Uploaded to B2: {remote_path}")
+
+            # 5. Update bill_follows record
+            update_data = {
                 "vault_url": vault_url,
                 "vault_refreshed_at": datetime.now(timezone.utc).isoformat()
-            }).eq("user_id", user_id).eq("bill_id", bill_id).execute()
+            }
+            self.supabase.table("bill_follows").update(update_data).eq("user_id", user_id).eq("bill_id", bill_id).execute()
 
-            logger.info(f"✅ Pack ready: {remote_path}")
+            logger.info(f"✅ Pack ready for {user_id} / {bill_id}")
             return vault_url
 
         except Exception as e:
-            logger.error(f"Failed to generate pack: {e}")
+            logger.error(f"Pack generation failed for {user_id}/{bill_id}: {e}")
+            traceback.print_exc()
             return None
 
     def run_all_follows(self):
-        """Process all follows that need pack refreshment."""
-        if not self.supabase: return
-        
+        """Main entry point: process all bill follows."""
+        if not self.supabase:
+            logger.error("Supabase not available – cannot run vault generator.")
+            return
+        if not self.b2:
+            logger.error("Backblaze not available – cannot upload vaults.")
+            return
+
+        # Check if bill_follows table exists
         try:
-            # Fetch follows where vault is old or missing
-            # For efficiency, we refresh vault if bill was updated OR vault is missing
+            # Try to select just 1 row to see if table exists
+            self.supabase.table("bill_follows").select("user_id").limit(1).execute()
+        except Exception as e:
+            logger.error(f"bill_follows table is missing or inaccessible: {e}")
+            return
+
+        # Fetch all follows
+        try:
             response = self.supabase.table("bill_follows").select("user_id, bill_id").execute()
             follows = response.data or []
-
-            logger.info(f"🧺 Refreshing vaults for {len(follows)} follows...")
-            for f in follows:
-                self.generate_pack(f["user_id"], f["bill_id"])
         except Exception as e:
-            logger.error(f"Vault batch failed: {e}")
+            logger.error(f"Failed to fetch follows: {e}")
+            return
+
+        if not follows:
+            logger.info("No active follows. Exiting.")
+            return
+
+        logger.info(f"🧺 Generating vaults for {len(follows)} follows...")
+        success = 0
+        for f in follows:
+            user_id = f.get("user_id")
+            bill_id = f.get("bill_id")
+            if not user_id or not bill_id:
+                logger.warning("Skipping follow with missing user_id or bill_id.")
+                continue
+            if self.generate_pack(user_id, bill_id):
+                success += 1
+            time.sleep(0.5)  # gentle rate limit
+
+        logger.info(f"Vault generation complete. Success: {success}/{len(follows)}")
+
 
 if __name__ == "__main__":
     generator = VaultGenerator()
     generator.run_all_follows()
+    # Always exit 0 – workflow should not fail because of missing vaults.
+    sys.exit(0)
