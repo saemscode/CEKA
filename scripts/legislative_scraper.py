@@ -913,6 +913,7 @@ class LegislativeScraper:
         return any(sig.lower() in lower for sig in cf_signatures)
 
     def _wait_for_real_content(self, page, timeout_ms: int = 15000) -> bool:
+        """Wait until real content (table or PDF links) appears, not a Cloudflare challenge."""
         deadline = time.time() + timeout_ms / 1000
         while time.time() < deadline:
             html = page.content()
@@ -920,16 +921,16 @@ class LegislativeScraper:
                 logger.warning("  [CF] Challenge page detected. Waiting 3s for JS resolution...")
                 time.sleep(3)
                 continue
+            # Check for table rows with PDF links (real content)
             has_content = page.evaluate("""() => {
-                return (
-                    document.querySelectorAll('.views-row').length > 0 ||
-                    document.querySelectorAll('a[href$=".pdf"]').length > 0 ||
-                    document.querySelector('.view-bills') !== null
-                );
+                const table = document.querySelector('table');
+                if (table && table.querySelectorAll('a[href$=".pdf"]').length > 0) return true;
+                return document.querySelectorAll('a[href$=".pdf"]').length > 0;
             }""")
             if has_content:
                 return True
             time.sleep(1)
+        # If no CF detected but no content either, assume real (empty) page
         html = page.content()
         if not self._is_cloudflare_challenge(html):
             return True
@@ -1004,7 +1005,7 @@ class LegislativeScraper:
         return browser, context
 
     # -------------------------------------------------------------------
-    #  _scrape_bills – the fixed version
+    #  _scrape_bills – CORRECTED for table structure, no ?title=
     # -------------------------------------------------------------------
     def _scrape_bills(self, page, target: dict, max_pages: int):
         base_url = target["url"].rstrip("/")
@@ -1015,8 +1016,11 @@ class LegislativeScraper:
         consecutive_empty = 0
 
         for page_num in range(max_pages):
-            # Removed hardcoded field_parliament_value – uses default current parliament
-            page_url = f"{base_url}?title=&page={page_num}"
+            # Construct URL: no extra parameters except page number
+            if page_num == 0:
+                page_url = base_url
+            else:
+                page_url = f"{base_url}?page={page_num}"
             logger.info(f"  Page {page_num + 1}: {page_url}")
 
             try:
@@ -1039,58 +1043,34 @@ class LegislativeScraper:
                     break
                 prev_page_hash = current_hash
 
-                # Two‑pass row extractor
+                # Extract rows from the table (the site uses <table> structure)
                 rows = page.evaluate("""() => {
                     const results = [];
+                    // Find the main table – usually the first table with many PDF links
+                    const tables = document.querySelectorAll('table');
+                    let billTable = null;
+                    for (const table of tables) {
+                        if (table.querySelectorAll('a[href$=".pdf"]').length > 2) {
+                            billTable = table;
+                            break;
+                        }
+                    }
+                    if (!billTable) return results;
+
                     const seen = new Set();
-
-                    // Pass 1: Drupal Views rows
-                    const viewsRows = document.querySelectorAll('.views-row');
-                    viewsRows.forEach(row => {
-                        const allLinks = Array.from(row.querySelectorAll('a[href]'));
-                        const pdfLinks = allLinks.filter(a =>
-                            a.href.toLowerCase().endsWith('.pdf') ||
-                            a.href.toLowerCase().includes('/sites/default/files/')
-                        );
-                        const nodeLinks = allLinks.filter(a =>
-                            a.href.includes('/node/') && !a.href.toLowerCase().endsWith('.pdf')
-                        );
-                        if (pdfLinks.length === 0) return;
-
-                        const pdfLink = pdfLinks[0];
-                        if (seen.has(pdfLink.href)) return;
+                    const rows = billTable.querySelectorAll('tbody tr, tr');
+                    for (const row of rows) {
+                        const pdfLink = row.querySelector('a[href$=".pdf"]');
+                        if (!pdfLink) continue;
+                        if (seen.has(pdfLink.href)) continue;
                         seen.add(pdfLink.href);
 
+                        const detailLink = row.querySelector('a:not([href$=".pdf"])');
                         results.push({
                             pdfHref: pdfLink.href,
                             pdfText: pdfLink.textContent.trim(),
-                            detailHref: nodeLinks.length > 0 ? nodeLinks[0].href : null,
-                            rowText: row.innerText.trim().substring(0, 300),
-                            pass: 1
-                        });
-                    });
-
-                    // Pass 2: Direct PDF sweep if no rows found
-                    if (results.length === 0) {
-                        const allPdfLinks = document.querySelectorAll('a[href$=".pdf"]');
-                        allPdfLinks.forEach(a => {
-                            if (seen.has(a.href)) return;
-                            const href = a.href.toLowerCase();
-                            if (
-                                href.includes('/sites/default/files/') ||
-                                href.includes('/bills/') ||
-                                a.textContent.toLowerCase().includes('bill')
-                            ) {
-                                seen.add(a.href);
-                                results.push({
-                                    pdfHref: a.href,
-                                    pdfText: a.textContent.trim(),
-                                    detailHref: null,
-                                    rowText: a.closest('tr, li, div') ?
-                                        a.closest('tr, li, div').innerText.trim().substring(0, 300) : '',
-                                    pass: 2
-                                });
-                            }
+                            detailHref: detailLink ? detailLink.href : null,
+                            rowText: row.innerText.trim().substring(0, 300)
                         });
                     }
                     return results;
@@ -1153,14 +1133,10 @@ class LegislativeScraper:
                             "created_at": datetime.now(timezone.utc).isoformat(),
                         })
 
-                # Pagination check
+                # Pagination check: look for "next" link
                 has_next = page.evaluate("""() => {
-                    return !!(
-                        document.querySelector('li.pager-next a') ||
-                        document.querySelector('a[rel="next"]') ||
-                        document.querySelector('.pager__item--next a') ||
-                        document.querySelector('li.next a')
-                    );
+                    const next = document.querySelector('li.pager-next a, a[rel="next"], .pager__item--next a, li.next a');
+                    return next !== null;
                 }""")
                 if not has_next:
                     logger.info(f"  [Cap] No next-page link after page {page_num + 1}. Pagination done.")
@@ -1228,7 +1204,7 @@ class LegislativeScraper:
         return self.data
 
     # -------------------------------------------------------------------
-    #  The rest of the original methods (unchanged)
+    #  The rest of the original methods (unchanged, but kept for completeness)
     #  - _load_targets, _deep_process_bill, _distill_bill_content,
     #    _ocr_page_screenshots, _scrape_bill_detail_page,
     #    _extract_text_cascade, _parse_bill_text, _scrape_standard_docs,
