@@ -9,7 +9,7 @@ class BackblazeVault:
         self.endpoint = os.environ.get("B2_S3_ENDPOINT")
         self.key_id = os.environ.get("B2_KEY_ID")
         self.application_key = os.environ.get("B2_APPLICATION_KEY")
-        self.bucket_name = os.environ.get("B2_BUCKET_NAME", "ceka-vault")
+        self.bucket_name = os.environ.get("B2_BUCKET_NAME", "ceka-resources-vault")
         
         self.s3 = boto3.client(
             's3',
