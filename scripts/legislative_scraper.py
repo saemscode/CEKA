@@ -1853,3 +1853,4 @@ if __name__ == "__main__":
     scraper = LegislativeScraper(headless=True)
     scraper.scrape_all(max_pages=40)
     scraper.save_data()
+    
