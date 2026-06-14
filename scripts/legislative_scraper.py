@@ -1005,7 +1005,7 @@ class LegislativeScraper:
         return browser, context
 
     # -------------------------------------------------------------------
-    #  _scrape_bills – FINAL FIXED VERSION
+    #  _scrape_bills – FINAL FIXED VERSION (table extraction)
     # -------------------------------------------------------------------
     def _scrape_bills(self, page, target: dict, max_pages: int):
         base_url = target["url"].rstrip("/")
@@ -1350,6 +1350,11 @@ class LegislativeScraper:
         if not real_date:
             real_date = datetime.now().strftime("%Y-%m-%d")
 
+        # -----------------------------------------------------------------
+        # FINAL DICTIONARY - REMOVED is_money_bill AND concerns_counties
+        # because they are missing in the Supabase schema.
+        # You can add them back after altering the table.
+        # -----------------------------------------------------------------
         return {
             "title": title,
             "bill_no": self._extract_bill_no(text or title),
@@ -1370,8 +1375,8 @@ class LegislativeScraper:
             "ai_concerns": ai_concerns,
             "tabloid_summary": tabloid_summary,
             "constitutional_section": constitutional_section,
-            "is_money_bill": structural_data.get("is_money_bill"),
-            "concerns_counties": structural_data.get("concerns_counties"),
+            # "is_money_bill": structural_data.get("is_money_bill"),      # commented out – add column first
+            # "concerns_counties": structural_data.get("concerns_counties"), # commented out – add column first
             "metadata": {
                 "scraped_at": datetime.now(timezone.utc).isoformat(),
                 "extraction_method": extraction_method,
