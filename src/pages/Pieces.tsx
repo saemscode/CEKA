@@ -170,31 +170,53 @@ const Pieces = () => {
     return (
         <Layout>
             <div className="container mx-auto py-12 px-4 shadow-pattern bg-pattern-grid/30 dark:bg-pattern-grid-dark/20">
-                {/* Header */}
-                <header className="mb-12 text-center max-w-3xl mx-auto space-y-4">
+                {/* Header - Redesigned with minimal social media aesthetic */}
+                <header className="mb-16 max-w-3xl mx-auto">
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-kenya-red/10 text-kenya-red text-xs font-bold uppercase tracking-widest"
+                        className="relative overflow-hidden rounded-[40px] border border-white/20 dark:border-white/5 bg-white/60 dark:bg-black/40 backdrop-blur-2xl shadow-ios-high dark:shadow-ios-high-dark p-10 md:p-14"
                     >
-                        ● Interactive Learning
+                        {/* Decorative ambient glow */}
+                        <div className="absolute -top-20 -right-20 w-64 h-64 bg-kenya-green/10 rounded-full blur-3xl pointer-events-none" />
+                        <div className="absolute -bottom-20 -left-20 w-64 h-64 bg-kenya-red/5 rounded-full blur-3xl pointer-events-none" />
+
+                        <div className="relative z-10 space-y-6">
+                            {/* Capsule badge */}
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.95 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                transition={{ delay: 0.05 }}
+                                className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-kenya-red/10 dark:bg-kenya-red/20 border border-kenya-red/20 dark:border-kenya-red/30 text-kenya-red dark:text-kenya-red text-[11px] font-bold uppercase tracking-[0.15em]"
+                            >
+                                Civic Social Media
+                            </motion.div>
+
+                            {/* Title */}
+                            <motion.h1
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.15 }}
+                                className="text-5xl md:text-7xl font-[1000] tracking-[-0.03em] leading-[0.95] text-kenya-black dark:text-white"
+                            >
+                                Our{" "}
+                                <span className="text-transparent bg-clip-text bg-gradient-to-r from-kenya-green to-kenya-green/80 dark:from-kenya-green dark:to-kenya-green/60">
+                                    Pieces
+                                </span>
+                            </motion.h1>
+
+                            {/* Description */}
+                            <motion.p
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.25 }}
+                                className="text-lg md:text-xl text-muted-foreground font-normal leading-relaxed max-w-2xl"
+                            >
+                                <span className="font-semibold text-foreground dark:text-white/90">{CEKA_ABOUT.tagline}</span>{" "} <br />
+                                <br />Explore our collection of educational carousels, PDF series and visual explainers designed to simplify complex civic, social and legal concepts for everyday Kenyans.
+                            </motion.p>
+                        </div>
                     </motion.div>
-                    <motion.h1
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.1 }}
-                        className="text-4xl md:text-5xl font-black tracking-tighter text-kenya-black dark:text-white uppercase"
-                    >
-                        Our <span className="text-kenya-green">Pieces</span>
-                    </motion.h1>
-                    <motion.p
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.2 }}
-                        className="text-lg text-muted-foreground"
-                    >
-                        {CEKA_ABOUT.tagline} Explore our collection of educational carousels, PDF series and visual explainers designed to simplify complex civic, social and legal concepts for everyday Kenyans.
-                    </motion.p>
                 </header>
 
                 {/* Main Content Grid */}
