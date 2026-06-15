@@ -174,7 +174,7 @@ const MediaFeed: React.FC = () => {
                     </div>
                 </div>
             ) : (
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-1">
+                <div className="grid grid-cols-3 gap-1">
                     {content.map((item) => (
                         <div
                             key={item.id}
