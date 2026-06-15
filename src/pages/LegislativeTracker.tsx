@@ -580,7 +580,23 @@ const LegislativeTracker = () => {
                           checked={deepSearch}
                           onChange={() => setDeepSearch(!deepSearch)}
                         />
-                        <div className="w-12 h-6 bg-slate-200 dark:bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-kenya-green shadow-inner"></div>
+                        <div
+                          className="
+                            w-11 h-6 bg-slate-200 dark:bg-white/10
+                            rounded-full
+                            transition-colors duration-300 ease-in-out
+                            peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary/30
+                            peer-checked:bg-kenya-green
+                            shadow-inner
+                            after:content-[''] after:absolute after:top-[2px] after:start-[2px]
+                            after:bg-white after:border-gray-300 after:border after:rounded-full
+                            after:h-5 after:w-5
+                            after:transition-transform after:duration-300 after:ease-in-out
+                            after:translate-x-0
+                            peer-checked:after:translate-x-full
+                            rtl:peer-checked:after:-translate-x-full
+                          "
+                        />
                       </label>
                     </div>
                   </div>

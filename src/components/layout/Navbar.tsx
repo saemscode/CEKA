@@ -191,9 +191,7 @@ const Navbar = React.forwardRef<HTMLElement, NavbarProps>(({ isFixed }, ref) => 
           <div className="flex items-center gap-3">
             {/* Mobile search icon – visible only below sm breakpoint */}
             <Link to="/search" className="sm:hidden">
-              <Button variant="ghost" size="icon" className="h-10 w-10 rounded-2xl bg-slate-100 dark:bg-white/5">
-                <SearchIcon className="h-5 w-5 text-slate-600 dark:text-gray-300" />
-              </Button>
+              <SearchIcon className="h-5 w-5 mx-2 text-slate-600 dark:text-gray-300" />
             </Link>
 
             {/* Desktop search bar */}

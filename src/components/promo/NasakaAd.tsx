@@ -202,7 +202,7 @@ export const NasakaFeedBanner: React.FC = () => {
       className="relative w-full overflow-hidden rounded-[32px] border border-slate-200/50 dark:border-white/10 bg-white/40 dark:bg-slate-950/40 p-6 shadow-ios-high backdrop-blur-3xl"
     >
       {/* Background Decor */}
-      <CivicBackgroundLattice className="opacity-[0.03]" />
+      <CivicBackgroundLattice className="opacity-[0.5]" />
 
       <div className="relative z-10 flex flex-col md:flex-row gap-8">
         {/* Ad Info */}
@@ -212,7 +212,7 @@ export const NasakaFeedBanner: React.FC = () => {
               CEKA
             </span>
             <div className="h-1 w-1 rounded-full bg-slate-300 dark:bg-white/20" />
-            <span className="text-[10px] font-black text-slate-500 dark:text-white/40 uppercase tracking-widest">Official Partner</span>
+            <span className="text-[10px] font-black text-slate-500 dark:text-white/40 uppercase tracking-widest z-10">Official Partner</span>
           </div>
 
           <div className="flex items-start gap-4">
@@ -269,7 +269,7 @@ export const NasakaFeedBanner: React.FC = () => {
         onClick={handleDismiss}
         className="absolute top-4 right-4 p-2.5 rounded-full bg-slate-100/50 dark:bg-white/5 border border-slate-200/50 dark:border-white/10 hover:bg-slate-200/50 dark:hover:bg-white/10 text-slate-400 dark:text-white/40 hover:text-slate-600 dark:hover:text-white transition-all shadow-sm"
       >
-        <IconX className="w-4 h-4" />
+        <IconX className="w-4 h-4 z-20" />
       </button>
     </motion.div>
   );

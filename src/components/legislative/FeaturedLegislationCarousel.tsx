@@ -6,7 +6,8 @@ import { Link } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { TrendingUp, ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
+import { NavFilesIcon } from '@/components/ui/CustomIcons';
 import { motion } from 'framer-motion';
 import { BillFollowButton } from './BillFollowButton';
 import { getBillIdentifier } from '@/services/billService';
@@ -30,7 +31,7 @@ interface FeaturedLegislationCarouselProps {
 const FeaturedLegislationCarousel: React.FC<FeaturedLegislationCarouselProps> = ({ bills, isLoading }) => {
     // Derived state for loop physics (Data Buffer)
     const isLoopable = bills.length > 1;
-    const displayBills = bills.length > 0 && bills.length < 8 
+    const displayBills = bills.length > 0 && bills.length < 8
         ? [...bills, ...bills, ...bills] // Triple for ultra-smooth loop on small lists
         : bills;
 
@@ -102,10 +103,10 @@ const FeaturedLegislationCarousel: React.FC<FeaturedLegislationCarouselProps> = 
             <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">
                     <div className="h-10 w-10 rounded-2xl bg-kenya-green/10 flex items-center justify-center">
-                        <TrendingUp className="h-5 w-5 text-kenya-green" />
+                        <NavFilesIcon className="h-5 w-5 text-kenya-green" />
                     </div>
                     <div>
-                        <h2 className="text-xl font-black tracking-tight">Featured Legislation</h2>
+                        <h2 className="text-xl font-black tracking-tight">Featured Bills</h2>
                         <p className="text-xs text-muted-foreground">Most followed bills this week</p>
                     </div>
                 </div>
@@ -118,8 +119,8 @@ const FeaturedLegislationCarousel: React.FC<FeaturedLegislationCarouselProps> = 
                                 key={idx}
                                 onClick={() => emblaApi?.scrollTo(idx)}
                                 className={`h-1.5 rounded-full transition-all duration-300 ${(selectedIndex % bills.length) === idx
-                                        ? 'w-6 bg-kenya-green'
-                                        : 'w-1.5 bg-slate-300 dark:bg-white/20 hover:bg-slate-400 dark:hover:bg-white/40'
+                                    ? 'w-6 bg-kenya-green'
+                                    : 'w-1.5 bg-slate-300 dark:bg-white/20 hover:bg-slate-400 dark:hover:bg-white/40'
                                     }`}
                                 aria-label={`Go to slide ${idx + 1}`}
                             />
@@ -225,8 +226,8 @@ const FeaturedLegislationCarousel: React.FC<FeaturedLegislationCarouselProps> = 
                         key={idx}
                         onClick={() => emblaApi?.scrollTo(idx)}
                         className={`h-1.5 rounded-full transition-all duration-300 ${(selectedIndex % bills.length) === idx
-                                ? 'w-6 bg-kenya-green'
-                                : 'w-1.5 bg-slate-300 dark:bg-white/20'
+                            ? 'w-6 bg-kenya-green'
+                            : 'w-1.5 bg-slate-300 dark:bg-white/20'
                             }`}
                         aria-label={`Go to slide ${idx + 1}`}
                     />

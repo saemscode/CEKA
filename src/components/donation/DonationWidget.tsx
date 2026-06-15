@@ -351,7 +351,7 @@ const DonationWidget: React.FC<DonationWidgetProps> = ({
                             <span className={cn(
                               "text-sm font-black transition-all duration-150",
                               amount === val && !isCustom
-                                ? "text-white"                     // Selected amount = bright white
+                                ? "text-slate-900 dark:text-slate-200"                     // Selected amount = bright white
                                 : "text-gray-600 dark:text-gray-300" // Unselected amount = faded gray (both light/dark)
                             )}>
                               KES {val}
@@ -387,7 +387,7 @@ const DonationWidget: React.FC<DonationWidgetProps> = ({
                           type="number"
                           value={amount}
                           onChange={e => setAmount(e.target.value)}
-                          className="w-full h-14 px-4 bg-white/5 border border-kenya-green/20 focus:border-kenya-green outline-none rounded-xl text-2xl font-black text-center text-kenya-green transition-all"
+                          className="w-full h-14 px-4 bg-white/5 border border-kenya-green/20 focus:border-kenya-green outline-none rounded-xl text-2xl font-black text-center text-slate-900 dark:text-slate-200 transition-all"
                           placeholder="0"
                           autoFocus
                         />
@@ -400,7 +400,7 @@ const DonationWidget: React.FC<DonationWidgetProps> = ({
                       disabled={isPaying}
                       className="w-full py-4 rounded-xl font-black uppercase text-xs tracking-[0.2em] bg-kenya-green hover:bg-[#0ead36] text-white transition-all shadow-xl shadow-kenya-green/20 flex items-center justify-center gap-3 active:scale-95 disabled:opacity-50"
                     >
-                      <img src="/icons/wallet-money-svgrepo-com.svg" className="w-5 h-5 invert dark:invert-0" alt="" />
+                      <img src="/icons/wallet-money-svgrepo-com.svg" className="w-5 h-5 invert dark:invert-20" alt="" />
                       {isPaying ? 'Processing...' : `Donate KES ${amount}`}
                     </button>
                   </div>
