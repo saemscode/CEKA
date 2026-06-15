@@ -1,4 +1,5 @@
-import React from 'react';
+// Pieces.tsx (updated with realtime carousel deletion listener)
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '@/contexts/ThemeContext';
 import { cn } from '@/lib/utils';
@@ -7,6 +8,7 @@ import MediaFeed from '@/components/resources/MediaFeed';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ExternalLink, Instagram, Facebook, Twitter, Users, Eye, Search } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
+import { supabase } from '@/integrations/supabase/client';
 
 // Upscrolled Logo SVG Component
 const UpscrolledLogo: React.FC<{ className?: string }> = ({ className = "w-5 h-5" }) => (
@@ -148,6 +150,18 @@ const CEKA_ABOUT = {
 const Pieces = () => {
     const navigate = useNavigate();
     const { theme } = useTheme();
+    const [refreshKey, setRefreshKey] = useState(0); // used to force MediaFeed re-fetch
+
+    // Listen for carousel deletion events from BulkUploadManager
+    useEffect(() => {
+        const handleCarouselDeleted = (e: CustomEvent) => {
+            console.log('Carousel deleted, refreshing feed', e.detail.carouselId);
+            setRefreshKey(prev => prev + 1);
+        };
+
+        window.addEventListener('carousel-deleted', handleCarouselDeleted as EventListener);
+        return () => window.removeEventListener('carousel-deleted', handleCarouselDeleted as EventListener);
+    }, []);
 
     const handleTagClick = (area: string) => {
         navigate(`/search?q=${encodeURIComponent(area)}`);
@@ -186,7 +200,7 @@ const Pieces = () => {
                 {/* Main Content Grid */}
                 <div className="grid lg:grid-cols-[1fr_320px] gap-8">
                     {/* Main Feed Area */}
-                    <div>
+                    <div key={refreshKey}>
                         <MediaFeed />
                     </div>
 

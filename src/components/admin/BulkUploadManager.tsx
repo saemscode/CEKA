@@ -1,8 +1,6 @@
-// Bulk Upload Manager - Advanced B2 Cloud Manager
-// Supports custom folder creation, staged metadata review, and automated SQL sync
-// for both the Resource Library and Instagram-style Carousels.
-
+// BulkUploadManager.tsx
 import React, { useState, useCallback, useRef, useEffect } from 'react';
+import { unzipSync } from 'fflate';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -23,6 +21,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { mediaService, MediaContent } from '@/services/mediaService';
 import { CEKALoader } from '@/components/ui/ceka-loader';
 
+const CF_VISION_URL = 'https://ceka-vision-extract.saemscodes.workers.dev';
+const CF_VALIDATOR_URL = 'https://ceka-extraction-validator.saemscodes.workers.dev';
+const CF_TRANSLATOR_URL = 'https://ceka-translation-draft.saemscodes.workers.dev';
+
 interface UploadFile {
     id: string;
     file: File;
@@ -33,11 +35,22 @@ interface UploadFile {
     progress: number;
     url?: string;
     error?: string;
-
-    // Simplified details
     stagedTitle: string;
     stagedDescription: string;
     stagedTags: string;
+    base64?: string;
+    extracted?: any;
+    translationDraft?: string | null;
+    confidence?: number;
+    validatorDecision?: string;
+    orderIndex?: number;
+    // Persistence identifiers (set after upload)
+    dbId?: string;
+    storagePath?: string;
+    variantPaths?: string[];
+    storageProviderUsed?: 'b2' | 'supabase';
+    regModeUsed?: RegistrationMode;
+    carouselId?: string;
 }
 
 type RegistrationMode = 'storage_only' | 'resource' | 'carousel_item';
@@ -66,6 +79,27 @@ const CATEGORIES = [
     { value: 'media', label: 'Media' }
 ];
 
+const IMG_EXTS = ['.jpg', '.jpeg', '.png', '.webp'];
+const isImg = (n: string) => IMG_EXTS.some(e => n.toLowerCase().endsWith(e));
+const ZIP_MIME = 'application/zip';
+const isZip = (f: File) => f.type === ZIP_MIME || f.name.toLowerCase().endsWith('.zip');
+
+const fileToBase64 = (file: File): Promise<string> =>
+    new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
+
+const blobToBase64 = (blob: Blob): Promise<string> =>
+    new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+    });
+
 const BulkUploadManager = () => {
     const [files, setFiles] = useState<UploadFile[]>([]);
     const [uploading, setUploading] = useState(false);
@@ -91,13 +125,12 @@ const BulkUploadManager = () => {
     const [storageProvider, setStorageProvider] = useState<'b2' | 'supabase'>('b2');
     const [carousels, setCarousels] = useState<MediaContent[]>([]);
     const [expandedFiles, setExpandedFiles] = useState<Record<string, boolean>>({});
-
+    const [deletingFiles, setDeletingFiles] = useState<Set<string>>(new Set());
     const [backblazeReady, setBackblazeReady] = useState<boolean | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const folderInputRef = useRef<HTMLInputElement>(null);
     const { toast } = useToast();
 
-    // Check Backblaze on mount and fetch carousels
     useEffect(() => {
         checkBackblaze();
         fetchCarousels();
@@ -121,14 +154,63 @@ const BulkUploadManager = () => {
         }
     };
 
-    // Add files from input
-    const handleFilesSelected = useCallback((selectedFiles: FileList | null) => {
-        if (!selectedFiles) return;
+    const ingestZip = async (file: File) => {
+        try {
+            const buf = await file.arrayBuffer();
+            const unzipped = unzipSync(new Uint8Array(buf));
+            const entries = Object.entries(unzipped)
+                .filter(([name]) => isImg(name))
+                .sort(([a], [b]) => a.localeCompare(b, undefined, { numeric: true }));
 
+            if (!entries.length) {
+                toast({ title: 'No images in ZIP', variant: 'destructive' });
+                return;
+            }
+
+            const zipBase = file.name.replace(/\.zip$/i, '').replace(/[-_]/g, ' ');
+            const cleanTitle = zipBase
+                .split(' ')
+                .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+                .join(' ');
+            const cleanSlug = cleanTitle.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '');
+
+            if (regMode === 'carousel_item' && files.length === 0) {
+                setCarouselInfo({ title: cleanTitle, slug: cleanSlug, description: '', tags: '' });
+                setIsCreatingNewCarousel(true);
+            }
+
+            const newFiles: UploadFile[] = await Promise.all(entries.map(async ([name, bytes], idx) => {
+                const ext = name.split('.').pop()?.toLowerCase() || 'jpg';
+                const mime = ext === 'webp' ? 'image/webp' : ext === 'png' ? 'image/png' : 'image/jpeg';
+                const base64 = await blobToBase64(new Blob([bytes], { type: mime }));
+                return {
+                    id: `${Date.now()}-${idx}-${Math.random().toString(36).slice(2)}`,
+                    file: new File([bytes], name, { type: mime }),
+                    name: name.split('/').pop() || name,
+                    size: bytes.length,
+                    type: mime,
+                    status: 'staged',
+                    progress: 0,
+                    stagedTitle: name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' '),
+                    stagedDescription: '',
+                    stagedTags: '',
+                    base64,
+                    extracted: null,
+                    translationDraft: null,
+                };
+            }));
+
+            setFiles(prev => [...prev, ...newFiles]);
+        } catch (err: any) {
+            toast({ title: 'ZIP extraction failed', description: err.message, variant: 'destructive' });
+        }
+    };
+
+    const handleFilesSelected = useCallback(async (selectedFiles: FileList | null) => {
+        if (!selectedFiles) return;
         const fileArray = Array.from(selectedFiles);
 
-        // AUTO-INFERENCE: Guess Carousel Title and Slug from folder or first file
-        if (regMode === 'carousel_item' && files.length === 0) {
+        if (regMode === 'carousel_item' && files.length === 0 && fileArray.length > 0) {
             const firstFile = fileArray[0];
             const pathParts = (firstFile as any).webkitRelativePath?.split('/');
             const rawName = pathParts && pathParts.length > 1
@@ -142,15 +224,10 @@ const BulkUploadManager = () => {
 
             const cleanSlug = cleanTitle.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '');
 
-            setCarouselInfo(prev => ({
-                ...prev,
-                title: cleanTitle,
-                slug: cleanSlug
-            }));
+            setCarouselInfo(prev => ({ ...prev, title: cleanTitle, slug: cleanSlug }));
             setIsCreatingNewCarousel(true);
         }
 
-        // Limit for carousels
         if (regMode === 'carousel_item' && (files.length + fileArray.length) > 20) {
             toast({
                 title: 'Limit Reached',
@@ -160,38 +237,54 @@ const BulkUploadManager = () => {
             return;
         }
 
-        const newFiles: UploadFile[] = fileArray.map((file) => ({
-            id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
-            file,
-            name: file.name,
-            size: file.size,
-            type: file.type,
-            status: 'staged',
-            progress: 0,
-            stagedTitle: file.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' '),
-            stagedDescription: '',
-            stagedTags: ''
+        const newFiles: UploadFile[] = await Promise.all(fileArray.map(async (file) => {
+            const base64 = await fileToBase64(file);
+            return {
+                id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+                file,
+                name: file.name,
+                size: file.size,
+                type: file.type,
+                status: 'staged',
+                progress: 0,
+                stagedTitle: file.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' '),
+                stagedDescription: '',
+                stagedTags: '',
+                base64,
+                extracted: null,
+                translationDraft: null,
+            };
         }));
 
-        setFiles((prev) => [...prev, ...newFiles]);
+        setFiles(prev => [...prev, ...newFiles]);
     }, [files.length, regMode, toast]);
 
-    // Handle drag and drop
-    const handleDrop = useCallback((e: React.DragEvent) => {
+    const handleDrop = useCallback(async (e: React.DragEvent) => {
         e.preventDefault();
         const dt = e.dataTransfer;
-        handleFilesSelected(dt.files);
-    }, [handleFilesSelected]);
+        const droppedFiles = Array.from(dt.files);
+        const zips = droppedFiles.filter(isZip);
+        const others = droppedFiles.filter(f => !isZip(f));
 
-    // Update staged metadata
+        for (const zip of zips) await ingestZip(zip);
+        if (others.length > 0) handleFilesSelected(others as unknown as FileList);
+    }, [ingestZip, handleFilesSelected]);
+
+    const onFileInputChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const selectedFiles = e.target.files;
+        if (!selectedFiles) return;
+        const filesArray = Array.from(selectedFiles);
+        const zips = filesArray.filter(isZip);
+        const others = filesArray.filter(f => !isZip(f));
+
+        for (const zip of zips) await ingestZip(zip);
+        if (others.length > 0) handleFilesSelected(others as unknown as FileList);
+    };
+
     const updateStagedFile = (id: string, updates: Partial<UploadFile>) => {
         setFiles(prev => prev.map(f => f.id === id ? { ...f, ...updates } : f));
     };
 
-    /**
-     * NATIVE CHURN LOGIC: Generates specific quality variants in-browser using Canvas
-     * Targeted at SD (320p), HD (720p), and Full HD (1080p).
-     */
     const churnImage = async (file: File, quality: '320p' | '720p' | '1080p'): Promise<File> => {
         return new Promise((resolve, reject) => {
             const img = new window.Image();
@@ -200,10 +293,8 @@ const BulkUploadManager = () => {
                 let width = img.width;
                 let height = img.height;
 
-                // Targeted heights for standard tiers
                 const targetHeight = quality === '320p' ? 320 : quality === '720p' ? 720 : 1080;
 
-                // Only scale down, never up
                 if (height > targetHeight) {
                     const ratio = targetHeight / height;
                     width = Math.round(width * ratio);
@@ -216,7 +307,6 @@ const BulkUploadManager = () => {
                 const ctx = canvas.getContext('2d');
                 if (!ctx) return reject('Canvas context failed');
 
-                // High quality image smoothing
                 ctx.imageSmoothingEnabled = true;
                 ctx.imageSmoothingQuality = 'high';
                 ctx.drawImage(img, 0, 0, width, height);
@@ -230,16 +320,13 @@ const BulkUploadManager = () => {
                         lastModified: Date.now()
                     });
                     resolve(newFile);
-                }, file.type, 0.92); // High 92% quality jpeg/webp
+                }, file.type, 0.92);
             };
             img.onerror = reject;
             img.src = URL.createObjectURL(file);
         });
     };
 
-    /**
-     * Helper to get image dimensions for dynamic tiering
-     */
     const getImageDimensions = (file: File): Promise<{ width: number; height: number }> => {
         return new Promise((resolve) => {
             const img = new window.Image();
@@ -252,10 +339,74 @@ const BulkUploadManager = () => {
         });
     };
 
-    // Upload single file to selected storage and Sync to SQL
+    const runVisionPipelineForSlide = async (file: UploadFile, carouselId: string, totalFiles: number) => {
+        if (!file.type.startsWith('image/') || !file.base64) return;
+        try {
+            const vRes = await fetch(CF_VISION_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    image_base64: file.base64,
+                    slide_number: (file.orderIndex ?? 0) + 1,
+                    total_slides: totalFiles,
+                    is_final: (file.orderIndex ?? 0) + 1 === totalFiles
+                }),
+            });
+            const vData = await vRes.json();
+            if (vRes.ok && !vData.error) {
+                const updated = { ...file, extracted: vData.extracted };
+                setFiles(prev => prev.map(f => f.id === file.id ? updated : f));
+
+                const valRes = await fetch(CF_VALIDATOR_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ extraction: vData.extracted, slide_number: updated.orderIndex! + 1, total_slides: totalFiles }),
+                });
+                const valData = await valRes.json();
+                updated.confidence = valData.score ?? 0;
+                updated.validatorDecision = valData.decision ?? 'human_review';
+
+                const srcText = vData.extracted?.headline || vData.extracted?.body || '';
+                if (srcText.trim().length > 3) {
+                    const tRes = await fetch(CF_TRANSLATOR_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ source_text: srcText, source_language: 'en', target_language: 'sw' }),
+                    });
+                    const tData = await tRes.json();
+                    updated.translationDraft = tData.translated_text || null;
+                    setFiles(prev => prev.map(f => f.id === file.id ? updated : f));
+
+                    const ex = updated.extracted;
+                    const fields = [
+                        { type: 'headline', text: ex?.headline?.trim() },
+                        { type: 'subheadline', text: ex?.subheadline?.trim() },
+                        { type: 'body', text: ex?.body?.trim() },
+                        { type: 'cta_directive', text: ex?.cta_directive?.trim() },
+                        { type: 'cta_support', text: ex?.cta_support?.trim() },
+                    ].filter(f => f.text);
+
+                    for (const f of fields) {
+                        await (supabase as any).from('translation_units').upsert({
+                            batch_id: carouselId,
+                            carousel_id: carouselId,
+                            slide_number: updated.orderIndex! + 1,
+                            type: f.type,
+                            source_text: f.text,
+                            active: true,
+                            ...(f.type === 'headline' && updated.translationDraft ? { ai_draft_sw: updated.translationDraft } : {}),
+                        }, { onConflict: 'carousel_id,slide_number,type' });
+                    }
+                }
+            }
+        } catch (err) {
+            console.error('Vision pipeline failed for slide', err);
+        }
+    };
+
     const processFile = async (uploadFile: UploadFile, galleryIdOverride?: string): Promise<void> => {
-        setFiles((prev) =>
-            prev.map((f) => (f.id === uploadFile.id ? { ...f, status: 'uploading', progress: 10 } : f))
+        setFiles(prev =>
+            prev.map(f => (f.id === uploadFile.id ? { ...f, status: 'uploading', progress: 10 } : f))
         );
 
         try {
@@ -263,17 +414,13 @@ const BulkUploadManager = () => {
             const finalCarouselId = galleryIdOverride || selectedCarousel;
             const isImage = uploadFile.type.startsWith('image');
 
-            // 1. QUAD-CHURN PIPELINE: If it's an image, generate variants based on source size
             const variantsToUpload: { file: File; suffix: string; quality: string }[] = [{ file: uploadFile.file, suffix: '_4k', quality: '4k' }];
             let sourceDims = { width: 0, height: 0 };
             const qualitiesAvailable: string[] = ['4k'];
 
             if (isImage) {
                 try {
-                    console.log(`[Churn] Detecting source dimensions for: ${uploadFile.name}`);
                     sourceDims = await getImageDimensions(uploadFile.file);
-
-                    // DYNAMIC TIERS: Only generate if source meets the height requirement
                     if (sourceDims.height >= 320) {
                         const sd = await churnImage(uploadFile.file, '320p');
                         variantsToUpload.push({ file: sd, suffix: '_320p', quality: '320p' });
@@ -294,15 +441,12 @@ const BulkUploadManager = () => {
                 }
             }
 
-            // 2. BATCH UPLOAD: Upload all variants with a CONSISTENT timestamp
-            let mainResult: any = null;
-            const uploadedVariants: string[] = [];
-
-            // Calculate a common base filename for all variants to keep suffixes aligned
             const commonTimestamp = Date.now();
             const cleanBaseName = uploadFile.name.replace(/\.[^/.]+$/, '').replace(/[^a-zA-Z0-9.-]/g, '_');
             const cleanExt = uploadFile.name.split('.').pop();
             const variantBase = `${finalFolder}/${commonTimestamp}-${cleanBaseName}`;
+            const variantPaths: string[] = [];
+            let mainResult: any = null;
 
             for (const variant of variantsToUpload) {
                 let result;
@@ -316,12 +460,12 @@ const BulkUploadManager = () => {
                         finalFolder,
                         (progress) => {
                             if (variant.suffix === '_4k') {
-                                setFiles((prev) =>
-                                    prev.map((f) => (f.id === uploadFile.id ? { ...f, progress: Math.min(progress, 90) } : f))
+                                setFiles(prev =>
+                                    prev.map(f => (f.id === uploadFile.id ? { ...f, progress: Math.min(progress, 90) } : f))
                                 );
                             }
                         },
-                        variantFileName // FORCE CONSISTENT NAME
+                        variantFileName
                     );
                 } else {
                     const filePath = variantFileName;
@@ -332,6 +476,7 @@ const BulkUploadManager = () => {
                 }
 
                 if (result.success) {
+                    variantPaths.push(result.fileName);
                     if (variant.quality === '4k') mainResult = result;
                 }
             }
@@ -340,18 +485,19 @@ const BulkUploadManager = () => {
                 throw new Error(mainResult?.error || 'Upload failed');
             }
 
-            // 3. Detect Aspect Ratio
             let aspectRatio = '1:1';
             if (isImage) {
                 aspectRatio = await mediaService.detectAspectRatio(uploadFile.file);
             }
 
-            // 4. Automated SQL Sync based on Registration Mode
+            let dbId: string | undefined;
+            let orderIndex = 0;
+
             if (regMode === 'resource') {
                 const tagsRaw = useSharedMetadata ? sharedMetadata.tags : uploadFile.stagedTags;
                 const tagsArray = tagsRaw.split(',').map(t => t.trim()).filter(Boolean);
 
-                const { error: sqlError } = await supabase.from('resources').insert({
+                const { data: inserted, error: sqlError } = await supabase.from('resources').insert({
                     title: useSharedMetadata && sharedMetadata.title ? sharedMetadata.title : uploadFile.stagedTitle,
                     description: (useSharedMetadata ? sharedMetadata.description : uploadFile.stagedDescription) || 'Uploaded via Advanced B2 Cloud Manager',
                     url: mainResult.fileUrl || '',
@@ -361,10 +507,10 @@ const BulkUploadManager = () => {
                     status: isInstantPublish ? 'published' : 'draft',
                     downloads: 0,
                     views: 0
-                });
+                }).select('id').single();
                 if (sqlError) throw sqlError;
-            }
-            else if (regMode === 'carousel_item' && finalCarouselId) {
+                dbId = inserted?.id;
+            } else if (regMode === 'carousel_item' && finalCarouselId) {
                 if (isInstantPublish) {
                     await (supabase as any).from('media_content').update({ status: 'published' }).eq('id', finalCarouselId);
                 }
@@ -376,8 +522,9 @@ const BulkUploadManager = () => {
                     .limit(1);
 
                 const nextOrder = (currentItems && currentItems[0] ? currentItems[0].order_index + 1 : 0);
+                orderIndex = nextOrder;
 
-                const { error: sqlError } = await (supabase.from('media_items' as any) as any).insert({
+                const { data: insertedItem, error: sqlError } = await (supabase.from('media_items' as any) as any).insert({
                     content_id: finalCarouselId,
                     type: isImage ? 'image' : uploadFile.type === 'application/pdf' ? 'pdf' : 'video',
                     file_path: mainResult.fileName,
@@ -396,28 +543,50 @@ const BulkUploadManager = () => {
                             shared_description: sharedMetadata.description
                         } : {})
                     }
-                });
+                }).select('id').single();
                 if (sqlError) throw sqlError;
+                dbId = insertedItem?.id;
+
+                // Set order index on the file object for later use in deletion / pipeline
+                uploadFile.orderIndex = nextOrder;
             }
 
-            setFiles((prev) =>
-                prev.map((f) =>
+            // Update file state with identifiers
+            setFiles(prev =>
+                prev.map(f =>
                     f.id === uploadFile.id
-                        ? { ...f, status: 'success', progress: 100, url: mainResult.fileUrl }
+                        ? {
+                            ...f,
+                            status: 'success',
+                            progress: 100,
+                            url: mainResult.fileUrl,
+                            storagePath: mainResult.fileName,
+                            variantPaths,
+                            storageProviderUsed: storageProvider,
+                            regModeUsed: regMode,
+                            dbId,
+                            carouselId: finalCarouselId || undefined,
+                            orderIndex: orderIndex,
+                        }
                         : f
                 )
             );
+
+            // Run vision pipeline only for carousel images
+            if (regMode === 'carousel_item' && isImage && finalCarouselId) {
+                const totalFiles = files.filter(f => f.status === 'staged' || f.status === 'pending').length + 1; // approximate
+                await runVisionPipelineForSlide(uploadFile, finalCarouselId, totalFiles);
+            }
         } catch (error: any) {
             console.error('Processing error:', error);
-            setFiles((prev) =>
-                prev.map((f) => (f.id === uploadFile.id ? { ...f, status: 'error', progress: 0, error: error.message } : f))
+            setFiles(prev =>
+                prev.map(f => (f.id === uploadFile.id ? { ...f, status: 'error', progress: 0, error: error.message } : f))
             );
         }
     };
 
-    // Start Batch Upload
     const startBatchUpload = async () => {
-        const stagged = files.filter((f) => f.status === 'staged' || f.status === 'pending');
+        const stagged = files.filter(f => f.status === 'staged' || f.status === 'pending');
         if (stagged.length === 0) {
             toast({ title: 'Add images first', description: 'Review your files before uploading.', variant: 'destructive' });
             return;
@@ -447,7 +616,6 @@ const BulkUploadManager = () => {
 
         let finalCarouselId = selectedCarousel;
 
-        // 1. Create New Carousel if needed (One-Click Pipeline)
         if (regMode === 'carousel_item' && isCreatingNewCarousel) {
             try {
                 const tagsArray = carouselInfo.tags.split(',').map(t => t.trim()).filter(Boolean);
@@ -479,7 +647,6 @@ const BulkUploadManager = () => {
             }
         }
 
-        // 2. Process all files
         for (const file of stagged) {
             await processFile(file, finalCarouselId);
         }
@@ -488,13 +655,75 @@ const BulkUploadManager = () => {
         toast({ title: 'Success', description: `${stagged.length} items live on the site.` });
     };
 
-    // Helpers
+    const deletePersistedFile = async (file: UploadFile) => {
+        setDeletingFiles(prev => new Set(prev).add(file.id));
+        try {
+            // 1. Delete DB records
+            if (file.dbId && file.regModeUsed) {
+                if (file.regModeUsed === 'resource') {
+                    await supabase.from('resources').delete().eq('id', file.dbId);
+                } else if (file.regModeUsed === 'carousel_item') {
+                    // Delete translation units for this carousel slide
+                    if (file.carouselId && file.orderIndex !== undefined) {
+                        await (supabase as any)
+                            .from('translation_units')
+                            .delete()
+                            .eq('carousel_id', file.carouselId)
+                            .eq('slide_number', file.orderIndex + 1);
+                    }
+                    await (supabase.from('media_items' as any) as any).delete().eq('id', file.dbId);
+
+                    // Check if carousel empty and delete if so
+                    if (file.carouselId) {
+                        const { count } = await (supabase.from('media_items' as any) as any)
+                            .select('*', { count: 'exact', head: true })
+                            .eq('content_id', file.carouselId);
+                        if (count === 0) {
+                            await (supabase.from('media_content' as any) as any).delete().eq('id', file.carouselId);
+                            // Emit event for frontend invalidation
+                            window.dispatchEvent(new CustomEvent('carousel-deleted', { detail: { carouselId: file.carouselId } }));
+                        }
+                    }
+                }
+            }
+
+            // 2. Delete storage files
+            const paths = file.variantPaths ?? (file.storagePath ? [file.storagePath] : []);
+            if (paths.length > 0) {
+                if (file.storageProviderUsed === 'b2') {
+                    for (const path of paths) {
+                        await backblazeStorage.deleteFile(path);
+                    }
+                } else {
+                    await supabase.storage.from('resources').remove(paths as string[]);
+                }
+            }
+
+            // 3. Remove from UI
+            setFiles(prev => prev.filter(f => f.id !== file.id));
+            toast({ title: 'Deleted', description: `${file.stagedTitle || file.name} removed.` });
+        } catch (err: any) {
+            toast({ title: 'Deletion failed', description: err.message, variant: 'destructive' });
+        } finally {
+            setDeletingFiles(prev => {
+                const next = new Set(prev);
+                next.delete(file.id);
+                return next;
+            });
+        }
+    };
+
     const removeFile = (id: string) => {
-        setFiles((prev) => prev.filter((f) => f.id !== id));
+        const file = files.find(f => f.id === id);
+        if (file && file.status === 'success') {
+            deletePersistedFile(file);
+        } else {
+            setFiles(prev => prev.filter(f => f.id !== id));
+        }
     };
 
     const clearCompleted = () => {
-        setFiles((prev) => prev.filter((f) => f.status !== 'success'));
+        setFiles(prev => prev.filter(f => f.status !== 'success'));
     };
 
     const getFileIcon = (type: string) => {
@@ -727,14 +956,14 @@ const BulkUploadManager = () => {
                     <div className="h-16 w-16 rounded-3xl bg-primary/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                         <Upload className="h-8 w-8 text-primary" />
                     </div>
-                    <h3 className="font-black text-lg">Add Images</h3>
-                    <p className="text-xs text-muted-foreground mb-4">Click here or drop your folder to start</p>
-                    <input ref={fileInputRef} type="file" multiple className="hidden" onChange={(e) => handleFilesSelected(e.target.files)} />
+                    <h3 className="font-black text-lg">Add Images or ZIP</h3>
+                    <p className="text-xs text-muted-foreground mb-4">Click, drop images, or drop a .zip archive</p>
+                    <input ref={fileInputRef} type="file" multiple accept="image/*,.zip" className="hidden" onChange={onFileInputChange} />
                     <Button variant="outline" className="rounded-xl h-10 px-6 font-bold border-2">Select Files</Button>
                 </Card>
             </div>
 
-            {/* Shared Metadata Section - Tactical Override */}
+            {/* Shared Metadata Section */}
             {useSharedMetadata && files.length > 0 && (
                 <Card className="border-0 shadow-ios-high bg-primary/5 backdrop-blur-xl animate-in fade-in slide-in-from-bottom-4 duration-500 overflow-hidden relative">
                     <div className="absolute top-0 left-0 w-1 h-full bg-primary/40" />
@@ -825,6 +1054,12 @@ const BulkUploadManager = () => {
                                         <p className="text-[10px] text-muted-foreground font-black uppercase tracking-widest opacity-60">
                                             {formatSize(file.size)} • {file.type.split('/')[1] || 'FILE'}
                                         </p>
+                                        {file.extracted?.headline && (
+                                            <p className="text-[11px] text-white/40 truncate mt-0.5">"{file.extracted.headline}"</p>
+                                        )}
+                                        {file.translationDraft && (
+                                            <p className="text-[11px] text-ios-blue/80 truncate mt-0.5">{file.translationDraft}</p>
+                                        )}
                                     </div>
 
                                     <div className="flex items-center gap-1">
@@ -837,7 +1072,7 @@ const BulkUploadManager = () => {
                                             size="icon"
                                             variant="ghost"
                                             onClick={() => removeFile(file.id)}
-                                            disabled={file.status === 'uploading'}
+                                            disabled={file.status === 'uploading' || deletingFiles.has(file.id)}
                                             className="rounded-xl h-9 w-9 hover:bg-kenya-red/10 hover:text-kenya-red"
                                         >
                                             <Trash2 className="h-4 w-4" />
