@@ -14,8 +14,9 @@ import { useToast } from '@/hooks/use-toast';
 import {
     Upload, Folder, File as FileIcon, X, CheckCircle, XCircle, Clock, RefreshCw,
     Image, FileText, Music, Video, Archive, Trash2, Eye, Edit3, Save, Plus, ExternalLink, Settings, Zap,
-    ChevronDown, PlusCircle
+    ChevronDown, PlusCircle, AlertTriangle
 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import backblazeStorage from '@/services/backblazeStorage';
 import { supabase } from '@/integrations/supabase/client';
 import { mediaService, MediaContent } from '@/services/mediaService';
@@ -44,7 +45,6 @@ interface UploadFile {
     confidence?: number;
     validatorDecision?: string;
     orderIndex?: number;
-    // Persistence identifiers (set after upload)
     dbId?: string;
     storagePath?: string;
     variantPaths?: string[];
@@ -126,6 +126,8 @@ const BulkUploadManager = () => {
     const [carousels, setCarousels] = useState<MediaContent[]>([]);
     const [expandedFiles, setExpandedFiles] = useState<Record<string, boolean>>({});
     const [deletingFiles, setDeletingFiles] = useState<Set<string>>(new Set());
+    const [deletingCarousel, setDeletingCarousel] = useState<string | null>(null);
+    const [archivingCarousel, setArchivingCarousel] = useState<Set<string>>(new Set());
     const [backblazeReady, setBackblazeReady] = useState<boolean | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const folderInputRef = useRef<HTMLInputElement>(null);
@@ -152,6 +154,102 @@ const BulkUploadManager = () => {
         } catch (error) {
             console.error('Failed to fetch carousels:', error);
         }
+    };
+
+    const deleteEntireCarousel = async (carouselId: string) => {
+        setDeletingCarousel(carouselId);
+        try {
+            const { data: items, error: fetchErr } = await (supabase.from('media_items' as any) as any)
+                .select('*')
+                .eq('content_id', carouselId);
+            if (fetchErr) throw fetchErr;
+
+            for (const item of items || []) {
+                const meta = item.metadata || {};
+                const fileName = item.file_path;
+                const base = fileName.substring(0, fileName.lastIndexOf('.'));
+                const ext = fileName.split('.').pop();
+                const variantPaths = [fileName];
+                const qualities = meta.qualities || [];
+                if (qualities.includes('320p')) variantPaths.push(`${base}_320p.${ext}`);
+                if (qualities.includes('720p')) variantPaths.push(`${base}_720p.${ext}`);
+                if (qualities.includes('1080p')) variantPaths.push(`${base}_1080p.${ext}`);
+                if (item.storage_provider === 'supabase' || !item.storage_provider) {
+                    await supabase.storage.from('resources').remove(variantPaths);
+                } else {
+                    for (const path of variantPaths) {
+                        await backblazeStorage.deleteFile(path);
+                    }
+                }
+            }
+
+            await (supabase.from('media_items' as any) as any)
+                .delete()
+                .eq('content_id', carouselId);
+
+            await (supabase as any)
+                .from('translation_units')
+                .delete()
+                .eq('carousel_id', carouselId);
+
+            await (supabase.from('media_content' as any) as any)
+                .delete()
+                .eq('id', carouselId);
+
+            setFiles(prev => prev.filter(f => f.carouselId !== carouselId));
+
+            if (selectedCarousel === carouselId) {
+                setSelectedCarousel('');
+            }
+
+            await fetchCarousels();
+
+            window.dispatchEvent(new CustomEvent('carousel-deleted', { detail: { carouselId } }));
+
+            toast({ title: 'Carousel Deleted', description: 'The entire carousel and all its items have been permanently removed.' });
+        } catch (err: any) {
+            toast({ title: 'Deletion failed', description: err.message, variant: 'destructive' });
+        } finally {
+            setDeletingCarousel(null);
+        }
+    };
+
+    const archiveCarousel = async (carouselId: string, currentStatus: string) => {
+        setArchivingCarousel(prev => new Set(prev).add(carouselId));
+        try {
+            const newStatus = currentStatus === 'archived' ? 'published' : 'archived';
+            await (supabase as any).from('media_content').update({ status: newStatus }).eq('id', carouselId);
+            await fetchCarousels();
+            toast({ title: newStatus === 'archived' ? 'Archived' : 'Published', description: 'Carousel status updated.' });
+        } catch (err: any) {
+            toast({ title: 'Action failed', description: err.message, variant: 'destructive' });
+        } finally {
+            setArchivingCarousel(prev => {
+                const next = new Set(prev);
+                next.delete(carouselId);
+                return next;
+            });
+        }
+    };
+
+    const confirmDeleteCarousel = (carouselId: string) => {
+        const carousel = carousels.find(c => c.id === carouselId);
+        const name = carousel ? carousel.title : 'this carousel';
+        toast({
+            title: `Delete ${name}?`,
+            description: 'This will permanently remove all images, metadata, and the carousel itself. This cannot be undone.',
+            variant: 'destructive',
+            action: (
+                <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => deleteEntireCarousel(carouselId)}
+                    className="ml-2"
+                >
+                    Delete
+                </Button>
+            ),
+        });
     };
 
     const ingestZip = async (file: File) => {
@@ -547,11 +645,9 @@ const BulkUploadManager = () => {
                 if (sqlError) throw sqlError;
                 dbId = insertedItem?.id;
 
-                // Set order index on the file object for later use in deletion / pipeline
                 uploadFile.orderIndex = nextOrder;
             }
 
-            // Update file state with identifiers
             setFiles(prev =>
                 prev.map(f =>
                     f.id === uploadFile.id
@@ -572,9 +668,8 @@ const BulkUploadManager = () => {
                 )
             );
 
-            // Run vision pipeline only for carousel images
             if (regMode === 'carousel_item' && isImage && finalCarouselId) {
-                const totalFiles = files.filter(f => f.status === 'staged' || f.status === 'pending').length + 1; // approximate
+                const totalFiles = files.filter(f => f.status === 'staged' || f.status === 'pending').length + 1;
                 await runVisionPipelineForSlide(uploadFile, finalCarouselId, totalFiles);
             }
         } catch (error: any) {
@@ -658,12 +753,10 @@ const BulkUploadManager = () => {
     const deletePersistedFile = async (file: UploadFile) => {
         setDeletingFiles(prev => new Set(prev).add(file.id));
         try {
-            // 1. Delete DB records
             if (file.dbId && file.regModeUsed) {
                 if (file.regModeUsed === 'resource') {
                     await supabase.from('resources').delete().eq('id', file.dbId);
                 } else if (file.regModeUsed === 'carousel_item') {
-                    // Delete translation units for this carousel slide
                     if (file.carouselId && file.orderIndex !== undefined) {
                         await (supabase as any)
                             .from('translation_units')
@@ -673,21 +766,19 @@ const BulkUploadManager = () => {
                     }
                     await (supabase.from('media_items' as any) as any).delete().eq('id', file.dbId);
 
-                    // Check if carousel empty and delete if so
                     if (file.carouselId) {
                         const { count } = await (supabase.from('media_items' as any) as any)
                             .select('*', { count: 'exact', head: true })
                             .eq('content_id', file.carouselId);
                         if (count === 0) {
                             await (supabase.from('media_content' as any) as any).delete().eq('id', file.carouselId);
-                            // Emit event for frontend invalidation
                             window.dispatchEvent(new CustomEvent('carousel-deleted', { detail: { carouselId: file.carouselId } }));
+                            await fetchCarousels();
                         }
                     }
                 }
             }
 
-            // 2. Delete storage files
             const paths = file.variantPaths ?? (file.storagePath ? [file.storagePath] : []);
             if (paths.length > 0) {
                 if (file.storageProviderUsed === 'b2') {
@@ -699,7 +790,6 @@ const BulkUploadManager = () => {
                 }
             }
 
-            // 3. Remove from UI
             setFiles(prev => prev.filter(f => f.id !== file.id));
             toast({ title: 'Deleted', description: `${file.stagedTitle || file.name} removed.` });
         } catch (err: any) {
@@ -863,28 +953,46 @@ const BulkUploadManager = () => {
                                         </div>
                                     </div>
 
-                                    <Select
-                                        value={isCreatingNewCarousel ? 'NEW' : selectedCarousel}
-                                        onValueChange={(v) => {
-                                            if (v === 'NEW') {
-                                                setIsCreatingNewCarousel(true);
-                                                setSelectedCarousel('');
-                                            } else {
-                                                setIsCreatingNewCarousel(false);
-                                                setSelectedCarousel(v);
-                                            }
-                                        }}
-                                    >
-                                        <SelectTrigger className="rounded-xl border-2 h-12 shadow-ios-inner bg-background/50">
-                                            <SelectValue placeholder="Select a Carousel..." />
-                                        </SelectTrigger>
-                                        <SelectContent className="glass-card">
-                                            <SelectItem value="NEW" className="font-bold text-primary italic">+ New Carousel</SelectItem>
-                                            {carousels.map((c) => (
-                                                <SelectItem key={c.id} value={c.id}>{c.title} ({c.slug})</SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
+                                    <div className="flex items-center gap-2">
+                                        <Select
+                                            value={isCreatingNewCarousel ? 'NEW' : selectedCarousel}
+                                            onValueChange={(v) => {
+                                                if (v === 'NEW') {
+                                                    setIsCreatingNewCarousel(true);
+                                                    setSelectedCarousel('');
+                                                } else {
+                                                    setIsCreatingNewCarousel(false);
+                                                    setSelectedCarousel(v);
+                                                }
+                                            }}
+                                        >
+                                            <SelectTrigger className="rounded-xl border-2 h-12 shadow-ios-inner bg-background/50 flex-1">
+                                                <SelectValue placeholder="Select a Carousel..." />
+                                            </SelectTrigger>
+                                            <SelectContent className="glass-card">
+                                                <SelectItem value="NEW" className="font-bold text-primary italic">+ New Carousel</SelectItem>
+                                                {carousels.map((c) => (
+                                                    <SelectItem key={c.id} value={c.id}>{c.title} ({c.slug})</SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+
+                                        {!isCreatingNewCarousel && selectedCarousel && (
+                                            <Button
+                                                variant="destructive"
+                                                size="icon"
+                                                disabled={deletingCarousel === selectedCarousel}
+                                                onClick={() => confirmDeleteCarousel(selectedCarousel)}
+                                                className="h-12 w-12 rounded-xl bg-kenya-red/10 hover:bg-kenya-red/20 border border-kenya-red/20"
+                                            >
+                                                {deletingCarousel === selectedCarousel ? (
+                                                    <CEKALoader variant="ios" size="sm" />
+                                                ) : (
+                                                    <AlertTriangle className="h-5 w-5 text-kenya-red" />
+                                                )}
+                                            </Button>
+                                        )}
+                                    </div>
 
                                     {isCreatingNewCarousel && (
                                         <div className="p-5 rounded-2xl bg-primary/5 border-2 border-primary/20 space-y-4 glass-card shadow-ios-high animate-in zoom-in-95 duration-300">
@@ -1124,6 +1232,76 @@ const BulkUploadManager = () => {
                     </CardContent>
                 </Card>
             )}
+
+            {/* Live Carousels List */}
+            <Card className="border-0 shadow-ios-high bg-card/50 backdrop-blur-xl">
+                <CardHeader className="pb-3 border-b border-muted/20">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <CardTitle className="text-lg font-black tracking-tight">Live Carousels</CardTitle>
+                            <CardDescription className="text-[10px] uppercase font-bold tracking-widest text-primary">View, Archive, or Delete</CardDescription>
+                        </div>
+                    </div>
+                </CardHeader>
+                <CardContent className="pt-6 space-y-3 max-h-96 overflow-y-auto hide-scrollbar">
+                    {carousels.length === 0 ? (
+                        <p className="text-muted-foreground text-sm text-center py-8">No carousels created yet.</p>
+                    ) : (
+                        carousels.map((carousel) => (
+                            <div
+                                key={carousel.id}
+                                className="flex items-center justify-between p-4 rounded-2xl bg-muted/5 border border-muted/20 hover:border-primary/20 transition-all"
+                            >
+                                <div className="min-w-0 flex-1">
+                                    <h4 className="font-bold text-sm truncate">{carousel.title}</h4>
+                                    <p className="text-[10px] text-muted-foreground uppercase tracking-widest">{carousel.slug}</p>
+                                    {carousel.status && (
+                                        <Badge variant="outline" className="mt-1 text-[9px] capitalize">{carousel.status}</Badge>
+                                    )}
+                                </div>
+                                <div className="flex items-center gap-1 ml-4">
+                                    <Button
+                                        size="icon"
+                                        variant="ghost"
+                                        className="h-9 w-9 rounded-xl"
+                                        asChild
+                                    >
+                                        <Link to={`/carousel/${carousel.slug}`} target="_blank">
+                                            <ExternalLink className="h-4 w-4" />
+                                        </Link>
+                                    </Button>
+                                    <Button
+                                        size="icon"
+                                        variant="ghost"
+                                        onClick={() => archiveCarousel(carousel.id, carousel.status)}
+                                        disabled={archivingCarousel.has(carousel.id)}
+                                        className="h-9 w-9 rounded-xl hover:bg-amber-500/10 hover:text-amber-500"
+                                    >
+                                        {archivingCarousel.has(carousel.id) ? (
+                                            <CEKALoader variant="ios" size="sm" />
+                                        ) : (
+                                            <Archive className="h-4 w-4" />
+                                        )}
+                                    </Button>
+                                    <Button
+                                        size="icon"
+                                        variant="ghost"
+                                        onClick={() => confirmDeleteCarousel(carousel.id)}
+                                        disabled={deletingCarousel === carousel.id}
+                                        className="h-9 w-9 rounded-xl hover:bg-kenya-red/10 hover:text-kenya-red"
+                                    >
+                                        {deletingCarousel === carousel.id ? (
+                                            <CEKALoader variant="ios" size="sm" />
+                                        ) : (
+                                            <Trash2 className="h-4 w-4" />
+                                        )}
+                                    </Button>
+                                </div>
+                            </div>
+                        ))
+                    )}
+                </CardContent>
+            </Card>
 
             {/* Help / Context */}
             <Card className="border-0 shadow-lg bg-primary/5">
