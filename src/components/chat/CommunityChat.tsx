@@ -798,8 +798,9 @@ const CommunityChat = () => {
             <JoinRoomGuide
                 isOpen={showGuide}
                 onClose={handleCloseGuide}
-                roomName={rooms.find(r => r.id === activeRoom)?.name || 'Chat'}
-            />
+                roomName={rooms.find(r => r.id === activeRoom)?.name || 'Chat'} rooms={[]} onSelectRoom={function (roomId: string): void {
+                    throw new Error('Function not implemented.');
+                }} currentRoomId={''} />
 
             {/* Create Room Dialog */}
             <Dialog open={createRoomOpen} onOpenChange={setCreateRoomOpen}>
