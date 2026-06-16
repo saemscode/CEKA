@@ -13,10 +13,10 @@ interface Room {
 
 interface JoinRoomGuideProps {
     isOpen: boolean;
-    onClose: () => void;
+    onClose: () => void;           // "Skip" — clears active room, returns to lobby
     roomName: string;
     rooms: Room[];
-    onSelectRoom: (roomId: string) => void;
+    onSelectRoom: (roomId: string) => void; // formal join — only called on confirm
     currentRoomId: string;
 }
 
@@ -42,20 +42,19 @@ const JoinRoomGuide: React.FC<JoinRoomGuideProps> = ({
 
     const handleConfirm = () => {
         onSelectRoom(selectedRoomId);
+        setStep('select');
+        // guide closes via onSelectRoom -> handleGuideRoomSelect in parent
+    };
+
+    const handleBack = () => setStep('select');
+
+    // Skip: close modal AND clear room (parent sets activeRoom to '')
+    const handleSkip = () => {
         onClose();
         setStep('select');
     };
 
-    const handleBack = () => {
-        setStep('select');
-    };
-
-    const handleClose = () => {
-        onClose();
-        setStep('select');
-    };
-
-    const publicRooms = rooms.filter(r => r.type === 'public' || r.type === undefined);
+    const publicRooms = rooms.filter(r => r.type === 'public' || (r.type as any) === undefined);
 
     if (!isOpen) return null;
 
@@ -67,19 +66,21 @@ const JoinRoomGuide: React.FC<JoinRoomGuideProps> = ({
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     className="fixed inset-0 z-50 flex items-center justify-center"
-                    style={{ backgroundColor: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(8px)' }}
-                    onClick={handleClose}
+                    style={{ backgroundColor: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(10px)' }}
+                    onClick={handleSkip}
                 >
                     <motion.div
-                        initial={{ opacity: 0, scale: 0.92, y: 20 }}
+                        initial={{ opacity: 0, scale: 0.92, y: 24 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.92, y: 20 }}
+                        exit={{ opacity: 0, scale: 0.92, y: 24 }}
                         transition={{ type: 'spring', damping: 24, stiffness: 260 }}
                         className="bg-white dark:bg-[#1C1C1E] rounded-[32px] shadow-2xl w-full max-w-md mx-4 overflow-hidden"
                         onClick={e => e.stopPropagation()}
                     >
                         <AnimatePresence mode="wait">
-                            {step === 'select' ? (
+
+                            {/* ── Step 1: Room selection ── */}
+                            {step === 'select' && (
                                 <motion.div
                                     key="select"
                                     initial={{ opacity: 0, x: -20 }}
@@ -87,7 +88,6 @@ const JoinRoomGuide: React.FC<JoinRoomGuideProps> = ({
                                     exit={{ opacity: 0, x: -20 }}
                                     transition={{ duration: 0.18 }}
                                 >
-                                    {/* Header */}
                                     <div className="px-7 pt-8 pb-4">
                                         <div className="w-14 h-14 rounded-[18px] bg-primary/10 flex items-center justify-center mb-5">
                                             <Hash className="h-7 w-7 text-primary" />
@@ -96,11 +96,10 @@ const JoinRoomGuide: React.FC<JoinRoomGuideProps> = ({
                                             Pick a room
                                         </h2>
                                         <p className="text-sm text-muted-foreground">
-                                            Choose where you'd like to start the conversation.
+                                            Choose where you'd like to join the conversation.
                                         </p>
                                     </div>
 
-                                    {/* Room list */}
                                     <div className="px-4 pb-4 space-y-1 max-h-[320px] overflow-y-auto">
                                         {publicRooms.length === 0 && (
                                             <div className="text-center py-10 text-muted-foreground text-sm">
@@ -122,37 +121,48 @@ const JoinRoomGuide: React.FC<JoinRoomGuideProps> = ({
                                                 >
                                                     <div className={cn(
                                                         'h-10 w-10 rounded-2xl flex items-center justify-center shrink-0 transition-colors',
-                                                        isCurrent ? 'bg-primary/20' : 'bg-slate-100 dark:bg-white/5 group-hover:bg-primary/10'
+                                                        isCurrent
+                                                            ? 'bg-primary/20'
+                                                            : 'bg-slate-100 dark:bg-white/5 group-hover:bg-primary/10'
                                                     )}>
-                                                        <Hash className={cn('h-5 w-5', isCurrent ? 'text-primary' : 'text-muted-foreground group-hover:text-primary')} />
+                                                        <Hash className={cn(
+                                                            'h-5 w-5',
+                                                            isCurrent ? 'text-primary' : 'text-muted-foreground group-hover:text-primary'
+                                                        )} />
                                                     </div>
                                                     <div className="flex-1 min-w-0">
-                                                        <p className="text-sm font-bold truncate text-slate-900 dark:text-white">{room.name}</p>
+                                                        <p className="text-sm font-bold truncate text-slate-900 dark:text-white">
+                                                            {room.name}
+                                                        </p>
                                                         <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-medium">
-                                                            {isCurrent ? 'Current room' : 'Public room'}
+                                                            Public room
                                                         </p>
                                                     </div>
                                                     <ChevronRight className={cn(
                                                         'h-4 w-4 shrink-0 transition-colors',
-                                                        isCurrent ? 'text-primary' : 'text-muted-foreground group-hover:text-primary'
+                                                        isCurrent
+                                                            ? 'text-primary'
+                                                            : 'text-muted-foreground group-hover:text-primary'
                                                     )} />
                                                 </button>
                                             );
                                         })}
                                     </div>
 
-                                    {/* Footer */}
                                     <div className="px-7 pb-7 pt-2">
                                         <Button
                                             variant="ghost"
                                             className="w-full rounded-2xl h-12 text-xs font-bold uppercase tracking-widest text-muted-foreground"
-                                            onClick={handleClose}
+                                            onClick={handleSkip}
                                         >
                                             Skip for now
                                         </Button>
                                     </div>
                                 </motion.div>
-                            ) : (
+                            )}
+
+                            {/* ── Step 2: Confirm & onboard ── */}
+                            {step === 'confirm' && (
                                 <motion.div
                                     key="confirm"
                                     initial={{ opacity: 0, x: 20 }}
@@ -160,7 +170,6 @@ const JoinRoomGuide: React.FC<JoinRoomGuideProps> = ({
                                     exit={{ opacity: 0, x: 20 }}
                                     transition={{ duration: 0.18 }}
                                 >
-                                    {/* Back nav */}
                                     <div className="px-5 pt-5">
                                         <button
                                             onClick={handleBack}
@@ -170,8 +179,7 @@ const JoinRoomGuide: React.FC<JoinRoomGuideProps> = ({
                                         </button>
                                     </div>
 
-                                    {/* Content */}
-                                    <div className="px-7 pt-4 pb-4">
+                                    <div className="px-7 pt-4 pb-7">
                                         <div className="w-14 h-14 rounded-[18px] bg-primary/10 flex items-center justify-center mb-5">
                                             <CheckCircle2 className="h-7 w-7 text-primary" />
                                         </div>
@@ -179,8 +187,8 @@ const JoinRoomGuide: React.FC<JoinRoomGuideProps> = ({
                                             Join #{selectedRoomName}
                                         </h2>
                                         <p className="text-sm text-muted-foreground mb-6">
-                                            This is a public room. Your messages are visible to all members. Keep the discussion
-                                            respectful and on-topic.
+                                            This is a public room. Your messages are visible to all members.
+                                            Keep the discussion respectful and on-topic.
                                         </p>
 
                                         <div className="space-y-3 mb-6">
@@ -210,13 +218,14 @@ const JoinRoomGuide: React.FC<JoinRoomGuideProps> = ({
                                         <Button
                                             variant="ghost"
                                             className="w-full rounded-2xl h-10 text-xs font-bold uppercase tracking-widest text-muted-foreground mt-2"
-                                            onClick={handleClose}
+                                            onClick={handleSkip}
                                         >
                                             Skip for now
                                         </Button>
                                     </div>
                                 </motion.div>
                             )}
+
                         </AnimatePresence>
                     </motion.div>
                 </motion.div>
