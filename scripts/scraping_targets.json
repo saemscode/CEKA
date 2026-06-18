@@ -15,6 +15,14 @@
             "type": "bills",
             "freq": "daily_0400_eat",
             "parliament_value": null
+        },
+        {
+            "name": "Parliament Bill Tracker",
+            "url": "https://www.parliament.go.ke/the-national-assembly/house-business/bill-tracker",
+            "selector": "a[href$='.pdf']",
+            "type": "bill_tracker_matrix",
+            "freq": "daily_0500_eat",
+            "note": "Enrichment-only pipeline. Runs AFTER bills. Writes tracker_enrichment_*.json sidecar. Never inserts into bills table directly."
         }
     ]
 }

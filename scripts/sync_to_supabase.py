@@ -228,8 +228,163 @@ def sync_data(input_file: Optional[str] = None, output_dir: str = "processed_dat
     record_scrape_run(supabase, stats, source_name)
 
 
+def apply_tracker_enrichment(input_file: Optional[str] = None, output_dir: str = "processed_data/legislative"):
+    """
+    Reads the latest tracker_enrichment_*.json sidecar and applies
+    UPDATE-only enrichment to matched bill records in Supabase.
+    Never inserts new records. Only updates tracker-owned fields.
+    Fields owned by primary scrape (title, summary, text_content, ai_concerns, b2_url) are never touched.
+    """
+    load_env()
+    supabase = get_supabase_client()
+
+    # Find the enrichment sidecar
+    if input_file:
+        enrich_file = input_file
+    else:
+        if not os.path.exists(output_dir):
+            logging.warning("[Tracker Enrichment] No output_dir found. Skipping.")
+            return
+        candidates = [
+            f for f in os.listdir(output_dir)
+            if f.startswith("tracker_enrichment_") and f.endswith(".json")
+        ]
+        if not candidates:
+            logging.info("[Tracker Enrichment] No tracker sidecar found. Nothing to enrich.")
+            return
+        candidates.sort()
+        enrich_file = os.path.join(output_dir, candidates[-1])
+
+    logging.info(f"[Tracker Enrichment] Loading sidecar: {enrich_file}")
+    with open(enrich_file, "r", encoding="utf-8") as f:
+        payload = json.load(f)
+
+    matched_rows = payload.get("matched", [])
+    unmatched_rows = payload.get("unmatched", [])
+    logging.info(f"[Tracker Enrichment] {len(matched_rows)} matched, {len(unmatched_rows)} unmatched rows")
+
+    # Status advancement order — only move forward
+    STATUS_ORDER = [
+        "PUBLISHED", "PRE-PUBLICATION", "1ST READING", "COMMITTEE",
+        "2ND READING", "REPORT STAGE", "COMMITTEE STAGE", "3RD READING",
+        "PASSED", "FORWARDED", "ASSENT"
+    ]
+
+    stats = {"enriched": 0, "skipped_locked": 0, "not_found": 0, "failed": 0}
+
+    for enrichment in matched_rows:
+        try:
+            bill_title = enrichment.get("bill_title", "")
+            bill_no    = enrichment.get("bill_no", "")
+
+            # Find the bill in Supabase (bill_no first, then title)
+            existing = None
+            if bill_no:
+                try:
+                    res = supabase.table("bills").select("id,status,status_lock,sponsor") \
+                        .eq("bill_no", bill_no).maybe_single().execute()
+                    if res and res.data:
+                        existing = res.data
+                except Exception:
+                    pass
+
+            if not existing and bill_title:
+                try:
+                    res = supabase.table("bills").select("id,status,status_lock,sponsor") \
+                        .eq("title", bill_title).maybe_single().execute()
+                    if res and res.data:
+                        existing = res.data
+                except Exception:
+                    pass
+
+            if not existing:
+                logging.warning(f"[Tracker Enrichment] Bill not found in DB: '{bill_title}' ({bill_no})")
+                stats["not_found"] += 1
+                continue
+
+            # Respect status_lock
+            if existing.get("status_lock"):
+                logging.info(f"[Tracker Enrichment] 🔒 LOCKED — skipping status for: '{bill_title}'")
+                stats["skipped_locked"] += 1
+
+            # Build update payload — tracker-owned fields only
+            update = {}
+
+            # Dates — only set if non-empty and field is currently null
+            for field, val in [
+                ("first_reading_date",  enrichment.get("first_reading_date")),
+                ("committee_date",       enrichment.get("committee_date")),
+                ("second_reading_date", enrichment.get("second_reading_date")),
+                ("third_reading_date",  enrichment.get("third_reading_date")),
+                ("assent_date",         enrichment.get("assent_date")),
+            ]:
+                if val and val.strip():
+                    update[field] = val.strip()
+
+            # Sponsor — use tracker value only if no sponsor currently set
+            tracker_sponsor = enrichment.get("tracker_sponsor")
+            if tracker_sponsor and not existing.get("sponsor"):
+                update["sponsor"] = tracker_sponsor
+
+            # Status — only advance, never downgrade, never override a lock
+            if not existing.get("status_lock"):
+                tracker_status = (enrichment.get("tracker_status") or "").upper()
+                current_status = (existing.get("status") or "").upper()
+                try:
+                    curr_idx  = STATUS_ORDER.index(current_status)
+                    track_idx = STATUS_ORDER.index(tracker_status)
+                    if track_idx > curr_idx:
+                        update["status"] = STATUS_ORDER[track_idx]
+                        logging.info(
+                            f"[Tracker Enrichment] Status advanced: '{bill_title}' "
+                            f"{current_status} → {STATUS_ORDER[track_idx]}"
+                        )
+                except ValueError:
+                    pass  # Unknown stage — preserve existing
+
+            # Enrichment metadata
+            update["tracker_enriched_at"] = enrichment.get("enriched_at", datetime.now().isoformat())
+            update["updated_at"] = datetime.now().isoformat()
+
+            if len(update) > 2:  # More than just timestamps
+                supabase.table("bills").update(update).eq("id", existing["id"]).execute()
+                logging.info(f"[Tracker Enrichment] ✅ Enriched: '{bill_title}' — fields: {list(update.keys())}")
+                stats["enriched"] += 1
+            else:
+                logging.debug(f"[Tracker Enrichment] No new fields for: '{bill_title}' — skipping UPDATE")
+
+        except Exception as e:
+            logging.error(f"[Tracker Enrichment] ❌ Failed on '{enrichment.get('bill_title')}': {e}")
+            stats["failed"] += 1
+
+    logging.info(
+        f"[Tracker Enrichment] Complete — "
+        f"Enriched: {stats['enriched']}, "
+        f"Locked (skipped status): {stats['skipped_locked']}, "
+        f"Not found: {stats['not_found']}, "
+        f"Failed: {stats['failed']}"
+    )
+
+    # Log unmatched rows for manual review
+    if unmatched_rows:
+        unmatched_path = enrich_file.replace("tracker_enrichment_", "tracker_unmatched_")
+        with open(unmatched_path, "w", encoding="utf-8") as f:
+            json.dump(unmatched_rows, f, indent=2, ensure_ascii=False)
+        logging.warning(
+            f"[Tracker Enrichment] {len(unmatched_rows)} unmatched rows saved to: {unmatched_path}"
+        )
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--file", help="Specific JSON file to upload (full path)", default=None)
+    parser.add_argument("--file", help="Specific bills JSON file to upload (full path)", default=None)
+    parser.add_argument("--tracker-file", help="Specific tracker enrichment JSON file (full path)", default=None)
+    parser.add_argument("--skip-bills", action="store_true", help="Skip bills sync, run tracker enrichment only")
+    parser.add_argument("--skip-tracker", action="store_true", help="Skip tracker enrichment, run bills sync only")
     args = parser.parse_args()
-    sync_data(input_file=args.file)
+
+    if not args.skip_bills:
+        sync_data(input_file=args.file)
+
+    if not args.skip_tracker:
+        apply_tracker_enrichment(input_file=args.tracker_file)

@@ -1138,6 +1138,7 @@ class LegislativeScraper:
     #  scrape_all – uses stealth browser and proxy pool
     # -------------------------------------------------------------------
     def scrape_all(self, max_pages: int = 40) -> List[Dict[str, Any]]:
+        self.tracker_enrichment: Dict[str, Any] = {"matched": [], "unmatched": [], "pdf_count": 0, "row_count": 0}
         logger.info("=" * 60)
         logger.info("  Legislative Sync Engine  (Stealth + CF-hardened + ProxyPool)")
         logger.info("=" * 60)
@@ -1170,6 +1171,12 @@ class LegislativeScraper:
                 except Exception as e:
                     logger.error(f"  Target failed: {e}")
 
+            # --- Phase 2: Tracker Enrichment (runs after bills, same browser session) ---
+            logger.info("\n" + "=" * 60)
+            logger.info("  Bill Tracker Enrichment Phase")
+            logger.info("=" * 60)
+            self.tracker_enrichment = self._run_tracker_enrichment(page)
+
             browser.close()
 
         # Save proxy usage stats
@@ -1182,7 +1189,7 @@ class LegislativeScraper:
         logger.info(f"  Cloudmersive requests: {metrics['ocr_cloudmersive_total']} (failed: {metrics['ocr_cloudmersive_failed']})")
         logger.info(f"  Daily quota remaining: {metrics['daily_requests_remaining']}/{self.ocr_engine.OCR_SPACE_DAILY_LIMIT}")
         logger.info(f"  Total OCR processing time: {metrics['total_processing_time_ms']}ms")
-        logger.info(f"\nSync complete – {len(self.data)} items scraped")
+        logger.info(f"\nSync complete – {len(self.data)} bills scraped")
         return self.data
 
     # -------------------------------------------------------------------
@@ -1829,15 +1836,274 @@ Return EXACTLY a JSON object with these keys:
         logger.warning(f"      [DL] All download methods failed for: {url}")
         return None
 
+    # ===================================================================
+    #  BILL TRACKER ENRICHMENT ENGINE
+    #  Runs after the primary bills pipeline. Reads tracker matrix PDFs,
+    #  extracts tabular data, joins each row to an existing bill record,
+    #  and writes a tracker_enrichment_*.json sidecar for sync_to_supabase.
+    #  NEVER inserts new bill records. UPDATE-only on matched bills.
+    # ===================================================================
+
+    def _fetch_tracker_pdfs(self, page, target: dict) -> List[str]:
+        """Scrape the Bill Tracker page and return all PDF URLs found."""
+        pdf_urls = []
+        try:
+            page.goto(target["url"], wait_until="domcontentloaded", timeout=60000)
+            if not self._wait_for_real_content(page, timeout_ms=20000):
+                logger.warning("  [Tracker] Cloudflare block on Bill Tracker page.")
+                return []
+            page.wait_for_timeout(2000)
+            links = page.evaluate("""
+                () => Array.from(document.querySelectorAll('a[href$=".pdf"]'))
+                         .map(a => a.href)
+            """)
+            pdf_urls = list(set(links))
+            logger.info(f"  [Tracker] Found {len(pdf_urls)} tracker PDF(s)")
+        except Exception as e:
+            logger.error(f"  [Tracker] Failed to fetch tracker page: {e}")
+        return pdf_urls
+
+    def _extract_tracker_table(self, pdf_bytes: bytes) -> List[Dict[str, Any]]:
+        """
+        Extract tabular rows from a Bill Tracker matrix PDF.
+        Uses pdfplumber for cell-aware table extraction.
+        Returns a list of dicts with keys: bill_no, title, sponsor,
+        first_reading, committee_date, second_reading, third_reading,
+        assent_date, current_status.
+        """
+        rows = []
+        if not PDFPLUMBER_OK:
+            logger.warning("  [Tracker] pdfplumber not installed — table extraction unavailable.")
+            return rows
+        try:
+            import pdfplumber
+            with pdfplumber.open(io.BytesIO(pdf_bytes)) as pdf:
+                for page_num, pg in enumerate(pdf.pages):
+                    tables = pg.extract_tables()
+                    for table in tables:
+                        if not table or len(table) < 2:
+                            continue
+                        # Detect header row
+                        header_raw = [str(c or "").strip().lower() for c in table[0]]
+                        # Map column names flexibly
+                        col = {}
+                        for i, h in enumerate(header_raw):
+                            if any(k in h for k in ["bill no", "bill_no", "no."]):
+                                col["bill_no"] = i
+                            elif any(k in h for k in ["title", "name", "short title"]):
+                                col["title"] = i
+                            elif any(k in h for k in ["sponsor", "mover", "proposer"]):
+                                col["sponsor"] = i
+                            elif any(k in h for k in ["1st", "first read"]):
+                                col["first_reading"] = i
+                            elif any(k in h for k in ["committee", "referral"]):
+                                col["committee_date"] = i
+                            elif any(k in h for k in ["2nd", "second read"]):
+                                col["second_reading"] = i
+                            elif any(k in h for k in ["3rd", "third read"]):
+                                col["third_reading"] = i
+                            elif any(k in h for k in ["assent", "signed", "enacted"]):
+                                col["assent_date"] = i
+                            elif any(k in h for k in ["status", "stage", "current"]):
+                                col["current_status"] = i
+
+                        if not col:
+                            logger.debug(f"  [Tracker] Page {page_num+1}: no recognisable columns")
+                            continue
+
+                        for data_row in table[1:]:
+                            if not data_row or all(c is None or str(c).strip() == "" for c in data_row):
+                                continue
+                            safe = lambda i: str(data_row[i] or "").strip() if i < len(data_row) else ""
+                            row = {
+                                "bill_no":        safe(col.get("bill_no", -1)),
+                                "title":          safe(col.get("title", -1)),
+                                "sponsor":        safe(col.get("sponsor", -1)),
+                                "first_reading":  safe(col.get("first_reading", -1)),
+                                "committee_date": safe(col.get("committee_date", -1)),
+                                "second_reading": safe(col.get("second_reading", -1)),
+                                "third_reading":  safe(col.get("third_reading", -1)),
+                                "assent_date":    safe(col.get("assent_date", -1)),
+                                "current_status": safe(col.get("current_status", -1)),
+                            }
+                            # Only keep rows that have at least a title or bill_no
+                            if row["bill_no"] or row["title"]:
+                                rows.append(row)
+        except Exception as e:
+            logger.error(f"  [Tracker] Table extraction failed: {e}")
+        logger.info(f"  [Tracker] Extracted {len(rows)} row(s) from tracker matrix")
+        return rows
+
+    def _join_tracker_row_to_bill(self, tracker_row: Dict, bills_snapshot: List[Dict]) -> Optional[Dict]:
+        """
+        Three-key cascade join from a tracker row to a bill in bills_snapshot.
+        Key 1: exact bill_no match.
+        Key 2: fuzzy title match (>= 0.85 similarity).
+        Key 3: LLM disambiguation (0.60–0.84 similarity).
+        Returns the matched bill dict, or None if unmatched.
+        """
+        import difflib
+
+        t_bill_no = re.sub(r'[^0-9]', '', tracker_row.get("bill_no", ""))
+        t_title = (tracker_row.get("title") or "").strip().lower()
+
+        # --- Key 1: bill_no exact match ---
+        if t_bill_no:
+            for bill in bills_snapshot:
+                b_no = re.sub(r'[^0-9]', '', bill.get("bill_no", ""))
+                if b_no and b_no == t_bill_no:
+                    logger.debug(f"  [Tracker Join] bill_no match: {t_bill_no} -> '{bill['title']}'")
+                    return bill
+
+        # --- Key 2: fuzzy title ---
+        if not t_title:
+            return None
+
+        best_ratio = 0.0
+        best_bill = None
+        for bill in bills_snapshot:
+            b_title = (bill.get("title") or "").strip().lower()
+            ratio = difflib.SequenceMatcher(None, t_title, b_title).ratio()
+            if ratio > best_ratio:
+                best_ratio = ratio
+                best_bill = bill
+
+        if best_ratio >= 0.85 and best_bill is not None:
+            logger.debug(f"  [Tracker Join] fuzzy match ({best_ratio:.2f}): '{tracker_row['title']}' -> '{best_bill['title']}'")
+            return best_bill
+
+        # --- Key 3: LLM disambiguation ---
+        if 0.60 <= best_ratio < 0.85 and best_bill and self.orchestrator:
+            prompt = (
+                f"Tracker title: \"{tracker_row['title']}\"\n"
+                f"Database title: \"{best_bill['title']}\"\n\n"
+                "Are these two titles referring to the same Kenyan legislative bill? "
+                "Reply with exactly one word: YES or NO."
+            )
+            try:
+                answer = self.orchestrator.fast_query(prompt)
+                if isinstance(answer, str) and answer.strip().upper().startswith("YES"):
+                    logger.info(f"  [Tracker Join] LLM confirmed match ({best_ratio:.2f}): '{tracker_row['title']}'")
+                    return best_bill
+                else:
+                    logger.info(f"  [Tracker Join] LLM rejected match ({best_ratio:.2f}): '{tracker_row['title']}'")
+            except Exception as e:
+                logger.warning(f"  [Tracker Join] LLM disambiguation failed: {e}")
+
+        logger.info(f"  [Tracker] UNMATCHED row (best={best_ratio:.2f}): '{tracker_row.get('title')}'")
+        return None
+
+    def _run_tracker_enrichment(self, page) -> Dict[str, Any]:
+        """
+        Main tracker enrichment orchestrator. Called from scrape_all() after
+        the bills pipeline completes.
+
+        Returns a dict:
+          matched:   list of {bill_id, bill_title, enrichment_fields} ready for UPDATE
+          unmatched: list of raw tracker rows that had no bill match
+        """
+        result = {"matched": [], "unmatched": [], "pdf_count": 0, "row_count": 0}
+
+        # Find tracker targets
+        tracker_targets = [t for t in self.targets if t.get("type") == "bill_tracker_matrix"]
+        if not tracker_targets:
+            logger.info("  [Tracker] No bill_tracker_matrix targets configured. Skipping.")
+            return result
+
+        # Use self.data as the bills join pool (already scraped this run)
+        bills_snapshot = [b for b in self.data if b.get("title")]
+
+        for target in tracker_targets:
+            logger.info(f"\n>>> Tracker Enrichment: {target['name']}")
+            pdf_urls = self._fetch_tracker_pdfs(page, target)
+            result["pdf_count"] += len(pdf_urls)
+
+            for pdf_url in pdf_urls:
+                pdf_bytes = self._download_pdf(pdf_url, page)
+                if not pdf_bytes:
+                    logger.warning(f"  [Tracker] Could not download: {pdf_url}")
+                    continue
+
+                tracker_rows = self._extract_tracker_table(pdf_bytes)
+                result["row_count"] += len(tracker_rows)
+
+                for row in tracker_rows:
+                    matched_bill = self._join_tracker_row_to_bill(row, bills_snapshot)
+
+                    if matched_bill:
+                        # Build enrichment payload — only tracker-owned fields
+                        # Status advancement logic: only move FORWARD, never backward
+                        STATUS_ORDER = [
+                            "PUBLISHED", "1ST READING", "COMMITTEE", "2ND READING",
+                            "REPORT STAGE", "COMMITTEE STAGE", "3RD READING",
+                            "PASSED", "FORWARDED", "ASSENT"
+                        ]
+                        current_status = (matched_bill.get("status") or "").upper()
+                        tracker_status = (row.get("current_status") or "").upper()
+                        if STAGE_DETECTOR_OK and tracker_status:
+                            tracker_status = normalize_stage_label(tracker_status).upper()
+
+                        # Only update status if tracker stage is further along
+                        new_status = current_status
+                        try:
+                            curr_idx = STATUS_ORDER.index(current_status)
+                            track_idx = STATUS_ORDER.index(tracker_status)
+                            if track_idx > curr_idx:
+                                new_status = STATUS_ORDER[track_idx]
+                        except ValueError:
+                            pass  # Unknown stage — preserve existing
+
+                        enrichment = {
+                            "bill_title":          matched_bill["title"],
+                            "bill_no":             matched_bill.get("bill_no") or row.get("bill_no"),
+                            "tracker_status":      new_status,
+                            "first_reading_date":  row["first_reading"] or None,
+                            "committee_date":       row["committee_date"] or None,
+                            "second_reading_date": row["second_reading"] or None,
+                            "third_reading_date":  row["third_reading"] or None,
+                            "assent_date":         row["assent_date"] or None,
+                            "tracker_sponsor":     row["sponsor"] or None,
+                            "source_pdf":          pdf_url,
+                            "enriched_at":         datetime.now(timezone.utc).isoformat(),
+                        }
+                        result["matched"].append(enrichment)
+                        logger.info(f"  [Tracker] MATCHED: '{matched_bill['title']}'")
+                    else:
+                        result["unmatched"].append({**row, "source_pdf": pdf_url})
+
+        logger.info(
+            f"\n--- Tracker Enrichment Results ---\n"
+            f"  PDFs processed: {result['pdf_count']}\n"
+            f"  Rows extracted: {result['row_count']}\n"
+            f"  Matched:        {len(result['matched'])}\n"
+            f"  Unmatched:      {len(result['unmatched'])}"
+        )
+        return result
+
     def save_data(self):
         fpath = f"processed_data/legislative/legislation_sync_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
         os.makedirs(os.path.dirname(fpath), exist_ok=True)
         with open(fpath, 'w', encoding='utf-8') as f:
             json.dump(self.data, f, indent=2, ensure_ascii=False)
         logger.info(f"Saved to {fpath}")
+        return fpath
+
+    def save_tracker_enrichment(self, enrichment_result: Dict[str, Any]) -> Optional[str]:
+        """Save the tracker enrichment sidecar JSON for sync_to_supabase to consume."""
+        if not enrichment_result.get("matched") and not enrichment_result.get("unmatched"):
+            logger.info("  [Tracker] No enrichment data to save.")
+            return None
+        ts = datetime.now().strftime('%Y%m%d_%H%M%S')
+        fpath = f"processed_data/legislative/tracker_enrichment_{ts}.json"
+        os.makedirs(os.path.dirname(fpath), exist_ok=True)
+        with open(fpath, 'w', encoding='utf-8') as f:
+            json.dump(enrichment_result, f, indent=2, ensure_ascii=False)
+        logger.info(f"  [Tracker] Sidecar saved to {fpath}")
+        return fpath
 
 
 if __name__ == "__main__":
     scraper = LegislativeScraper(headless=True)
     scraper.scrape_all(max_pages=40)
     scraper.save_data()
+    scraper.save_tracker_enrichment(scraper.tracker_enrichment)
