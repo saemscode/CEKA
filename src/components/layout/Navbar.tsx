@@ -36,39 +36,39 @@ import SearchSuggestion from '@/components/SearchSuggestion';
 import AuthModal from '@/components/auth/AuthModal';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { NotificationDropdown } from '@/components/notifications/NotificationDropdown';
-import { SearchIcon } from '@/components/ui/CustomIcons'; // ✅ Import the custom search icon
+import { SearchIcon, UsersIcon, NavFilesIcon, ConstitutionChapterIcon, PenNewSquareIcon, NavCommentIcon, CalendarIcon, AddProfileIcon, PositionManIcon, CarouselSlideIcon, ConstitutionSectionIcon, CampaignIcon, GlobeIcon, ChevronRightIcon, CivicGlossaryIcon } from '@/components/ui/CustomIcons'; // ✅ Import the custom search icon
 
 // Icon mapping for menu items
 const getItemIcon = (path: string) => {
   switch (path) {
-    case '/about': return Info;
-    case '/legislative-tracker': return FileText;
-    case '/resources': return Shield;
-    case '/blog': return PenTool;
-    case '/community': return MessageSquare;
-    case '/calendar': return Calendar;
-    case '/join-community': return Heart;
-    case '/nasaka-iebc': return MapPin;
-    case '/pieces': return Image;
-    case '/peoples-audit': return Radio;
-    case '/shambles': return Users;
-    case '/translate': return Globe;
-    default: return ChevronRight;
+    case '/about': return UsersIcon;
+    case '/legislative-tracker': return NavFilesIcon;
+    case '/resources': return ConstitutionChapterIcon;
+    case '/blog': return PenNewSquareIcon;
+    case '/community': return NavCommentIcon;
+    case '/calendar': return CalendarIcon;
+    case '/join-community': return AddProfileIcon;
+    case '/nasaka-iebc': return PositionManIcon;
+    case '/pieces': return CarouselSlideIcon;
+    case '/peoples-audit': return ConstitutionSectionIcon;
+    case '/shambles': return CampaignIcon;
+    case '/translate': return CivicGlossaryIcon;
+    default: return ChevronRightIcon;
   }
 };
 
 // Category color mapping
 const getCategoryColor = (categoryName: string) => {
   if (categoryName.includes('Discover')) return 'text-primary';
-  if (categoryName.includes('Engage')) return 'text-kenya-green';
-  if (categoryName.includes('Tools')) return 'text-amber-500';
+  if (categoryName.includes('Engage')) return 'text-slate-800';
+  if (categoryName.includes('Tools')) return 'text-green-700';
   return 'text-primary';
 };
 
 const getCategoryBgColor = (categoryName: string) => {
   if (categoryName.includes('Discover')) return 'bg-primary/10';
   if (categoryName.includes('Engage')) return 'bg-kenya-green/10';
-  if (categoryName.includes('Tools')) return 'bg-amber-500/10';
+  if (categoryName.includes('Tools')) return 'bg-slate-500/10';
   return 'bg-primary/10';
 };
 

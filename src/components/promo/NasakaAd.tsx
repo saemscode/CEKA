@@ -61,24 +61,26 @@ const NasakaLogo = ({ size = 48, className }: { size?: number; className?: strin
   </svg>
 );
 
-/** Civic Background Lattice using ed-stuff assets */
-const CivicBackgroundLattice = ({ className }: { className?: string }) => (
+/** Nasaka-themed background lattice — sourced from context/icons 7 */
+const NasakaBackgroundLattice = ({ className }: { className?: string }) => (
   <div className={cn("absolute inset-0 overflow-hidden opacity-10 pointer-events-none", className)}>
-    {/* ed-stuff-2 elements */}
-    <svg viewBox="0 0 48 48" className="absolute top-0 right-0 w-64 h-64 text-blue-500 transform translate-x-1/4 -translate-y-1/4">
-      <path d="M12.288,23.452h1.803c-0.298,0.203-0.582,0.431-0.842,0.691c-1.091,1.091-1.691,2.546-1.691,4.097  c0,3.191,2.597,5.788,5.788,5.788h2.378v1.587c0,0.226,0.152,0.424,0.371,0.483c0.218,0.06,0.449-0.037,0.563-0.233l1.894-3.281  l1.894,3.29c0.091,0.158,0.258,0.251,0.434,0.251c0.043,0,0.086-0.005,0.129-0.017c0.219-0.058,0.371-0.256,0.371-0.483v-1.597H41  c0.276,0,0.5-0.224,0.5-0.5v-1.609c0-0.104-0.039-0.195-0.093-0.274c-0.006-0.009-0.004-0.021-0.01-0.03  c-0.745-0.973-1.139-2.14-1.139-3.375s0.394-2.402,1.139-3.375c0.007-0.009,0.004-0.021,0.01-0.03  c0.054-0.08,0.093-0.171,0.093-0.274v-1.609c0-0.276-0.224-0.5-0.5-0.5h-4.558v-1.109c0-0.01-0.005-0.019-0.006-0.029  c-0.001-0.021-0.008-0.038-0.012-0.058c-0.012-0.067-0.036-0.126-0.071-0.181c-0.007-0.011-0.006-0.025-0.014-0.036  c-0.745-0.973-1.139-2.14-1.139-3.375s0.394-2.402,1.139-3.375c0.008-0.011,0.007-0.025,0.014-0.036  c0.036-0.055,0.059-0.114,0.071-0.181c0.004-0.02,0.011-0.038,0.012-0.058c0.001-0.01,0.006-0.019,0.006-0.029v-1.609  c0-0.276-0.224-0.5-0.5-0.5H12.288c-1.551,0-3.006,0.601-4.097,1.691S6.5,16.112,6.5,17.664C6.5,20.855,9.097,23.452,12.288,23.452z" fill="currentColor" />
+    {/* Large compass — top-right anchor */}
+    <svg viewBox="0 0 24 24" fill="none" className="absolute -top-8 -right-8 w-64 h-64 text-blue-500">
+      <path d="M15.94 7.62L11.06 9.62C10.725 9.752 10.421 9.952 10.166 10.206C9.912 10.461 9.712 10.765 9.58 11.1L7.58 15.98C7.547 16.064 7.549 16.157 7.584 16.239C7.62 16.322 7.687 16.387 7.77 16.42C7.851 16.45 7.939 16.45 8.02 16.42L12.9 14.42C13.235 14.288 13.539 14.088 13.794 13.834C14.048 13.579 14.248 13.275 14.38 12.94L16.38 8.06C16.413 7.976 16.411 7.883 16.376 7.801C16.34 7.718 16.273 7.653 16.19 7.62C16.109 7.59 16.021 7.59 15.94 7.62ZM12 13C11.802 13 11.609 12.941 11.444 12.832C11.28 12.722 11.152 12.565 11.076 12.383C11 12.2 10.981 11.999 11.019 11.805C11.058 11.611 11.153 11.433 11.293 11.293C11.433 11.153 11.611 11.058 11.805 11.019C11.999 10.981 12.2 11 12.383 11.076C12.565 11.152 12.722 11.28 12.832 11.444C12.941 11.609 13 11.802 13 12C13 12.265 12.895 12.52 12.707 12.707C12.52 12.895 12.265 13 12 13Z" fill="currentColor"/>
+      <path d="M12 21C10.22 21 8.48 20.472 6.999 19.483C5.52 18.494 4.366 17.089 3.685 15.444C3.004 13.8 2.826 11.99 3.173 10.244C3.52 8.498 4.377 6.895 5.636 5.636C6.895 4.377 8.498 3.52 10.244 3.173C11.99 2.826 13.8 3.004 15.444 3.685C17.089 4.366 18.494 5.52 19.483 6.999C20.472 8.48 21 10.22 21 12C21 14.387 20.052 16.676 18.364 18.364C16.676 20.052 14.387 21 12 21ZM12 4.5C10.517 4.5 9.067 4.94 7.833 5.764C6.6 6.588 5.639 7.759 5.071 9.13C4.503 10.5 4.355 12.008 4.644 13.463C4.934 14.918 5.648 16.254 6.697 17.303C7.746 18.352 9.082 19.067 10.537 19.356C11.992 19.645 13.5 19.497 14.87 18.929C16.241 18.361 17.412 17.4 18.236 16.167C19.06 14.933 19.5 13.483 19.5 12C19.5 10.011 18.71 8.103 17.303 6.697C15.897 5.29 13.989 4.5 12 4.5Z" fill="currentColor"/>
     </svg>
-    {/* edagain paths as repeating pattern */}
-    <svg viewBox="0 0 32 32" className="absolute bottom-0 left-0 w-48 h-48 text-indigo-500 transform -translate-x-1/4 translate-y-1/4 opacity-40">
-      <path d="M15,29V8c0-1.7-1.3-3-3-3H3C1.9,5,1,5.9,1,7v17c0,1.1,0.9,2,2,2h9C13.7,26,15,27.3,15,29L15,29" fill="currentColor" />
-      <path d="M17,29V8c0-1.7,1.3-3,3-3h9c1.1,0,2,0.9,2,2v17c0,1.1-0.9,2-2,2h-9C18.3,26,17,27.3,17,29L17,29" fill="currentColor" />
+    {/* Map pin — bottom-left, partially cropped */}
+    <svg viewBox="0 0 56 56" className="absolute -bottom-6 -left-4 w-36 h-36 text-[#1A6BFF]">
+      <path d="M28.012 52.82C28.949 52.82 30.168 49.07 30.168 42.133L30.168 20.57C33.988 19.609 36.8 16.14 36.8 12.015C36.8 7.164 32.886 3.18 28.012 3.18C23.113 3.18 19.199 7.164 19.199 12.015C19.199 16.117 22.012 19.586 25.809 20.57L25.809 42.133C25.809 49.047 27.051 52.82 28.012 52.82Z M25.48 12.508C23.887 12.508 22.48 11.102 22.48 9.461C22.48 7.844 23.887 6.461 25.48 6.461C27.145 6.461 28.48 7.844 28.48 9.461C28.48 11.102 27.145 12.508 25.48 12.508Z" fill="currentColor"/>
     </svg>
-    {/* edtena paths */}
-    <svg viewBox="0 0 32 32" className="absolute top-1/2 left-1/3 w-32 h-32 text-blue-400 rotate-12">
-      <path d="M27,3H11C9.3,3,8,4.8,8,7v14H7c-1.7,0-3,1.8-3,4s1.3,4,3,4h16c1.7,0,3-1.8,3-4V8h3c0.6,0,1-0.4,1-1C30,4.8,28.7,3,27,3z" fill="currentColor" />
+    {/* Diagonal location pin — centre watermark */}
+    <svg viewBox="0 0 24 24" fill="none" className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-40 h-40 text-blue-300 rotate-[-15deg]">
+      <path opacity="0.4" fillRule="evenodd" clipRule="evenodd" d="M16.219 4.838L19.183 7.805C21.195 9.819 22.201 10.826 21.967 11.912C21.732 12.997 20.4 13.497 17.736 14.498L15.892 15.191C15.179 15.459 14.822 15.593 14.547 15.831C14.426 15.936 14.318 16.054 14.225 16.184C14.013 16.48 13.912 16.847 13.71 17.582C13.249 19.255 13.019 20.091 12.471 20.404C12.24 20.536 11.979 20.605 11.713 20.605C11.083 20.604 10.47 19.99 9.244 18.764L7.778 17.296L6.699 16.216L5.285 14.8C4.067 13.581 3.458 12.972 3.454 12.345C3.452 12.074 3.523 11.807 3.658 11.572C3.971 11.029 4.801 10.8 6.461 10.342C7.198 10.139 7.566 10.038 7.863 9.825C7.995 9.729 8.116 9.618 8.222 9.493C8.459 9.215 8.591 8.856 8.854 8.138L9.522 6.315C10.509 3.622 11.002 2.275 12.09 2.035C13.179 1.795 14.192 2.809 16.219 4.838Z" fill="currentColor"/>
+      <path d="M3.302 21.776L7.778 17.296L6.699 16.216L2.224 20.697C1.926 20.995 1.926 21.478 2.224 21.776C2.521 22.075 3.004 22.075 3.302 21.776Z" fill="currentColor"/>
     </svg>
   </div>
 );
+
 
 const IconX = ({ className }: { className?: string }) => (
   <svg viewBox="0 0 24 24" fill="none" className={className} xmlns="http://www.w3.org/2000/svg">
@@ -201,12 +203,12 @@ export const NasakaFeedBanner: React.FC = () => {
       animate={{ opacity: 1, y: 0 }}
       className="relative w-full overflow-hidden rounded-[32px] border border-slate-200/50 dark:border-white/10 bg-white/40 dark:bg-slate-950/40 p-6 shadow-ios-high backdrop-blur-3xl"
     >
-      {/* Background Decor */}
-      <CivicBackgroundLattice className="opacity-[0.5]" />
+      {/* Nasaka-themed background decorations */}
+      <NasakaBackgroundLattice className="opacity-[0.25]" />
 
-      <div className="relative z-10 flex flex-col md:flex-row gap-8">
+      <div className="relative z-10 flex flex-col lg:flex-row gap-6 lg:gap-8 items-center">
         {/* Ad Info */}
-        <div className="flex-1 space-y-4">
+        <div className="flex-1 space-y-4 min-w-0">
           <div className="flex items-center gap-2">
             <span className="rounded-full bg-blue-500/10 border border-blue-500/20 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-widest text-[#1A6BFF]">
               CEKA
@@ -256,11 +258,23 @@ export const NasakaFeedBanner: React.FC = () => {
           </div>
         </div>
 
-        {/* Mockups */}
-        <div className="hidden lg:flex w-72 gap-3 shrink-0">
-          <MockupFrame title="Map View" type="map" />
-          <MockupFrame title="Search" type="search" />
-          <MockupFrame title="Results" type="list" />
+        {/* Hero Screenshot — single wide image, responsive */}
+        <div className="hidden lg:flex shrink-0 w-80 xl:w-96 h-52 xl:h-60 rounded-2xl overflow-hidden shadow-xl ring-1 ring-white/10">
+          <img
+            src="/nasaka-app-hero.png"
+            alt="Nasaka IEBC Office Finder app screenshot"
+            className="w-full h-full object-cover object-left-top"
+            loading="lazy"
+          />
+        </div>
+        {/* Tablet: narrower image below text */}
+        <div className="lg:hidden w-full max-w-sm mx-auto h-36 rounded-2xl overflow-hidden shadow-lg ring-1 ring-white/10 sm:block hidden">
+          <img
+            src="/nasaka-app-hero.png"
+            alt="Nasaka IEBC Office Finder app screenshot"
+            className="w-full h-full object-cover object-top"
+            loading="lazy"
+          />
         </div>
       </div>
 
@@ -305,7 +319,7 @@ export const NasakaSidebarWidget: React.FC<{ dwellDelayMs?: number }> = ({ dwell
       isVisible ? "translate-x-0 opacity-100" : "-translate-x-full opacity-0"
     )}>
       <div className="relative overflow-hidden rounded-[28px] border border-slate-200/50 dark:border-white/10 bg-white/60 dark:bg-slate-900/40 p-5 shadow-ios-high backdrop-blur-3xl">
-        <CivicBackgroundLattice className="opacity-[0.05]" />
+        <NasakaBackgroundLattice className="opacity-[0.05]" />
 
         <button
           onClick={handleDismiss}
