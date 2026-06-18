@@ -1091,8 +1091,7 @@ class LegislativeScraper:
                     self.seen_titles.add(slug_key)
 
                     if not self._is_bill_document(title):
-                        self.data.append(self._build_non_bill_record(title, pdf_href, target))
-                        logger.info(f"    [DOC] {title}")
+                        logger.info(f"    [SKIP] Non-bill document hard-discarded (strict mode): {title}")
                         continue
 
                     try:
@@ -1163,11 +1162,11 @@ class LegislativeScraper:
 
             for target in self.targets:
                 logger.info(f"\n>>> Syncing: {target['name']}")
+                if target.get('type') != 'bills':
+                    logger.info(f"  [SKIP] Target type '{target.get('type')}' is not 'bills' — skipped (strict mode).")
+                    continue
                 try:
-                    if target['type'] == 'bills':
-                        self._scrape_bills(page, target, max_pages)
-                    else:
-                        self._scrape_standard_docs(page, target)
+                    self._scrape_bills(page, target, max_pages)
                 except Exception as e:
                     logger.error(f"  Target failed: {e}")
 
@@ -1187,13 +1186,13 @@ class LegislativeScraper:
         return self.data
 
     # -------------------------------------------------------------------
-    #  The rest of the original methods (unchanged)
+    #  Remaining methods
     #  - _load_targets, _deep_process_bill, _distill_bill_content,
     #    _ocr_page_screenshots, _scrape_bill_detail_page,
     #    _extract_text_cascade, _parse_bill_text, _scrape_standard_docs,
-    #    _build_non_bill_record, _is_bill_document, _clean_title,
-    #    _title_from_url, _extract_year, _extract_bill_no,
-    #    _infer_status_from_text, _infer_category, _download_pdf, save_data
+    #    _is_bill_document, _clean_title, _title_from_url, _extract_year,
+    #    _extract_bill_no, _infer_status_from_text, _infer_category,
+    #    _download_pdf, save_data
     # -------------------------------------------------------------------
     def _load_targets(self) -> list:
         try:
@@ -1627,30 +1626,20 @@ Return EXACTLY a JSON object with these keys:
         return result
 
     def _scrape_standard_docs(self, page, target):
-        page.goto(target['url'], wait_until="networkidle")
-        links = page.evaluate("""(sel) => {
-            return Array.from(document.querySelectorAll(sel || 'a[href$=".pdf"]')).map(a => ({
-                text: a.innerText.trim(),
-                href: a.href
-            }));
-        }""", target.get('selector'))
-        for l in links:
-            if not l['text'] or l['text'] in self.seen_titles:
-                continue
-            self.seen_titles.add(l['text'])
-            self.data.append(self._build_non_bill_record(l['text'], l['href'], target))
-            logger.info(f"    [DOC] {l['text']}")
+        # TOMBSTONED (strict mode) — non-bill targets are blocked in scrape_all().
+        # This method must never be reached. If it is, fail loudly.
+        raise RuntimeError(
+            f"[STRICT MODE] _scrape_standard_docs called for '{target.get('name')}' "
+            f"(type='{target.get('type')}'). Only type='bills' targets are permitted. "
+            "Remove this target from scraping_targets.json."
+        )
 
     def _build_non_bill_record(self, title, url, target):
-        return {
-            "title": title,
-            "url": url,
-            "source": target['name'],
-            "category": "Documentation",
-            "date": datetime.now().strftime("%Y-%m-%d"),
-            "status": "Ingested",
-            "document_type": "doc"
-        }
+        # TOMBSTONED (strict mode) — non-bill records must never enter self.data.
+        raise RuntimeError(
+            f"[STRICT MODE] _build_non_bill_record called for '{title}'. "
+            "All non-bill documents must be hard-discarded via 'continue' in _scrape_bills()."
+        )
 
     _BILL_BLOCKLIST = (
         'hansard', 'order paper', 'questions',
