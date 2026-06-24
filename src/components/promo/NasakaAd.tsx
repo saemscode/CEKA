@@ -1,25 +1,20 @@
 /**
  * NasakaAd.tsx
- * CEKA High-Fidelity Promo System — Nasaka IEBC Office Finder
- * 
+ * CEKA High-Fidelity Promo System — Multi-Ad Extension
+ *
  * Placements:
- *   - <NasakaFeedBanner />: Premium glassmorphic banner for home feed.
- *   - <NasakaSidebarWidget />: Contextual floating widget with dwell trigger.
- *   - <NasakaToolsCard />: Standard directory card for tools section.
- * 
- * Features:
- *   - Deep iOS-inspired glassmorphism (backdrop-blur-3xl).
- *   - High-definition inline SVG globe and branding.
- *   - Smart frequency capping (7-day window).
- *   - Fully responsive and accessible.
+ *   - NasakaFeedBanner / BitcoinDonationFeedBanner / LegislativeTrackerFeedBanner
+ *   - NasakaSidebarWidget / BitcoinDonationSidebarWidget / LegislativeTrackerSidebarWidget
+ *   - NasakaToolsCard / BitcoinDonationToolsCard / LegislativeTrackerToolsCard
  */
 
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { BitcoinDonationIcon, LegislativeTrackerIcon, ShieldCheckIcon } from '@/components/ui/CustomIcons';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// CONFIG & PERSISTENCE
+// CONFIG & PERSISTENCE (existing)
 // ─────────────────────────────────────────────────────────────────────────────
 
 const NASAKA_KEY = "nasaka_ad_dismissed_at";
@@ -39,7 +34,7 @@ const dismissAd = () => {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// BRAND ASSETS (Official High-Fidelity SVGs)
+// BRAND ASSETS (existing) — Nasaka logo and decorations, plus generic icons
 // ─────────────────────────────────────────────────────────────────────────────
 
 /** Official Nasaka IEBC Logo Component */
@@ -64,23 +59,19 @@ const NasakaLogo = ({ size = 48, className }: { size?: number; className?: strin
 /** Nasaka-themed background lattice — sourced from context/icons 7 */
 const NasakaBackgroundLattice = ({ className }: { className?: string }) => (
   <div className={cn("absolute inset-0 overflow-hidden opacity-10 pointer-events-none", className)}>
-    {/* Large compass — top-right anchor */}
     <svg viewBox="0 0 24 24" fill="none" className="absolute -top-8 -right-8 w-64 h-64 text-blue-500">
-      <path d="M15.94 7.62L11.06 9.62C10.725 9.752 10.421 9.952 10.166 10.206C9.912 10.461 9.712 10.765 9.58 11.1L7.58 15.98C7.547 16.064 7.549 16.157 7.584 16.239C7.62 16.322 7.687 16.387 7.77 16.42C7.851 16.45 7.939 16.45 8.02 16.42L12.9 14.42C13.235 14.288 13.539 14.088 13.794 13.834C14.048 13.579 14.248 13.275 14.38 12.94L16.38 8.06C16.413 7.976 16.411 7.883 16.376 7.801C16.34 7.718 16.273 7.653 16.19 7.62C16.109 7.59 16.021 7.59 15.94 7.62ZM12 13C11.802 13 11.609 12.941 11.444 12.832C11.28 12.722 11.152 12.565 11.076 12.383C11 12.2 10.981 11.999 11.019 11.805C11.058 11.611 11.153 11.433 11.293 11.293C11.433 11.153 11.611 11.058 11.805 11.019C11.999 10.981 12.2 11 12.383 11.076C12.565 11.152 12.722 11.28 12.832 11.444C12.941 11.609 13 11.802 13 12C13 12.265 12.895 12.52 12.707 12.707C12.52 12.895 12.265 13 12 13Z" fill="currentColor"/>
-      <path d="M12 21C10.22 21 8.48 20.472 6.999 19.483C5.52 18.494 4.366 17.089 3.685 15.444C3.004 13.8 2.826 11.99 3.173 10.244C3.52 8.498 4.377 6.895 5.636 5.636C6.895 4.377 8.498 3.52 10.244 3.173C11.99 2.826 13.8 3.004 15.444 3.685C17.089 4.366 18.494 5.52 19.483 6.999C20.472 8.48 21 10.22 21 12C21 14.387 20.052 16.676 18.364 18.364C16.676 20.052 14.387 21 12 21ZM12 4.5C10.517 4.5 9.067 4.94 7.833 5.764C6.6 6.588 5.639 7.759 5.071 9.13C4.503 10.5 4.355 12.008 4.644 13.463C4.934 14.918 5.648 16.254 6.697 17.303C7.746 18.352 9.082 19.067 10.537 19.356C11.992 19.645 13.5 19.497 14.87 18.929C16.241 18.361 17.412 17.4 18.236 16.167C19.06 14.933 19.5 13.483 19.5 12C19.5 10.011 18.71 8.103 17.303 6.697C15.897 5.29 13.989 4.5 12 4.5Z" fill="currentColor"/>
+      <path d="M15.94 7.62L11.06 9.62C10.725 9.752 10.421 9.952 10.166 10.206C9.912 10.461 9.712 10.765 9.58 11.1L7.58 15.98C7.547 16.064 7.549 16.157 7.584 16.239C7.62 16.322 7.687 16.387 7.77 16.42C7.851 16.45 7.939 16.45 8.02 16.42L12.9 14.42C13.235 14.288 13.539 14.088 13.794 13.834C14.048 13.579 14.248 13.275 14.38 12.94L16.38 8.06C16.413 7.976 16.411 7.883 16.376 7.801C16.34 7.718 16.273 7.653 16.19 7.62C16.109 7.59 16.021 7.59 15.94 7.62ZM12 13C11.802 13 11.609 12.941 11.444 12.832C11.28 12.722 11.152 12.565 11.076 12.383C11 12.2 10.981 11.999 11.019 11.805C11.058 11.611 11.153 11.433 11.293 11.293C11.433 11.153 11.611 11.058 11.805 11.019C11.999 10.981 12.2 11 12.383 11.076C12.565 11.152 12.722 11.28 12.832 11.444C12.941 11.609 13 11.802 13 12C13 12.265 12.895 12.52 12.707 12.707C12.52 12.895 12.265 13 12 13Z" fill="currentColor" />
+      <path d="M12 21C10.22 21 8.48 20.472 6.999 19.483C5.52 18.494 4.366 17.089 3.685 15.444C3.004 13.8 2.826 11.99 3.173 10.244C3.52 8.498 4.377 6.895 5.636 5.636C6.895 4.377 8.498 3.52 10.244 3.173C11.99 2.826 13.8 3.004 15.444 3.685C17.089 4.366 18.494 5.52 19.483 6.999C20.472 8.48 21 10.22 21 12C21 14.387 20.052 16.676 18.364 18.364C16.676 20.052 14.387 21 12 21ZM12 4.5C10.517 4.5 9.067 4.94 7.833 5.764C6.6 6.588 5.639 7.759 5.071 9.13C4.503 10.5 4.355 12.008 4.644 13.463C4.934 14.918 5.648 16.254 6.697 17.303C7.746 18.352 9.082 19.067 10.537 19.356C11.992 19.645 13.5 19.497 14.87 18.929C16.241 18.361 17.412 17.4 18.236 16.167C19.06 14.933 19.5 13.483 19.5 12C19.5 10.011 18.71 8.103 17.303 6.697C15.897 5.29 13.989 4.5 12 4.5Z" fill="currentColor" />
     </svg>
-    {/* Map pin — bottom-left, partially cropped */}
     <svg viewBox="0 0 56 56" className="absolute -bottom-6 -left-4 w-36 h-36 text-[#1A6BFF]">
-      <path d="M28.012 52.82C28.949 52.82 30.168 49.07 30.168 42.133L30.168 20.57C33.988 19.609 36.8 16.14 36.8 12.015C36.8 7.164 32.886 3.18 28.012 3.18C23.113 3.18 19.199 7.164 19.199 12.015C19.199 16.117 22.012 19.586 25.809 20.57L25.809 42.133C25.809 49.047 27.051 52.82 28.012 52.82Z M25.48 12.508C23.887 12.508 22.48 11.102 22.48 9.461C22.48 7.844 23.887 6.461 25.48 6.461C27.145 6.461 28.48 7.844 28.48 9.461C28.48 11.102 27.145 12.508 25.48 12.508Z" fill="currentColor"/>
+      <path d="M28.012 52.82C28.949 52.82 30.168 49.07 30.168 42.133L30.168 20.57C33.988 19.609 36.8 16.14 36.8 12.015C36.8 7.164 32.886 3.18 28.012 3.18C23.113 3.18 19.199 7.164 19.199 12.015C19.199 16.117 22.012 19.586 25.809 20.57L25.809 42.133C25.809 49.047 27.051 52.82 28.012 52.82Z M25.48 12.508C23.887 12.508 22.48 11.102 22.48 9.461C22.48 7.844 23.887 6.461 25.48 6.461C27.145 6.461 28.48 7.844 28.48 9.461C28.48 11.102 27.145 12.508 25.48 12.508Z" fill="currentColor" />
     </svg>
-    {/* Diagonal location pin — centre watermark */}
     <svg viewBox="0 0 24 24" fill="none" className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-40 h-40 text-blue-300 rotate-[-15deg]">
-      <path opacity="0.4" fillRule="evenodd" clipRule="evenodd" d="M16.219 4.838L19.183 7.805C21.195 9.819 22.201 10.826 21.967 11.912C21.732 12.997 20.4 13.497 17.736 14.498L15.892 15.191C15.179 15.459 14.822 15.593 14.547 15.831C14.426 15.936 14.318 16.054 14.225 16.184C14.013 16.48 13.912 16.847 13.71 17.582C13.249 19.255 13.019 20.091 12.471 20.404C12.24 20.536 11.979 20.605 11.713 20.605C11.083 20.604 10.47 19.99 9.244 18.764L7.778 17.296L6.699 16.216L5.285 14.8C4.067 13.581 3.458 12.972 3.454 12.345C3.452 12.074 3.523 11.807 3.658 11.572C3.971 11.029 4.801 10.8 6.461 10.342C7.198 10.139 7.566 10.038 7.863 9.825C7.995 9.729 8.116 9.618 8.222 9.493C8.459 9.215 8.591 8.856 8.854 8.138L9.522 6.315C10.509 3.622 11.002 2.275 12.09 2.035C13.179 1.795 14.192 2.809 16.219 4.838Z" fill="currentColor"/>
-      <path d="M3.302 21.776L7.778 17.296L6.699 16.216L2.224 20.697C1.926 20.995 1.926 21.478 2.224 21.776C2.521 22.075 3.004 22.075 3.302 21.776Z" fill="currentColor"/>
+      <path opacity="0.4" fillRule="evenodd" clipRule="evenodd" d="M16.219 4.838L19.183 7.805C21.195 9.819 22.201 10.826 21.967 11.912C21.732 12.997 20.4 13.497 17.736 14.498L15.892 15.191C15.179 15.459 14.822 15.593 14.547 15.831C14.426 15.936 14.318 16.054 14.225 16.184C14.013 16.48 13.912 16.847 13.71 17.582C13.249 19.255 13.019 20.091 12.471 20.404C12.24 20.536 11.979 20.605 11.713 20.605C11.083 20.604 10.47 19.99 9.244 18.764L7.778 17.296L6.699 16.216L5.285 14.8C4.067 13.581 3.458 12.972 3.454 12.345C3.452 12.074 3.523 11.807 3.658 11.572C3.971 11.029 4.801 10.8 6.461 10.342C7.198 10.139 7.566 10.038 7.863 9.825C7.995 9.729 8.116 9.618 8.222 9.493C8.459 9.215 8.591 8.856 8.854 8.138L9.522 6.315C10.509 3.622 11.002 2.275 12.09 2.035C13.179 1.795 14.192 2.809 16.219 4.838Z" fill="currentColor" />
+      <path d="M3.302 21.776L7.778 17.296L6.699 16.216L2.224 20.697C1.926 20.995 1.926 21.478 2.224 21.776C2.521 22.075 3.004 22.075 3.302 21.776Z" fill="currentColor" />
     </svg>
   </div>
 );
-
 
 const IconX = ({ className }: { className?: string }) => (
   <svg viewBox="0 0 24 24" fill="none" className={className} xmlns="http://www.w3.org/2000/svg">
@@ -145,7 +136,7 @@ const IconArrowRight = ({ className }: { className?: string }) => (
 );
 
 // ─────────────────────────────────────────────────────────────────────────────
-// COMPONENTS
+// EXISTING COMPONENTS (unchanged)
 // ─────────────────────────────────────────────────────────────────────────────
 
 /** Illustrative App Screenshot Frame */
@@ -392,3 +383,324 @@ export const NasakaToolsCard: React.FC = () => (
     </div>
   </div>
 );
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MULTI‑AD EXTENSION (new code appended below — no pre‑existing code modified)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** ──────── Ad Content Type & Persistence Helpers ──────── */
+type AdContent = {
+  id: string;
+  title: string;
+  subtitle?: string;
+  description: string;
+  cta: { label: string; url: string };
+  brandIcon: React.ComponentType<{ className?: string }>;
+  backgroundColor?: string;
+  backgroundDecor?: React.ComponentType<{ className?: string }>;
+  stats?: { icon: React.ComponentType<{ className?: string }>; label: string }[];
+  image?: string;
+};
+
+const AD_PREFIX = "ceka_ad_dismissed_";
+
+const shouldShowAdById = (id: string): boolean => {
+  if (typeof window === "undefined") return false;
+  const key = AD_PREFIX + id;
+  const stored = localStorage.getItem(key);
+  if (!stored) return true;
+  return Date.now() - parseInt(stored, 10) > AD_REFRESH_INTERVAL_MS;
+};
+
+const dismissAdById = (id: string) => {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(AD_PREFIX + id, Date.now().toString());
+};
+
+/** ──────── New Background Decorations ──────── */
+const BitcoinBackground = ({ className }: { className?: string }) => (
+  <div className={cn("absolute inset-0 overflow-hidden opacity-10 pointer-events-none", className)}>
+    <svg viewBox="0 0 529.012 529.013" className="absolute -top-10 -right-10 w-48 h-48 text-orange-500">
+      <path fill="currentColor" d="M366.817,252.027c19.285-8.727,34.561-21.824,45.826-39.278c11.268-17.46,16.898-36.64,16.898-57.552 c0-19.284-4.566-36.689-13.703-52.222c-9.137-15.532-20.551-27.962-34.254-37.301c-13.703-9.339-29.234-15.478-46.592-18.421 c-2.826-0.478-5.984-0.906-9.295-1.31V18.36c0-10.141-8.221-18.36-18.361-18.36h-36.719c-10.141,0-18.36,8.219-18.36,18.36v24.48 h-38.293V18.36c0-10.141-8.219-18.36-18.36-18.36h-36.72c-10.141,0-18.36,8.219-18.36,18.36v24.48H77.543v446.393h62.993v21.42 c0,10.141,8.219,18.36,18.36,18.36h36.72c10.141,0,18.36-8.22,18.36-18.36v-21.42h15.514c8.023-0.055,15.587-0.128,22.779-0.208 v21.628c0,10.141,8.219,18.36,18.36,18.36h36.721c10.141,0,18.359-8.22,18.359-18.36V487.14c5.098-0.288,9.303-0.606,12.49-0.949 c23.955-2.638,44.102-9.693,60.441-21.162c16.34-11.47,29.229-26.794,38.672-45.979c9.438-19.187,14.156-38.924,14.156-59.224 c0-25.783-7.307-48.214-21.922-67.296S394.02,259.947,366.817,252.027z M219.442,117.137c42.43,0,68.109,0.508,77.039,1.523 c15.023,1.83,26.34,7.057,33.953,15.68s11.42,19.841,11.42,33.648c0,14.413-4.418,26.034-13.25,34.865 c-8.83,8.832-20.961,14.162-36.389,15.986c-8.525,1.016-30.35,1.523-65.466,1.523h-59.07V117.137H219.442z M345.655,393.473 c-8.428,9.438-19.334,15.38-32.736,17.815c-8.732,1.83-29.332,2.742-61.812,2.742h-83.434V294.659h72.772 c41.004,0,67.651,2.13,79.934,6.396s21.67,11.065,28.164,20.404c6.492,9.339,9.742,20.704,9.742,34.106 C358.292,371.392,354.083,384.029,345.655,393.473z" />
+    </svg>
+    <svg viewBox="0 0 512 512" className="absolute bottom-0 left-0 w-32 h-32 text-orange-400/50">
+      <path fill="currentColor" d="M272.431,6.816C268.072,2.458,262.164,0.008,256,0.002c-0.008,0-0.017-0.002-0.026-0.002 c-6.173,0-12.093,2.453-16.455,6.817c-6.613,6.614-161.955,163.854-161.955,326.783C77.563,431.97,157.598,512,255.975,512 c0.008,0,0.017,0,0.025,0c98.392-0.014,178.437-80.038,178.437-178.399C434.437,170.668,279.046,13.428,272.431,6.816z" />
+    </svg>
+  </div>
+);
+
+const LegislativeBackground = ({ className }: { className?: string }) => (
+  <div className={cn("absolute inset-0 overflow-hidden opacity-10 pointer-events-none", className)}>
+    <svg viewBox="0 0 56 56" className="absolute -top-6 -right-6 w-36 h-36 text-emerald-600">
+      <path fill="currentColor" d="M 15.5547 53.125 L 40.4453 53.125 C 45.2969 53.125 47.7109 50.6640 47.7109 45.7890 L 47.7109 24.5078 C 47.7109 21.4844 47.3828 20.1718 45.5078 18.2500 L 32.5703 5.1015 C 30.7891 3.2734 29.3359 2.8750 26.6875 2.8750 L 15.5547 2.8750 C 10.7266 2.8750 8.2891 5.3594 8.2891 10.2344 L 8.2891 45.7890 C 8.2891 50.6875 10.7266 53.125 15.5547 53.125 Z M 15.7422 49.3515 C 13.3281 49.3515 12.0625 48.0625 12.0625 45.7187 L 12.0625 10.3047 C 12.0625 7.9844 13.3281 6.6484 15.7656 6.6484 L 26.1718 6.6484 L 26.1718 20.2656 C 26.1718 23.2187 27.6718 24.6718 30.5781 24.6718 L 43.9375 24.6718 L 43.9375 45.7187 C 43.9375 48.0625 42.6953 49.3515 40.2578 49.3515 Z M 31.0000 21.1328 C 30.0859 21.1328 29.7109 20.7578 29.7109 19.8203 L 29.7109 7.3750 L 43.2109 21.1328 Z M 36.6250 31.1172 L 18.8359 31.1172 C 17.9922 31.1172 17.3828 31.7500 17.3828 32.5469 C 17.3828 33.3672 17.9922 34.0000 18.8359 34.0000 L 36.6250 34.0000 C 37.4453 34.0000 38.0781 33.3672 38.0781 32.5469 C 38.0781 31.7500 37.4453 31.1172 36.6250 31.1172 Z M 36.6250 39.2969 L 18.8359 39.2969 C 17.9922 39.2969 17.3828 39.9531 17.3828 40.7734 C 17.3828 41.5703 17.9922 42.1797 18.8359 42.1797 L 36.6250 42.1797 C 37.4453 42.1797 38.0781 41.5703 38.0781 40.7734 C 38.0781 39.9531 37.4453 39.2969 36.6250 39.2969 Z" />
+    </svg>
+    <svg viewBox="0 0 24 24" className="absolute bottom-4 left-4 w-24 h-24 text-emerald-500/70">
+      <path fill="currentColor" d="M20 13V17.5C20 20.5577 16 20.5 12 20.5C8 20.5 4 20.5577 4 17.5V13M12 3L12 15M12 3L16 7M12 3L8 7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  </div>
+);
+
+/** ──────── Ad Content Definitions ──────── */
+const BITCOIN_AD: AdContent = {
+  id: 'bitcoin-donation',
+  title: 'Now Supporting Bitcoin Donations',
+  subtitle: 'CEKA',
+  description: 'Support civic education with Bitcoin, Lightning, or Liquid. Fast, borderless, secure.',
+  cta: { label: 'Donate Bitcoin', url: '/donate' },
+  brandIcon: BitcoinDonationIcon,
+  backgroundColor: '#F7931A',
+  backgroundDecor: BitcoinBackground,
+  stats: [
+    { icon: IconGlobe, label: 'On‑Chain & Lightning' },
+    { icon: ShieldCheckIcon, label: 'Secure' },
+    { icon: IconTick, label: 'Instant' }
+  ],
+};
+
+const LEGISLATIVE_AD: AdContent = {
+  id: 'legislative-tracker',
+  title: 'Legislative Tracker',
+  subtitle: 'New Tool',
+  description: 'Stay up‑to‑date with the latest Bills and legislative action across Kenya.',
+  cta: { label: 'Open Tracker', url: '/legislative-tracker' },
+  brandIcon: LegislativeTrackerIcon,
+  backgroundColor: '#10B981',
+  backgroundDecor: LegislativeBackground,
+  stats: [
+    { icon: IconArrowLocation, label: 'Live Bills' },
+    { icon: IconGlobe, label: 'All Parliaments' },
+    { icon: IconTick, label: 'Free' }
+  ],
+};
+
+/** ──────── Generic Ad Components (re‑use the same structure as Nasaka) ──────── */
+const AdFeedBanner: React.FC<{ ad: AdContent }> = ({ ad }) => {
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    setIsVisible(shouldShowAdById(ad.id));
+  }, [ad.id]);
+
+  const handleDismiss = () => {
+    dismissAdById(ad.id);
+    setIsVisible(false);
+  };
+
+  if (!isVisible) return null;
+
+  const BackgroundDecor = ad.backgroundDecor;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="relative w-full overflow-hidden rounded-[32px] border border-slate-200/50 dark:border-white/10 bg-white/40 dark:bg-slate-950/40 p-6 shadow-ios-high backdrop-blur-3xl"
+    >
+      {BackgroundDecor && <BackgroundDecor className="opacity-[0.25]" />}
+
+      <div className="relative z-10 flex flex-col lg:flex-row gap-6 lg:gap-8 items-center">
+        <div className="flex-1 space-y-4 min-w-0">
+          <div className="flex items-center gap-2">
+            <span className="rounded-full bg-blue-500/10 border border-blue-500/20 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-widest text-[#1A6BFF]">
+              CEKA
+            </span>
+            <div className="h-1 w-1 rounded-full bg-slate-300 dark:bg-white/20" />
+            <span className="text-[10px] font-black text-slate-500 dark:text-white/40 uppercase tracking-widest z-10">{ad.subtitle || "CEKA"}</span>
+          </div>
+
+          <div className="flex items-start gap-4">
+            <div className="h-16 w-16 shrink-0 rounded-2xl shadow-lg ring-1 ring-white/10 transition-transform duration-500 group-hover:scale-105" style={{ backgroundColor: ad.backgroundColor || '#1A6BFF' }}>
+              <ad.brandIcon className="h-full w-full text-white p-2.5" />
+            </div>
+            <div>
+              <h3 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
+                {ad.title}
+              </h3>
+              <p className="mt-1 text-sm text-slate-600 dark:text-slate-400 leading-relaxed max-w-md">
+                {ad.description}
+              </p>
+            </div>
+          </div>
+
+          {ad.stats && (
+            <div className="flex flex-wrap gap-3 py-2">
+              {ad.stats.map((stat, i) => (
+                <div key={i} className="flex items-center gap-2 rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-200/50 dark:border-white/5 px-3 py-1.5 backdrop-blur-sm">
+                  <span style={{ color: ad.backgroundColor || '#1A6BFF' }}>
+                    <stat.icon className="w-3.5 h-3.5" />
+                  </span>
+                  <span className="text-xs font-black text-slate-600 dark:text-white/70 uppercase tracking-tight">{stat.label}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className="flex items-center gap-4 pt-2">
+            <a
+              href={ad.cta.url}
+              target="_blank"
+              rel="noopener"
+              className="group relative flex items-center justify-center gap-2 rounded-2xl px-6 py-3.5 text-[11px] font-black uppercase tracking-widest text-white transition-all hover:scale-[1.02] active:scale-[0.98] shadow-lg"
+              style={{ backgroundColor: ad.backgroundColor || '#1A6BFF', boxShadow: `0 8px 20px ${ad.backgroundColor}30` }}
+            >
+              <IconDownload className="w-4 h-4" />
+              {ad.cta.label}
+            </a>
+          </div>
+        </div>
+
+        {/* Image or fallback brand icon */}
+        {ad.image ? (
+          <div className="hidden lg:flex shrink-0 w-80 xl:w-96 h-52 xl:h-60 rounded-2xl overflow-hidden shadow-xl ring-1 ring-white/10">
+            <img src={ad.image} alt={ad.title} className="w-full h-full object-cover object-left-top" loading="lazy" />
+          </div>
+        ) : (
+          <div className="hidden lg:flex shrink-0 w-80 xl:w-96 h-52 xl:h-60 rounded-2xl shadow-xl ring-1 ring-white/10 items-center justify-center" style={{ backgroundColor: ad.backgroundColor + '15' }}>
+            <ad.brandIcon className="w-20 h-20 text-white/30" />
+          </div>
+        )}
+      </div>
+
+      <button
+        onClick={handleDismiss}
+        className="absolute top-4 right-4 p-2.5 rounded-full bg-slate-100/50 dark:bg-white/5 border border-slate-200/50 dark:border-white/10 hover:bg-slate-200/50 dark:hover:bg-white/10 text-slate-400 dark:text-white/40 hover:text-slate-600 dark:hover:text-white transition-all shadow-sm z-20"
+      >
+        <IconX className="w-4 h-4" />
+      </button>
+    </motion.div>
+  );
+};
+
+const AdSidebarWidget: React.FC<{ ad: AdContent; dwellDelayMs?: number }> = ({ ad, dwellDelayMs = 30000 }) => {
+  const [shouldRender, setShouldRender] = useState(false);
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    if (!shouldShowAdById(ad.id)) return;
+
+    const timer = setTimeout(() => {
+      setShouldRender(true);
+      setTimeout(() => setIsVisible(true), 100);
+    }, dwellDelayMs);
+
+    return () => clearTimeout(timer);
+  }, [ad.id, dwellDelayMs]);
+
+  const handleDismiss = () => {
+    dismissAdById(ad.id);
+    setIsVisible(false);
+    setTimeout(() => setShouldRender(false), 500);
+  };
+
+  if (!shouldRender) return null;
+
+  const BackgroundDecor = ad.backgroundDecor;
+
+  return (
+    <div className={cn(
+      "fixed bottom-24 left-8 z-[5000] w-64 transition-all duration-700 ease-[cubic-bezier(0.34,1.56,0.64,1)]",
+      isVisible ? "translate-x-0 opacity-100" : "-translate-x-full opacity-0"
+    )}>
+      <div className="relative overflow-hidden rounded-[28px] border border-slate-200/50 dark:border-white/10 bg-white/60 dark:bg-slate-900/40 p-5 shadow-ios-high backdrop-blur-3xl">
+        {BackgroundDecor && <BackgroundDecor className="opacity-[0.05]" />}
+
+        <button
+          onClick={handleDismiss}
+          className="absolute top-3 right-3 p-2 rounded-full hover:bg-slate-100 dark:hover:bg-white/5 text-slate-400 dark:text-white/30 transition-all border border-slate-200 dark:border-white/5 z-20"
+        >
+          <IconX className="w-3 h-3" />
+        </button>
+
+        <div className="space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 flex items-center justify-center rounded-xl shadow-lg ring-1 ring-white/10" style={{ backgroundColor: ad.backgroundColor || '#1A6BFF' }}>
+              <ad.brandIcon className="h-6 w-6 text-white" />
+            </div>
+            <div>
+              <p className="text-[9px] font-black uppercase tracking-widest" style={{ color: ad.backgroundColor || '#1A6BFF' }}>{ad.subtitle || "CEKA"}</p>
+              <h4 className="font-bold text-slate-900 dark:text-white tracking-tight leading-none">{ad.title}</h4>
+            </div>
+          </div>
+
+          <p className="text-[11px] font-bold leading-relaxed text-slate-600 dark:text-slate-400">
+            {ad.description}
+          </p>
+
+          <a
+            href={ad.cta.url}
+            target="_blank"
+            rel="noopener"
+            className="flex items-center justify-center gap-2 w-full rounded-2xl py-3 text-[10px] font-black uppercase tracking-widest text-white transition-all shadow-lg"
+            style={{ backgroundColor: ad.backgroundColor || '#1A6BFF', boxShadow: `0 4px 12px ${ad.backgroundColor}40` }}
+          >
+            <IconHand className="w-5 h-5" />
+            {ad.cta.label}
+          </a>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const AdToolsCard: React.FC<{ ad: AdContent }> = ({ ad }) => (
+  <div className="group relative overflow-hidden rounded-2xl border border-slate-200 dark:border-white/5 bg-white dark:bg-slate-900/20 p-5 transition-all hover:border-blue-500/30">
+    <div className="absolute left-0 top-0 h-full w-1.5" style={{ backgroundColor: ad.backgroundColor || '#3B82F6' }} />
+
+    <div className="flex items-center gap-5">
+      <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-xl p-2 transition-transform group-hover:scale-105" style={{ backgroundColor: ad.backgroundColor || '#1A6BFF' }}>
+        <ad.brandIcon className="h-full w-full text-white" />
+      </div>
+
+      <div className="flex-1">
+        <div className="flex items-center gap-2 mb-1">
+          <span className="text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded" style={{ color: ad.backgroundColor || '#1A6BFF', backgroundColor: `${ad.backgroundColor}20` }}>
+            CEKA Tool
+          </span>
+        </div>
+        <h4 className="text-sm font-bold text-slate-900 dark:text-white leading-none">
+          {ad.title}
+        </h4>
+        <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400 leading-tight">
+          {ad.description}
+        </p>
+      </div>
+
+      <a
+        href={ad.cta.url}
+        target="_blank"
+        rel="noopener"
+        className="flex h-10 items-center gap-2 rounded-xl border border-white/5 px-4 text-[10px] font-black uppercase tracking-widest transition-all"
+        style={{
+          backgroundColor: `${ad.backgroundColor}15`,
+          color: ad.backgroundColor || '#1A6BFF',
+          borderColor: `${ad.backgroundColor}30`
+        }}
+        onMouseEnter={(e) => {
+          const el = e.currentTarget;
+          el.style.backgroundColor = ad.backgroundColor || '#1A6BFF';
+          el.style.color = '#fff';
+        }}
+        onMouseLeave={(e) => {
+          const el = e.currentTarget;
+          el.style.backgroundColor = `${ad.backgroundColor}15`;
+          el.style.color = ad.backgroundColor || '#1A6BFF';
+        }}
+      >
+        <IconArrowRight className="w-3 h-3" />
+        Get It
+      </a>
+    </div>
+  </div>
+);
+
+/** ──────── New Exported Ad Placements ──────── */
+
+// Bitcoin Donation
+export const BitcoinDonationFeedBanner: React.FC = () => <AdFeedBanner ad={BITCOIN_AD} />;
+export const BitcoinDonationSidebarWidget: React.FC<{ dwellDelayMs?: number }> = (props) => <AdSidebarWidget ad={BITCOIN_AD} {...props} />;
+export const BitcoinDonationToolsCard: React.FC = () => <AdToolsCard ad={BITCOIN_AD} />;
+
+// Legislative Tracker
+export const LegislativeTrackerFeedBanner: React.FC = () => <AdFeedBanner ad={LEGISLATIVE_AD} />;
+export const LegislativeTrackerSidebarWidget: React.FC<{ dwellDelayMs?: number }> = (props) => <AdSidebarWidget ad={LEGISLATIVE_AD} {...props} />;
+export const LegislativeTrackerToolsCard: React.FC = () => <AdToolsCard ad={LEGISLATIVE_AD} />;
