@@ -198,7 +198,7 @@ const DonationWidget: React.FC<DonationWidgetProps> = ({
     navigator.clipboard.writeText(method.payload);
     toast({
       title: `${method.label} address copied`,
-      description: 'You can now paste this into your wallet.',
+      description: 'Number copied to clipboard. You can proceed to send your MPesa donation there via Send Money',
       duration: 3000,
     });
   };
