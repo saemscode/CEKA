@@ -49,14 +49,14 @@ const Hero = () => {
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
               <Button asChild size="lg" className="bg-kenya-green hover:bg-kenya-green/90">
-                <Link to="/resources">
-                  {translate('Explore Resources', language)}
+                <Link to="/legislative-tracker">
+                  {translate('Track Bills', language)}
                   <ChevronRight className="ml-2 h-4 w-4" />
                 </Link>
               </Button>
               <Button asChild variant="outline" size="lg">
-                <Link to="/legislative-tracker">
-                  {translate('Track Legislation', language)}
+                <Link to="/campaign">
+                  {translate('June 25th: CEKA Special', language)}
                 </Link>
               </Button>
             </div>

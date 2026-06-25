@@ -149,6 +149,32 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ clas
         }
     };
 
+    // ── Category grouping ────────────────────────────────────────────────────
+    type Category = 'urgent' | 'legislative' | 'community' | 'system';
+
+    const CATEGORY_META: Record<Category, { label: string; color: string; dot: string }> = {
+        urgent:      { label: 'Urgent',      color: 'text-red-600 bg-red-100 dark:bg-red-500/10 dark:text-red-400',      dot: 'bg-red-500' },
+        legislative: { label: 'Legislative', color: 'text-amber-600 bg-amber-100 dark:bg-amber-500/10 dark:text-amber-400', dot: 'bg-amber-500' },
+        community:   { label: 'Community',   color: 'text-primary bg-primary/10',                                           dot: 'bg-primary' },
+        system:      { label: 'System',      color: 'text-slate-500 bg-slate-100 dark:bg-white/5 dark:text-white/40',       dot: 'bg-slate-400' },
+    };
+
+    function getCategory(n: Notification): Category {
+        if (n.priority === 'urgent') return 'urgent';
+        const leg: NotificationSourceType[] = ['bill_update', 'bill_follow', 'legislative'];
+        if (leg.includes(n.source_type as any)) return 'legislative';
+        if (n.source_type === 'system' || n.source_type === 'admin') return 'system';
+        return 'community';
+    }
+
+    // Build ordered grouped map preserving insertion order
+    const CATEGORY_ORDER: Category[] = ['urgent', 'legislative', 'community', 'system'];
+    const grouped = notifications.reduce<Record<Category, Notification[]>>(
+        (acc, n) => { const cat = getCategory(n); acc[cat].push(n); return acc; },
+        { urgent: [], legislative: [], community: [], system: [] }
+    );
+
+
     return (
         <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
             <DropdownMenuTrigger asChild>
@@ -195,7 +221,7 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ clas
                 </div>
 
                 {/* Notification List */}
-                <ScrollArea className="h-[400px]">
+                <ScrollArea className="h-[420px]">
                     {isLoading ? (
                         <div className="flex items-center justify-center py-12">
                             <CEKALoader variant="ios" size="md" />
@@ -214,95 +240,108 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ clas
                         </div>
                     ) : (
                         <AnimatePresence initial={false}>
-                            {notifications.map((notification, index) => {
-                                const Icon = getIcon(notification.source_type);
-
+                            {CATEGORY_ORDER.map((cat) => {
+                                const items = grouped[cat];
+                                if (items.length === 0) return null;
+                                const meta = CATEGORY_META[cat];
                                 return (
-                                    <motion.div
-                                        key={notification.id}
-                                        initial={{ opacity: 0, y: -10 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        exit={{ opacity: 0, x: -100 }}
-                                        transition={{ delay: index * 0.02 }}
-                                        onClick={() => handleNotificationClick(notification)}
-                                        className={cn(
-                                            "relative flex gap-3 px-4 py-3 cursor-pointer transition-colors group",
-                                            "hover:bg-muted/50",
-                                            !notification.is_read && "bg-primary/5"
-                                        )}
-                                    >
-                                        {/* Unread indicator */}
-                                        {!notification.is_read && (
-                                            <div className={cn(
-                                                "absolute left-1 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full",
-                                                getPriorityColor(notification.priority)
-                                            )} />
-                                        )}
-
-                                        {/* Avatar or Icon */}
-                                        {notification.actor?.avatar_url || notification.image_url ? (
-                                            <Avatar className="h-10 w-10 shrink-0">
-                                                <AvatarImage src={notification.actor?.avatar_url || notification.image_url || ''} />
-                                                <AvatarFallback>
-                                                    <Icon className="h-4 w-4" />
-                                                </AvatarFallback>
-                                            </Avatar>
-                                        ) : (
-                                            <div className="h-10 w-10 shrink-0 rounded-full bg-primary/10 flex items-center justify-center">
-                                                <Icon className="h-5 w-5 text-primary" />
-                                            </div>
-                                        )}
-
-                                        {/* Content */}
-                                        <div className="flex-1 min-w-0">
-                                            <p className={cn(
-                                                "text-sm line-clamp-1",
-                                                !notification.is_read && "font-semibold"
-                                            )}>
-                                                {notification.title}
-                                            </p>
-                                            <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">
-                                                {notification.message}
-                                            </p>
-                                            <div className="flex items-center gap-2 mt-1">
-                                                <span className="text-xs text-muted-foreground/70">
-                                                    {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}
-                                                </span>
-                                                {notification.source_type !== 'system' && (
-                                                    <Badge variant="outline" className="text-[10px] h-4 px-1.5 rounded-md">
-                                                        {notification.source_type.replace('_', ' ')}
-                                                    </Badge>
-                                                )}
-                                            </div>
+                                    <div key={cat}>
+                                        {/* Category header pill */}
+                                        <div className="px-4 pt-3 pb-1.5 flex items-center gap-2">
+                                            <span className={cn('inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest', meta.color)}>
+                                                <span className={cn('w-1.5 h-1.5 rounded-full', meta.dot)} />
+                                                {meta.label}
+                                            </span>
+                                            <span className="text-[10px] text-muted-foreground/50 font-semibold">{items.length}</span>
                                         </div>
 
-                                        {/* Actions */}
-                                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                            {!notification.is_read && (
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    className="h-7 w-7 rounded-full"
-                                                    onClick={(e) => handleMarkAsRead(notification, e)}
+                                        {items.map((notification, index) => {
+                                            const Icon = getIcon(notification.source_type);
+
+                                            return (
+                                                <motion.div
+                                                    key={notification.id}
+                                                    initial={{ opacity: 0, y: -10 }}
+                                                    animate={{ opacity: 1, y: 0 }}
+                                                    exit={{ opacity: 0, x: -100 }}
+                                                    transition={{ delay: index * 0.02 }}
+                                                    onClick={() => handleNotificationClick(notification)}
+                                                    className={cn(
+                                                        "relative flex gap-3 px-4 py-3 cursor-pointer transition-colors group",
+                                                        "hover:bg-muted/50",
+                                                        !notification.is_read && "bg-primary/5"
+                                                    )}
                                                 >
-                                                    <Check className="h-3.5 w-3.5" />
-                                                </Button>
-                                            )}
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                className="h-7 w-7 rounded-full hover:bg-red-100 hover:text-red-500"
-                                                onClick={(e) => handleArchive(notification, e)}
-                                            >
-                                                <Archive className="h-3.5 w-3.5" />
-                                            </Button>
-                                        </div>
+                                                    {/* Unread indicator */}
+                                                    {!notification.is_read && (
+                                                        <div className={cn(
+                                                            "absolute left-1 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full",
+                                                            getPriorityColor(notification.priority)
+                                                        )} />
+                                                    )}
 
-                                        {/* Link indicator */}
-                                        {notification.link && (
-                                            <ChevronRight className="h-4 w-4 text-muted-foreground/50 self-center shrink-0" />
-                                        )}
-                                    </motion.div>
+                                                    {/* Avatar or Icon */}
+                                                    {notification.actor?.avatar_url || notification.image_url ? (
+                                                        <Avatar className="h-10 w-10 shrink-0">
+                                                            <AvatarImage src={notification.actor?.avatar_url || notification.image_url || ''} />
+                                                            <AvatarFallback>
+                                                                <Icon className="h-4 w-4" />
+                                                            </AvatarFallback>
+                                                        </Avatar>
+                                                    ) : (
+                                                        <div className="h-10 w-10 shrink-0 rounded-full bg-primary/10 flex items-center justify-center">
+                                                            <Icon className="h-5 w-5 text-primary" />
+                                                        </div>
+                                                    )}
+
+                                                    {/* Content */}
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className={cn(
+                                                            "text-sm line-clamp-1",
+                                                            !notification.is_read && "font-semibold"
+                                                        )}>
+                                                            {notification.title}
+                                                        </p>
+                                                        <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">
+                                                            {notification.message}
+                                                        </p>
+                                                        <div className="flex items-center gap-2 mt-1">
+                                                            <span className="text-xs text-muted-foreground/70">
+                                                                {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Actions */}
+                                                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                        {!notification.is_read && (
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                className="h-7 w-7 rounded-full"
+                                                                onClick={(e) => handleMarkAsRead(notification, e)}
+                                                            >
+                                                                <Check className="h-3.5 w-3.5" />
+                                                            </Button>
+                                                        )}
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            className="h-7 w-7 rounded-full hover:bg-red-100 hover:text-red-500"
+                                                            onClick={(e) => handleArchive(notification, e)}
+                                                        >
+                                                            <Archive className="h-3.5 w-3.5" />
+                                                        </Button>
+                                                    </div>
+
+                                                    {/* Link indicator */}
+                                                    {notification.link && (
+                                                        <ChevronRight className="h-4 w-4 text-muted-foreground/50 self-center shrink-0" />
+                                                    )}
+                                                </motion.div>
+                                            );
+                                        })}
+                                    </div>
                                 );
                             })}
                         </AnimatePresence>

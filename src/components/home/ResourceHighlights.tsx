@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { BookOpen, Scale, FileText, ChevronRight, Play, Download, ExternalLink } from 'lucide-react';
+import { BookOpen, Scale, FileText, ChevronRightIcon, Play, Download, ExternalLink } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { translate, cn } from '@/lib/utils';
@@ -83,8 +83,8 @@ const ResourceHighlights = () => {
             viewport={{ once: true }}
             className="space-y-4"
           >
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 text-blue-500 text-[10px] font-bold uppercase tracking-widest border border-blue-500/20">
-              Civic Repository
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-kenya-green/10 text-kenya-green text-[10px] font-bold uppercase tracking-widest border border-kenya-green/20">
+              Resources
             </div>
             <h2 className="text-3xl md:text-5xl font-extrabold tracking-tight text-slate-900 dark:text-white leading-tight">
               {translate('Explore Key Resources', language)}
@@ -94,9 +94,9 @@ const ResourceHighlights = () => {
             </p>
           </motion.div>
 
-          <Button variant="ghost" className="rounded-full hover:bg-slate-100 dark:hover:bg-white/5 font-bold group">
-            Browse Full Library
-            <ExternalLink className="ml-2 h-4 w-4 group-hover:scale-110 transition-transform" />
+          <Button variant="outline" className="rounded-full border-black/10 dark:border-white/10 hover:bg-kenya-green hover:text-white hover:border-kenya-green transition-all duration-300 px-6 font-bold group">
+            {translate('View all Resources', language)}
+            <ChevronRightIcon className="h-4 w-4 ml-2 group-hover:translate-x-1 transition-transform" />
           </Button>
         </div>
 

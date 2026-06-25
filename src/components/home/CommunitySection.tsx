@@ -40,12 +40,12 @@ const CommunitySection = () => {
     const now = new Date();
     const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
 
-    if (diffInHours < 1) return 'Just now';
-    if (diffInHours < 24) return `${diffInHours}h ago`;
+    if (diffInHours < 1) return 'Released Just now';
+    if (diffInHours < 24) return `Released ${diffInHours}h ago`;
 
     const diffInDays = Math.floor(diffInHours / 24);
-    if (diffInDays === 1) return 'Yesterday';
-    if (diffInDays < 7) return `${diffInDays}d ago`;
+    if (diffInDays === 1) return 'Released Yesterday';
+    if (diffInDays < 7) return `Released ${diffInDays}d ago`;
 
     return date.toLocaleDateString();
   };
@@ -94,8 +94,8 @@ const CommunitySection = () => {
             viewport={{ once: true }}
             className="space-y-4"
           >
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-kenya-red/10 text-kenya-red text-[10px] font-bold uppercase tracking-widest border border-kenya-red/20">
-              Assembly Discourse
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-kenya-green/10 text-kenya-green text-[10px] font-bold uppercase tracking-widest border border-kenya-green/20">
+              Discussions & Posts
             </div>
             <h2 className="text-3xl md:text-5xl font-extrabold tracking-tight text-slate-900 dark:text-white leading-tight">
               {translate('Blog Discussions', language)}
@@ -142,7 +142,7 @@ const CommunitySection = () => {
                     <div className="flex justify-between items-center">
                       <div className="flex items-center gap-2">
                         <Badge variant="outline" className="bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-400 font-bold border-none rounded-full px-3 py-1 text-[10px] uppercase tracking-wider">
-                          Civic Insight
+                          Blog
                         </Badge>
                         <time className="text-[11px] font-bold text-slate-400 uppercase tracking-tight">
                           {getTimeAgo(post.published_at || post.created_at)}

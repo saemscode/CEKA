@@ -1,4 +1,4 @@
-// DonationWidget.tsx (full corrected file using CustomIcons components)
+// @/components/donation/DonationWidget.tsx (full corrected file using CustomIcons components)
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Gift } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { PenNewSquareIcon, ThumbIcon } from '@/components/ui/CustomIcons';
 import { QRCodeSVG } from 'qrcode.react';
+import { useNavigate } from 'react-router-dom';
 import {
   MpesaDonationIcon,
   BitcoinDonationIcon,
@@ -119,6 +120,7 @@ const DonationWidget: React.FC<DonationWidgetProps> = ({
   const hoverInactivityTimerRef = useRef<any>(null);
   const opacityTimerRef = useRef<any>(null);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const clearTimers = () => {
     [visibilityTimerRef, timeoutTimerRef, hoverInactivityTimerRef, opacityTimerRef].forEach(timerRef => {
@@ -186,6 +188,17 @@ const DonationWidget: React.FC<DonationWidgetProps> = ({
     setIsExpanded(true);
   };
 
+  // Listen for programmatic open from anywhere in the app (e.g. CampaignDetail "Support Safely")
+  useEffect(() => {
+    const handleToggle = () => {
+      setIsExpanded(true);
+      setIsVisible(true);
+      setHasTimedOut(false);
+    };
+    window.addEventListener('ceka-toggle-donation', handleToggle);
+    return () => window.removeEventListener('ceka-toggle-donation', handleToggle);
+  }, []);
+
   const handleCollapse = () => {
     setIsExpanded(false);
     setQrMethod(null); // close any open QR modal
@@ -196,11 +209,19 @@ const DonationWidget: React.FC<DonationWidgetProps> = ({
 
   const handleCopy = (method: DonationMethod) => {
     navigator.clipboard.writeText(method.payload);
-    toast({
-      title: `${method.label} number copied`,
-      description: 'Number copied to clipboard. You can proceed to send your MPesa donation there via Send Money',
-      duration: 3000,
-    });
+    if (method.kind === 'manual') {
+      toast({
+        title: `${method.label} number copied`,
+        description: 'Number copied to clipboard. Open M-Pesa → Send Money and paste the number to complete your donation.',
+        duration: 4000,
+      });
+    } else {
+      toast({
+        title: `${method.label} address copied`,
+        description: 'Address copied to clipboard. Open your wallet and paste it into the send field to complete your donation.',
+        duration: 4000,
+      });
+    }
   };
 
   const handlePaystackDonate = () => {
@@ -245,11 +266,8 @@ const DonationWidget: React.FC<DonationWidgetProps> = ({
         },
         callback: function (response: any) {
           setIsPaying(false);
-          toast({
-            title: "Support Confirmed",
-            description: "Thank you for your generous contribution to the mission!",
-          });
           handleCollapse();
+          navigate('/donation-success?rail=paystack');
         },
         onClose: function () {
           setIsPaying(false);

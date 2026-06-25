@@ -36,6 +36,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { placeholderService } from '@/services/placeholderService';
 import ResourceCard from '@/components/resources/ResourceCard';
 import { CEKALoader } from '@/components/ui/ceka-loader';
+import { BookIcon } from '@/components/ui/CustomIcons';
 
 // Table for Windows List Mode
 import {
@@ -85,6 +86,7 @@ const ResourceLibrary = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState<string>('All');
   const [dynamicThumbnails, setDynamicThumbnails] = useState<Record<string, string>>({});
+  const [shakeSearch, setShakeSearch] = useState(false);
 
   // Pagination State
   const ITEMS_PER_PAGE = 12;
@@ -139,7 +141,7 @@ const ResourceLibrary = () => {
         console.error('Error loading resources:', error);
         toast({
           title: "Connection Error",
-          description: "Could not synchronize with the resource vault.",
+          description: "Could not access the database. Please check your connection.",
           variant: "destructive"
         });
       } finally {
@@ -320,11 +322,11 @@ const ResourceLibrary = () => {
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
             <div className="space-y-1">
               <h1 className="text-4xl font-black tracking-tight flex items-center gap-3">
-                <BookOpen className="h-8 w-8 text-primary" />
-                {translate("Resource Vault", language)}
+                <BookIcon className="h-8 w-8 mt-2 text-primary" />
+                {translate("Resources", language)}
               </h1>
               <p className="text-muted-foreground text-sm font-medium">
-                {translate("Access the repository of civic knowledge and national protocols", language)}
+                {translate("Access our repository of civic resources and materials for your knowledge", language)}
               </p>
             </div>
 
@@ -405,7 +407,11 @@ const ResourceLibrary = () => {
           </div>
 
           <div className="flex gap-3 max-w-2xl mx-auto w-full">
-            <div className="relative flex-1">
+            <motion.div
+              className="relative flex-1"
+              animate={shakeSearch ? { x: [0, -6, 6, -6, 6, 0] } : {}}
+              transition={{ duration: 0.4 }}
+            >
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
               <Input
                 id="resource-search"
@@ -417,21 +423,57 @@ const ResourceLibrary = () => {
                 onChange={(e) => setSearchTerm(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
-                    toast({
-                      title: "Searching...",
-                      description: `Refining search for "${searchTerm}"`,
-                    });
+                    const trimmed = searchTerm.trim();
+                    if (!trimmed) {
+                      setShakeSearch(true);
+                      setTimeout(() => setShakeSearch(false), 400);
+                      toast({
+                        title: "Let's try that again",
+                        description: "Type something to search the resource library.",
+                      });
+                    } else {
+                      toast({
+                        title: "Searching…",
+                        description: `Here's what I found for "${trimmed}"`,
+                      });
+                    }
                   }
                 }}
               />
-            </div>
+            </motion.div>
             <Button
               onClick={() => {
-                toast({ title: "Searching...", description: `Refining vault for "${searchTerm}"` });
+                const trimmed = searchTerm.trim();
+                if (!trimmed) {
+                  setShakeSearch(true);
+                  setTimeout(() => setShakeSearch(false), 400);
+                  toast({
+                    title: "Need a Search Term",
+                    description: "Type something to search the resource library.",
+                  });
+                } else {
+                  toast({
+                    title: "Searching…",
+                    description: `Now looking for "${trimmed}"`,
+                  });
+                }
               }}
-              className="h-14 px-8 rounded-2xl bg-kenya-black dark:bg-white dark:text-black text-white hover:bg-kenya-red transition-all shadow-lg font-bold"
+              className={`
+                relative h-10 px-8 mt-1 rounded-2xl font-bold select-none
+                transition-all duration-300 ease-out
+                bg-black/20 dark:bg-white/70
+                backdrop-blur-xl
+                border border-white/20 dark:border-white/40
+                text-white dark:text-black
+                shadow-lg hover:shadow-xl
+                hover:bg-black/30 dark:hover:bg-white/80
+                active:scale-[0.97]
+                active:bg-black/40 dark:active:bg-white/90
+                active:shadow-inner
+                [text-shadow:_0_1px_2px_rgb(0_0_0_/_20%)] dark:[text-shadow:_0_1px_2px_rgb(255_255_255_/_20%)]
+              `}
             >
-              Search Vault
+              <span className="text-sm">Search</span>
             </Button>
           </div>
 
@@ -439,7 +481,7 @@ const ResourceLibrary = () => {
             {isLoading ? (
               <div className="flex flex-col items-center justify-center py-32 gap-4">
                 <CEKALoader variant="scanning" size="lg" />
-                <p className="text-sm font-bold text-muted-foreground uppercase tracking-widest animate-pulse mt-4">Syncing Vault</p>
+                <p className="text-sm font-bold text-muted-foreground uppercase tracking-widest animate-pulse mt-4">Loading...</p>
               </div>
             ) : filteredResources.length === 0 ? (
               <div className="text-center py-20 glass-card rounded-[40px]">
@@ -450,7 +492,7 @@ const ResourceLibrary = () => {
                 <p className="text-muted-foreground max-w-md mx-auto mb-8">Try adjusting your filters or search term to discover curated civic educational materials.</p>
                 <Button variant="outline" onClick={resetFilters} className="rounded-2xl px-8 h-12 border-primary/20 hover:bg-primary/5">
                   <RefreshCw className="h-4 w-4 mr-2" />
-                  Reset Vault Filters
+                  Reset Your Search Filters
                 </Button>
               </div>
             ) : (

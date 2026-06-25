@@ -10,13 +10,13 @@ import { translate, cn } from '@/lib/utils';
 import { billService, Bill, getBillIdentifier } from '@/services/billService';
 import { CEKACardSkeleton } from '@/components/ui/ceka-loader';
 import { BillFollowButton } from '@/components/legislative/BillFollowButton';
-import { 
-  EyeIcon, 
-  TagIcon, 
-  CalendarIcon, 
-  UsersIcon, 
-  ClockIcon, 
-  ChevronRightIcon 
+import {
+  EyeIcon,
+  TagIcon,
+  CalendarIcon,
+  UsersIcon,
+  ClockIcon,
+  ChevronRightIcon
 } from '@/components/ui/CustomIcons';
 
 // Status color mapping
@@ -140,7 +140,7 @@ const FeaturedLegislation = () => {
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-kenya-green opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-kenya-green"></span>
               </span>
-              Parliamentary Watch
+              Legislative Tracker
             </div>
             <h2 className="text-3xl md:text-5xl font-extrabold tracking-tight text-slate-900 dark:text-white leading-tight">
               {translate('Featured Legislation', language)}
@@ -230,9 +230,9 @@ const FeaturedLegislation = () => {
                       <EyeIcon size={18} className="text-white group-hover/btn:scale-110 transition-transform" />
                     </Link>
                   </Button>
-                  
-                  <BillFollowButton 
-                    billId={bill.id} 
+
+                  <BillFollowButton
+                    billId={bill.id}
                     billTitle={bill.title}
                     showCount={true}
                     size="lg"

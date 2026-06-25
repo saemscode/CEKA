@@ -66,6 +66,8 @@ import TransparencyManifesto from '@/pages/TransparencyManifesto';
 import InfrastructureDetails from '@/pages/InfrastructureDetails';
 import TranslatePage from '@/pages/TranslatePage';
 import ArticleViewer from '@/pages/ArticleViewer';
+import DonationSuccess from '@/pages/DonationSuccess';
+import CivicPointsPage from '@/pages/settings/CivicPointsPage';
 
 const queryClient = new QueryClient();
 
@@ -196,6 +198,7 @@ const AppContent = () => {
         <Route path="/account" element={<Navigate to="/settings/account" replace />} />
         <Route path="/document/:id" element={<DocumentViewerPage />} />
         <Route path="/thumbnail-demo" element={<ThumbnailDemo />} />
+        <Route path="/donation-success" element={<DonationSuccess />} />
         <Route path="/privacy" element={<PrivacyPolicy />} />
         <Route path="/terms" element={<TermsConditions />} />
         <Route path="/settings" element={<SettingsLayout />}>
@@ -204,6 +207,7 @@ const AppContent = () => {
           <Route path="notifications" element={<NotificationSettings />} />
           <Route path="appearance" element={<AppearanceSettings />} />
           <Route path="privacy" element={<PrivacySettings />} />
+          <Route path="civic-points" element={<CivicPointsPage />} />
         </Route>
         <Route path="*" element={<NotFound />} />
       </Routes>

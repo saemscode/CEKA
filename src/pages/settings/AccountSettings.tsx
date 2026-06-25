@@ -13,8 +13,9 @@ import { translate } from '@/lib/utils';
 import { Navigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Camera, Save, LogOut, HandHelping, AlertTriangle, Check, KeyRound, Trash2, Shield, Zap } from 'lucide-react';
+import { Camera, Save, LogOut, HandHelping, AlertTriangle, Check, KeyRound, Trash2, Shield, Zap, ChevronRight } from 'lucide-react';
 import { CEKALoader } from '@/components/ui/ceka-loader';
+import { Link } from 'react-router-dom';
 
 const AccountSettings = () => {
   const { session, user } = useAuth();
@@ -26,6 +27,8 @@ const AccountSettings = () => {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [passwordLoading, setPasswordLoading] = useState(false);
   const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
+  const [apiKey, setApiKey] = useState<string | null>(null);
+  const [apiKeyCopied, setApiKeyCopied] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -37,6 +40,7 @@ const AccountSettings = () => {
     avatar_url: '',
     bio: '',
     county: '',
+    alert_keywords: '',
     civic_credits: 0,
     verification_status: 'unverified'
   });
@@ -71,9 +75,12 @@ const AccountSettings = () => {
           avatar_url: data.avatar_url || '',
           bio: data.bio || '',
           county: (data as any).county || '',
+          alert_keywords: (data as any).alert_keywords || '',
           civic_credits: (data as any).civic_credits || 0,
           verification_status: (data as any).verification_status || 'unverified'
         });
+        // Restore API key from profile metadata
+        if ((data as any).api_key) setApiKey((data as any).api_key);
       }
     } catch (err) {
       console.error('Error loading profile:', err);
@@ -100,6 +107,7 @@ const AccountSettings = () => {
             avatar_url: profile.avatar_url,
             bio: profile.bio,
             county: profile.county,
+            alert_keywords: profile.alert_keywords,
             updated_at: new Date().toISOString()
           });
 
@@ -131,6 +139,7 @@ const AccountSettings = () => {
           avatar_url: profile.avatar_url,
           bio: profile.bio,
           county: profile.county,
+          alert_keywords: profile.alert_keywords,
           updated_at: new Date().toISOString()
         });
 
@@ -284,6 +293,23 @@ const AccountSettings = () => {
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
+  };
+
+  // Generate a deterministic API key from user ID + timestamp
+  const handleGenerateKey = async () => {
+    if (!session?.user?.id) return;
+    const raw = `ck_${session.user.id.replace(/-/g, '').slice(0, 16)}_${Date.now().toString(36)}`;
+    setApiKey(raw);
+    await supabase.from('profiles').upsert({ id: session.user.id, api_key: raw } as any);
+    toast({ title: 'New API key generated', description: 'Copy it now — it will be masked after you leave this page.' });
+  };
+
+  const handleCopyKey = () => {
+    if (!apiKey) return;
+    navigator.clipboard.writeText(apiKey);
+    setApiKeyCopied(true);
+    setTimeout(() => setApiKeyCopied(false), 2000);
+    toast({ title: 'API key copied', description: 'Keep this key secret.' });
   };
 
   if (!session) {
@@ -472,9 +498,13 @@ const AccountSettings = () => {
             <div className="space-y-2 text-sm">
               <Label className="font-bold ml-1 uppercase text-[10px] tracking-widest text-muted-foreground">Alert Keywords</Label>
               <Input
+                value={profile.alert_keywords}
+                onChange={e => setProfile({ ...profile, alert_keywords: e.target.value })}
+                onBlur={handleFieldBlur}
                 placeholder="Finance Bill, Education, Healthcare, corruption..."
                 className="rounded-2xl bg-slate-50 dark:bg-white/5 border-none h-12"
               />
+              <p className="text-[10px] text-muted-foreground ml-1">Separate keywords with commas. You'll be notified when these appear in legislative updates.</p>
             </div>
             <div className="space-y-2 text-sm">
               <Label className="font-bold ml-1 uppercase text-[10px] tracking-widest text-muted-foreground">Monitoring District/County</Label>
@@ -501,11 +531,15 @@ const AccountSettings = () => {
             <div className="p-4 rounded-2xl bg-slate-100 dark:bg-white/5 border-none flex items-center justify-between">
               <div className="space-y-1">
                 <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Primary API Key</p>
-                <code className="text-[10px] font-mono opacity-60">ck_••••••••••••••••••••</code>
+                <code className="text-[10px] font-mono opacity-60">
+                  {apiKey ? `ck_${apiKey.slice(3, 11)}••••••••` : 'ck_••••••••••••••••••••'}
+                </code>
               </div>
-              <Button size="sm" variant="ghost" className="rounded-xl h-8 text-[10px] font-bold">Copy Key</Button>
+              <Button size="sm" variant="ghost" className="rounded-xl h-8 text-[10px] font-bold" onClick={handleCopyKey}>
+                {apiKeyCopied ? <Check className="w-3.5 h-3.5 text-green-500" /> : 'Copy Key'}
+              </Button>
             </div>
-            <Button variant="outline" className="w-full rounded-2xl font-bold gap-2 text-xs h-11">
+            <Button variant="outline" className="w-full rounded-2xl font-bold gap-2 text-xs h-11" onClick={handleGenerateKey}>
               <Zap className="h-4 w-4 text-amber-500" />
               Generate New Key
             </Button>
@@ -540,6 +574,13 @@ const AccountSettings = () => {
                   {profile.civic_credits} CREDITS
                 </Badge>
               </div>
+              <Link
+                to="/settings/civic-points"
+                className="mt-4 inline-flex items-center gap-1.5 text-xs font-bold text-kenya-green hover:underline"
+              >
+                View My Points & Progress
+                <ChevronRight className="w-3.5 h-3.5" />
+              </Link>
             </div>
           </div>
         </Card>

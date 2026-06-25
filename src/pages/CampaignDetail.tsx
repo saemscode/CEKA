@@ -10,8 +10,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   ShareIcon, Clock, CalendarIcon, Users, HandHelping,
   Heart, CheckCircle2, MessageSquare, Loader2, Rocket,
-  ExternalLink, TrendingUp, MapPin, Globe, Activity, Image as ImageIcon
+  ExternalLink, MapPin, Globe, Activity, Image as ImageIcon
 } from 'lucide-react';
+import { InstagramIcon, TwitterIcon, TiktokIcon, RedditIcon, ArrowLeftIcon, WhatsappIcon, Kenya2Icon, KenyaIcon, AlertIcon } from '@/components/ui/CustomIcons';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -20,12 +21,84 @@ import { useAuth } from '@/providers/AuthProvider';
 import { CreateCampaignModal } from '@/components/campaigns/CreateCampaignModal';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Helmet } from 'react-helmet-async';
+import { marked } from 'marked';
+import DOMPurify from 'dompurify';
+
+// ── Content Renderer ─────────────────────────────────────────────────────────
+
+/*
+ * Detects input format (HTML, Markdown, or plain text) and converts to safe HTML.
+ * - HTML strings: sanitised via DOMPurify and returned as-is.
+ * - Markdown: converted to HTML via marked, then sanitised.
+ * - Plain text: double-newlines → </p><p>, single-newlines → <br>.
+ */
+const renderContent = (raw: string): string => {
+  if (!raw) return '';
+
+  const hasHTML = /<[a-z][\s\S]*>/i.test(raw);
+
+  let html = '';
+  if (hasHTML) {
+    html = raw;
+  } else {
+    const mdRegex = /(?:(?:^|\n)#{1,6}\s|\*\*|__|[*+\-]\s|\d+\.\s|\[.+\]\(.+\)|!\[.*\]\(.+\))/;
+    if (mdRegex.test(raw)) {
+      html = marked.parse(raw, { breaks: true }) as string;
+    } else {
+      html = raw
+        .split(/\n\n+/)
+        .map(para => `<p>${para.replace(/\n/g, '<br>')}</p>`)
+        .join('');
+    }
+  }
+
+  // Bypass both TS errors: TrustedHTML return type and deep instantiation
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return (DOMPurify as any).sanitize(html, {
+    ALLOWED_TAGS: [
+      'p', 'br', 'strong', 'em', 'u', 'a', 'ul', 'ol', 'li',
+      'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote', 'code', 'pre',
+      'img', 'span', 'div', 'table', 'thead', 'tbody', 'tr', 'th', 'td',
+      'iframe', 'video', 'audio'
+    ],
+    ALLOWED_ATTR: ['href', 'src', 'alt', 'class', 'target', 'rel'],
+  }) as string;
+};
+
+// ── Social Button Config ─────────────────────────────────────────────────────
+
+const getSocialButtonConfig = (url: string | null | undefined) => {
+  if (!url) return null;
+  try {
+    const hostname = new URL(url).hostname.replace('www.', '');
+    if (hostname.includes('instagram.com')) {
+      return { icon: 'Instagram', color: 'bg-gradient-to-r from-[#833AB4] via-[#E1306C] to-[#F58529] text-white shadow-lg hover:shadow-xl transition-all duration-300', label: 'Instagram' };
+    }
+    if (hostname.includes('tiktok.com')) {
+      return { icon: 'TikTok', color: 'bg-black text-white shadow-lg hover:shadow-xl transition-all duration-300', label: 'TikTok' };
+    }
+    if (hostname.includes('x.com') || hostname.includes('twitter.com')) {
+      return { icon: 'Twitter', color: 'bg-black text-white shadow-lg hover:shadow-xl transition-all duration-300', label: 'X' };
+    }
+    if (hostname.includes('reddit.com')) {
+      return { icon: 'Reddit', color: 'bg-[#FF4500] text-white shadow-lg hover:shadow-xl transition-all duration-300', label: 'Reddit' };
+    }
+    return { icon: 'Globe', color: 'bg-slate-200 dark:bg-white/10 text-slate-800 dark:text-white shadow-sm hover:shadow-md transition-all duration-300 border border-slate-300 dark:border-white/10', label: 'Visit Site' };
+  } catch {
+    return null;
+  }
+};
+
+// ── UUID Validator ───────────────────────────────────────────────────────────
+
+const isValidUUID = (str: string): boolean =>
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-5][0-9a-f]{3}-[089ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(str);
 
 // ── Data fetchers ────────────────────────────────────────────────────────────
 
 const fetchCampaignByIdentifier = async (identifier: string) => {
   // Try slug first
-  const { data: bySlug } = await supabase
+  const { data: bySlug } = await (supabase as any)
     .from('campaigns')
     .select('*')
     .eq('slug', identifier)
@@ -33,15 +106,20 @@ const fetchCampaignByIdentifier = async (identifier: string) => {
 
   if (bySlug) return bySlug;
 
-  // Then try UUID
-  const { data: byId, error } = await supabase
-    .from('campaigns')
-    .select('*')
-    .eq('id', identifier)
-    .single();
+  // Only try UUID if the identifier looks like a UUID
+  if (isValidUUID(identifier)) {
+    const { data: byId, error } = await supabase
+      .from('campaigns')
+      .select('*')
+      .eq('id', identifier)
+      .single();
 
-  if (error) throw error;
-  return byId;
+    if (error) throw error;
+    return byId;
+  }
+
+  // If not a UUID and slug not found, throw a meaningful error
+  throw new Error('Campaign not found');
 };
 
 const fetchCampaignCollaborations = async (campaignId: string) => {
@@ -95,6 +173,24 @@ const fetchCampaignSupporters = async (campaignId: string) => {
     .eq('campaign_id', campaignId)
     .order('date', { ascending: false })
     .limit(20);
+  return data || [];
+};
+
+const fetchCampaignComments = async (campaignId: string) => {
+  const { data } = await (supabase as any)
+    .from('campaign_comments')
+    .select(`
+      id,
+      content,
+      created_at,
+      profiles (
+        id,
+        full_name,
+        avatar_url
+      )
+    `)
+    .eq('campaign_id', campaignId)
+    .order('created_at', { ascending: false });
   return data || [];
 };
 
@@ -156,6 +252,12 @@ const CampaignDetail = () => {
     enabled: !!id,
   });
 
+  const { data: comments = [] } = useQuery({
+    queryKey: ['campaign_comments', campaign?.id],
+    queryFn: () => fetchCampaignComments(campaign!.id),
+    enabled: !!campaign?.id,
+  });
+
   const { data: similarCampaigns = [] } = useQuery({
     queryKey: ['similar_campaigns', id],
     queryFn: () => fetchSimilarCampaigns(id!),
@@ -193,6 +295,23 @@ const CampaignDetail = () => {
     },
   });
 
+  const commentMutation = useMutation({
+    mutationFn: async (content: string) => {
+      const { error } = await (supabase as any)
+        .from('campaign_comments')
+        .insert({ campaign_id: campaign?.id, user_id: user!.id, content });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['campaign_comments', campaign?.id] });
+      setComment('');
+      toast({ title: 'Comment posted!', description: 'Your voice has been added to the campaign.' });
+    },
+    onError: () => {
+      toast({ title: 'Error', description: 'Failed to post comment. Please try again.', variant: 'destructive' });
+    }
+  });
+
   const handleJoinCampaign = () => {
     if (!user) {
       toast({
@@ -215,17 +334,21 @@ const CampaignDetail = () => {
   };
 
   const handleDonate = () => {
-    toast({
-      title: 'Redirecting to Secure Payment',
-      description: 'Your contribution is securely logged onto the CEKA Civic Ledger.',
-    });
+    window.dispatchEvent(new CustomEvent('ceka-toggle-donation'));
   };
 
   const handleSubmitComment = (e: React.FormEvent) => {
     e.preventDefault();
-    if (comment.trim()) {
-      toast({ title: 'Comment submitted!', description: 'Your comment has been posted.' });
-      setComment('');
+    if (!user) {
+      toast({
+        title: 'Authentication Required',
+        description: 'You must be logged in to post a comment.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    if (comment.trim() && !commentMutation.isPending) {
+      commentMutation.mutate(comment.trim());
     }
   };
 
@@ -247,6 +370,7 @@ const CampaignDetail = () => {
   // ── Derived values ───────────────────────────────────────────────────────
 
   const participantCount = campaign?.current_count || 0;
+  const signatureCount = (campaign as any)?.signature_count ?? participantCount;
   const goalCount = campaign?.goal_count || 0;
   const raisedAmount = (campaign as any)?.raised_amount || 0;
   const targetAmount = (campaign as any)?.target_amount || 0;
@@ -294,7 +418,7 @@ const CampaignDetail = () => {
       // Only renders if installed properly
       return (
         <Helmet>
-          <title>{campaign.title} | CEKA Civic Action</title>
+          <title>{campaign.title} | CEKA: Civic Campaign</title>
           <meta name="description" content={campaign.description?.substring(0, 160) || "Join the civic movement on CEKA."} />
           <meta property="og:title" content={campaign.title} />
           <meta property="og:description" content={campaign.description?.substring(0, 160) || "Join the civic movement on CEKA."} />
@@ -321,10 +445,11 @@ const CampaignDetail = () => {
             onClick={() => window.history.back()}
             className="text-sm font-bold text-slate-500 dark:text-white/50 hover:text-slate-800 dark:hover:text-white"
           >
-            ← Back to Explore
+            <ArrowLeftIcon />
+            Back to Explore
           </Button>
           <Button
-            className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-full font-bold px-6 shadow-lg shadow-emerald-600/20"
+            className="bg-kenya-green hover:bg-kenya-green/90 text-white rounded-full font-bold px-6 shadow-lg shadow-kenya-green/20"
             onClick={() => setIsCreatorModalOpen(true)}
           >
             <Rocket className="w-4 h-4 mr-2" /> Start a Campaign
@@ -391,7 +516,7 @@ const CampaignDetail = () => {
                     Supporters {supporters.length > 0 && `(${supporters.length})`}
                   </TabsTrigger>
                 )}
-                <TabsTrigger value="comments" className="rounded-lg flex-1">Comments</TabsTrigger>
+                <TabsTrigger value="comments" className="rounded-lg flex-1">Comments {comments.length > 0 && `(${comments.length})`}</TabsTrigger>
               </TabsList>
 
               {/* About */}
@@ -399,11 +524,12 @@ const CampaignDetail = () => {
                 <div className="prose dark:prose-invert max-w-none text-slate-700 dark:text-slate-300 leading-relaxed">
                   <div
                     dangerouslySetInnerHTML={{
-                      __html:
+                      __html: renderContent(
                         (campaign as any).detailed_description ||
                         (campaign as any).content ||
                         campaign.description ||
-                        '',
+                        ''
+                      ),
                     }}
                   />
                 </div>
@@ -488,7 +614,7 @@ const CampaignDetail = () => {
                 <div className="space-y-4">
                   {updates.length === 0 ? (
                     <div className="py-16 text-center rounded-2xl border border-dashed border-slate-200 dark:border-white/10">
-                      <TrendingUp className="w-8 h-8 mx-auto text-slate-300 dark:text-white/15 mb-3" />
+                      <AlertIcon className="w-8 h-8 mx-auto text-slate-300 dark:text-white/15 mb-3" />
                       <p className="text-sm font-medium text-slate-500 dark:text-white/40">No updates posted yet.</p>
                     </div>
                   ) : (
@@ -517,7 +643,7 @@ const CampaignDetail = () => {
                     {supporters.length === 0 ? (
                       <div className="py-16 text-center rounded-2xl border border-dashed border-slate-200 dark:border-white/10">
                         <Heart className="w-8 h-8 mx-auto text-slate-300 dark:text-white/15 mb-3" />
-                        <p className="text-sm font-medium text-slate-500 dark:text-white/40">Be the first to support safely on the CEKA Civic Ledger!</p>
+                        <p className="text-sm font-medium text-slate-500 dark:text-white/40">Be the first to support this campaign!</p>
                       </div>
                     ) : (
                       supporters.map((supporter: any, index: number) => (
@@ -566,18 +692,50 @@ const CampaignDetail = () => {
                       <Input
                         id="campaign-comment"
                         name="comment"
-                        placeholder="Add your voice to this campaign..."
+                        placeholder={user ? 'Add your voice to this campaign...' : 'Sign in to leave a comment...'}
                         value={comment}
                         onChange={(e) => setComment(e.target.value)}
+                        disabled={!user || commentMutation.isPending}
                         className="mb-3 bg-slate-50 dark:bg-black/20 border-slate-200 dark:border-white/10 rounded-xl"
                       />
-                      <Button type="submit" size="sm" className="rounded-lg font-bold">Post Comment</Button>
+                      <Button
+                        type="submit"
+                        size="sm"
+                        className="rounded-lg font-bold"
+                        disabled={!user || commentMutation.isPending}
+                      >
+                        {commentMutation.isPending ? 'Posting...' : 'Post Comment'}
+                      </Button>
                     </div>
                   </div>
                 </form>
-                <div className="flex flex-col items-center justify-center py-12 text-slate-400 dark:text-white/30 border border-dashed border-slate-200 dark:border-white/10 rounded-2xl">
-                  <MessageSquare className="h-7 w-7 mb-3 opacity-40" />
-                  <span className="text-sm font-medium">No comments yet. Join the conversation.</span>
+                <div className="space-y-4">
+                  {comments.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-12 text-slate-400 dark:text-white/30 border border-dashed border-slate-200 dark:border-white/10 rounded-2xl">
+                      <MessageSquare className="h-7 w-7 mb-3 opacity-40" />
+                      <span className="text-sm font-medium">No comments yet. Join the conversation.</span>
+                    </div>
+                  ) : (
+                    comments.map((c: any) => (
+                      <div key={c.id} className="flex gap-4 p-4 rounded-xl bg-slate-50 dark:bg-white/[0.025] border border-slate-100 dark:border-white/5">
+                        <Avatar className="w-8 h-8 shrink-0">
+                          <AvatarImage src={c.profiles?.avatar_url} />
+                          <AvatarFallback className="bg-kenya-green/10 text-kenya-green font-bold text-xs">
+                            {c.profiles?.full_name?.charAt(0) || 'U'}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex justify-between items-start gap-2">
+                            <span className="font-bold text-sm text-slate-800 dark:text-white">{c.profiles?.full_name || 'Anonymous'}</span>
+                            <span className="text-xs text-slate-400 dark:text-white/30 whitespace-nowrap">
+                              {new Date(c.created_at).toLocaleDateString('en-KE', { day: 'numeric', month: 'short', year: 'numeric' })}
+                            </span>
+                          </div>
+                          <p className="text-sm text-slate-600 dark:text-slate-300 mt-1 leading-relaxed">{c.content}</p>
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
               </TabsContent>
             </Tabs>
@@ -595,7 +753,7 @@ const CampaignDetail = () => {
               <Card className="border-slate-200 dark:border-white/10 shadow-xl overflow-hidden rounded-2xl relative">
                 {/* Visual Trust Indicator (Top right watermark) */}
                 <div className="absolute top-0 right-0 p-3 opacity-5">
-                  <Globe className="w-24 h-24 stroke-[1px] mix-blend-overlay" />
+                  <KenyaIcon className="w-32 h-32 stroke-[1px] mix-blend-overlay" />
                 </div>
 
                 <div className="h-1 w-full bg-gradient-to-r from-kenya-green to-emerald-400" />
@@ -608,7 +766,7 @@ const CampaignDetail = () => {
                         Signatures
                       </span>
                       <span className="font-black text-2xl text-slate-800 dark:text-white tabular-nums">
-                        {participantCount.toLocaleString()}
+                        {signatureCount.toLocaleString()}
                       </span>
                     </div>
                     <Progress
@@ -620,7 +778,7 @@ const CampaignDetail = () => {
                         {progressValue}% of {goalCount.toLocaleString()} goal
                       </span>
                       <span className="text-xs font-semibold text-slate-400 dark:text-white/30">
-                        {participantCount} participants
+                        {participantCount} joined
                       </span>
                     </div>
                   </div>
@@ -668,8 +826,8 @@ const CampaignDetail = () => {
                     ) : (
                       <Button
                         className={`w-full font-bold rounded-xl h-12 shadow-lg transition-all active:scale-95 ${isFollowing
-                            ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-white/10 dark:hover:bg-white/15 dark:text-white shadow-none'
-                            : 'bg-kenya-green hover:bg-[#0ead36] text-white shadow-kenya-green/20'
+                          ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-white/10 dark:hover:bg-white/15 dark:text-white shadow-none'
+                          : 'bg-kenya-green hover:bg-[#0ead36] text-white shadow-kenya-green/20'
                           }`}
                         onClick={handleJoinCampaign}
                         disabled={followMutation.isPending}
@@ -679,7 +837,7 @@ const CampaignDetail = () => {
                         ) : (
                           <HandHelping className="mr-2 h-4 w-4" />
                         )}
-                        {isFollowing ? 'Following Campaign' : 'Join Campaign'}
+                        {isFollowing ? 'Following Campaign' : 'Follow Campaign'}
                       </Button>
                     )}
 
@@ -695,19 +853,79 @@ const CampaignDetail = () => {
                       </Button>
                     )}
 
-                    {/* Share / WhatsApp Button Split */}
+                    {/* Share / Dynamic Social Button Split */}
                     <div className="flex gap-2">
-                      <a
-                        href={`https://wa.me/?text=${encodeURIComponent(`Join me in verifying this campaign on CEKA Civic Ledger:\n\n${campaign.title}\n\n${window.location.href}`)}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex-1 flex items-center justify-center h-11 rounded-xl bg-[#25D366]/10 text-[#25D366] hover:bg-[#25D366]/20 font-bold transition-colors"
-                      >
-                        WhatsApp
-                      </a>
+                      {(() => {
+                        const socialData = (campaign as any)?.social_share_url;
+                        // If socialData is null, undefined, or an empty object, fallback to WhatsApp
+                        if (!socialData || typeof socialData !== 'object' || Object.keys(socialData).length === 0) {
+                          return (
+                            <a
+                              href={`https://wa.me/?text=${encodeURIComponent(`Join me in supporting this campaign through CEKA. All proceeds go directly to the cause:\n\n${campaign.title}\n\n${window.location.href}`)}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex-1 flex items-center justify-center h-11 rounded-xl px-3 bg-[#25D366]/10 text-[#25D366] hover:bg-[#25D366]/20 font-bold transition-colors"
+                            >
+                              <WhatsappIcon className="w-4 h-4" />
+                              <span className="text-sm ml-2">WhatsApp</span>
+                            </a>
+                          );
+                        }
+
+                        // Map social keys to icon components and colors
+                        const socialMap: Record<string, { icon: React.ElementType; color: string }> = {
+                          instagram: { icon: InstagramIcon, color: 'bg-gradient-to-r from-[#833AB4] via-[#E1306C] to-[#F58529] text-white shadow-lg hover:shadow-xl transition-all duration-300' },
+                          tiktok: { icon: TiktokIcon, color: 'bg-black text-white shadow-lg hover:shadow-xl transition-all duration-300' },
+                          twitter: { icon: TwitterIcon, color: 'bg-black text-white shadow-lg hover:shadow-xl transition-all duration-300' },
+                          x: { icon: TwitterIcon, color: 'bg-black text-white shadow-lg hover:shadow-xl transition-all duration-300' },
+                          reddit: { icon: RedditIcon, color: 'bg-[#FF4500] text-white shadow-lg hover:shadow-xl transition-all duration-300' },
+                        };
+
+                        // Filter to only known platforms with valid URLs
+                        const entries = Object.entries(socialData).filter(([key, value]) =>
+                          socialMap[key.toLowerCase()] && typeof value === 'string' && value.startsWith('http')
+                        );
+
+                        if (entries.length === 0) {
+                          // Fallback to WhatsApp if no valid social links
+                          return (
+                            <a
+                              href={`https://wa.me/?text=${encodeURIComponent(`Join me in supporting this campaign through CEKA. All proceeds go directly to the cause:\n\n${campaign.title}\n\n${window.location.href}`)}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex-1 flex items-center justify-center h-11 rounded-xl px-3 bg-[#25D366]/10 text-[#25D366] hover:bg-[#25D366]/20 font-bold transition-colors"
+                            >
+                              <WhatsappIcon className="w-4 h-4" />
+                              <span className="text-sm ml-2">WhatsApp</span>
+                            </a>
+                          );
+                        }
+
+                        // Render a row of small social buttons
+                        return (
+                          <div className="flex flex-1 gap-2">
+                            {entries.map(([key, url]) => {
+                              const normalizedKey = key.toLowerCase();
+                              const { icon: Icon, color } = socialMap[normalizedKey];
+                              return (
+                                <a
+                                  key={key}
+                                  href={url as string}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className={`flex-1 flex items-center justify-center h-11 rounded-xl px-3 font-bold transition-colors ${color} active:scale-95`}
+                                >
+                                  <Icon className="w-4 h-4" />
+                                  <span className="text-xs ml-1 capitalize">{normalizedKey === 'x' ? 'X' : normalizedKey}</span>
+                                </a>
+                              );
+                            })}
+                          </div>
+                        );
+                      })()}
                       <Button
                         variant="ghost"
-                        className="flex-[2] h-11 rounded-xl text-slate-500 dark:text-white/40 hover:text-slate-800 dark:hover:text-white font-semibold border border-slate-200 dark:border-white/10"
+                        className="flex-[2] h-11 rounded-xl px-4 text-slate-500 dark:text-white/40 hover:text-slate-800 dark:hover:text-white font-semibold border border-slate-200 dark:border-white/10"
                         onClick={handleShare}
                       >
                         <ShareIcon className="mr-2 h-4 w-4" />
