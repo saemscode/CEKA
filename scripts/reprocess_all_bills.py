@@ -1,4 +1,5 @@
 import os
+import sys
 import json
 import logging
 import time
@@ -12,6 +13,9 @@ try:
     load_dotenv(dotenv_path=str(env_path), override=True)
 except ImportError:
     pass
+
+# Add scripts directory to Python path to resolve local imports
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 # ── OCR: hardcode Tesseract + Poppler binary paths ──────────────────────────
 import os as _os
@@ -28,10 +32,10 @@ if _os.path.isdir(_POPPLER):
 
 
 try:
-    from supabase_direct import SupabaseDirect
-    from sovereign_corroborator import SovereignCorroborator
-    from multi_llm_orchestrator import MultiLLMOrchestrator
-    from enriched_bill_prompts import build_enrichment_prompt
+    from supabase_direct import SupabaseDirect  # type: ignore
+    from sovereign_corroborator import SovereignCorroborator  # type: ignore
+    from multi_llm_orchestrator import MultiLLMOrchestrator  # type: ignore
+    from enriched_bill_prompts import build_enrichment_prompt  # type: ignore
 except ImportError as e:
     print(f"Error: Missing dependency — {e}")
     exit(1)
@@ -175,7 +179,10 @@ class BatchIntelligenceUpgrader:
             try:
                 import pytesseract
                 from pdf2image import convert_from_bytes
-                pages = convert_from_bytes(content, dpi=200, poppler_path=self.poppler_path)
+                if self.poppler_path is not None:
+                    pages = convert_from_bytes(content, dpi=200, poppler_path=self.poppler_path)
+                else:
+                    pages = convert_from_bytes(content, dpi=200)
                 text = "\n".join(pytesseract.image_to_string(p) for p in pages)
                 if text and len(text) >= 50:
                     logger.info("    → Extracted via Tesseract OCR.")
@@ -210,11 +217,39 @@ class BatchIntelligenceUpgrader:
         else:
             ai_concerns_json = None
 
+        # ── Normalize constitutional_section: always a plain comma-separated string ──
+        cs_raw = intel.get("constitutional_section") or current_bill.get("constitutional_section") or ""
+        if isinstance(cs_raw, list):
+            flat = []
+            for item in cs_raw:
+                if isinstance(item, list):
+                    flat.extend(item)
+                else:
+                    flat.append(str(item))
+            cs_clean = ", ".join(flat)
+        else:
+            cs_clean = str(cs_raw).strip()
+        # Strip any stray JSON brackets that leaked through as a string
+        if cs_clean.startswith("["):
+            try:
+                parsed = json.loads(cs_clean)
+                if isinstance(parsed, list):
+                    # Flatten one level
+                    parts = []
+                    for p in parsed:
+                        if isinstance(p, list):
+                            parts.extend(str(x) for x in p)
+                        else:
+                            parts.append(str(p))
+                    cs_clean = ", ".join(parts)
+            except Exception:
+                cs_clean = cs_clean.strip("[]\"'")
+
         update_data = {
             "summary": intel.get("summary") or current_bill.get("summary"),
             # description is now reserved for the enriched narrative — don't overwrite with short_title
             "sponsor": intel.get("sponsor") or current_bill.get("sponsor") or "Government",
-            "constitutional_section": intel.get("constitutional_section") or current_bill.get("constitutional_section"),
+            "constitutional_section": cs_clean or None,
             "is_money_bill": intel.get("is_money_bill"), # NEW
             "concerns_counties": intel.get("concerns_counties"), # NEW
             "ai_concerns": ai_concerns_json,
@@ -293,7 +328,10 @@ class BatchIntelligenceUpgrader:
         if not text or len(text) < 50:
             logger.info("  [1/4] Text missing — attempting re-extraction from PDF URL...")
             pdf_url = bill.get("pdf_url") or bill.get("url")
-            text = self._extract_pdf_text(pdf_url)
+            if pdf_url is not None:
+                text = self._extract_pdf_text(pdf_url)
+            else:
+                text = ""
             if text and len(text) >= 50:
                 logger.info(f"    → Extracted {len(text)} chars from PDF.")
             else:

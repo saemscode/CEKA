@@ -1,0 +1,298 @@
+id,title,description,organizer,image_url,goal_count,current_count,status,created_at,updated_at,type,content,detailed_description,target_amount,raised_amount,currency,start_date,end_date,location,gallery,is_boosted,user_id,slug,social_share_url,signature_count
+10e10f13-d663-4456-a04d-51c66ac9c1b5,#StopGBV,"A national movement for safety, justice and zero-tolerance policy against Gender-Based Violence.",CEKA Human Rights,https://i.imgur.com/JIoiaUa.jpeg,1000000,0,active,2026-02-27 11:11:39.797983+00,2026-06-10 09:18:50.223271+00,awareness,"Gender-Based Violence remains one of the most critical human rights crises in Kenya. #StopGBV is CEKA's national campaign demanding safety, justice, and a zero-tolerance policy against all forms of GBV including femicide, domestic violence, and sexual violence. We break down the legal frameworks protecting survivors, track relevant legislation in Parliament, and connect citizens to reporting and support mechanisms.","Kenya continues to record alarming rates of Gender-Based Violence across all counties and demographics. #StopGBV is Civic Education Kenya's dedicated human rights campaign that educates citizens on the constitutional and legal protections available to survivors, exposes systemic failures in the justice system, and demands legislative accountability. The campaign anchors its advocacy in Article 29 of the Constitution of Kenya (freedom and security of the person), Article 45 (family rights), and the Protection Against Domestic Violence Act 2015. CEKA produces plain-language explainers on how to report GBV, how courts process these cases, and what Parliament is doing (or not doing) to strengthen protective legislation. The campaign operates through CEKA's social channels, the Pieces editorial platform, and community workshops, and is coordinated by CEKA Human Rights.",0,0,KES,2026-02-27 00:00:00+00,,"Kenya, Africa",[],false,,stopgbv,,0
+38c9e552-45b4-4aad-b004-154030808846,Voter Registration Drive,Massive grassroots movement to register 5 million new voters before 2027.,Kenyans ft. Ademba Allans,https://i.imgur.com/pobYOFy.jpeg,5000000,1,active,2026-02-27 11:11:39.797983+00,2026-06-10 09:18:50.223271+00,mobilization,"With the 2027 General Election approaching, Kenya needs 5 million new registered voters on the roll. This is a massive grassroots mobilization campaign coordinated by Kenyans ft. Ademba Allans, driving citizens to IEBC registration centers through the NASAKA IEBC Map, county-level outreach, and digital channels. Every unregistered Kenyan is a voice that will not be heard. Register. Mobilize. Show up.","The Voter Registration Drive is a nationwide mobilization campaign targeting 5 million new voter registrations before the 2027 General Election. The campaign leverages CEKA's NASAKA IEBC Map to direct citizens to their nearest IEBC registration centers across all 47 counties, combines digital outreach with on-the-ground county activations, and partners with community leaders, youth groups, and influencers to reach first-time voters. The constitutional basis for the campaign is Article 38 of the Constitution of Kenya, which guarantees every citizen the right to vote. Coordination is led by Kenyans ft. Ademba Allans, with CEKA providing the civic infrastructure, mapping tools, and educational resources. Progress is tracked by registration numbers reported through IEBC's continuous voter registration updates.",0,0,KES,2026-02-27 00:00:00+00,2027-07-31 00:00:00+00,"Kenya, Africa",[],false,,voter-registration-drive,,1
+3d5e428b-d005-4db9-9738-68212d80f5d4,CEKA App (Civic Education Kenya App),"Comprehensive interactive app for civic education on Constitution, governance, rights, and public participation.",Civic Education Kenya (CEKA),,1000000,0,active,2025-06-01 00:00:00+00,2026-06-10 00:00:00+00,education,"CEKA is Kenya's open-source civic education platform. The app delivers interactive learning modules on the Constitution of Kenya 2010, the Bill of Rights, government structures across the Executive, Legislature and Judiciary, electoral processes, devolution, public participation, and accountability. It includes the Legislative Bill Tracker, the NASAKA IEBC Map, Ask CEKA AI, the Constitution RAG Chat, community forums, and a gamified points economy with Swahili-named civic tiers. Available on web and Android.","The Civic Education Kenya App (CEKA) is a comprehensive open-source civic technology platform built to drive political accountability, constitutional literacy, and voter engagement across Kenya. It operates simultaneously as an educational repository, a legislative tracker, and a grassroots mobilization tool. The platform runs on React, TypeScript, Vite, and Supabase with 23+ Edge Functions in production, deployed across Cloudflare and Vercel with a Capacitor Android build. It features a gamified points economy with Swahili-named tiers (Mwananchi through Mwalimu), badge awards, a perks catalogue, three-layer OTP rate limiting, and granular notification preferences. The platform tagline is Educate, Amplify, Empower and it operates as a faceless, leaderless, tribeless initiative serving all Kenyans.",0,0,KES,2025-06-01 00:00:00+00,,"Kenya, Africa",[],false,,ceka-app-civic-education-kenya-app,,0
+4e025bef-2567-49b9-88ec-44efb8f0515b,#LetsBreakDown Series,"Ongoing breakdowns of bills, legislation, leadership positions, and governance issues for public understanding and accountability.",Civic Education Kenya (CEKA),,500000,0,active,2026-01-01 00:00:00+00,2026-06-10 00:00:00+00,education,"#LetsBreakDown is CEKA's flagship content series turning the most complex governance questions in Kenya into clear, shareable, visual explainers. From the roles of MPs, Senators, Women Representatives, and MCAs to how the national budget works, what devolution means for your county, and what a specific Finance Bill clause actually does to your cost of living — #LetsBreakDown makes the answer available to every Kenyan with a phone.","#LetsBreakDown is a long-running editorial series produced by Civic Education Kenya across Instagram, TikTok, X, and the CEKA Pieces platform. Each installment selects a single governance concept, legislative development, or civic process and produces a multi-slide visual explainer calibrated to a secondary school reading level with no legalese. Topics have covered the roles of all elected and appointed officials, the Finance Bill 2025 and 2026 clause by clause, the constitutional right to public participation, devolution and county revenue allocation, the recall process, and the structure of Kenya's judicial system. The series has contributed to CEKA campaigns reaching over 1 million Kenyans on individual issues and over 2.1 million social media impressions on the Finance Bill 2026 campaign alone.",0,0,KES,2026-01-01 00:00:00+00,,"Kenya, Africa",[],false,,letsbreakdown-series,,0
+6ecb0911-14ca-4b1b-80a8-7aafcde21a5e,June 25th,"Today, we join millions of Kenyans in reflecting on a date that has become deeply embedded in our national civic consciousness.
+
+June 25 is no longer simply a day on the calendar.
+
+It beckons as a day that now carries the weight of sacrifice, irresponsibility in power, the rights and power in the people, and the continuing conversation on what kind of Kenya we want to live in, build, and leave behind.
+
+Indeed, for many of us, the memory of June 25 represents grief.
+
+And that grief is deeply felt.
+
+For others, it represents a moment when the Constitution ceased being an abstract concept and became something tangible. Something personal.
+
+Regardless of where one stands, the events and repercussions of June 25 fundamentally altered how citizens relate to governance, public accountability, and the responsibility of democratic participation.
+
+It reminded the nation that citizenship is not a spectator role.
+
+It is a lived responsibility.
+
+As Civic Education Kenya, we believe this remains one of the most important lessons of this moment. Looking at how far we have come, the sacrifices made cannot be in vain. The responsibility before us is to continue building and safeguarding a future that is not guaranteed, but remains within our collective power to shape.
+
+For years, civic education has often been viewed as something that belongs in forums, workshops, brochures, Uraia posters, classrooms, or election seasons.
+
+Today, that understanding is changing.
+
+Civic education is no longer merely information.
+
+Across the country, we have witnessed a growing hunger for knowledge. A growing desire to understand how government works, how decisions are made, how public resources are managed, and how citizens can meaningfully engage before decisions are made, while decisions are being made, and after decisions have been made.
+
+Especially before.
+
+This was among the aspirations behind the 2010 Constitution.
+
+An informed citizenry at the centre of governance.
+
+A public that does not merely react to decisions, but actively participates in shaping them.
+
+We believe June 25 brought that aspiration closer to reality.
+
+Yet the journey stretches ahead of us.
+
+We are not where we need to be.
+
+As we reflect on June 25, we also recognise the many families whose lives have been permanently altered by the events and aftermath surrounding this period in Kenya's history.
+
+We acknowledge those who lost loved ones.
+
+We acknowledge those who sustained injuries.
+
+We acknowledge those who continue seeking answers.
+
+We acknowledge those who continue seeking relief from the weight of it.
+
+We acknowledge those who continue carrying burdens that changed the course of their lives in ways that may never fully be known.
+
+These experiences form part of our national story.
+
+They should not be forgotten.
+
+At the same time, remembrance alone is not enough.
+
+A mature democracy must continuously learn from its defining moments.
+
+It must examine what worked.
+
+It must examine what failed.
+
+It must ask difficult questions.
+
+And it must chart a path forward.
+
+The Kenya we seek will not be built by a people consumed by self-interest and indifferent to the plight of their neighbour.
+
+Neither will it be built by those who benefit from broken systems and weakened institutions.
+
+It will be built by citizens who understand that progress is often the work of generations.
+
+Citizens who remain committed to the difficult task of nation-building even when they may never personally enjoy the full fruits of their efforts.
+
+Our future will not be determined by a single protest.
+
+Nor by a single election.
+
+Nor by a single political party.
+
+Nor by a single leader.
+
+Nor even by a single generation, though we would gladly welcome such a miracle.
+
+It will be determined by the strength of our institutions.
+
+It will be determined by the quality of our civic culture.
+
+It will be determined by the willingness of citizens to remain informed, engaged, and active in public life.
+
+Not occasionally.
+
+Consistently.
+
+For us at Civic Education Kenya, June 25 reinforces why our mission remains necessary.
+
+It reinforces the importance of ensuring that every Kenyan can access the information needed to participate meaningfully in national life.
+
+Our commitment remains unchanged.
+
+We will continue working to make civic education accessible.
+
+We will continue helping citizens understand public processes.
+
+We will continue supporting and amplifying those already doing this work at the grassroots level.
+
+We will continue simplifying legislation, governance processes, and public policy into language that is accessible and understandable.
+
+We will continue working towards civic education resources that are available to all Kenyans regardless of language, location, or background.
+
+We will continue creating and supporting tools that strengthen public participation.
+
+We will continue encouraging informed engagement across all levels of society.
+
+We will continue supporting a culture in which citizenship is active, informed, and empowered.
+
+As we mark this day, we encourage every Kenyan to reflect not only on what happened, but also on what comes next.
+
+The responsibility of building a stronger democracy does not belong to institutions alone.
+
+It belongs to all of us.
+
+You and I.
+
+The Constitution begins with the words:
+
+> ""We, the people of Kenya.""
+
+Those words remain as important today as they were when they were first written.
+
+We do not have the luxury of despair.
+
+We do not have the permission to forget.
+
+We have a Constitution.
+
+We have a mandate.
+
+And we have each other.
+
+Aluta Continua. ✊🏽🇰🇪",Civic Education Kenya (CEKA),https://i.imgur.com/gmeNbht.jpeg,5000000,250001,active,2026-06-24 23:05:57.362031+00,2026-06-24 23:05:57.362031+00,awareness,June 25th : CEKA Special,"Today, we join millions of Kenyans in reflecting on a date that has become deeply embedded in our national civic consciousness.
+
+June 25 is no longer simply a day on the calendar.
+
+It beckons as a day that now carries the weight of sacrifice, irresponsibility in power, the rights and power in the people, and the continuing conversation on what kind of Kenya we want to live in, build, and leave behind.
+
+Indeed, for many of us, the memory of June 25 represents grief.
+
+And that grief is deeply felt.
+
+For others, it represents a moment when the Constitution ceased being an abstract concept and became something tangible. Something personal.
+
+Regardless of where one stands, the events and repercussions of June 25 fundamentally altered how citizens relate to governance, public accountability, and the responsibility of democratic participation.
+
+It reminded the nation that citizenship is not a spectator role.
+
+It is a lived responsibility.
+
+As Civic Education Kenya, we believe this remains one of the most important lessons of this moment. Looking at how far we have come, the sacrifices made cannot be in vain. The responsibility before us is to continue building and safeguarding a future that is not guaranteed, but remains within our collective power to shape.
+
+For years, civic education has often been viewed as something that belongs in forums, workshops, brochures, Uraia posters, classrooms, or election seasons.
+
+Today, that understanding is changing.
+
+Civic education is no longer merely information.
+
+Across the country, we have witnessed a growing hunger for knowledge. A growing desire to understand how government works, how decisions are made, how public resources are managed, and how citizens can meaningfully engage before decisions are made, while decisions are being made, and after decisions have been made.
+
+Especially before.
+
+This was among the aspirations behind the 2010 Constitution.
+
+An informed citizenry at the centre of governance.
+
+A public that does not merely react to decisions, but actively participates in shaping them.
+
+We believe June 25 brought that aspiration closer to reality.
+
+Yet the journey stretches ahead of us.
+
+We are not where we need to be.
+
+As we reflect on June 25, we also recognise the many families whose lives have been permanently altered by the events and aftermath surrounding this period in Kenya's history.
+
+We acknowledge those who lost loved ones.
+
+We acknowledge those who sustained injuries.
+
+We acknowledge those who continue seeking answers.
+
+We acknowledge those who continue seeking relief from the weight of it.
+
+We acknowledge those who continue carrying burdens that changed the course of their lives in ways that may never fully be known.
+
+These experiences form part of our national story.
+
+They should not be forgotten.
+
+At the same time, remembrance alone is not enough.
+
+A mature democracy must continuously learn from its defining moments.
+
+It must examine what worked.
+
+It must examine what failed.
+
+It must ask difficult questions.
+
+And it must chart a path forward.
+
+The Kenya we seek will not be built by a people consumed by self-interest and indifferent to the plight of their neighbour.
+
+Neither will it be built by those who benefit from broken systems and weakened institutions.
+
+It will be built by citizens who understand that progress is often the work of generations.
+
+Citizens who remain committed to the difficult task of nation-building even when they may never personally enjoy the full fruits of their efforts.
+
+Our future will not be determined by a single protest.
+
+Nor by a single election.
+
+Nor by a single political party.
+
+Nor by a single leader.
+
+Nor even by a single generation, though we would gladly welcome such a miracle.
+
+It will be determined by the strength of our institutions.
+
+It will be determined by the quality of our civic culture.
+
+It will be determined by the willingness of citizens to remain informed, engaged, and active in public life.
+
+Not occasionally.
+
+Consistently.
+
+For us at Civic Education Kenya, June 25 reinforces why our mission remains necessary.
+
+It reinforces the importance of ensuring that every Kenyan can access the information needed to participate meaningfully in national life.
+
+Our commitment remains unchanged.
+
+We will continue working to make civic education accessible.
+
+We will continue helping citizens understand public processes.
+
+We will continue supporting and amplifying those already doing this work at the grassroots level.
+
+We will continue simplifying legislation, governance processes, and public policy into language that is accessible and understandable.
+
+We will continue working towards civic education resources that are available to all Kenyans regardless of language, location, or background.
+
+We will continue creating and supporting tools that strengthen public participation.
+
+We will continue encouraging informed engagement across all levels of society.
+
+We will continue supporting a culture in which citizenship is active, informed, and empowered.
+
+As we mark this day, we encourage every Kenyan to reflect not only on what happened, but also on what comes next.
+
+The responsibility of building a stronger democracy does not belong to institutions alone.
+
+It belongs to all of us.
+
+You and I.
+
+The Constitution begins with the words:
+
+> ""We, the people of Kenya.""
+
+Those words remain as important today as they were when they were first written.
+
+We do not have the luxury of despair.
+
+We do not have the permission to forget.
+
+We have a Constitution.
+
+We have a mandate.
+
+And we have each other.
+
+Aluta Continua. ✊🏽🇰🇪",25000,500,KES,2026-06-24 21:00:00+00,2026-06-25 21:00:01+00,"Kenya, Africa",[],true,99a89404-8dd0-4e22-9ee5-30c28295771b,june-25th,"{""tiktok"": ""https://www.tiktok.com/@adembaallans/video/7654844002717519125"", ""instagram"": ""https://www.instagram.com/p/DZ9VTi5tmlD/""}",250000
+7ec94f3e-c93b-468c-bf15-f30d81d211eb,Legislative Bill Tracker,Tool for tracking and explaining bills in Parliament to support informed public participation.,Civic Education Kenya (CEKA),,2000000,0,active,2025-09-01 00:00:00+00,2026-06-10 00:00:00+00,transparency,"Kenya's most citizen-accessible legislative tracker. Follow any bill in Parliament from introduction to assent, read AI-generated plain-language summaries of what each bill actually means, track public participation deadlines, and submit your memorandum directly to the relevant Parliamentary committee through CEKA's memorandum builder. Covering 527+ bills across 23 ministry-aligned categories, with real-time updates and clause-level analysis.","The CEKA Legislative Bill Tracker is a real-time monitoring dashboard integrated into the Civic Education Kenya platform at civiceducationkenya.com. It tracks Parliamentary proceedings, bill statuses, voting timelines, and public participation deadlines across 527+ bills organized into a 23-category ministry-aligned taxonomy. The tracker features AI-powered plain-language summarization of legal text, AI-identified Citizen Concerns per bill, clause-level analysis seeded with Finance Bill 2026 data, a memorandum builder that routes citizen submissions to the correct Parliamentary committee by constituency, version comparison between bill drafts and amendments, and WhatsApp sharing of bill summaries. During the Finance Bill 2026 review, CEKA's tracker directly facilitated a measurable surge in citizen memoranda submissions to Parliament. The tracker is grounded in the constitutional right to public participation under Article 118 of the Constitution of Kenya.",0,0,KES,2025-09-01 00:00:00+00,,"Kenya, Africa",[],false,,legislative-bill-tracker,,0
+ad834322-38b9-44e3-bb9d-98333003008c,#Distractions,Exposing state-sponsored narratives designed to divert attention from key governance failures.,Civic Education Kenya (CEKA),https://i.imgur.com/q6wfYqF.jpeg,500000,0,active,2026-02-27 11:11:39.797983+00,2026-06-10 09:18:50.223271+00,accountability,"#Distractions is CEKA's governance accountability campaign exposing state-sponsored narratives engineered to divert public attention from critical governance failures. When Parliament is passing legislation that affects millions, when public funds are being misappropriated, or when accountability processes are being undermined, manufactured controversies flood the public discourse. CEKA names them, tracks them, and redirects the focus back to what matters.","#Distractions is a forensic governance campaign run by CEKA Governance Watch that systematically identifies and exposes the coordinated use of media narratives, public spectacles, and manufactured political controversies to shield the state from scrutiny during critical legislative and accountability moments. The campaign cross-references the timing of major distractions against Parliamentary proceedings, Controller of Budget reports, court judgments, and public participation deadlines to demonstrate the pattern. Content is produced as visual forensic explainers distributed through CEKA's social channels and the Pieces archive. The campaign is grounded in Article 35 of the Constitution of Kenya (right to access information) and Article 10 (national values of transparency and accountability). #Distractions is boosted as a flagship CEKA Governance Watch initiative and is designed to train citizens to recognize and resist information manipulation as a tool of governance capture.",0,0,KES,2026-02-27 00:00:00+00,,"Kenya, Africa",[],true,,distractions,,0
+caa0349e-5227-40bc-9686-5ad8c97e2825,Recall254,"Digital platform explaining and facilitating the constitutional right to recall non-performing elected officials (MPs, governors, etc.).",Civic Education Kenya (CEKA),https://www.civiceducationkenya.com/images/recall254.jpg,254000,0,active,2026-01-15 00:00:00+00,2026-06-10 00:00:00+00,accountability,"Most Kenyans do not know they have a constitutional right to remove a non-performing elected leader before their term ends. Recall254 exists to change that. The platform walks citizens through Article 104 of the Constitution of Kenya step by step, explaining eligibility criteria, the petition process, signature thresholds, and the legal timeline required to initiate a recall against an MP or other elected representative.","Recall254 is a civic education and mobilization module built around Article 104 of the Constitution of Kenya, which grants registered voters the right to recall their Member of Parliament under defined conditions. The platform provides interactive eligibility checkers by constituency, downloadable petition templates, plain-language legal guidance, and an active bulletin of any ongoing recall campaigns across Kenya. It is designed to close the awareness gap around one of the most powerful but least understood democratic tools available to Kenyan citizens. Recall254 is built and maintained by Civic Education Kenya and is accessible via civiceducationkenya.com.",0,0,KES,2026-01-15 00:00:00+00,,"Kenya, Africa",[],false,,recall254,,0
+fe81a65e-7b8f-4a00-8ac8-03f126c4c2a4,NASAKA IEBC,"Interactive map and tool to locate IEBC offices, voter registration centers, and polling stations nationwide.",Civic Education Kenya (CEKA),https://www.civiceducationkenya.com/images/nasaka.jpg,6800000,2500000,active,2025-01-01 00:00:00+00,2026-06-10 00:00:00+00,mobilization,"Finding your nearest IEBC voter registration center should not be difficult. NASAKA maps 24,000+ IEBC offices, registration centers, and polling stations across all 47 counties, with GPS-enabled search, turn-by-turn navigation, operating hours, and contact details. Available on the web and as a published Android app on the Google Play Store. The platform reached over 1 million requests in a single month, a direct measure of how many Kenyans needed this tool and had nowhere else to find it.","NASAKA IEBC is an interactive geolocated mapping service developed by Civic Education Kenya, covering 24,000+ IEBC electoral offices, voter registration centers, and polling stations across all 47 counties and constituencies in Kenya. It is built on a multi-provider geocoding pipeline versioned through v10+ with Titan AI cascade fallback, supports 15 languages including Swahili and Sheng, and features community-verified location data. The companion Android app is published on the Google Play Store. Location data is processed locally with no personal data collected or stored. The platform is independent of and not affiliated with the Government of Kenya or the IEBC. It is listed on Wikidata (Q139784812). NASAKA recorded over 1 million monthly requests at peak, triggering a server infrastructure upgrade, and is described by users as feeling government-level reliable despite being entirely citizen-built.",0,0,KES,2025-01-01 00:00:00+00,2027-08-31 00:00:00+00,"Kenya, Africa",[],false,,nasaka-iebc,,2500000

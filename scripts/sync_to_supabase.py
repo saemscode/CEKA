@@ -21,7 +21,9 @@ def get_supabase_client() -> Client:
 
 def normalize_title(title: str) -> str:
     t = title.lower()
-    t = re.sub(r'\b(the|bill|no|of|copy|amendment|senate|national|assembly|gazette)\b', '', t)
+    # IMPORTANT: do NOT strip 'amendment' — it distinguishes e.g.
+    # 'Finance Bill 2026' from 'Finance (Amendment) Bill 2026'
+    t = re.sub(r'\b(the|bill|no|of|copy|senate|national|assembly|gazette)\b', '', t)
     t = re.sub(r'\b20\d{2}\b', '', t)
     t = re.sub(r'[^\w\s]', '', t)
     return " ".join(t.split()).strip()
@@ -209,10 +211,39 @@ def sync_data(input_file: Optional[str] = None, output_dir: str = "processed_dat
                     logging.info(f"🔒 LOCKED: Preserving status for '{item['title']}'")
                     new_data.pop("status", None)
 
+            # ── Serialize ai_concerns to JSON string if it's a list ──
+            if isinstance(new_data.get("ai_concerns"), list):
+                import json as _json
+                new_data["ai_concerns"] = _json.dumps(new_data["ai_concerns"])
+
+            # ── Serialize constitutional_section: flatten any nested array ──
+            cs = new_data.get("constitutional_section")
+            if isinstance(cs, list):
+                # Unwrap nested arrays like [["Article 201", "Article 206"]] → "Article 201, Article 206"
+                flat = []
+                for item in cs:
+                    if isinstance(item, list):
+                        flat.extend(item)
+                    else:
+                        flat.append(str(item))
+                new_data["constitutional_section"] = ", ".join(flat)
+
             if existing:
                 logging.info(f"🔄 Refreshing: {item['title']}")
-                supabase.table("bills").update(new_data).eq("id", existing['id']).execute()
-                stats["updates"] += 1
+                # ── Change detection: only UPDATE if something actually differs ──
+                TRACKED = ["status", "sponsor", "summary", "pdf_url", "url",
+                           "ai_concerns", "constitutional_section", "tabloid_summary",
+                           "text_content", "description", "bill_no", "session_year"]
+                has_change = any(
+                    str(new_data.get(f) or "").strip() != str(existing.get(f) or "").strip()
+                    for f in TRACKED if new_data.get(f) is not None
+                )
+                if has_change:
+                    supabase.table("bills").update(new_data).eq("id", existing['id']).execute()
+                    stats["updates"] += 1
+                else:
+                    logging.debug(f"⏭️  No changes for: {item['title']} — skipped UPDATE")
+
             else:
                 logging.info(f"✨ New Bill: {item['title']}")
                 if not new_data.get("status"):

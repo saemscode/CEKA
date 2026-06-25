@@ -386,7 +386,7 @@ const CampaignDetail = () => {
   // Trusted Organizer Meta mapping
   const organizerMeta = (campaign as any)?.organizer_meta || {};
   const organizerName = organizerMeta.name || (typeof campaign?.organizer === 'string' ? campaign.organizer : 'Community Organizer');
-  const organizerLogo = organizerMeta.logo_url || '/placeholder.svg';
+  const organizerLogo = organizerMeta.logo_url || '/logo-white.png';
   const isVerifiedOrg = !!organizerMeta.verified_org;
 
   // ── Loading / Error states ───────────────────────────────────────────────
@@ -464,7 +464,7 @@ const CampaignDetail = () => {
           className="relative h-64 md:h-80 lg:h-96 rounded-2xl overflow-hidden mb-6 shadow-xl"
         >
           <img
-            src={campaign.image_url || '/placeholder.svg'}
+            src={campaign.image_url || '/logo-white.png'}
             alt={campaign.title}
             className="w-full h-full object-cover"
           />

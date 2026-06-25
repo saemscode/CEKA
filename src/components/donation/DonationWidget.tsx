@@ -37,115 +37,129 @@ const DONATION_METHODS: DonationMethod[] = [
   },
 ];
 
-// BTCPay Pay Button HTML — embedded directly, triggers native BTCPay modal
-const BTCPAY_FORM_HTML = `
-<style>
-  .btcpay-form { display: inline-flex; align-items: center; justify-content: center; width: 100%; }
-  .btcpay-form--block { flex-direction: column; gap: 12px; }
-  .btcpay-custom-container { text-align: center; width: 100%; }
-  .btcpay-custom { display: flex; align-items: center; justify-content: center; gap: 4px; }
-  .btcpay-form .plus-minus {
-    cursor: pointer; font-size: 20px; line-height: 1;
-    background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2);
-    height: 36px; width: 36px; border-radius: 50%; margin: 0 4px;
-    display: inline-flex; align-items: center; justify-content: center;
-    color: #fff; transition: background 0.2s;
-  }
-  .btcpay-form .plus-minus:hover { background: rgba(255,255,255,0.25); }
-  .btcpay-form select {
-    -moz-appearance: none; -webkit-appearance: none; appearance: none;
-    background: rgba(255,255,255,0.1); color: #fff;
-    border: 1px solid rgba(255,255,255,0.25); border-radius: 8px;
-    padding: 4px 10px; font-size: 11px; cursor: pointer; font-weight: 700;
-    letter-spacing: 0.05em;
-  }
-  .btcpay-form select option { color: #000; background: #fff; }
-  .btcpay-input-price {
-    -moz-appearance: textfield; border: none;
-    background: rgba(255,255,255,0.15); color: #fff;
-    text-align: center; font-size: 28px; font-weight: 900;
-    width: 3em; border-radius: 10px; padding: 4px;
-    box-shadow: inset 0 2px 6px rgba(0,0,0,0.2);
-  }
-  .btcpay-input-price::-webkit-outer-spin-button,
-  .btcpay-input-price::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-  .btcpay-submit {
-    min-width: 100%; min-height: 52px; border-radius: 14px; border: none;
-    background: #fff; cursor: pointer;
-    display: flex; align-items: center; justify-content: center; gap: 10px;
-    font-size: 13px; font-weight: 900; letter-spacing: 0.08em;
-    text-transform: uppercase; color: #0f3b21;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.25); transition: transform 0.15s;
-  }
-  .btcpay-submit:hover { transform: scale(1.02); }
-  .btcpay-submit img { height: 28px; border-radius: 6px; }
-</style>
-<form method="POST" action="https://btcpay.twentyone.africa/api/v1/invoices" class="btcpay-form btcpay-form--block">
-  <input type="hidden" name="storeId" value="HcRpH25NVLi2fNbRG8ykAUmskk6t9XjtfYAm3M3zV3n" />
-  <input type="hidden" name="jsonResponse" value="true" />
-  <input type="hidden" name="checkoutDesc" value="Support CEKA" />
-  <input type="hidden" name="serverIpn" value="https://cajrvemigxghnfmyopiy.supabase.co/functions/v1/btcpay-confirmations" />
-  <input type="hidden" name="browserRedirect" value="https://civiceducationkenya.com/donation-success" />
-  <input type="hidden" name="notifyEmail" value="admin@civiceducationkenya.com" />
-  <div class="btcpay-custom-container">
-    <div class="btcpay-custom">
-      <button class="plus-minus" type="button" data-type="-" data-step="100" data-min="100" data-max="50000">−</button>
-      <input class="btcpay-input-price" type="number" name="price" min="100" max="50000" step="100" value="500" data-price="500" />
-      <button class="plus-minus" type="button" data-type="+" data-step="100" data-min="100" data-max="50000">+</button>
-    </div>
-    <select name="currency" style="margin-top:8px">
-      <option value="KES" selected>KES</option>
-      <option value="USD">USD</option>
-      <option value="GBP">GBP</option>
-      <option value="EUR">EUR</option>
-      <option value="BTC">BTC</option>
-    </select>
-  </div>
-  <button type="submit" class="btcpay-submit" title="Pay with BTCPay Server">
-    <img src="https://www.civiceducationkenya.com/favicon.ico" alt="CEKA" />
-    Donate with Bitcoin / Lightning
-  </button>
-</form>
-<script>
-  (function() {
-    if (!window.btcpay) {
-      var s = document.createElement('script');
-      s.src = 'https://btcpay.twentyone.africa/modal/btcpay.js';
-      document.head.appendChild(s);
+// BTCPay Pay Button — a proper React component (dangerouslySetInnerHTML scripts never execute in React)
+const BTCPAY_STORE_ID = 'HcRpH25NVLi2fNbRG8ykAUmskk6t9XjtfYAm3M3zV3n';
+const BTCPAY_HOST    = 'https://btcpay.twentyone.africa';
+
+const BTCPayButton: React.FC = () => {
+  const [amount, setAmount] = React.useState(5);      // default $5 USD
+  const [currency, setCurrency] = React.useState('USD');
+  const [busy, setBusy] = React.useState(false);
+  const [err, setErr] = React.useState('');
+
+  // Load modal JS once
+  React.useEffect(() => {
+    if (document.getElementById('btcpay-modal-js')) return;
+    const s = document.createElement('script');
+    s.id  = 'btcpay-modal-js';
+    s.src = `${BTCPAY_HOST}/modal/btcpay.js`;
+    s.async = true;
+    document.head.appendChild(s);
+  }, []);
+
+  const STEP: Record<string, number> = { USD: 1, GBP: 1, EUR: 1, KES: 100, BTC: 0.00001 };
+  const MIN:  Record<string, number> = { USD: 1, GBP: 1, EUR: 1, KES: 100, BTC: 0.00001 };
+  const MAX:  Record<string, number> = { USD: 500, GBP: 400, EUR: 450, KES: 50000, BTC: 0.01 };
+
+  const step = STEP[currency] ?? 1;
+  const min  = MIN[currency]  ?? 1;
+  const max  = MAX[currency]  ?? 500;
+
+  const handleCurrencyChange = (c: string) => {
+    setCurrency(c);
+    const defaults: Record<string, number> = { USD: 5, GBP: 4, EUR: 5, KES: 500, BTC: 0.0001 };
+    setAmount(defaults[c] ?? 5);
+    setErr('');
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErr('');
+    setBusy(true);
+    try {
+      const form = new FormData();
+      form.append('storeId',       BTCPAY_STORE_ID);
+      form.append('jsonResponse',  'true');
+      form.append('checkoutDesc',  'Support CEKA');
+      form.append('price',          String(amount));
+      form.append('currency',        currency);
+      form.append('serverIpn',      'https://cajrvemigxghnfmyopiy.supabase.co/functions/v1/btcpay-confirmations');
+      form.append('browserRedirect','https://civiceducationkenya.com/donation-success');
+      form.append('notifyEmail',    'admin@civiceducationkenya.com');
+
+      const res = await fetch(`${BTCPAY_HOST}/api/v1/invoices`, { method: 'POST', body: form });
+      const text = await res.text();
+      if (!res.ok) { setErr(`BTCPay error ${res.status}. Try USD.`); return; }
+      const json = JSON.parse(text);
+      const invoiceId = json.invoiceId || json.id;
+      if (!invoiceId) { setErr('No invoice ID returned. Try USD.'); return; }
+      if ((window as any).btcpay?.appendInvoiceFrame) {
+        (window as any).btcpay.appendInvoiceFrame(invoiceId);
+      } else {
+        window.open(`${BTCPAY_HOST}/invoice?id=${invoiceId}`, '_blank');
+      }
+    } catch (ex: any) {
+      setErr('Network error. Please try again.');
+    } finally {
+      setBusy(false);
     }
-    function initBtcpay() {
-      document.querySelectorAll('.btcpay-form:not([data-init])').forEach(function(form) {
-        form.dataset.init = '1';
-        form.addEventListener('submit', function(e) {
-          e.preventDefault();
-          var xhr = new XMLHttpRequest();
-          xhr.onreadystatechange = function() {
-            if (this.readyState === 4 && this.status === 200 && this.responseText) {
-              window.btcpay.appendInvoiceFrame(JSON.parse(this.responseText).invoiceId);
-            }
-          };
-          xhr.open('POST', e.target.action, true);
-          xhr.send(new FormData(e.target));
-        });
-      });
-      document.querySelectorAll('.plus-minus:not([data-init])').forEach(function(btn) {
-        btn.dataset.init = '1';
-        btn.addEventListener('click', function() {
-          var root = btn.closest('.btcpay-form');
-          var el = root.querySelector('.btcpay-input-price');
-          var step = parseInt(btn.dataset.step) || 100;
-          var min = parseInt(btn.dataset.min) || 100;
-          var max = parseInt(btn.dataset.max) || 50000;
-          var v = parseInt(el.value) || min;
-          el.value = btn.dataset.type === '-' ? Math.max(min, v - step) : Math.min(max, v + step);
-        });
-      });
-    }
-    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initBtcpay);
-    else setTimeout(initBtcpay, 100);
-  })();
-</script>
-`;
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="w-full space-y-3">
+      {/* Amount row */}
+      <div className="flex items-center justify-center gap-2">
+        <button
+          type="button"
+          onClick={() => setAmount(a => Math.max(min, parseFloat((a - step).toFixed(8))))}
+          className="w-9 h-9 rounded-full bg-white/15 border border-white/25 text-white text-xl font-bold flex items-center justify-center hover:bg-white/25 transition"
+          aria-label="Decrease amount"
+        >−</button>
+        <input
+          type="number"
+          value={amount}
+          min={min} max={max} step={step}
+          onChange={e => setAmount(parseFloat(e.target.value) || min)}
+          className="w-24 text-center text-3xl font-black bg-white/15 text-white border-none outline-none rounded-xl py-1 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+          aria-label="Donation amount"
+        />
+        <button
+          type="button"
+          onClick={() => setAmount(a => Math.min(max, parseFloat((a + step).toFixed(8))))}
+          className="w-9 h-9 rounded-full bg-white/15 border border-white/25 text-white text-xl font-bold flex items-center justify-center hover:bg-white/25 transition"
+          aria-label="Increase amount"
+        >+</button>
+      </div>
+
+      {/* Currency selector */}
+      <div className="flex justify-center">
+        <select
+          value={currency}
+          onChange={e => handleCurrencyChange(e.target.value)}
+          className="bg-white/10 text-white border border-white/25 rounded-lg px-3 py-1.5 text-xs font-bold cursor-pointer outline-none appearance-none"
+          aria-label="Currency"
+        >
+          <option value="USD">USD</option>
+          <option value="KES">KES</option>
+          <option value="GBP">GBP</option>
+          <option value="EUR">EUR</option>
+          <option value="BTC">BTC</option>
+        </select>
+      </div>
+
+      {err && <p className="text-red-300 text-[10px] text-center font-bold">{err}</p>}
+
+      <button
+        type="submit"
+        disabled={busy}
+        className="w-full min-h-[52px] rounded-2xl bg-white font-black text-[13px] uppercase tracking-wider text-[#0f3b21] shadow-lg shadow-black/25 hover:scale-[1.02] active:scale-95 transition flex items-center justify-center gap-2 disabled:opacity-60"
+      >
+        {busy ? 'Opening wallet…' : `Donate ${currency === 'BTC' ? '₿' : currency} ${amount} — Bitcoin / Lightning`}
+      </button>
+    </form>
+  );
+};
+
 
 
 const HeartDonationIcon: React.FC<{ className?: string }> = ({ className }) => (
@@ -646,7 +660,7 @@ const DonationWidget: React.FC<DonationWidgetProps> = ({
                       </div>
                       <span className="text-white text-[10px] font-black uppercase tracking-widest opacity-80">Bitcoin · Lightning · Liquid</span>
                     </div>
-                    <div dangerouslySetInnerHTML={{ __html: BTCPAY_FORM_HTML }} />
+                    <BTCPayButton />
                   </div>
 
 
