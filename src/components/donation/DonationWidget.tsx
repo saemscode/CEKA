@@ -1,33 +1,27 @@
-// @/components/donation/DonationWidget.tsx (full corrected file using CustomIcons components)
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Gift } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { PenNewSquareIcon, ThumbIcon } from '@/components/ui/CustomIcons';
-import { QRCodeSVG } from 'qrcode.react';
 import { useNavigate } from 'react-router-dom';
 import {
   MpesaDonationIcon,
-  BitcoinDonationIcon,
-  LiquidDonationIcon,
-  LightningDonationIcon,
   CopyDonationIcon,
-  QrDonationIcon,
 } from '@/components/ui/CustomIcons';
 
 declare global {
   interface Window {
     PaystackPop: any;
+    btcpay: any;
   }
 }
 
 type DonationMethod = {
-  id: 'mpesa' | 'bitcoin' | 'liquid' | 'lightning';
+  id: 'mpesa';
   label: string;
-  kind: 'manual' | 'crypto' | 'invoice';
+  kind: 'manual';
   payload: string;
-  qrPayload?: string;
   helperText?: string;
   icon: React.ComponentType<{ className?: string }>;
 };
@@ -41,34 +35,118 @@ const DONATION_METHODS: DonationMethod[] = [
     helperText: 'Direct Mobile Transfer',
     icon: MpesaDonationIcon,
   },
-  {
-    id: 'bitcoin',
-    label: 'Bitcoin',
-    kind: 'crypto',
-    payload: 'bc1qma9d0yzkhwj4txhgl8pv376jdu8vgvcuqha8ywf3ete48wg7zr2q6gn3at',
-    qrPayload: 'bitcoin:bc1qma9d0yzkhwj4txhgl8pv376jdu8vgvcuqha8ywf3ete48wg7zr2q6gn3at',
-    helperText: 'On-chain BTC transfer',
-    icon: BitcoinDonationIcon,
-  },
-  {
-    id: 'liquid',
-    label: 'Liquid',
-    kind: 'crypto',
-    payload: 'liquidnetwork:lq1qq0x78dfcjzerv0fs287ddddk6pl4vrpvnl7ere620xkfz293j32gcx9ade9m560gdsff5ay4g3a9g8d6ndwe5sr3mclpus5tf?amount=0.0001&message=Thank+you+for+supporting+CEKA%21&assetid=6f0279e9ed041c3d710a9f57d0c02928416460c4b722ae3457a11eec381c526d',
-    qrPayload: 'liquidnetwork:lq1qq0x78dfcjzerv0fs287ddddk6pl4vrpvnl7ere620xkfz293j32gcx9ade9m560gdsff5ay4g3a9g8d6ndwe5sr3mclpus5tf?amount=0.0001&message=Thank+you+for+supporting+CEKA%21&assetid=6f0279e9ed041c3d710a9f57d0c02928416460c4b722ae3457a11eec381c526d',
-    helperText: 'Liquid Network / L-BTC',
-    icon: LiquidDonationIcon,
-  },
-  {
-    id: 'lightning',
-    label: 'Lightning',
-    kind: 'invoice',
-    payload: 'LNBC100U1P4RKVZFPP5QT7CD4SA9VMRP2XV0PJ3LQCTJT5J08C4P866SKFY33TM6ZZGCY9SDPS235XZMNTYPUK7AFQVEHHYGRNW4C8QMMJW35KUEEQGDZ5KSFPCQZXRXQYP2XQRZJQV7ACPPT7D47FEEP4V26ZSD7MHZ6C39USU8FVHNR5D34V5QP28L55ZZXEYQQ28QQQQQQQQQQQQQQQ9GQ2YSP5QF25R4RP590PGFAKLTU0Z6TDHF4ZD8NFP5XMM9U2AJMPQG7ZPSCS9QXPQYSGQVYNMTYLUSSFR3VCD28KDC4YGZ9C4VNVS00LAMMD9A38H6NVVDARXYY70H54G8QL4FNNAQDFPF2X5J03RMDM264978DGVGMSTYR4F69GPG9DVH8',
-    qrPayload: 'lightning:LNBC100U1P4RKVZFPP5QT7CD4SA9VMRP2XV0PJ3LQCTJT5J08C4P866SKFY33TM6ZZGCY9SDPS235XZMNTYPUK7AFQVEHHYGRNW4C8QMMJW35KUEEQGDZ5KSFPCQZXRXQYP2XQRZJQV7ACPPT7D47FEEP4V26ZSD7MHZ6C39USU8FVHNR5D34V5QP28L55ZZXEYQQ28QQQQQQQQQQQQQQQ9GQ2YSP5QF25R4RP590PGFAKLTU0Z6TDHF4ZD8NFP5XMM9U2AJMPQG7ZPSCS9QXPQYSGQVYNMTYLUSSFR3VCD28KDC4YGZ9C4VNVS00LAMMD9A38H6NVVDARXYY70H54G8QL4FNNAQDFPF2X5J03RMDM264978DGVGMSTYR4F69GPG9DVH8',
-    helperText: 'Instant Invoice / LNURL',
-    icon: LightningDonationIcon,
-  },
 ];
+
+// BTCPay Pay Button HTML — embedded directly, triggers native BTCPay modal
+const BTCPAY_FORM_HTML = `
+<style>
+  .btcpay-form { display: inline-flex; align-items: center; justify-content: center; width: 100%; }
+  .btcpay-form--block { flex-direction: column; gap: 12px; }
+  .btcpay-custom-container { text-align: center; width: 100%; }
+  .btcpay-custom { display: flex; align-items: center; justify-content: center; gap: 4px; }
+  .btcpay-form .plus-minus {
+    cursor: pointer; font-size: 20px; line-height: 1;
+    background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2);
+    height: 36px; width: 36px; border-radius: 50%; margin: 0 4px;
+    display: inline-flex; align-items: center; justify-content: center;
+    color: #fff; transition: background 0.2s;
+  }
+  .btcpay-form .plus-minus:hover { background: rgba(255,255,255,0.25); }
+  .btcpay-form select {
+    -moz-appearance: none; -webkit-appearance: none; appearance: none;
+    background: rgba(255,255,255,0.1); color: #fff;
+    border: 1px solid rgba(255,255,255,0.25); border-radius: 8px;
+    padding: 4px 10px; font-size: 11px; cursor: pointer; font-weight: 700;
+    letter-spacing: 0.05em;
+  }
+  .btcpay-form select option { color: #000; background: #fff; }
+  .btcpay-input-price {
+    -moz-appearance: textfield; border: none;
+    background: rgba(255,255,255,0.15); color: #fff;
+    text-align: center; font-size: 28px; font-weight: 900;
+    width: 3em; border-radius: 10px; padding: 4px;
+    box-shadow: inset 0 2px 6px rgba(0,0,0,0.2);
+  }
+  .btcpay-input-price::-webkit-outer-spin-button,
+  .btcpay-input-price::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  .btcpay-submit {
+    min-width: 100%; min-height: 52px; border-radius: 14px; border: none;
+    background: #fff; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    font-size: 13px; font-weight: 900; letter-spacing: 0.08em;
+    text-transform: uppercase; color: #0f3b21;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.25); transition: transform 0.15s;
+  }
+  .btcpay-submit:hover { transform: scale(1.02); }
+  .btcpay-submit img { height: 28px; border-radius: 6px; }
+</style>
+<form method="POST" action="https://btcpay.twentyone.africa/api/v1/invoices" class="btcpay-form btcpay-form--block">
+  <input type="hidden" name="storeId" value="HcRpH25NVLi2fNbRG8ykAUmskk6t9XjtfYAm3M3zV3n" />
+  <input type="hidden" name="jsonResponse" value="true" />
+  <input type="hidden" name="checkoutDesc" value="Support CEKA" />
+  <input type="hidden" name="serverIpn" value="https://cajrvemigxghnfmyopiy.supabase.co/functions/v1/btcpay-confirmations" />
+  <input type="hidden" name="browserRedirect" value="https://civiceducationkenya.com/donation-success" />
+  <input type="hidden" name="notifyEmail" value="admin@civiceducationkenya.com" />
+  <div class="btcpay-custom-container">
+    <div class="btcpay-custom">
+      <button class="plus-minus" type="button" data-type="-" data-step="100" data-min="100" data-max="50000">−</button>
+      <input class="btcpay-input-price" type="number" name="price" min="100" max="50000" step="100" value="500" data-price="500" />
+      <button class="plus-minus" type="button" data-type="+" data-step="100" data-min="100" data-max="50000">+</button>
+    </div>
+    <select name="currency" style="margin-top:8px">
+      <option value="KES" selected>KES</option>
+      <option value="USD">USD</option>
+      <option value="GBP">GBP</option>
+      <option value="EUR">EUR</option>
+      <option value="BTC">BTC</option>
+    </select>
+  </div>
+  <button type="submit" class="btcpay-submit" title="Pay with BTCPay Server">
+    <img src="https://www.civiceducationkenya.com/favicon.ico" alt="CEKA" />
+    Donate with Bitcoin / Lightning
+  </button>
+</form>
+<script>
+  (function() {
+    if (!window.btcpay) {
+      var s = document.createElement('script');
+      s.src = 'https://btcpay.twentyone.africa/modal/btcpay.js';
+      document.head.appendChild(s);
+    }
+    function initBtcpay() {
+      document.querySelectorAll('.btcpay-form:not([data-init])').forEach(function(form) {
+        form.dataset.init = '1';
+        form.addEventListener('submit', function(e) {
+          e.preventDefault();
+          var xhr = new XMLHttpRequest();
+          xhr.onreadystatechange = function() {
+            if (this.readyState === 4 && this.status === 200 && this.responseText) {
+              window.btcpay.appendInvoiceFrame(JSON.parse(this.responseText).invoiceId);
+            }
+          };
+          xhr.open('POST', e.target.action, true);
+          xhr.send(new FormData(e.target));
+        });
+      });
+      document.querySelectorAll('.plus-minus:not([data-init])').forEach(function(btn) {
+        btn.dataset.init = '1';
+        btn.addEventListener('click', function() {
+          var root = btn.closest('.btcpay-form');
+          var el = root.querySelector('.btcpay-input-price');
+          var step = parseInt(btn.dataset.step) || 100;
+          var min = parseInt(btn.dataset.min) || 100;
+          var max = parseInt(btn.dataset.max) || 50000;
+          var v = parseInt(el.value) || min;
+          el.value = btn.dataset.type === '-' ? Math.max(min, v - step) : Math.min(max, v + step);
+        });
+      });
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initBtcpay);
+    else setTimeout(initBtcpay, 100);
+  })();
+</script>
+`;
+
 
 const HeartDonationIcon: React.FC<{ className?: string }> = ({ className }) => (
   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className={className} xmlns="http://www.w3.org/2000/svg">
@@ -531,6 +609,7 @@ const DonationWidget: React.FC<DonationWidgetProps> = ({
                     <div className="flex-1 h-px bg-slate-200 dark:bg-white/10" />
                   </div>
 
+                  {/* ── M-Pesa manual methods ── */}
                   <div className="space-y-3 pb-2">
                     {DONATION_METHODS.map((method) => (
                       <div
@@ -543,32 +622,33 @@ const DonationWidget: React.FC<DonationWidgetProps> = ({
                             <div className="min-w-0 flex-1">
                               <p className="font-bold text-xs text-slate-900 dark:text-white mb-0.5">{method.label}</p>
                               <p className="text-[10px] text-slate-500 dark:text-slate-400 font-mono truncate">
-                                {method.kind === 'manual' ? method.payload : truncateMiddle(method.payload)}
+                                {method.payload}
                               </p>
                             </div>
                           </div>
-                          <div className="flex items-center gap-2 shrink-0 ml-3">
-                            <button
-                              onClick={() => handleCopy(method)}
-                              className="p-1.5 rounded-lg hover:bg-slate-200 dark:hover:bg-white/10 transition-colors"
-                              title={`Copy ${method.label} address`}
-                            >
-                              <CopyDonationIcon className="w-4 h-4 opacity-70 group-hover:opacity-100 transition-opacity" />
-                            </button>
-                            {method.kind !== 'manual' && (
-                              <button
-                                onClick={() => setQrMethod(method)}
-                                className="p-1.5 rounded-lg hover:bg-slate-200 dark:hover:bg-white/10 transition-colors"
-                                title={`Show ${method.label} QR Code`}
-                              >
-                                <QrDonationIcon className="w-4 h-4 opacity-70 group-hover:opacity-100 transition-opacity" />
-                              </button>
-                            )}
-                          </div>
+                          <button
+                            onClick={() => handleCopy(method)}
+                            className="p-1.5 rounded-lg hover:bg-slate-200 dark:hover:bg-white/10 transition-colors ml-3"
+                            title={`Copy M-Pesa number`}
+                          >
+                            <CopyDonationIcon className="w-4 h-4 opacity-70 group-hover:opacity-100 transition-opacity" />
+                          </button>
                         </div>
                       </div>
                     ))}
                   </div>
+
+                  {/* ── BTCPay crypto section ── */}
+                  <div className="rounded-2xl overflow-hidden bg-gradient-to-br from-[#0f3b21] to-[#1a5c35] p-4 shadow-xl">
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="w-5 h-5 rounded-md bg-white/20 flex items-center justify-center">
+                        <svg viewBox="0 0 24 24" className="w-3 h-3 text-white" fill="currentColor"><path d="M14.24 10.56C13.93 11.8 12 11.17 11.4 11L12.05 8.38C12.65 8.55 14.56 9.26 14.24 10.56M11.12 12.49C10.75 13.87 8.46 13.12 7.72 12.93L8.45 10.01C9.19 10.2 11.5 11.04 11.12 12.49M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2M13.19 14.97C13.04 15.54 12.6 15.91 12 16.1V17H10.9V16.14C10.43 16.09 9.95 15.96 9.5 15.76L9.86 14.3C10.33 14.5 10.87 14.68 11.4 14.72C11.95 14.77 12.3 14.56 12.38 14.17C12.47 13.74 12.1 13.54 11.31 13.21C10.31 12.82 9.5 12.33 9.71 11.27C9.87 10.65 10.31 10.24 10.9 10.05V9.17H12V10.01C12.4 10.05 12.8 10.15 13.22 10.32L12.87 11.74C12.53 11.6 12.13 11.46 11.72 11.44C11.22 11.41 10.95 11.64 10.89 11.96C10.82 12.33 11.22 12.52 12.01 12.86C13.08 13.31 13.39 13.91 13.19 14.97Z"/></svg>
+                      </div>
+                      <span className="text-white text-[10px] font-black uppercase tracking-widest opacity-80">Bitcoin · Lightning · Liquid</span>
+                    </div>
+                    <div dangerouslySetInnerHTML={{ __html: BTCPAY_FORM_HTML }} />
+                  </div>
+
 
                   <button
                     className="w-full py-3 rounded-xl font-black text-[10px] uppercase tracking-widest text-slate-500 dark:text-slate-400 hover:text-red-500 dark:hover:text-red-400 transition-all duration-150"

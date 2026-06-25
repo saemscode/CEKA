@@ -6,7 +6,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { translate } from '@/lib/utils';
 import { useAuth } from '@/providers/AuthProvider';
 import { motion } from 'framer-motion';
-import { User, Bell, Shield, Eye, Settings as SettingsIcon } from 'lucide-react';
+import { User, Bell, Shield, Eye, Settings as SettingsIcon, Trophy } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const SettingsLayout = () => {
@@ -17,10 +17,11 @@ const SettingsLayout = () => {
   const currentPath = location.pathname.split('/').pop() || 'account';
 
   const tabs = [
-    { id: 'account', label: translate("Account", language), icon: User, path: '/settings/account', adminOnly: false, authRequired: true },
-    { id: 'notifications', label: translate("Notifications", language), icon: Bell, path: '/settings/notifications', adminOnly: false, authRequired: false },
-    { id: 'appearance', label: translate("Appearance", language), icon: Eye, path: '/settings/appearance', adminOnly: false, authRequired: false },
-    { id: 'privacy', label: translate("Privacy", language), icon: Shield, path: '/settings/privacy', adminOnly: false, authRequired: false },
+    { id: 'account',      label: translate("Account", language),       icon: User,    path: '/settings/account',       adminOnly: false, authRequired: true },
+    { id: 'notifications',label: translate("Notifications", language),  icon: Bell,    path: '/settings/notifications',  adminOnly: false, authRequired: false },
+    { id: 'appearance',   label: translate("Appearance", language),     icon: Eye,     path: '/settings/appearance',     adminOnly: false, authRequired: false },
+    { id: 'privacy',      label: translate("Privacy", language),        icon: Shield,  path: '/settings/privacy',        adminOnly: false, authRequired: false },
+    { id: 'civic-points', label: 'Points',                              icon: Trophy,  path: '/settings/civic-points',   adminOnly: false, authRequired: true },
   ];
 
   React.useEffect(() => {

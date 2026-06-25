@@ -4,11 +4,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/providers/AuthProvider';
 import { GamificationService } from '@/services/gamificationService';
-import { Award, TrendingUp, Zap, Star, ChevronRight, Share2, Trophy } from 'lucide-react';
+import { Award, TrendingUp, Zap, Star, Share2, Trophy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Navigate } from 'react-router-dom';
-import Layout from '@/components/layout/Layout';
 
 // ─── Level definitions (mirrors CivicMiniPlayer) ─────────────────────────────
 const CIVIC_LEVELS = [
@@ -84,16 +83,7 @@ const CivicPointsPage: React.FC = () => {
   };
 
   return (
-    <Layout>
-      <div className="container max-w-2xl py-8 space-y-6">
-
-        {/* Back */}
-        <button
-          onClick={() => navigate('/settings/account')}
-          className="text-xs font-bold text-slate-400 hover:text-slate-700 dark:hover:text-white flex items-center gap-1 transition-colors mb-2"
-        >
-          ← Back to Settings
-        </button>
+    <div className="max-w-2xl space-y-6">
 
         {/* Hero score card */}
         <motion.div
@@ -288,8 +278,7 @@ const CivicPointsPage: React.FC = () => {
           )}
         </motion.div>
 
-      </div>
-    </Layout>
+    </div>
   );
 };
 

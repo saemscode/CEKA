@@ -746,7 +746,7 @@ const DetailCard: React.FC<{
             </div>
 
             {/* Tab bar */}
-            <div className="flex px-4 pb-2 gap-0.5 bg-slate-50 dark:bg-white/5 mx-4 rounded-xl mb-2">
+            <div className="flex px-4 pb-2 pt-1.5 gap-0.5 bg-slate-100 dark:bg-white/5 mx-4 rounded-xl mb-2">
               {SLIDES.map((s, i) => (
                 <button
                   key={s}

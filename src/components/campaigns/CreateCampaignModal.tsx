@@ -32,6 +32,9 @@ export const CreateCampaignModal: React.FC<CreateCampaignModalProps> = ({ isOpen
   const [targetAmount, setTargetAmount] = useState('');
   const [location, setLocation] = useState('');
   const [isBoosted, setIsBoosted] = useState(false);
+  const [externalLinks, setExternalLinks] = useState<{ label: string; url: string }[]>([]);
+  const [linkLabel, setLinkLabel] = useState('');
+  const [linkUrl, setLinkUrl] = useState('');
 
   const handleSubmit = async (paystackRef?: string) => {
     if (!user) {
@@ -43,12 +46,10 @@ export const CreateCampaignModal: React.FC<CreateCampaignModalProps> = ({ isOpen
     try {
       const { error } = await (supabase.from('campaign_proposals') as any).insert({
         user_id: user.id,
-        title,
-        type,
-        goal,
-        content,
+        title, type, goal, content,
         target_amount: targetAmount ? parseInt(targetAmount) : null,
         location,
+        external_links: externalLinks.length ? externalLinks : null,
         status: 'PENDING_REVIEW',
         is_boosted: !!paystackRef || isBoosted,
         paystack_reference: paystackRef || null
@@ -120,6 +121,12 @@ export const CreateCampaignModal: React.FC<CreateCampaignModalProps> = ({ isOpen
     setStep(s => s + 1);
   };
 
+  const handleAddLink = () => {
+    if (!linkUrl) return;
+    setExternalLinks(prev => [...prev, { label: linkLabel || linkUrl, url: linkUrl }]);
+    setLinkLabel(''); setLinkUrl('');
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -157,12 +164,28 @@ export const CreateCampaignModal: React.FC<CreateCampaignModalProps> = ({ isOpen
                 </div>
                 <div>
                   <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 block">Category Type</label>
-                  <select value={type} onChange={e=>setType(e.target.value)} className="w-full bg-slate-100 dark:bg-black/40 border border-slate-200 dark:border-white/10 rounded-xl px-4 py-3 text-sm focus:border-kenya-green outline-none appearance-none">
-                    <option>Advocacy</option>
-                    <option>Environment</option>
-                    <option>Civic Assembly</option>
-                    <option>Digital Rights</option>
-                    <option>Relief Drive</option>
+                  <select value={type} onChange={e=>setType(e.target.value)} className="w-full bg-slate-100 dark:bg-black/40 border border-slate-200 dark:border-white/10 rounded-xl px-4 py-3 text-sm focus:border-kenya-green outline-none appearance-none dark:text-white">
+                    <optgroup label="Civic &amp; Governance">
+                      <option>Advocacy</option>
+                      <option>Petition</option>
+                      <option>Anti-Corruption</option>
+                      <option>Civic Assembly</option>
+                      <option>Digital Rights</option>
+                    </optgroup>
+                    <optgroup label="Social &amp; Community">
+                      <option>Healthcare</option>
+                      <option>Education</option>
+                      <option>Gender Equality</option>
+                      <option>Youth</option>
+                      <option>Housing</option>
+                      <option>Labour Rights</option>
+                      <option>Relief Drive</option>
+                    </optgroup>
+                    <optgroup label="Environment">
+                      <option>Environment</option>
+                      <option>Climate Action</option>
+                      <option>Food Security</option>
+                    </optgroup>
                   </select>
                 </div>
                 <div>
@@ -192,11 +215,52 @@ export const CreateCampaignModal: React.FC<CreateCampaignModalProps> = ({ isOpen
             )}
 
             {step === 3 && (
+              <div className="space-y-4 animate-in fade-in slide-in-from-right-4">
+                <div>
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 block flex items-center gap-1">
+                    <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                    External Campaigning Tools (optional)
+                  </label>
+                  <p className="text-[10px] text-slate-400 mb-3">Link to Change.org, Avaaz, Care2, or any external petition platform to broaden your reach.</p>
+                  <div className="space-y-2">
+                    {externalLinks.map((lk, i) => (
+                      <div key={i} className="flex items-center gap-2 p-2 bg-kenya-green/5 border border-kenya-green/20 rounded-xl">
+                        <span className="flex-1 text-xs font-semibold text-slate-700 dark:text-white truncate">{lk.label}</span>
+                        <button onClick={() => setExternalLinks(prev => prev.filter((_, j) => j !== i))} className="text-red-400 hover:text-red-600 text-xs">✕</button>
+                      </div>
+                    ))}
+                    <div className="flex gap-2">
+                      <input value={linkLabel} onChange={e => setLinkLabel(e.target.value)} placeholder="Label (e.g. Sign on Change.org)" className="flex-1 bg-slate-100 dark:bg-black/40 border border-slate-200 dark:border-white/10 rounded-xl px-3 py-2 text-xs outline-none dark:text-white" />
+                    </div>
+                    <div className="flex gap-2">
+                      <input value={linkUrl} onChange={e => setLinkUrl(e.target.value)} placeholder="https://www.change.org/p/..." className="flex-1 bg-slate-100 dark:bg-black/40 border border-slate-200 dark:border-white/10 rounded-xl px-3 py-2 text-xs outline-none dark:text-white" />
+                      <button onClick={handleAddLink} className="px-3 py-2 bg-kenya-green text-white text-[10px] font-black rounded-xl hover:bg-kenya-green/90 transition">Add</button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Quick-insert popular platforms */}
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    { label: 'Change.org', url: 'https://www.change.org/start-a-petition' },
+                    { label: 'Avaaz', url: 'https://secure.avaaz.org/page/en/petition/start/' },
+                    { label: 'Care2', url: 'https://www.care2.com/create-a-petition' },
+                  ].map(p => (
+                    <button key={p.label} onClick={() => { setLinkLabel(`Sign on ${p.label}`); setLinkUrl(p.url); }}
+                      className="text-[10px] font-bold px-2.5 py-1 rounded-full border border-slate-200 dark:border-white/10 text-slate-500 dark:text-white/50 hover:border-kenya-green hover:text-kenya-green transition">
+                      + {p.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {step === 4 && (
               <div className="space-y-6 animate-in fade-in slide-in-from-right-4">
                 <div className="p-4 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 rounded-2xl flex gap-4">
                   <AlertCircle className="w-6 h-6 text-amber-600 shrink-0 mt-0.5" />
                   <div>
-                    <h3 className="font-bold text-amber-800 dark:text-amber-400 text-sm">Boost & Verify via Paystack</h3>
+                    <h3 className="font-bold text-amber-800 dark:text-amber-400 text-sm">Boost &amp; Verify via Paystack</h3>
                     <p className="text-xs text-amber-700/80 dark:text-amber-500/80 mt-1">
                       Skip standard manual moderation queues. Pay KES 500 verification fee to instantly priority-label your campaign. Verified campaigns get 3x more visibility on CEKA.
                     </p>
@@ -216,7 +280,7 @@ export const CreateCampaignModal: React.FC<CreateCampaignModalProps> = ({ isOpen
                       disabled={isSubmitting}
                       className="py-4 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-bold shadow-lg shadow-amber-500/20 transition text-sm flex items-center justify-center gap-2"
                     >
-                      Pay & Boost ⚡
+                      Pay &amp; Boost ⚡
                    </button>
                 </div>
               </div>
@@ -224,7 +288,7 @@ export const CreateCampaignModal: React.FC<CreateCampaignModalProps> = ({ isOpen
           </div>
 
           {/* Footer Navigation */}
-          {step < 3 && (
+          {step < 4 && (
             <div className="p-6 border-t border-slate-100 dark:border-white/5 bg-slate-50/50 dark:bg-black/20 flex justify-between">
               <button 
                 onClick={() => step > 1 ? setStep(s=>s-1) : onClose()} 

@@ -704,3 +704,126 @@ export const BitcoinDonationToolsCard: React.FC = () => <AdToolsCard ad={BITCOIN
 export const LegislativeTrackerFeedBanner: React.FC = () => <AdFeedBanner ad={LEGISLATIVE_AD} />;
 export const LegislativeTrackerSidebarWidget: React.FC<{ dwellDelayMs?: number }> = (props) => <AdSidebarWidget ad={LEGISLATIVE_AD} {...props} />;
 export const LegislativeTrackerToolsCard: React.FC = () => <AdToolsCard ad={LEGISLATIVE_AD} />;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// DATABASE-DRIVEN AD SYSTEM
+// Fetches from `public.promo_ads` table. Supports tiers, campaign links, collab.
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Table shape (subset of what we read):
+// promo_ads { id, title, subtitle, description, cta_label, cta_url, background_color,
+//             image_url, logo_url, tier, campaign_id, is_collab, is_active, external }
+
+import { supabase } from '@/integrations/supabase/client';
+
+type DbAd = {
+  id: string;
+  title: string;
+  subtitle?: string;
+  description: string;
+  cta_label: string;
+  cta_url: string;
+  background_color?: string;
+  image_url?: string;
+  logo_url?: string;
+  tier?: 'standard' | 'premium' | 'collab';
+  campaign_id?: string;
+  campaign?: { title: string; slug?: string };
+  is_collab?: boolean;
+  external?: boolean;
+};
+
+function useDbAds(tier?: string): { ads: DbAd[]; loading: boolean } {
+  const [ads, setAds] = React.useState<DbAd[]>([]);
+  const [loading, setLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    let q = (supabase as any)
+      .from('promo_ads')
+      .select('*, campaign:campaigns(title, slug)')
+      .eq('is_active', true)
+      .order('tier', { ascending: false })
+      .limit(6);
+    if (tier) q = q.eq('tier', tier);
+
+    q.then(({ data }: { data: DbAd[] | null }) => {
+      setAds(data || []);
+      setLoading(false);
+    });
+  }, [tier]);
+
+  return { ads, loading };
+}
+
+/** Generic DB ad → AdContent mapper */
+function dbAdToContent(ad: DbAd): AdContent {
+  const campaignUrl = ad.campaign?.slug
+    ? `/campaign/${ad.campaign.slug}`
+    : (ad.campaign_id ? `/campaign/${ad.campaign_id}` : ad.cta_url);
+
+  const FallbackIcon: React.FC<{ className?: string }> = ({ className }) => (
+    <svg viewBox="0 0 24 24" fill="currentColor" className={className}>
+      <path d="M11.5 2C6.81 2 3 5.81 3 10.5S6.81 19 11.5 19h.5v3c4.86-2.34 8-7 8-11.5C20 5.81 16.19 2 11.5 2zm1 14.5h-2v-2h2v2zm0-4h-2c0-3.25 3-3 3-5 0-1.1-.9-2-2-2s-2 .9-2 2h-2c0-2.21 1.79-4 4-4s4 1.79 4 4c0 2.5-3 2.75-3 5z" />
+    </svg>
+  );
+
+  const LogoIcon: React.FC<{ className?: string }> = ({ className }) =>
+    ad.logo_url
+      ? <img src={ad.logo_url} alt={ad.title} className={className} style={{ objectFit: 'contain' }} />
+      : <FallbackIcon className={className} />;
+
+  return {
+    id: ad.id,
+    title: ad.title,
+    subtitle: ad.subtitle || (ad.is_collab ? 'CEKA Collab' : ad.tier === 'premium' ? 'Premium Partner' : 'CEKA Partner'),
+    description: ad.description,
+    cta: { label: ad.cta_label, url: ad.campaign_id ? campaignUrl : ad.cta_url },
+    brandIcon: LogoIcon,
+    backgroundColor: ad.background_color || '#1A6BFF',
+    image: ad.image_url,
+  };
+}
+
+/**
+ * DbAdFeedBanner — renders the top-ranked active DB ad as a feed banner.
+ * Falls back to the static Nasaka ad if no DB ads are available.
+ */
+export const DbAdFeedBanner: React.FC<{ tier?: string }> = ({ tier }) => {
+  const { ads, loading } = useDbAds(tier);
+  if (loading) return null;
+  if (!ads.length) return <NasakaFeedBanner />;
+  return <AdFeedBanner ad={dbAdToContent(ads[0])} />;
+};
+
+/**
+ * DbAdSidebarWidget — delays, then shows the top-ranked DB ad as a floating sidebar widget.
+ */
+export const DbAdSidebarWidget: React.FC<{ tier?: string; dwellDelayMs?: number }> = ({ tier, dwellDelayMs }) => {
+  const { ads, loading } = useDbAds(tier);
+  if (loading) return null;
+  if (!ads.length) return <NasakaSidebarWidget dwellDelayMs={dwellDelayMs} />;
+  return <AdSidebarWidget ad={dbAdToContent(ads[0])} dwellDelayMs={dwellDelayMs} />;
+};
+
+/**
+ * CampaignCollabBanner — specifically renders collab campaign ads (is_collab=true).
+ * Used to highlight higher-tier and partner campaigns inside feeds.
+ */
+export const CampaignCollabBanner: React.FC = () => {
+  const [ad, setAd] = React.useState<DbAd | null>(null);
+
+  React.useEffect(() => {
+    (supabase as any)
+      .from('promo_ads')
+      .select('*, campaign:campaigns(title, slug)')
+      .eq('is_active', true)
+      .eq('is_collab', true)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single()
+      .then(({ data }: { data: DbAd | null }) => setAd(data));
+  }, []);
+
+  if (!ad) return null;
+  return <AdFeedBanner ad={dbAdToContent(ad)} />;
+};

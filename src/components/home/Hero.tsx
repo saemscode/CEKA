@@ -55,7 +55,7 @@ const Hero = () => {
                 </Link>
               </Button>
               <Button asChild variant="outline" size="lg">
-                <Link to="/campaign">
+                <Link to="/campaign/june-25th">
                   {translate('June 25th: CEKA Special', language)}
                 </Link>
               </Button>
