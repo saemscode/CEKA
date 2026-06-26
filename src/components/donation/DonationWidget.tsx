@@ -37,40 +37,90 @@ const DONATION_METHODS: DonationMethod[] = [
   },
 ];
 
-// BTCPay Pay Button — a proper React component (dangerouslySetInnerHTML scripts never execute in React)
+// BTCPay Pay Button — full redesign with BTC / Lightning / Liquid rail tabs
 const BTCPAY_STORE_ID = 'HcRpH25NVLi2fNbRG8ykAUmskk6t9XjtfYAm3M3zV3n';
 const BTCPAY_HOST    = 'https://btcpay.twentyone.africa';
 
-const BTCPayButton: React.FC = () => {
-  const [amount, setAmount] = React.useState(5);      // default $5 USD
-  const [currency, setCurrency] = React.useState('USD');
-  const [busy, setBusy] = React.useState(false);
-  const [err, setErr] = React.useState('');
+type CryptoRail = { id: string; label: string; icon: React.ReactNode; hint: string; checkoutDesc: string };
+const CRYPTO_RAILS: CryptoRail[] = [
+  {
+    id: 'onchain',
+    label: 'Bitcoin',
+    icon: (
+      <svg viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor">
+        <path d="M14.24 10.56C13.93 11.8 12 11.17 11.4 11L12.05 8.38C12.65 8.55 14.56 9.26 14.24 10.56M11.12 12.49C10.75 13.87 8.46 13.12 7.72 12.93L8.45 10.01C9.19 10.2 11.5 11.04 11.12 12.49M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2M13.19 14.97C13.04 15.54 12.6 15.91 12 16.1V17H10.9V16.14C10.43 16.09 9.95 15.96 9.5 15.76L9.86 14.3C10.33 14.5 10.87 14.68 11.4 14.72C11.95 14.77 12.3 14.56 12.38 14.17C12.47 13.74 12.1 13.54 11.31 13.21C10.31 12.82 9.5 12.33 9.71 11.27C9.87 10.65 10.31 10.24 10.9 10.05V9.17H12V10.01C12.4 10.05 12.8 10.15 13.22 10.32L12.87 11.74C12.53 11.6 12.13 11.46 11.72 11.44C11.22 11.41 10.95 11.64 10.89 11.96C10.82 12.33 11.22 12.52 12.01 12.86C13.08 13.31 13.39 13.91 13.19 14.97Z"/>
+      </svg>
+    ),
+    hint: 'On-chain · slow but final',
+    checkoutDesc: 'Support CEKA — On-Chain Bitcoin',
+  },
+  {
+    id: 'lightning',
+    label: 'Lightning',
+    icon: (
+      <svg viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor">
+        <path d="M7 2v11h3v9l7-12h-4l4-8z"/>
+      </svg>
+    ),
+    hint: 'Instant · near-zero fee',
+    checkoutDesc: 'Support CEKA — Lightning Network',
+  },
+  {
+    id: 'liquid',
+    label: 'Liquid',
+    icon: (
+      <svg viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor">
+        <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+      </svg>
+    ),
+    hint: 'Liquid Network · confidential',
+    checkoutDesc: 'Support CEKA — Liquid Network',
+  },
+];
 
-  // Load modal JS once
+const CURRENCY_OPTS = [
+  { value: 'USD', label: 'USD $', defaultAmt: 5 },
+  { value: 'KES', label: 'KES', defaultAmt: 500 },
+  { value: 'GBP', label: 'GBP £', defaultAmt: 4 },
+  { value: 'EUR', label: 'EUR €', defaultAmt: 5 },
+  { value: 'BTC', label: 'BTC ₿', defaultAmt: 0.0001 },
+];
+
+const STEP: Record<string, number> = { USD: 1, GBP: 1, EUR: 1, KES: 100, BTC: 0.00001 };
+const MIN:  Record<string, number> = { USD: 1, GBP: 1, EUR: 1, KES: 100, BTC: 0.00001 };
+const MAX:  Record<string, number> = { USD: 500, GBP: 400, EUR: 450, KES: 50000, BTC: 0.01 };
+
+const BTCPayButton: React.FC = () => {
+  const [rail, setRail]       = React.useState<string>('lightning');
+  const [currency, setCurrency] = React.useState('USD');
+  const [amount, setAmount]   = React.useState(5);
+  const [busy, setBusy]       = React.useState(false);
+  const [err, setErr]         = React.useState('');
+
+  // Load BTCPay modal JS once — now allowed by CSP
   React.useEffect(() => {
     if (document.getElementById('btcpay-modal-js')) return;
     const s = document.createElement('script');
-    s.id  = 'btcpay-modal-js';
-    s.src = `${BTCPAY_HOST}/modal/btcpay.js`;
+    s.id    = 'btcpay-modal-js';
+    s.src   = `${BTCPAY_HOST}/modal/btcpay.js`;
     s.async = true;
     document.head.appendChild(s);
   }, []);
 
-  const STEP: Record<string, number> = { USD: 1, GBP: 1, EUR: 1, KES: 100, BTC: 0.00001 };
-  const MIN:  Record<string, number> = { USD: 1, GBP: 1, EUR: 1, KES: 100, BTC: 0.00001 };
-  const MAX:  Record<string, number> = { USD: 500, GBP: 400, EUR: 450, KES: 50000, BTC: 0.01 };
-
   const step = STEP[currency] ?? 1;
-  const min  = MIN[currency]  ?? 1;
-  const max  = MAX[currency]  ?? 500;
+  const minV = MIN[currency]  ?? 1;
+  const maxV = MAX[currency]  ?? 500;
 
   const handleCurrencyChange = (c: string) => {
     setCurrency(c);
-    const defaults: Record<string, number> = { USD: 5, GBP: 4, EUR: 5, KES: 500, BTC: 0.0001 };
-    setAmount(defaults[c] ?? 5);
+    setAmount(CURRENCY_OPTS.find(o => o.value === c)?.defaultAmt ?? 5);
     setErr('');
   };
+
+  const dec = () => setAmount(a => parseFloat(Math.max(minV, a - step).toFixed(8)));
+  const inc = () => setAmount(a => parseFloat(Math.min(maxV, a + step).toFixed(8)));
+
+  const activeRail = CRYPTO_RAILS.find(r => r.id === rail) ?? CRYPTO_RAILS[1];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -78,87 +128,155 @@ const BTCPayButton: React.FC = () => {
     setBusy(true);
     try {
       const form = new FormData();
-      form.append('storeId',       BTCPAY_STORE_ID);
-      form.append('jsonResponse',  'true');
-      form.append('checkoutDesc',  'Support CEKA');
-      form.append('price',          String(amount));
-      form.append('currency',        currency);
-      form.append('serverIpn',      'https://cajrvemigxghnfmyopiy.supabase.co/functions/v1/btcpay-confirmations');
-      form.append('browserRedirect','https://civiceducationkenya.com/donation-success');
-      form.append('notifyEmail',    'admin@civiceducationkenya.com');
+      form.append('storeId',        BTCPAY_STORE_ID);
+      form.append('jsonResponse',   'true');
+      form.append('checkoutDesc',   activeRail.checkoutDesc);
+      form.append('price',           String(amount));
+      form.append('currency',         currency);
+      form.append('serverIpn',       'https://cajrvemigxghnfmyopiy.supabase.co/functions/v1/btcpay-confirmations');
+      form.append('browserRedirect', 'https://civiceducationkenya.com/donation-success');
+      form.append('notifyEmail',     'admin@civiceducationkenya.com');
 
-      const res = await fetch(`${BTCPAY_HOST}/api/v1/invoices`, { method: 'POST', body: form });
+      const res  = await fetch(`${BTCPAY_HOST}/api/v1/invoices`, { method: 'POST', body: form });
       const text = await res.text();
-      if (!res.ok) { setErr(`BTCPay error ${res.status}. Try USD.`); return; }
-      const json = JSON.parse(text);
+      if (!res.ok) { setErr(`BTCPay error ${res.status}. Please try USD.`); return; }
+      const json      = JSON.parse(text);
       const invoiceId = json.invoiceId || json.id;
-      if (!invoiceId) { setErr('No invoice ID returned. Try USD.'); return; }
+      if (!invoiceId) { setErr('No invoice returned. Please try again.'); return; }
+      // Use modal if loaded, else open new tab
       if ((window as any).btcpay?.appendInvoiceFrame) {
         (window as any).btcpay.appendInvoiceFrame(invoiceId);
       } else {
         window.open(`${BTCPAY_HOST}/invoice?id=${invoiceId}`, '_blank');
       }
-    } catch (ex: any) {
+    } catch {
       setErr('Network error. Please try again.');
     } finally {
       setBusy(false);
     }
   };
 
+  const amtDisplay = currency === 'BTC'
+    ? amount.toFixed(5)
+    : currency === 'KES'
+      ? amount.toLocaleString()
+      : amount.toFixed(2);
+
   return (
     <form onSubmit={handleSubmit} className="w-full space-y-3">
-      {/* Amount row */}
+
+      {/* ── Rail selector tabs ── */}
+      <div className="grid grid-cols-3 gap-1.5 bg-black/20 rounded-xl p-1">
+        {CRYPTO_RAILS.map(r => (
+          <button
+            key={r.id}
+            type="button"
+            onClick={() => { setRail(r.id); setErr(''); }}
+            className={`flex flex-col items-center gap-0.5 py-2 px-1 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all duration-150 ${
+              rail === r.id
+                ? 'bg-white/20 text-white shadow-inner shadow-black/20 scale-[1.02]'
+                : 'text-white/50 hover:text-white/80 hover:bg-white/10 active:scale-95'
+            }`}
+            aria-pressed={rail === r.id}
+          >
+            <span className={rail === r.id ? 'text-white' : 'text-white/40'}>{r.icon}</span>
+            {r.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Rail hint */}
+      <p className="text-center text-[9px] font-semibold text-white/40 tracking-wider uppercase -mt-1">
+        {activeRail.hint}
+      </p>
+
+      {/* ── Amount stepper ── */}
       <div className="flex items-center justify-center gap-2">
         <button
           type="button"
-          onClick={() => setAmount(a => Math.max(min, parseFloat((a - step).toFixed(8))))}
-          className="w-9 h-9 rounded-full bg-white/15 border border-white/25 text-white text-xl font-bold flex items-center justify-center hover:bg-white/25 transition"
+          onClick={dec}
+          className="w-10 h-10 rounded-full bg-white/10 border border-white/20 text-white text-2xl font-thin flex items-center justify-center hover:bg-white/25 active:scale-90 transition-all select-none"
           aria-label="Decrease amount"
         >−</button>
-        <input
-          type="number"
-          value={amount}
-          min={min} max={max} step={step}
-          onChange={e => setAmount(parseFloat(e.target.value) || min)}
-          className="w-24 text-center text-3xl font-black bg-white/15 text-white border-none outline-none rounded-xl py-1 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-          aria-label="Donation amount"
-        />
+
+        <div className="flex-1 relative">
+          <input
+            type="number"
+            value={amount}
+            min={minV} max={maxV} step={step}
+            onChange={e => setAmount(parseFloat(e.target.value) || minV)}
+            className="w-full text-center text-3xl font-black bg-white/10 text-white border border-white/20 outline-none rounded-xl py-1.5 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none focus:border-white/50 focus:bg-white/15 transition-colors"
+            aria-label="Donation amount"
+          />
+          <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[8px] font-black text-white/30 uppercase pointer-events-none">
+            {currency}
+          </span>
+        </div>
+
         <button
           type="button"
-          onClick={() => setAmount(a => Math.min(max, parseFloat((a + step).toFixed(8))))}
-          className="w-9 h-9 rounded-full bg-white/15 border border-white/25 text-white text-xl font-bold flex items-center justify-center hover:bg-white/25 transition"
+          onClick={inc}
+          className="w-10 h-10 rounded-full bg-white/10 border border-white/20 text-white text-2xl font-thin flex items-center justify-center hover:bg-white/25 active:scale-90 transition-all select-none"
           aria-label="Increase amount"
         >+</button>
       </div>
 
-      {/* Currency selector */}
+      {/* ── Currency dropdown ── */}
       <div className="flex justify-center">
-        <select
-          value={currency}
-          onChange={e => handleCurrencyChange(e.target.value)}
-          className="bg-white/10 text-white border border-white/25 rounded-lg px-3 py-1.5 text-xs font-bold cursor-pointer outline-none appearance-none"
-          aria-label="Currency"
-        >
-          <option value="USD">USD</option>
-          <option value="KES">KES</option>
-          <option value="GBP">GBP</option>
-          <option value="EUR">EUR</option>
-          <option value="BTC">BTC</option>
-        </select>
+        <div className="relative inline-flex items-center">
+          <select
+            value={currency}
+            onChange={e => handleCurrencyChange(e.target.value)}
+            className="appearance-none bg-white/12 hover:bg-white/20 text-white border border-white/30 hover:border-white/50 rounded-lg pl-3 pr-7 py-1.5 text-[11px] font-black cursor-pointer outline-none transition-all focus:border-white/60 focus:bg-white/20"
+            aria-label="Currency"
+            style={{ background: 'rgba(255,255,255,0.12)' }}
+          >
+            {CURRENCY_OPTS.map(o => (
+              <option key={o.value} value={o.value} style={{ background: '#1a5c35', color: '#fff' }}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+          {/* Custom chevron */}
+          <svg className="absolute right-2 pointer-events-none w-3 h-3 text-white/60" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+            <polyline points="6 9 12 15 18 9"/>
+          </svg>
+        </div>
       </div>
 
-      {err && <p className="text-red-300 text-[10px] text-center font-bold">{err}</p>}
+      {err && (
+        <p className="text-red-300 text-[10px] text-center font-bold px-2 py-1 bg-red-500/10 rounded-lg border border-red-400/20">
+          {err}
+        </p>
+      )}
 
+      {/* ── Submit button ── */}
       <button
         type="submit"
         disabled={busy}
-        className="w-full min-h-[52px] rounded-2xl bg-white font-black text-[13px] uppercase tracking-wider text-[#0f3b21] shadow-lg shadow-black/25 hover:scale-[1.02] active:scale-95 transition flex items-center justify-center gap-2 disabled:opacity-60"
+        className="w-full min-h-[52px] rounded-2xl bg-white font-black text-[12px] uppercase tracking-wider text-[#0f3b21] shadow-lg shadow-black/30 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2.5 disabled:opacity-60 disabled:cursor-not-allowed"
       >
-        {busy ? 'Opening wallet…' : `Donate ${currency === 'BTC' ? '₿' : currency} ${amount} — Bitcoin / Lightning`}
+        {busy ? (
+          <>
+            <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="12" cy="12" r="10" strokeOpacity="0.25"/>
+              <path d="M12 2a10 10 0 0 1 10 10" strokeLinecap="round"/>
+            </svg>
+            Opening checkout…
+          </>
+        ) : (
+          <>
+            <span className="text-[#0f3b21]">{activeRail.icon}</span>
+            Donate {currency === 'BTC' ? `₿ ${amtDisplay}` : `${currency} ${amtDisplay}`} via {activeRail.label}
+          </>
+        )}
       </button>
     </form>
   );
 };
+
+
+
 
 
 
