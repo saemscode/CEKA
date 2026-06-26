@@ -1,49 +1,36 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Heart, CheckCircle2, ArrowRight, Home, Zap, Bitcoin } from 'lucide-react';
+import { ArrowRight, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import Layout from '@/components/layout/Layout';
+import Lottie from 'lottie-react';
+import successAnimation from '../../context/Success.json';
 
-// Map BTCPay payment method identifiers to human-readable labels and icons
-const RAIL_META: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
-  bitcoin: {
-    label: 'Bitcoin',
-    color: 'from-orange-400 to-amber-500',
-    icon: <Bitcoin className="w-6 h-6 text-white" />,
-  },
-  lightning: {
-    label: 'Lightning',
-    color: 'from-yellow-400 to-amber-400',
-    icon: <Zap className="w-6 h-6 text-white" />,
-  },
-  liquid: {
-    label: 'Liquid Network',
-    color: 'from-teal-400 to-cyan-500',
-    icon: <CheckCircle2 className="w-6 h-6 text-white" />,
-  },
-  paystack: {
-    label: 'Card / M-Pesa',
-    color: 'from-kenya-green to-emerald-500',
-    icon: <Heart className="w-6 h-6 text-white" />,
-  },
-  mpesa: {
-    label: 'M-Pesa',
-    color: 'from-emerald-500 to-green-600',
-    icon: <Heart className="w-6 h-6 text-white" />,
-  },
-};
-
-const COUNTDOWN_SECONDS = 8;
+const COUNTDOWN_SECONDS = 15;
 
 const DonationSuccess: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [params] = useSearchParams();
 
   const rail = params.get('rail') || 'paystack';
   const invoiceId = params.get('invoiceId') || null;
   const campaignId = params.get('campaignId') || null;
 
-  const meta = RAIL_META[rail.toLowerCase()] ?? RAIL_META['paystack'];
+  useEffect(() => {
+    // 1. Did they come from BTCPay? (They must have an invoiceId in the URL)
+    const isValidCrypto = Boolean(invoiceId);
+    
+    // 2. Did they come from Paystack? (They must have the hidden internal router state)
+    const state = location.state as { fromDonation?: boolean } | null;
+    const isValidFiat = Boolean(state?.fromDonation);
+
+    // 3. The Guard: If they have neither, they typed the URL manually. Kick them out instantly.
+    if (!isValidCrypto && !isValidFiat) {
+      navigate('/', { replace: true });
+    }
+  }, [invoiceId, location.state, navigate]);
 
   const [seconds, setSeconds] = useState(COUNTDOWN_SECONDS);
 
@@ -61,135 +48,156 @@ const DonationSuccess: React.FC = () => {
     return () => clearInterval(interval);
   }, [campaignId, navigate]);
 
+  const isCrypto = ['bitcoin', 'lightning', 'liquid'].includes(rail.toLowerCase());
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center p-4">
-      {/* Background radial glow */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-[600px] h-[600px] rounded-full bg-kenya-green/5 blur-3xl" />
-        <div className="absolute -bottom-40 -left-40 w-[600px] h-[600px] rounded-full bg-emerald-500/5 blur-3xl" />
-      </div>
+    <Layout>
+      <div className="flex-1 min-h-[calc(100vh-140px)] flex flex-col items-center justify-center p-4 pt-10">
+        <motion.div
+          initial={{ opacity: 0, y: 32, scale: 0.95 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+          className="relative max-w-md w-full"
+        >
+          {/* Main Glass Card */}
+          <div className="relative rounded-[32px] border border-white/10 bg-white/[0.04] backdrop-blur-3xl overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.15)] pb-6">
 
-      <motion.div
-        initial={{ opacity: 0, y: 32, scale: 0.95 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-        className="relative max-w-md w-full"
-      >
-        {/* Glass card */}
-        <div className="relative rounded-3xl border border-white/10 bg-white/[0.03] backdrop-blur-2xl overflow-hidden shadow-2xl shadow-black/40">
-
-          {/* Top gradient accent */}
-          <div className={`h-1.5 w-full bg-gradient-to-r ${meta.color}`} />
-
-          <div className="p-8 text-center">
-
-            {/* Animated check ring */}
-            <motion.div
-              initial={{ scale: 0.5, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ delay: 0.2, duration: 0.5, type: 'spring', stiffness: 200 }}
-              className="mx-auto mb-6 relative"
-            >
-              <div className={`w-24 h-24 mx-auto rounded-full bg-gradient-to-br ${meta.color} flex items-center justify-center shadow-2xl`}>
-                {meta.icon}
-              </div>
-              {/* Ping ring */}
+            <div className="px-6 pt-8 pb-4 flex flex-col items-center text-center">
+              
+              {/* Native Lottie Success Animation */}
               <motion.div
-                initial={{ scale: 1, opacity: 0.4 }}
-                animate={{ scale: 1.6, opacity: 0 }}
-                transition={{ delay: 0.4, duration: 1.2, repeat: Infinity, repeatDelay: 1 }}
-                className={`absolute inset-0 rounded-full bg-gradient-to-br ${meta.color} w-24 h-24 mx-auto`}
-              />
-            </motion.div>
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ duration: 0.5, ease: "easeOut" }}
+                className="w-32 h-32 -mt-4 mb-2 drop-shadow-lg"
+              >
+                <Lottie animationData={successAnimation} loop={false} />
+              </motion.div>
 
-            <motion.h1
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.35 }}
-              className="text-3xl font-black text-white mb-2 tracking-tight"
-            >
-              Thank you! 🙏
-            </motion.h1>
+              <motion.h1
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+                className="text-2xl font-black text-white mb-3 tracking-tight"
+              >
+                Contribution Secured
+              </motion.h1>
 
-            <motion.p
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.45 }}
-              className="text-slate-400 leading-relaxed mb-2"
-            >
-              Your{' '}
-              <span className="font-bold text-white">{meta.label}</span>{' '}
-              donation to CEKA has been received. Every contribution directly funds civic education
-              and the defence of Kenyan rights.
-            </motion.p>
+              {/* Strictly Minimalist Civic Points Badge */}
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.3 }}
+                className="mb-5 inline-flex items-center justify-center px-3 py-1 rounded-full bg-white/10 border border-white/5 backdrop-blur-md shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)]"
+              >
+                <span className="text-[9px] font-black text-white/60 uppercase tracking-widest">+ 25 Civic Points Awarded</span>
+              </motion.div>
 
-            {invoiceId && (
+              <motion.p
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4 }}
+                className="text-white/60 text-[12px] leading-relaxed mb-6 px-2 font-semibold tracking-wide"
+              >
+                Your sovereign contribution directly fuels civic education and the defence of Kenyan rights. Thank you for building a better Kenya.
+              </motion.p>
+
+              {invoiceId && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.5 }}
+                  className="bg-black/20 rounded-2xl px-4 py-3 border border-white/5 mb-6 shadow-inner w-full flex justify-between items-center"
+                >
+                  <span className="text-[9px] font-black text-white/40 uppercase tracking-widest">Invoice Ref</span>
+                  <span className="text-[10px] font-mono font-bold text-white/70 truncate ml-4 tracking-wider">{invoiceId}</span>
+                </motion.div>
+              )}
+
+              {/* Blockchain Reality Check - Contextualized SVG */}
+              {isCrypto && (
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.6 }}
+                  className="w-full bg-black/40 rounded-3xl p-6 shadow-[inset_0_2px_10px_rgba(0,0,0,0.5)] border border-white/5 mb-6 flex flex-col items-center"
+                >
+                  <div className="w-32 mb-5 opacity-80 drop-shadow-md">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="auto" viewBox="0 0 943.45 800" role="img">
+                      <g transform="translate(-525.361 -281.856)">
+                        {/* Modified Skin Tones to #8d5524 */}
+                        <path d="M1.9,19.811a12.972,12.972,0,0,0,19.639,3.123l39.99,22.932L60.04,21.96,22.292,3.847A13.042,13.042,0,0,0,1.9,19.813Z" transform="translate(831.484 427.997) rotate(-4.012)" fill="#8d5524"/>
+                        <path d="M7.537,78.03l2.778-27.639a28.455,28.455,0,1,1,27.207,5.052V78.03Z" transform="translate(968.63 297.979)" fill="#8d5524"/>
+                        <path d="M81.565,169.59c6.627-14.525,6.88-51.682-6.174-77.927-2.577,6.5-5.364,11.62-8.318,14.454a7.963,7.963,0,0,1-2.9,1.993C17.347,123.064,0,94.52,0,94.52s12.33-7.112,11.8-19.3L38.116,81.4l18.9-52.094,1.886-2.016.04-.115.1-.036L60.108,26l.02-.024L73.492,21.7l24.853-9.371L112.538,2.5,148.166,0l6.3,10.251,39.6,14.426-3.249,98.388-3.533,10.409,2.908,8.625-5.08,6.87c5.91,4.641,6.98,9.853,4.34,15.5l-17.393,5.294s-43.1,6.9-69.941,6.9C88.549,176.661,79.143,174.9,81.565,169.59Z" transform="translate(865.29 360.739)" fill="#1c1c1c"/>
+                        <path d="M505.378,549.685c8.417,1.079,17.151,1.763,25.213-.851,1.27-.394,2.666-1.27,2.539-2.539a3.074,3.074,0,0,0-.572-1.27,78.423,78.423,0,0,1-7.617-14.51,1.269,1.269,0,0,0-.47-.66,1.194,1.194,0,0,0-.813,0c-3.719.977-6.932,3.38-10.626,4.409a15.109,15.109,0,0,1-5.788.432c-1.675-.191-3.968-1.574-5.484-1.4C502.623,538.844,504.73,544.023,505.378,549.685Z" transform="translate(569.793 217.038)" fill="#737373"/>
+                        <path d="M631.961,540.5c5.548-3.809,11.3-7.808,14.573-13.686a2.372,2.372,0,0,0,.394-1.176,2.44,2.44,0,0,0-.47-1.143,47.171,47.171,0,0,0-11.845-12.785,34.541,34.541,0,0,0-6.6,6.094c-1.4,1.47-5.255,3.809-5.29,6.056,0,1.27,1.47,2.742,2.159,3.809.927,1.371,1.8,2.767,2.645,4.19C628,532.556,632.4,540.224,631.961,540.5Z" transform="translate(602.392 212.166)" fill="#737373"/>
+                        <path d="M548.86,564.761a5.648,5.648,0,0,1-1.015,3.681,5,5,0,0,1-2.132,1.27c-11.768,4.215-25.391-1.04-37.133,3.111-2.411.851-4.7,2.082-7.121,2.895a38.747,38.747,0,0,1-8.886,1.574c-4.152.394-8.328.648-12.491.761a30.035,30.035,0,0,1-9.42-.826,11.316,11.316,0,0,1-7.223-5.731,5.5,5.5,0,0,1-.356-4.075,4.392,4.392,0,0,1,.774-1.27,11.135,11.135,0,0,1,2.767-2.247l4.329-2.792a29.059,29.059,0,0,1,6.563-3.478c1.713-.558,3.527-.8,5.268-1.27,6.081-1.777,10.728-6.6,15.044-11.235l5.89-6.284a5.929,5.929,0,0,1,2.044-1.637,5.663,5.663,0,0,1,2.539-.241,33.946,33.946,0,0,1,16.059,5.383,20.809,20.809,0,0,0,3.968,2.337c3.454,1.346,7.884.331,11.07-1.371,1.511-.813,1.176-1.27,1.815-2.717s2.184-2.373,3.527-1.054a3.733,3.733,0,0,1,.838,1.6c1.27,4.19.788,8.7.788,13.089a5.765,5.765,0,0,0,.254,2.031,11.491,11.491,0,0,0,1.155,1.88,4.287,4.287,0,0,1,.241.482,12.911,12.911,0,0,1,.851,6.132Z" transform="translate(559.305 218.961)" fill="#424242"/>
+                        <path d="M548.862,560.163a5.648,5.648,0,0,1-1.015,3.681,4.994,4.994,0,0,1-2.132,1.27c-11.768,4.215-25.391-1.04-37.132,3.111-2.411.851-4.7,2.082-7.121,2.895a38.734,38.734,0,0,1-8.886,1.574c-4.152.394-8.328.648-12.491.761a30.036,30.036,0,0,1-9.42-.826,11.316,11.316,0,0,1-7.223-5.731,5.5,5.5,0,0,1-.366-4.072,4.393,4.393,0,0,1,.774-1.27c.685,1.434,1.176,3.339,1.617,4.024a8.238,8.238,0,0,0,5.509,3.968,13.688,13.688,0,0,0,5.077-.648c10.664-2.645,22-2.679,32.245-6.678,3.517-1.384,6.869-3.224,10.562-4.062s7.617-.61,11.426-.927c6.018-.482,11.845-2.3,17.773-3.251a12.91,12.91,0,0,1,.8,6.172Z" transform="translate(559.303 223.558)" fill="#2d2d2d"/>
+                        <path d="M665.38,538.1c-.558,4.469-3.39,8.315-6.5,11.579s-6.626,6.2-9.1,9.953c-3.046,4.658-4.417,10.434-8.376,14.371a22.982,22.982,0,0,1-5.077,3.618,35.426,35.426,0,0,1-6.538,3.008c-5.916,1.891-12.288,1.461-18.471,1a16.614,16.614,0,0,1-5.865-1.13,17.676,17.676,0,0,1-2.438-1.5,11.643,11.643,0,0,1-3.809-3.809,3.81,3.81,0,0,1-.369-2.767,6.5,6.5,0,0,1,1.763-2.691,41.907,41.907,0,0,1,4.469-4.024,26.741,26.741,0,0,0,5.819-5.079,16.4,16.4,0,0,0,2.247-5.079,45.042,45.042,0,0,0,1.637-9.712,30.78,30.78,0,0,1,.673-6.5c.939-3.352,3.429-6.347,3.148-9.814a2.452,2.452,0,0,1,.126-1.486,2.068,2.068,0,0,1,1.168-.723,20.7,20.7,0,0,1,6.068-1.409,7.072,7.072,0,0,1,5.637,2.2c.863,1.041,1.434,2.539,2.7,2.939a4.29,4.29,0,0,0,1.929.076c3.123-.317,6.423-.711,8.886-2.729a11.082,11.082,0,0,0,3.681-8.082c0-1.155-.52-2.362,1.27-2.539,1.346-.178,2.412,1.27,3.1,2.159,2.476,3.314,5.014,6.779,5.941,10.816a3.188,3.188,0,0,1,1.13-.216,4.913,4.913,0,0,1,4.05,2.069,8.062,8.062,0,0,1,1.1,5.484Z" transform="translate(595.924 213.797)" fill="#424242"/>
+                        <path d="M665.278,535.424c-.558,4.469-3.39,8.315-6.5,11.579s-6.626,6.2-9.1,9.953c-3.046,4.658-4.417,10.434-8.376,14.371a22.982,22.982,0,0,1-5.077,3.618,35.437,35.437,0,0,1-6.538,3.008c-5.916,1.891-12.288,1.461-18.471,1a16.617,16.617,0,0,1-5.865-1.13,17.67,17.67,0,0,1-2.438-1.5,11.64,11.64,0,0,1-3.809-3.809,9.282,9.282,0,0,1,3.809-.914c2.742.147,4.748,2.742,7.376,3.542,3.744,1.13,7.477-1.511,11.273-2.411,2.476-.588,5.079-.432,7.528-1.27a18.608,18.608,0,0,0,5.572-3.38,28.367,28.367,0,0,0,5.955-5.731,36.881,36.881,0,0,0,3.492-6.97,99.66,99.66,0,0,1,7.054-13.508,9.543,9.543,0,0,1,1.434-1.88,19.928,19.928,0,0,1,1.943-1.409c2.539-1.91,3.593-5.079,4.481-8.175a14.3,14.3,0,0,1,1-2.729,4.913,4.913,0,0,1,4.05,2.069A8.06,8.06,0,0,1,665.278,535.424Z" transform="translate(596.027 216.473)" fill="#2d2d2d"/>
+                        <path d="M556.62,320.79" transform="translate(584.578 160.714)" fill="#2d2d2d"/>
+                        <path d="M862.683,412.446V396.682a43.772,43.772,0,0,0-43.772-43.76H196.232a43.772,43.772,0,0,0-43.772,43.76v29.072Z" transform="translate(475.655 169.375)" fill="#111111"/>
+                        <g transform="translate(1038.664 384.406) rotate(-4.012)">
+                          <path d="M22.136,63.953A12.972,12.972,0,0,0,20.774,44.11L34.156,0,11.194,6.814,2,47.658a13.042,13.042,0,0,0,20.131,16.3Z" transform="translate(0 136.26)" fill="#8d5524"/>
+                          <path d="M6.5,0,17.11,2.467S60.956,87.776,50.39,104.03,26.881,174.1,26.881,174.1,7.736,170.3.421,160.543l13.4-63.826L0,43.072Z" transform="translate(3.384 0)" fill="#1c1c1c"/>
+                        </g>
+                        <path d="M1281.945,724.139H344.465c-1.651,0-2.987-.7-2.987-1.569S342.811,721,344.461,721h937.48c1.651,0,2.987.7,2.987,1.569S1283.6,724.139,1281.945,724.139Z" transform="translate(183.883 357.717)" fill="#0a0a0a"/>
+                        <path d="M769.751,229.728l-.459-.918c-.709-1.419-6.585-13.219-7.323-16.253l-7.395.87-19.257,0,2.676-4.014-7.074.923a16.236,16.236,0,0,0-7.209,2.717,11.042,11.042,0,0,0-3.27,3.371c-2.527,4.327-6.388,11.405-6.427,11.477l-.369.677-3.208-5.4c-.042-.209-4.018-20.948,9.288-27.981.686-1.394,6.535-12.358,20.356-11.618a8.761,8.761,0,0,1,5.957-2.962c3.156-.165,6.433,1.493,9.723,4.949,4.371,4.589,10.357,10.874,13.978,17.853l1,1.425a11.23,11.23,0,0,1,2,6.973,23.279,23.279,0,0,1-.793,11.875Z" transform="translate(254.951 101.242)" fill="#050505"/>
+                        <path d="M879.488,425.766v437.98a37.882,37.882,0,0,1-37.882,37.869H190.347a37.869,37.869,0,0,1-37.857-37.869V381.6c18.663,6.919,18.663,6.919,37.857,6.347H841.6a37.883,37.883,0,0,1,37.886,37.823Z" transform="translate(475.663 177.103)" fill="#151515"/>
+                        <path d="M768.855,541V681.09H633.018a70.036,70.036,0,0,1,0-140.071Z" transform="translate(586.292 220.06)" fill="#0f0f0f"/>
+                        <circle cx="27.307" cy="27.307" r="27.307" transform="translate(1200.37 803.819)" fill="#1c1c1c"/>
+                      </g>
+                    </svg>
+                  </div>
+                  <h4 className="text-white text-[11px] font-black uppercase tracking-widest mb-1.5 drop-shadow-sm">Blockchain Verification</h4>
+                  <p className="text-white/50 text-[10px] leading-relaxed text-center px-2 font-medium">
+                    Your transaction has been broadcast. Once it receives <span className="font-bold text-white/80">1 confirmation (~10 mins)</span>, your official CEKA receipt will be emailed to you.
+                  </p>
+                </motion.div>
+              )}
+
+              {/* Auto-redirect countdown */}
               <motion.p
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                transition={{ delay: 0.55 }}
-                className="text-xs font-mono text-slate-500 mt-1 mb-4 truncate"
+                transition={{ delay: 0.7 }}
+                className="text-[9px] font-bold uppercase tracking-widest text-white/30 mb-5"
               >
-                Invoice: {invoiceId}
+                Redirecting in{' '}
+                <span className="text-white/70 font-black tabular-nums">{seconds}s</span>
               </motion.p>
-            )}
 
-            {/* Divider */}
-            <div className="h-px bg-white/8 my-6" />
-
-            {/* Auto-redirect countdown */}
-            <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.6 }}
-              className="text-xs font-semibold text-slate-500 mb-5"
-            >
-              Redirecting in{' '}
-              <span className="text-white font-black tabular-nums">{seconds}s</span>
-            </motion.p>
-
-            {/* CTA buttons */}
-            <motion.div
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.65 }}
-              className="flex gap-3"
-            >
-              <Button
-                onClick={() => navigate('/')}
-                className="flex-1 h-12 rounded-xl font-bold bg-kenya-green hover:bg-[#0ead36] text-white shadow-lg shadow-kenya-green/20 transition-all active:scale-95"
+              {/* Action Buttons */}
+              <motion.div
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.8 }}
+                className="w-full flex gap-3"
               >
-                <Home className="w-4 h-4 mr-2" />
-                Home
-              </Button>
-              {campaignId && (
                 <Button
-                  onClick={() => navigate(`/campaign/${campaignId}`)}
-                  variant="outline"
-                  className="flex-1 h-12 rounded-xl font-bold border-white/10 text-white hover:bg-white/10 transition-all active:scale-95"
+                  onClick={() => navigate('/')}
+                  className="flex-1 h-14 rounded-[20px] font-black uppercase tracking-widest text-[10px] bg-white text-black shadow-[0_2px_10px_rgba(255,255,255,0.1),inset_0_-2px_0_rgba(0,0,0,0.1)] hover:bg-gray-100 transition-all active:scale-[0.97]"
                 >
-                  Back to Campaign
-                  <ArrowRight className="w-4 h-4 ml-2" />
+                  <Home className="w-4 h-4 mr-2 opacity-70" />
+                  Return Home
                 </Button>
-              )}
-            </motion.div>
+                {campaignId && (
+                  <Button
+                    onClick={() => navigate(`/campaign/${campaignId}`)}
+                    variant="outline"
+                    className="flex-1 h-14 rounded-[20px] font-black uppercase tracking-widest text-[10px] border border-white/10 text-white bg-transparent hover:bg-white/5 transition-all active:scale-[0.97] shadow-inner"
+                  >
+                    Campaign
+                    <ArrowRight className="w-4 h-4 ml-2 opacity-70" />
+                  </Button>
+                )}
+              </motion.div>
+
+            </div>
           </div>
-
-          {/* Bottom bevel */}
-          <div className="h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
-        </div>
-
-        {/* Below-card tagline */}
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.8 }}
-          className="text-center text-xs text-slate-600 mt-5 font-medium"
-        >
-          CEKA · Civic Education Kenya — Building a better Kenya, one citizen at a time.
-        </motion.p>
-      </motion.div>
-    </div>
+        </motion.div>
+      </div>
+    </Layout>
   );
 };
 

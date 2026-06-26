@@ -9,6 +9,7 @@ import {
   MpesaDonationIcon,
   CopyDonationIcon,
 } from '@/components/ui/CustomIcons';
+import { QRCodeSVG } from 'qrcode.react';
 
 declare global {
   interface Window {
@@ -22,6 +23,7 @@ type DonationMethod = {
   label: string;
   kind: 'manual';
   payload: string;
+  qrPayload?: string;
   helperText?: string;
   icon: React.ComponentType<{ className?: string }>;
 };
@@ -37,18 +39,65 @@ const DONATION_METHODS: DonationMethod[] = [
   },
 ];
 
-// BTCPay Pay Button — full redesign with BTC / Lightning / Liquid rail tabs
-const BTCPAY_STORE_ID = 'HcRpH25NVLi2fNbRG8ykAUmskk6t9XjtfYAm3M3zV3n';
-const BTCPAY_HOST    = 'https://btcpay.twentyone.africa';
+const MaskedMethodItem: React.FC<{ method: DonationMethod, onCopy: (method: DonationMethod) => void }> = ({ method, onCopy }) => {
+  const [isRevealed, setIsRevealed] = useState(false);
 
-type CryptoRail = { id: string; label: string; icon: React.ReactNode; hint: string; checkoutDesc: string };
+  const handleTap = () => {
+    onCopy(method);
+    setIsRevealed(true);
+    setTimeout(() => setIsRevealed(false), 3000);
+  };
+
+  const payload = method.payload;
+  // Fallback if payload isn't long enough
+  const prefix = payload.length > 7 ? payload.slice(0, 5) : payload;
+  const suffix = payload.length > 7 ? payload.slice(-2) : '';
+  const middle = payload.length > 7 ? payload.slice(5, -2) : '';
+
+  return (
+    <button
+      type="button"
+      onClick={handleTap}
+      className="group w-full relative rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 hover:bg-slate-100 dark:hover:bg-white/10 transition-all active:scale-[0.98] overflow-hidden text-left"
+    >
+      <div className="p-4 flex items-center justify-between">
+        <div className="flex items-center min-w-0 flex-1">
+          {React.createElement(method.icon, { className: 'w-5 h-5 mr-3 shrink-0 text-slate-900 dark:text-white' })}
+          <div className="min-w-0 flex-1">
+            <p className="font-bold text-xs text-slate-900 dark:text-white mb-0.5">{method.label}</p>
+            <div className="flex items-center gap-0.5 text-[11px] font-mono text-slate-700 dark:text-slate-300">
+              <span className="font-bold">{prefix}</span>
+              <span className={`transition-all duration-500 ease-out select-none font-bold ${isRevealed ? 'blur-0 text-slate-900 dark:text-white' : 'blur-[4px] text-slate-500 dark:text-slate-500'}`}>
+                {middle}
+              </span>
+              <span className="font-bold">{suffix}</span>
+            </div>
+          </div>
+        </div>
+        <div className="p-1.5 rounded-lg hover:bg-slate-200 dark:hover:bg-white/10 transition-colors ml-3">
+          {isRevealed ? (
+            <svg className="w-4 h-4 text-kenya-green" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+          ) : (
+            <CopyDonationIcon className="w-4 h-4 opacity-70 group-hover:opacity-100 transition-opacity" />
+          )}
+        </div>
+      </div>
+    </button>
+  );
+};
+
+// BTCPay Pay Button — ultra-modern, deep iOS glassmorphism redesign
+const BTCPAY_STORE_ID = 'HcRpH25NVLi2fNbRG8ykAUmskk6t9XjtfYAm3M3zV3n';
+const BTCPAY_HOST = 'https://btcpay.twentyone.africa';
+
+type CryptoRail = { id: string; label: string; icon: React.ReactNode; hint: string; checkoutDesc: string; disabled?: boolean };
 const CRYPTO_RAILS: CryptoRail[] = [
   {
     id: 'onchain',
     label: 'Bitcoin',
     icon: (
-      <svg viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor">
-        <path d="M14.24 10.56C13.93 11.8 12 11.17 11.4 11L12.05 8.38C12.65 8.55 14.56 9.26 14.24 10.56M11.12 12.49C10.75 13.87 8.46 13.12 7.72 12.93L8.45 10.01C9.19 10.2 11.5 11.04 11.12 12.49M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2M13.19 14.97C13.04 15.54 12.6 15.91 12 16.1V17H10.9V16.14C10.43 16.09 9.95 15.96 9.5 15.76L9.86 14.3C10.33 14.5 10.87 14.68 11.4 14.72C11.95 14.77 12.3 14.56 12.38 14.17C12.47 13.74 12.1 13.54 11.31 13.21C10.31 12.82 9.5 12.33 9.71 11.27C9.87 10.65 10.31 10.24 10.9 10.05V9.17H12V10.01C12.4 10.05 12.8 10.15 13.22 10.32L12.87 11.74C12.53 11.6 12.13 11.46 11.72 11.44C11.22 11.41 10.95 11.64 10.89 11.96C10.82 12.33 11.22 12.52 12.01 12.86C13.08 13.31 13.39 13.91 13.19 14.97Z"/>
+      <svg fill="currentColor" viewBox="0 0 529.012 529.013" className="w-4 h-4 drop-shadow-md">
+        <path d="M366.817,252.027c19.285-8.727,34.561-21.824,45.826-39.278c11.268-17.46,16.898-36.64,16.898-57.552c0-19.284-4.566-36.689-13.703-52.222c-9.137-15.532-20.551-27.962-34.254-37.301c-13.703-9.339-29.234-15.478-46.592-18.421c-2.826-0.478-5.984-0.906-9.295-1.31V18.36c0-10.141-8.221-18.36-18.361-18.36h-36.719c-10.141,0-18.36,8.219-18.36,18.36v24.48h-38.293V18.36c0-10.141-8.219-18.36-18.36-18.36h-36.72c-10.141,0-18.36,8.219-18.36,18.36v24.48H77.543v446.393h62.993v21.42c0,10.141,8.219,18.36,18.36,18.36h36.72c10.141,0,18.36-8.22,18.36-18.36v-21.42h15.514c8.023-0.055,15.587-0.128,22.779-0.208v21.628c0,10.141,8.219,18.36,18.36,18.36h36.721c10.141,0,18.359-8.22,18.359-18.36V487.14c5.098-0.288,9.303-0.606,12.49-0.949c23.955-2.638,44.102-9.693,60.441-21.162c16.34-11.47,29.229-26.794,38.672-45.979c9.438-19.187,14.156-38.924,14.156-59.224c0-25.783-7.307-48.214-21.922-67.296S394.02,259.947,366.817,252.027z M219.442,117.137c42.43,0,68.109,0.508,77.039,1.523c15.023,1.83,26.34,7.057,33.953,15.68s11.42,19.841,11.42,33.648c0,14.413-4.418,26.034-13.25,34.865c-8.83,8.832-20.961,14.162-36.389,15.986c-8.525,1.016-30.35,1.523-65.466,1.523h-59.07V117.137H219.442z M345.655,393.473c-8.428,9.438-19.334,15.38-32.736,17.815c-8.732,1.83-29.332,2.742-61.812,2.742h-83.434V294.659h72.772c41.004,0,67.651,2.13,79.934,6.396s21.67,11.065,28.164,20.404c6.492,9.339,9.742,20.704,9.742,34.106C358.292,371.392,354.083,384.029,345.655,393.473z" />
       </svg>
     ),
     hint: 'On-chain · slow but final',
@@ -58,8 +107,8 @@ const CRYPTO_RAILS: CryptoRail[] = [
     id: 'lightning',
     label: 'Lightning',
     icon: (
-      <svg viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor">
-        <path d="M7 2v11h3v9l7-12h-4l4-8z"/>
+      <svg fill="currentColor" viewBox="0 0 32 32" className="w-4 h-4 drop-shadow-md">
+        <path d="M23.901 6.164c0.593-1.664 0.654-3.411 0.245-5.060h-0v0c-0.042 1.519-0.508 3.075-1.385 4.482-2.338 3.755-7.035 5.419-11.348 4.363 0.325-0.144 0.639-0.302 0.938-0.474 2.437-1.404 3.574-3.46 3.389-5.721-0.461 1.361-1.537 2.578-3.134 3.498-2.998 1.727-7.364 1.977-11.698 1.057v2.332c2.561 0.51 5.122 0.597 7.399 0.215 0.261 0.178 0.534 0.347 0.821 0.502l-0.041 0.003 6.591 7.669-5.806 1.273 18.698 10.643-6.822-10.984 3.622-0.933-5.712-7.841c1.285-0.748 2.406-1.772 3.249-3.044 2.523 0.916 5.292 1.244 7.945 1.023v-2.442c-2.3 0.224-4.692 0.048-6.95-0.562z"></path>
       </svg>
     ),
     hint: 'Instant · near-zero fee',
@@ -68,48 +117,50 @@ const CRYPTO_RAILS: CryptoRail[] = [
   {
     id: 'liquid',
     label: 'Liquid',
+    disabled: true,
     icon: (
-      <svg viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor">
-        <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+      <svg viewBox="0 0 512 512" className="w-4 h-4 drop-shadow-md text-blue-100">
+        <path fill="currentColor" opacity="0.8" d="M272.431,6.816C268.072,2.458,262.164,0.008,256,0.002c-0.008,0-0.017-0.002-0.026-0.002 c-6.173,0-12.093,2.453-16.455,6.817c-6.613,6.614-161.955,163.854-161.955,326.783C77.563,431.97,157.598,512,255.975,512 c0.008,0,0.017,0,0.025,0c98.392-0.014,178.437-80.038,178.437-178.399C434.437,170.668,279.046,13.428,272.431,6.816z" />
+        <path fill="currentColor" d="M255.975,512c0.008,0,0.017,0,0.025,0V0.002c-0.008,0-0.017-0.002-0.026-0.002 c-6.173,0.002-12.093,2.453-16.455,6.817c-6.613,6.614-161.955,163.854-161.955,326.783C77.563,431.97,157.598,512,255.975,512z" />
       </svg>
     ),
-    hint: 'Liquid Network · confidential',
+    hint: 'Confidential · upgrade pending',
     checkoutDesc: 'Support CEKA — Liquid Network',
   },
 ];
 
 const CURRENCY_OPTS = [
+  { value: 'KES', label: 'KES /=', defaultAmt: 100 },
   { value: 'USD', label: 'USD $', defaultAmt: 5 },
-  { value: 'KES', label: 'KES', defaultAmt: 500 },
   { value: 'GBP', label: 'GBP £', defaultAmt: 4 },
   { value: 'EUR', label: 'EUR €', defaultAmt: 5 },
   { value: 'BTC', label: 'BTC ₿', defaultAmt: 0.0001 },
 ];
 
 const STEP: Record<string, number> = { USD: 1, GBP: 1, EUR: 1, KES: 100, BTC: 0.00001 };
-const MIN:  Record<string, number> = { USD: 1, GBP: 1, EUR: 1, KES: 100, BTC: 0.00001 };
-const MAX:  Record<string, number> = { USD: 500, GBP: 400, EUR: 450, KES: 50000, BTC: 0.01 };
+const MIN: Record<string, number> = { USD: 1, GBP: 1, EUR: 1, KES: 100, BTC: 0.00001 };
+const MAX: Record<string, number> = { USD: 500, GBP: 400, EUR: 450, KES: 50000, BTC: 0.01 };
 
 const BTCPayButton: React.FC = () => {
-  const [rail, setRail]       = React.useState<string>('lightning');
-  const [currency, setCurrency] = React.useState('USD');
-  const [amount, setAmount]   = React.useState(5);
-  const [busy, setBusy]       = React.useState(false);
-  const [err, setErr]         = React.useState('');
+  const [rail, setRail] = React.useState<string>('lightning');
+  const [currency, setCurrency] = React.useState('KES');
+  const [amount, setAmount] = React.useState(100);
+  const [busy, setBusy] = React.useState(false);
+  const [err, setErr] = React.useState('');
+  const [showGuide, setShowGuide] = React.useState(false);
 
-  // Load BTCPay modal JS once — now allowed by CSP
   React.useEffect(() => {
     if (document.getElementById('btcpay-modal-js')) return;
     const s = document.createElement('script');
-    s.id    = 'btcpay-modal-js';
-    s.src   = `${BTCPAY_HOST}/modal/btcpay.js`;
+    s.id = 'btcpay-modal-js';
+    s.src = `${BTCPAY_HOST}/modal/btcpay.js`;
     s.async = true;
     document.head.appendChild(s);
   }, []);
 
   const step = STEP[currency] ?? 1;
-  const minV = MIN[currency]  ?? 1;
-  const maxV = MAX[currency]  ?? 500;
+  const minV = MIN[currency] ?? 1;
+  const maxV = MAX[currency] ?? 500;
 
   const handleCurrencyChange = (c: string) => {
     setCurrency(c);
@@ -128,22 +179,22 @@ const BTCPayButton: React.FC = () => {
     setBusy(true);
     try {
       const form = new FormData();
-      form.append('storeId',        BTCPAY_STORE_ID);
-      form.append('jsonResponse',   'true');
-      form.append('checkoutDesc',   activeRail.checkoutDesc);
-      form.append('price',           String(amount));
-      form.append('currency',         currency);
-      form.append('serverIpn',       'https://cajrvemigxghnfmyopiy.supabase.co/functions/v1/btcpay-confirmations');
+      form.append('storeId', BTCPAY_STORE_ID);
+      form.append('jsonResponse', 'true');
+      form.append('checkoutDesc', activeRail.checkoutDesc);
+      form.append('price', String(amount));
+      form.append('currency', currency);
+      form.append('serverIpn', 'https://cajrvemigxghnfmyopiy.supabase.co/functions/v1/btcpay-confirmations');
       form.append('browserRedirect', 'https://civiceducationkenya.com/donation-success');
-      form.append('notifyEmail',     'admin@civiceducationkenya.com');
+      form.append('notifyEmail', 'admin@civiceducationkenya.com');
 
-      const res  = await fetch(`${BTCPAY_HOST}/api/v1/invoices`, { method: 'POST', body: form });
+      const res = await fetch(`${BTCPAY_HOST}/api/v1/invoices`, { method: 'POST', body: form });
       const text = await res.text();
-      if (!res.ok) { setErr(`BTCPay error ${res.status}. Please try USD.`); return; }
-      const json      = JSON.parse(text);
+      if (!res.ok) { setErr(`BTCPay error ${res.status}. Try USD.`); return; }
+      const json = JSON.parse(text);
       const invoiceId = json.invoiceId || json.id;
       if (!invoiceId) { setErr('No invoice returned. Please try again.'); return; }
-      // Use modal if loaded, else open new tab
+
       if ((window as any).btcpay?.appendInvoiceFrame) {
         (window as any).btcpay.appendInvoiceFrame(invoiceId);
       } else {
@@ -156,122 +207,163 @@ const BTCPayButton: React.FC = () => {
     }
   };
 
-  const amtDisplay = currency === 'BTC'
-    ? amount.toFixed(5)
-    : currency === 'KES'
-      ? amount.toLocaleString()
-      : amount.toFixed(2);
+  const amtDisplay = currency === 'BTC' ? amount.toFixed(5) : currency === 'KES' ? amount.toLocaleString() : amount.toFixed(2);
 
   return (
-    <form onSubmit={handleSubmit} className="w-full space-y-3">
-
-      {/* ── Rail selector tabs ── */}
-      <div className="grid grid-cols-3 gap-1.5 bg-black/20 rounded-xl p-1">
-        {CRYPTO_RAILS.map(r => (
+    <div className="relative w-full">
+      {/* ── Tutorial Flip Card Overlay ── */}
+      {showGuide && (
+        <div className="relative w-full h-full inset-0 z-20 bg-[#06180c]/95 backdrop-blur-2xl rounded-2xl p-5 flex flex-col justify-center shadow-[0_0_40px_rgba(0,0,0,0.5)] border border-white/10 animate-in fade-in zoom-in-95 duration-200">
+          <h4 className="text-white font-black text-xs uppercase tracking-widest mb-4 text-center drop-shadow-md">3 Steps Using Bitcoin</h4>
+          <ul className="space-y-4 text-white/90 text-[11px] font-semibold tracking-wide">
+            <li className="flex items-start gap-3">
+              <span className="w-5 h-5 rounded-full bg-white/15 border border-white/20 flex items-center justify-center shrink-0 text-white font-black text-[10px] shadow-inner">1</span>
+              <span>Get a Lightning wallet like <b>Muun</b>, <b>Bull Wallet</b>, or <b>Wallet of Satoshi</b>.</span>
+            </li>
+            <li className="flex items-start gap-3">
+              <span className="w-5 h-5 rounded-full bg-white/15 border border-white/20 flex items-center justify-center shrink-0 text-white font-black text-[10px] shadow-inner">2</span>
+              <span>Select your amount and tap <b>Donate</b> to generate a unique invoice.</span>
+            </li>
+            <li className="flex items-start gap-3">
+              <span className="w-5 h-5 rounded-full bg-white/15 border border-white/20 flex items-center justify-center shrink-0 text-white font-black text-[10px] shadow-inner">3</span>
+              <span>Scan the QR code or tap the invoice to open your wallet and confirm.</span>
+            </li>
+          </ul>
           <button
-            key={r.id}
             type="button"
-            onClick={() => { setRail(r.id); setErr(''); }}
-            className={`flex flex-col items-center gap-0.5 py-2 px-1 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all duration-150 ${
-              rail === r.id
-                ? 'bg-white/20 text-white shadow-inner shadow-black/20 scale-[1.02]'
-                : 'text-white/50 hover:text-white/80 hover:bg-white/10 active:scale-95'
-            }`}
-            aria-pressed={rail === r.id}
+            onClick={() => setShowGuide(false)}
+            className="mt-6 w-full py-2.5 bg-white/10 hover:bg-white/20 active:scale-95 rounded-xl border border-white/20 text-white text-[11px] font-black uppercase tracking-widest transition-all"
           >
-            <span className={rail === r.id ? 'text-white' : 'text-white/40'}>{r.icon}</span>
-            {r.label}
+            Got it
           </button>
-        ))}
-      </div>
-
-      {/* Rail hint */}
-      <p className="text-center text-[9px] font-semibold text-white/40 tracking-wider uppercase -mt-1">
-        {activeRail.hint}
-      </p>
-
-      {/* ── Amount stepper ── */}
-      <div className="flex items-center justify-center gap-2">
-        <button
-          type="button"
-          onClick={dec}
-          className="w-10 h-10 rounded-full bg-white/10 border border-white/20 text-white text-2xl font-thin flex items-center justify-center hover:bg-white/25 active:scale-90 transition-all select-none"
-          aria-label="Decrease amount"
-        >−</button>
-
-        <div className="flex-1 relative">
-          <input
-            type="number"
-            value={amount}
-            min={minV} max={maxV} step={step}
-            onChange={e => setAmount(parseFloat(e.target.value) || minV)}
-            className="w-full text-center text-3xl font-black bg-white/10 text-white border border-white/20 outline-none rounded-xl py-1.5 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none focus:border-white/50 focus:bg-white/15 transition-colors"
-            aria-label="Donation amount"
-          />
-          <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[8px] font-black text-white/30 uppercase pointer-events-none">
-            {currency}
-          </span>
         </div>
-
-        <button
-          type="button"
-          onClick={inc}
-          className="w-10 h-10 rounded-full bg-white/10 border border-white/20 text-white text-2xl font-thin flex items-center justify-center hover:bg-white/25 active:scale-90 transition-all select-none"
-          aria-label="Increase amount"
-        >+</button>
-      </div>
-
-      {/* ── Currency dropdown ── */}
-      <div className="flex justify-center">
-        <div className="relative inline-flex items-center">
-          <select
-            value={currency}
-            onChange={e => handleCurrencyChange(e.target.value)}
-            className="appearance-none bg-white/12 hover:bg-white/20 text-white border border-white/30 hover:border-white/50 rounded-lg pl-3 pr-7 py-1.5 text-[11px] font-black cursor-pointer outline-none transition-all focus:border-white/60 focus:bg-white/20"
-            aria-label="Currency"
-            style={{ background: 'rgba(255,255,255,0.12)' }}
-          >
-            {CURRENCY_OPTS.map(o => (
-              <option key={o.value} value={o.value} style={{ background: '#1a5c35', color: '#fff' }}>
-                {o.label}
-              </option>
-            ))}
-          </select>
-          {/* Custom chevron */}
-          <svg className="absolute right-2 pointer-events-none w-3 h-3 text-white/60" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-            <polyline points="6 9 12 15 18 9"/>
-          </svg>
-        </div>
-      </div>
-
-      {err && (
-        <p className="text-red-300 text-[10px] text-center font-bold px-2 py-1 bg-red-500/10 rounded-lg border border-red-400/20">
-          {err}
-        </p>
       )}
 
-      {/* ── Submit button ── */}
-      <button
-        type="submit"
-        disabled={busy}
-        className="w-full min-h-[52px] rounded-2xl bg-white font-black text-[12px] uppercase tracking-wider text-[#0f3b21] shadow-lg shadow-black/30 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2.5 disabled:opacity-60 disabled:cursor-not-allowed"
-      >
-        {busy ? (
-          <>
-            <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="12" cy="12" r="10" strokeOpacity="0.25"/>
-              <path d="M12 2a10 10 0 0 1 10 10" strokeLinecap="round"/>
+      {/* ── Main Form ── */}
+      <form onSubmit={handleSubmit} className="w-full space-y-4">
+
+        {/* Header w/ Tutorial Toggle */}
+        <div className="flex justify-between items-center px-1">
+          <span className="text-[8px] -bottom-1 font-black text-white/50 uppercase tracking-widest">Choose Below</span>
+          <button
+            type="button"
+            onClick={() => setShowGuide(true)}
+            className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-white/5 hover:bg-white/15 border border-white/10 text-white/70 text-[9px] font-bold uppercase tracking-wider transition-all active:scale-95 shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)]"
+          >
+            <svg className="w-3 h-3 text-white/80" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M17.726 13.02 14 16H9v-1h4.065a.5.5 0 0 0 .416-.777l-.888-1.332A1.995 1.995 0 0 0 10.93 12H3a1 1 0 0 0-1 1v6a2 2 0 0 0 2 2h9.639a3 3 0 0 0 2.258-1.024L22 13l-1.452-.484a2.998 2.998 0 0 0-2.822.504zm1.532-5.63c.451-.465.73-1.108.73-1.818s-.279-1.353-.73-1.818A2.447 2.447 0 0 0 17.494 3S16.25 2.997 15 4.286C13.75 2.997 12.506 3 12.506 3a2.45 2.45 0 0 0-1.764.753c-.451.466-.73 1.108-.73 1.818s.279 1.354.73 1.818L15 12l4.258-4.61z" />
             </svg>
-            Opening checkout…
-          </>
-        ) : (
-          <>
-            <span className="text-[#0f3b21]">{activeRail.icon}</span>
-            Donate {currency === 'BTC' ? `₿ ${amtDisplay}` : `${currency} ${amtDisplay}`} via {activeRail.label}
-          </>
+            How to Donate
+          </button>
+        </div>
+
+        {/* ── iOS Segmented Control ── */}
+        <div className="flex p-1 bg-black/40 backdrop-blur-md rounded-xl shadow-[inset_0_1px_4px_rgba(0,0,0,0.6)] relative">
+          {CRYPTO_RAILS.map(r => (
+            <button
+              key={r.id}
+              type="button"
+              disabled={r.disabled}
+              onClick={() => { setRail(r.id); setErr(''); }}
+              className={`relative flex-1 flex flex-col items-center justify-center gap-1 py-2.5 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all duration-300 ease-[cubic-bezier(0.23,1,0.32,1)] ${rail === r.id
+                ? 'bg-white/25 text-white shadow-[0_2px_8px_rgba(0,0,0,0.3),inset_0_1px_1px_rgba(255,255,255,0.4)] scale-[1.02] z-10'
+                : r.disabled
+                  ? 'opacity-40 grayscale cursor-not-allowed'
+                  : 'text-white/50 hover:text-white/90 hover:bg-white/10 active:scale-95 z-0'
+                }`}
+              aria-pressed={rail === r.id}
+            >
+              <span className={rail === r.id ? 'text-white' : 'text-white/50'}>{r.icon}</span>
+              {r.label}
+
+              {r.disabled && (
+                <span className="absolute -bottom-1 bg-blue-500 text-white text-[5px] px-1.5 py-0.5 rounded border border-blue-400/50 tracking-widest font-black shadow-lg">
+                  COMING SOON
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+
+        <p className="text-center text-[9px] font-bold text-white/40 tracking-widest uppercase -mt-1.5 h-3">
+          {activeRail.hint}
+        </p>
+
+        {/* ── Unified iOS Stepper & Currency ── */}
+        <div className="flex items-center justify-between p-1.5 bg-white/10 backdrop-blur-2xl rounded-2xl border border-white/20 shadow-[inset_0_1px_2px_rgba(255,255,255,0.1),0_4px_12px_rgba(0,0,0,0.2)]">
+
+          <button
+            type="button"
+            onClick={dec}
+            className="w-11 h-11 shrink-0 rounded-xl bg-black/20 hover:bg-black/40 border border-white/10 text-white text-2xl font-light flex items-center justify-center active:scale-90 active:bg-black/60 transition-all duration-200 select-none shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)]"
+            aria-label="Decrease amount"
+          >
+            <span className="mb-1 text-center justify-center align-center">−</span></button>
+
+          <div className="flex-1 flex flex-col items-center justify-center relative">
+            {/* Currency Dropdown integrated into stepper */}
+            <div className="absolute -top-1">
+              <select
+                value={currency}
+                onChange={e => handleCurrencyChange(e.target.value)}
+                className="appearance-none bg-transparent text-white/50 hover:text-white/80 text-[9px] font-black uppercase tracking-widest cursor-pointer outline-none transition-all text-center pb-1"
+              >
+                {CURRENCY_OPTS.map(o => (
+                  <option key={o.value} value={o.value} style={{ background: '#0a2e19', color: '#fff' }}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+              <svg className="absolute mt-2 -right-3 top-1 pointer-events-none w-2 h-2 text-white/30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="6 9 12 15 18 9" /></svg>
+            </div>
+
+            <input
+              type="number"
+              value={amount}
+              min={minV} max={maxV} step={step}
+              onChange={e => setAmount(parseFloat(e.target.value) || minV)}
+              className="w-full text-center text-3xl font-black bg-transparent text-white border-none outline-none py-1 mt-3 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none focus:scale-105 transition-transform"
+              aria-label="Donation amount"
+            />
+          </div>
+
+          <button
+            type="button"
+            onClick={inc}
+            className="w-11 h-11 shrink-0 rounded-xl bg-black/20 hover:bg-black/40 border border-white/10 text-white text-2xl font-light flex items-center justify-center active:scale-90 active:bg-black/60 transition-all duration-200 select-none shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)]"
+            aria-label="Increase amount"
+          >
+            <span className="mb-1 text-center justify-center align-center cursor-pointer">+</span></button>
+        </div>
+
+        {err && (
+          <p className="text-red-200 text-[10px] text-center font-bold px-3 py-1.5 bg-red-500/20 rounded-xl border border-red-400/30 backdrop-blur-md animate-in slide-in-from-top-1">
+            {err}
+          </p>
         )}
-      </button>
-    </form>
+
+        {/* ── Submit Button (Deep Glass Gradient) ── */}
+        <button
+          type="submit"
+          disabled={busy}
+          className="w-full h-[56px] rounded-2xl bg-gradient-to-b from-white to-[#e0e0e0] font-black text-[13px] uppercase tracking-widest text-[#0f3b21] shadow-[0_6px_20px_rgba(0,0,0,0.4),inset_0_-3px_0_rgba(0,0,0,0.1)] hover:brightness-105 active:scale-[0.97] active:shadow-[0_2px_10px_rgba(0,0,0,0.4),inset_0_2px_4px_rgba(0,0,0,0.2)] transition-all duration-200 flex items-center justify-center gap-2.5 disabled:opacity-60 disabled:cursor-not-allowed group"
+        >
+          {busy ? (
+            <>
+              <svg className="w-5 h-5 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="10" strokeOpacity="0.25" /><path d="M12 2a10 10 0 0 1 10 10" strokeLinecap="round" />
+              </svg>
+              Initializing...
+            </>
+          ) : (
+            <>
+              <span className="text-[#0f3b21] drop-shadow-sm group-hover:scale-110 transition-transform">{activeRail.icon}</span>
+              Donate {currency === 'BTC' ? `₿ ${amtDisplay}` : `${currency} ${amtDisplay}`}
+            </>
+          )}
+        </button>
+      </form>
+    </div>
   );
 };
 
@@ -477,7 +569,7 @@ const DonationWidget: React.FC<DonationWidgetProps> = ({
         callback: function (response: any) {
           setIsPaying(false);
           handleCollapse();
-          navigate('/donation-success?rail=paystack');
+          navigate('/donation-success?rail=paystack', { state: { fromDonation: true } });
         },
         onClose: function () {
           setIsPaying(false);
@@ -744,46 +836,44 @@ const DonationWidget: React.FC<DonationWidgetProps> = ({
                   {/* ── M-Pesa manual methods ── */}
                   <div className="space-y-3 pb-2">
                     {DONATION_METHODS.map((method) => (
-                      <div
-                        key={method.id}
-                        className="group relative rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 hover:bg-slate-100 dark:hover:bg-white/10 transition-colors overflow-hidden"
-                      >
-                        <div className="p-4 flex items-center justify-between">
-                          <div className="flex items-center min-w-0 flex-1">
-                            {React.createElement(method.icon, { className: 'w-5 h-5 mr-3 shrink-0' })}
-                            <div className="min-w-0 flex-1">
-                              <p className="font-bold text-xs text-slate-900 dark:text-white mb-0.5">{method.label}</p>
-                              <p className="text-[10px] text-slate-500 dark:text-slate-400 font-mono truncate">
-                                {method.payload}
-                              </p>
-                            </div>
-                          </div>
-                          <button
-                            onClick={() => handleCopy(method)}
-                            className="p-1.5 rounded-lg hover:bg-slate-200 dark:hover:bg-white/10 transition-colors ml-3"
-                            title={`Copy M-Pesa number`}
-                          >
-                            <CopyDonationIcon className="w-4 h-4 opacity-70 group-hover:opacity-100 transition-opacity" />
-                          </button>
-                        </div>
-                      </div>
+                      <MaskedMethodItem key={method.id} method={method} onCopy={handleCopy} />
                     ))}
                   </div>
 
                   {/* ── BTCPay crypto section ── */}
                   <div className="rounded-2xl overflow-hidden bg-gradient-to-br from-[#0f3b21] to-[#1a5c35] p-4 shadow-xl">
                     <div className="flex items-center gap-2 mb-3">
-                      <div className="w-5 h-5 rounded-md bg-white/20 flex items-center justify-center">
-                        <svg viewBox="0 0 24 24" className="w-3 h-3 text-white" fill="currentColor"><path d="M14.24 10.56C13.93 11.8 12 11.17 11.4 11L12.05 8.38C12.65 8.55 14.56 9.26 14.24 10.56M11.12 12.49C10.75 13.87 8.46 13.12 7.72 12.93L8.45 10.01C9.19 10.2 11.5 11.04 11.12 12.49M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2M13.19 14.97C13.04 15.54 12.6 15.91 12 16.1V17H10.9V16.14C10.43 16.09 9.95 15.96 9.5 15.76L9.86 14.3C10.33 14.5 10.87 14.68 11.4 14.72C11.95 14.77 12.3 14.56 12.38 14.17C12.47 13.74 12.1 13.54 11.31 13.21C10.31 12.82 9.5 12.33 9.71 11.27C9.87 10.65 10.31 10.24 10.9 10.05V9.17H12V10.01C12.4 10.05 12.8 10.15 13.22 10.32L12.87 11.74C12.53 11.6 12.13 11.46 11.72 11.44C11.22 11.41 10.95 11.64 10.89 11.96C10.82 12.33 11.22 12.52 12.01 12.86C13.08 13.31 13.39 13.91 13.19 14.97Z"/></svg>
-                      </div>
-                      <span className="text-white text-[10px] font-black uppercase tracking-widest opacity-80">Bitcoin · Lightning · Liquid</span>
+                      <svg className="w-4 h-4 text-white/80" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M17.726 13.02 14 16H9v-1h4.065a.5.5 0 0 0 .416-.777l-.888-1.332A1.995 1.995 0 0 0 10.93 12H3a1 1 0 0 0-1 1v6a2 2 0 0 0 2 2h9.639a3 3 0 0 0 2.258-1.024L22 13l-1.452-.484a2.998 2.998 0 0 0-2.822.504zm1.532-5.63c.451-.465.73-1.108.73-1.818s-.279-1.353-.73-1.818A2.447 2.447 0 0 0 17.494 3S16.25 2.997 15 4.286C13.75 2.997 12.506 3 12.506 3a2.45 2.45 0 0 0-1.764.753c-.451.466-.73 1.108-.73 1.818s.279 1.354.73 1.818L15 12l4.258-4.61z" />
+                      </svg>
+                      <span className="text-white text-[10px] font-black uppercase tracking-widest opacity-80">Make Your Donation Easy</span>
                     </div>
                     <BTCPayButton />
+                    
+                    {/* ── Partner Recognition Footer (Inside Green Box) ── */}
+                    <a href="https://btcpayserver.org/" target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 pt-3 mt-4 border-t border-white/10 cursor-pointer group hover:opacity-100 transition-opacity">
+                      <span className="text-[8px] font-black uppercase tracking-[0.2em] text-white/50">
+                        In Partnership With
+                      </span>
+                      
+                      {/* The Inlined BTCPay SVG Logo */}
+                      <svg className="h-3 w-auto opacity-70 grayscale group-hover:grayscale-0 transition-all duration-500 ease-out" viewBox="0 0 105.46 188.47">
+                        <path fill="#cedc21" d="M117.24,247.32a11.06,11.06,0,0,1-11-11.06V69.91a11.06,11.06,0,1,1,22.11,0V236.26A11.06,11.06,0,0,1,117.24,247.32Z" transform="translate(-106.19 -58.85)"/>
+                        <path fill="#51b13e" d="M117.25,247.32a11.06,11.06,0,0,1-4.75-21l66.66-31.64L110.69,144.2a11.05,11.05,0,1,1,13.11-17.8l83.35,61.41a11,11,0,0,1-1.82,18.88L122,246.25A10.94,10.94,0,0,1,117.25,247.32Z" transform="translate(-106.19 -58.85)"/>
+                        <path fill="#cedc21" d="M117.25,181.93a11.05,11.05,0,0,1-6.56-20l68.47-50.45L112.5,79.89a11.05,11.05,0,0,1,9.48-20l83.35,39.56a11.05,11.05,0,0,1,1.82,18.89L123.8,179.78A11,11,0,0,1,117.25,181.93Z" transform="translate(-106.19 -58.85)"/>
+                        <polygon fill="#1e7a44" points="22.11 70.86 22.11 117.61 53.82 94.25 22.11 70.86"/>
+                        <rect fill="#ffffff" y="51.26" width="22.11" height="53.89"/>
+                        <path fill="#cedc21" d="M128.3,69.91a11.06,11.06,0,1,0-22.11,0V209H128.3Z" transform="translate(-106.19 -58.85)"/>
+                      </svg>
+                      
+                      <span className="text-[10px] font-black tracking-tight text-white/60">
+                        BTCPay
+                      </span>
+                    </a>
                   </div>
 
-
                   <button
-                    className="w-full py-3 rounded-xl font-black text-[10px] uppercase tracking-widest text-slate-500 dark:text-slate-400 hover:text-red-500 dark:hover:text-red-400 transition-all duration-150"
+                    className="w-full py-3 rounded-xl font-black text-[10px] uppercase tracking-widest text-slate-500 dark:text-slate-400 hover:text-red-500 dark:hover:text-red-400 transition-all duration-150 mt-2"
                     onClick={handleCollapse}
                   >
                     Maybe Later
