@@ -814,9 +814,8 @@ Mwananchi wa Jamhuri ya Kenya`;
             <div className="flex items-center gap-6 min-w-0">
               <div className="flex flex-col items-center">
                 <div className="w-12 h-12 sm:w-16 sm:h-16 flex-shrink-0">
-                  <MailBulkIcon className="w-full h-full text-kenya-green animate-pulse-gentle" />
+                  <MailBulkIcon className="w-full h-full sm:h-12 md:h-16 lg:h-20 text-kenya-green animate-pulse-gentle" />
                 </div>
-                <span className="text-[10px] font-black uppercase tracking-widest text-kenya-green mt-1">Petition</span>
               </div>
               <h1 className="text-2xl sm:text-4xl font-[1000] uppercase tracking-[-0.04em] text-slate-900 dark:text-white leading-none">Submit <span className="text-kenya-green">Email</span> here</h1>
             </div>
