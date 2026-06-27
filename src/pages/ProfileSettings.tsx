@@ -160,6 +160,8 @@ const ProfileSettings = () => {
     } finally {
       setLoading(false);
     }
+  };
+
   const updateAllyProfile = async () => {
     if (!session?.user?.id || !allyOrg) return;
     setSavingAlly(true);

@@ -11,7 +11,7 @@ import {
     Menu, X, ChevronDown, Bell, User, MoreVertical, Globe, Settings, Shield, Search, ChevronRight,
     FileText, PenTool, MessageSquare, Calendar, Heart, LayoutGrid, Radio, Users, Home, BookOpen,
     PlusCircle, Edit3, Activity, TrendingUp, Eye, UserCheck, Clock, AlertTriangle, Download,
-    RefreshCw, Plus, Sparkles, Zap, PieChart as LucidePieChart, Send
+    RefreshCw, Plus, Sparkles, Zap, PieChart as LucidePieChart, Send, Building
 } from 'lucide-react';
 import { adminService, AdminDashboardStats, UserActivityStats, ModerationQueueItem } from '@/services/adminService';
 import { roleService, PERMISSION_KEYS } from '@/services/roleService';
@@ -25,6 +25,7 @@ import EventManager from './EventManager';
 import LegislativeIntelligence from './LegislativeIntelligence';
 import BentoAnalyticsDashboard from './BentoAnalyticsDashboard';
 import PollManager from './PollManager';
+import PartnerManager from './PartnerManager';
 import { BroadcastCenter } from './broadcast/BroadcastCenter';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 import { supabase } from '@/integrations/supabase/client';
@@ -279,7 +280,7 @@ const EnhancedAdminDashboard = () => {
 
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
                 <div className="overflow-x-auto pb-2 -mx-4 px-4 lg:mx-0 lg:px-0 hide-scrollbar">
-                    <TabsList className="flex h-auto p-1.5 bg-muted/30 backdrop-blur-sm rounded-2xl w-max lg:w-full lg:grid lg:grid-cols-11">
+                    <TabsList className="flex flex-wrap h-auto p-1.5 bg-muted/30 backdrop-blur-sm rounded-2xl w-full gap-1.5">
                         <TabsTrigger value="overview" className="rounded-xl px-4 py-3 font-medium data-[state=active]:shadow-lg">
                             <LayoutGrid className="h-4 w-4 mr-2" />
                             Overview
@@ -325,6 +326,10 @@ const EnhancedAdminDashboard = () => {
                                 Campaigns
                             </TabsTrigger>
                         )}
+                        <TabsTrigger value="partners" className="rounded-xl px-4 py-3 font-medium data-[state=active]:shadow-lg">
+                            <Building className="h-4 w-4 mr-2" />
+                            Partners
+                        </TabsTrigger>
                         {permissions[PERMISSION_KEYS.BULK_UPLOAD] && (
                             <TabsTrigger value="uploads" className="rounded-xl px-4 py-3 font-medium data-[state=active]:shadow-lg">
                                 <BookOpen className="h-4 w-4 mr-2" />
@@ -434,7 +439,7 @@ const EnhancedAdminDashboard = () => {
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                                 <Button
                                     className="h-20 flex flex-col gap-2 rounded-2xl bg-muted/50 hover:bg-muted border-0"
                                     variant="outline"
@@ -460,6 +465,14 @@ const EnhancedAdminDashboard = () => {
                                 >
                                     <UserCheck className="h-6 w-6" />
                                     <span>User Management</span>
+                                </Button>
+                                <Button
+                                    className="h-20 flex flex-col gap-2 rounded-2xl bg-muted/50 hover:bg-muted border-0"
+                                    variant="outline"
+                                    onClick={() => setActiveTab('partners')}
+                                >
+                                    <Building className="h-6 w-6" />
+                                    <span>Manage Partners</span>
                                 </Button>
                             </div>
                         </CardContent>
@@ -549,6 +562,10 @@ const EnhancedAdminDashboard = () => {
 
                 <TabsContent value="campaigns">
                     <CampaignManager />
+                </TabsContent>
+
+                <TabsContent value="partners">
+                    <PartnerManager />
                 </TabsContent>
 
                 <TabsContent value="sessions">

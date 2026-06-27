@@ -42,6 +42,21 @@ const ArrowRightIcon = () => (
   </svg>
 );
 
+// Custom SVGs for cascading responsive tab headers
+const SignInTabIcon = ({ size = 20, className }: { size?: number; className?: string }) => (
+  <svg width={size} height={size} className={className} viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="512" cy="512" r="512" fill="currentColor" opacity="0.2" />
+    <path d="m458.15 617.7 18.8-107.3a56.94 56.94 0 0 1 35.2-101.9V289.4h-145.2a56.33 56.33 0 0 0-56.3 56.3v275.8a33.94 33.94 0 0 0 3.4 15c12.2 24.6 60.2 103.7 197.9 164.5V622.1a313.29 313.29 0 0 1-53.8-4.4zM656.85 289h-144.9v119.1a56.86 56.86 0 0 1 35.7 101.4l18.8 107.8A320.58 320.58 0 0 1 512 622v178.6c137.5-60.5 185.7-139.9 197.9-164.5a33.94 33.94 0 0 0 3.4-15V345.5a56 56 0 0 0-16.4-40 56.76 56.76 0 0 0-40.05-16.5z" fill="currentColor" />
+  </svg>
+);
+
+const SignUpTabIcon = ({ size = 20, className }: { size?: number; className?: string }) => (
+  <svg width={size} height={size} className={`${className} rotate-180`} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M20.1633 4.09295L15.0612 2.17072C14.1429 1.86721 13.2245 1.96838 12.5102 2.47423C12.2041 2.67657 12 2.87891 11.7959 3.08125H7.91837C6.38776 3.08125 5.06122 4.39646 5.06122 5.91401V6.9257C5.06122 7.33038 5.36735 7.73506 5.87755 7.73506C6.38776 7.73506 6.69388 7.33038 6.69388 6.9257V5.91401C6.69388 5.20582 7.30612 4.69997 7.91837 4.69997H11.2857V19.3696H7.91837C7.20408 19.3696 6.69388 18.7626 6.69388 18.1555V17.1439C6.69388 16.7392 6.38776 16.3345 5.87755 16.3345C5.36735 16.3345 5.06122 16.638 5.06122 17.0427V18.0544C5.06122 19.5719 6.28572 20.8871 7.91837 20.8871H11.7959C12 21.0895 12.2041 21.393 12.4082 21.4942C12.9184 21.7977 13.4286 22 14.0408 22C14.3469 22 14.7551 21.8988 15.0612 21.7977L20.1633 19.8754C21.2857 19.4708 22 18.4591 22 17.245V6.62219C22 5.50933 21.1837 4.39646 20.1633 4.09295Z" fill="currentColor" />
+    <path d="M6.38776 13.5017C6.08163 13.8052 6.08163 14.3111 6.38776 14.6146C6.4898 14.7158 6.69388 14.8169 6.89796 14.8169C7.10204 14.8169 7.30612 14.7158 7.40816 14.6146L9.44898 12.5912C9.55102 12.49 9.55102 12.3889 9.65306 12.3889C9.65306 12.2877 9.7551 12.1865 9.7551 12.0854C9.7551 11.9842 9.7551 11.883 9.65306 11.7819C9.65306 11.6807 9.55102 11.5795 9.44898 11.5795L7.40816 9.55612C7.10204 9.25261 6.59184 9.25261 6.28571 9.55612C5.97959 9.85963 5.97959 10.3655 6.28571 10.669L7 11.3772H2.81633C2.40816 11.3772 2 11.6807 2 12.1865C2 12.6924 2.30612 12.9959 2.81633 12.9959H7.10204L6.38776 13.5017Z" fill="currentColor" />
+  </svg>
+);
+
 // Clean, high-contrast iOS-style text input
 const IosInput = ({
   label, id, type = 'text', value, onChange, placeholder, autoComplete,
@@ -129,6 +144,13 @@ const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
   type Tab = 'signin' | 'signup' | 'partner';
   const [tab, setTab] = useState<Tab>('signin');
 
+  const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1024);
+  useEffect(() => {
+    const handleResize = () => setWindowWidth(window.innerWidth);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
@@ -203,23 +225,45 @@ const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
       });
       if (authError) throw authError;
 
-      // 2. Write to civic_education_providers — this IS the partner table
+      // 2. Write to partners table
       if (authData.user) {
-        await (supabase.from('civic_education_providers') as any).insert({
-          name: orgName,
-          website_url: orgWebsite || null,
-          contact_email: orgEmail,
-          focus_areas: [],
-          submitted_by_user_id: authData.user.id,
-          is_verified: false, // pending admin approval
-          description: null,
-        });
+        const { data: partnerData, error: dbError } = await (supabase
+          .from('partners' as any) as any)
+          .insert({
+            org_name: orgName,
+            org_email: orgEmail,
+            org_website: orgWebsite || null,
+            submitted_by_user_id: authData.user.id,
+            tier: 'free',
+            verification_status: 'unverified',
+            agreement_signed: false
+          })
+          .select('id')
+          .single();
 
-        // 3. Write a pending ally role (retains the structural 'ally' database role value)
-        await (supabase.from('user_roles') as any).insert({
+        if (dbError) throw dbError;
+
+        // 3. Write a pending ally role
+        await (supabase.from('user_roles' as any) as any).insert({
           user_id: authData.user.id,
           role: 'ally',
         });
+
+        // 4. Trigger partner welcome email edge function
+        if (partnerData) {
+          try {
+            await supabase.functions.invoke('send-partner-welcome', {
+              body: {
+                partner_id: (partnerData as any).id,
+                org_name: orgName,
+                org_email: orgEmail,
+                org_website: orgWebsite || undefined
+              }
+            });
+          } catch (emailErr) {
+            console.error('Failed to trigger partner welcome email:', emailErr);
+          }
+        }
       }
 
       setPartnerSubmitted(true);
@@ -276,13 +320,11 @@ const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
   let panelIllustration = '/images/login.svg';
   let panelTitle = 'Karibu Tena';
   let panelSubtitle = 'Catch up on the latest Bills, gain CEKA points, and contribute to keeping CEKA on the airwaves.';
-  let panelRotatingTexts = ["Hold Accountable.", "Speak Up.", "Engage With Us.", "Empower Others."];
 
   if (tab === 'signup') {
     panelIllustration = '/images/undraw_group-selfie_uih0.svg';
     panelTitle = 'Join CEKA Today';
     panelSubtitle = 'Join our growing network of active citizens making real societal impact.';
-    panelRotatingTexts = ["Kuwa Organised.", "Kuwa Informed.", "Kutetea Haki.", "Kuinject."];
   } else if (tab === 'partner') {
     panelIllustration = partnerSubmitted
       ? '/images/undraw_message-sent_iyz6.svg'
@@ -292,6 +334,14 @@ const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
       ? "Your application is submitted. We'll be in touch."
       : 'Partner with Kenya\'s leading civic education platform. Let\'s get work done... together.';
   }
+
+  const isMobileText = windowWidth < 768;
+  const prefixText = tab === 'signup' ? 'Jiunge.' : (isMobileText ? 'Get ' : 'Get Back.');
+  const rotatingTexts = isMobileText
+    ? ["Engaged.", "Empowered.", "Amplified.", "Educated."]
+    : (tab === 'signup'
+      ? ["Kuwa Organised.", "Kuwa Informed.", "Kutetea Haki.", "Kuinject."]
+      : ["Hold Accountable.", "Speak Up.", "Engage With Us.", "Empower Others."]);
 
   return (
     <AnimatePresence>
@@ -303,8 +353,187 @@ const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
           className="fixed inset-0 z-[9999] flex items-center justify-center"
           onClick={(e) => { if (e.target === e.currentTarget) onOpenChange(false); }}
         >
+          <style>{`
+            .auth-modal-wrapper {
+              display: flex;
+              flex-direction: column;
+              width: 100%;
+              max-width: 950px;
+              margin: 16px;
+              border-radius: 32px;
+              overflow: hidden;
+              background-color: #0a0a0a;
+              box-shadow: 0 32px 80px rgba(0,0,0,0.85);
+              max-height: 90vh;
+            }
+            @media (min-width: 992px) {
+              .auth-modal-wrapper {
+                flex-direction: row;
+                min-height: 580px;
+              }
+            }
+
+            .auth-hero-panel {
+              position: relative;
+              display: flex;
+              flex-direction: column;
+              justify-content: space-between;
+              padding: 32px;
+              overflow: hidden;
+              transition: all 0.5s ease;
+              border-bottom: 1px solid rgba(255,255,255,0.1);
+            }
+            @media (min-width: 992px) {
+              .auth-hero-panel {
+                width: 42%;
+                flex-shrink: 0;
+                border-bottom: none;
+                border-right: 1px solid rgba(255,255,255,0.1);
+                padding: 48px;
+              }
+            }
+
+            .auth-hero-logo {
+              position: absolute;
+              top: 32px;
+              left: 32px;
+              z-index: 20;
+              transition: opacity 0.2s ease;
+            }
+            @media (max-width: 991px) {
+              .auth-hero-logo {
+                display: none !important;
+              }
+            }
+
+            .auth-hero-illustration-wrapper {
+              position: relative;
+              width: 100%;
+              flex: 1;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              margin-top: 48px;
+              margin-bottom: 24px;
+              min-height: 200px;
+            }
+            @media (min-width: 992px) {
+              .auth-hero-illustration-wrapper {
+                min-height: 250px;
+              }
+            }
+
+            .auth-hero-illustration {
+              width: 100%;
+              height: 100%;
+              object-fit: contain;
+              transition: all 0.5s ease;
+            }
+
+            .auth-hero-text-wrapper {
+              position: relative;
+              z-index: 10;
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              text-align: center;
+            }
+            @media (min-width: 992px) {
+              .auth-hero-text-wrapper {
+                align-items: flex-start;
+                text-align: left;
+              }
+            }
+
+            .auth-hero-tag-label {
+              font-size: 10px;
+              padding: 0 4px;
+              font-weight: 900;
+              text-transform: uppercase;
+              letter-spacing: 0.2em;
+              color: rgba(255,255,255,0.5);
+              margin-bottom: 4px;
+            }
+
+            .auth-hero-subtitle {
+              color: rgba(255,255,255,0.6);
+              font-size: 12px;
+              line-height: 1.6;
+              font-weight: 500;
+              max-width: 320px;
+            }
+
+            /* Viewport < 370px adjustments */
+            @media (max-width: 369px) {
+              .auth-hero-illustration-wrapper {
+                max-height: 50px !important;
+                min-height: unset !important;
+                margin-top: 12px !important;
+                margin-bottom: 30px !important;
+              }
+              .auth-hero-illustration {
+                max-height: 100px !important;
+              }
+              .auth-hero-tag-label {
+                display: none !important;
+              }
+              .auth-hero-subtitle {
+                white-space: nowrap !important;
+                overflow: hidden !important;
+                text-overflow: ellipsis !important;
+              }
+            }
+
+            /* Viewport 370px–479px adjustments */
+            @media (min-width: 370px) and (max-width: 479px) {
+              .auth-hero-illustration-wrapper {
+                max-height: 130px !important;
+                min-height: unset !important;
+                margin-top: 12px !important;
+                margin-bottom: 16px !important;
+              }
+              .auth-hero-illustration {
+                max-height: 130px !important;
+              }
+              .auth-hero-subtitle {
+                white-space: nowrap !important;
+                overflow: hidden !important;
+                text-overflow: ellipsis !important;
+              }
+            }
+
+            /* Viewport 480px–991px: horizontal split layout inside the hero panel */
+            @media (min-width: 480px) and (max-width: 991px) {
+              .auth-hero-panel {
+                flex-direction: row !important;
+                align-items: center !important;
+                justify-content: space-between !important;
+                gap: 24px !important;
+                padding: 32px !important;
+              }
+              .auth-hero-illustration-wrapper {
+                width: 45% !important;
+                max-height: 140px !important;
+                min-height: unset !important;
+                margin: 0 !important;
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+              }
+              .auth-hero-illustration {
+                max-height: 140px !important;
+              }
+              .auth-hero-text-wrapper {
+                width: 50% !important;
+                margin: 0 !important;
+                align-items: flex-start !important;
+                text-align: left !important;
+              }
+            }
+          `}</style>
+
           {/* Backdrop Overlay */}
-          <div className="absolute inset-0 bg-black/85 backdrop-blur-md" />
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-md" />
 
           {/* Opaque, High-Contrast Split-Screen Container Card */}
           <motion.div
@@ -312,39 +541,38 @@ const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.96, y: 20 }}
             transition={{ type: 'spring', damping: 28, stiffness: 260 }}
-            className="relative z-10 w-full max-w-[950px] mx-4 rounded-[32px] overflow-hidden shadow-[0_32px_80px_rgba(0,0,0,0.85)] flex flex-col md:flex-row max-h-[90vh] md:min-h-[580px] bg-[#0a0a0a]"
+            className="auth-modal-wrapper"
           >
-            {/* ── RIGHT PANEL (Solid Opaque, Brand Green/Partners Royal Blue) ── */}
+            {/* ── RIGHT PANEL ── */}
             <div
-              className={`relative flex flex-col justify-between p-8 md:p-12 md:w-[42%] md:flex-shrink-0 overflow-hidden transition-all duration-500 border-r border-white/10 ${tab === 'partner' ? 'bg-[#0b2447]' : 'bg-[#004d00]'
-                }`}
+              className={`auth-hero-panel ${tab === 'partner' ? 'bg-[#0b2447]' : 'bg-[#004d00]'}`}
             >
               {/* Ambient visual overlay elements */}
               <div className="absolute -top-16 -right-16 w-48 h-48 bg-white/5 rounded-full blur-3xl pointer-events-none" />
               <div className="absolute -bottom-12 -left-12 w-56 h-56 bg-black/20 rounded-full blur-3xl pointer-events-none" />
 
-              {/* Logo / Wordmark Image - Larger slightly (Request 3) */}
+              {/* Logo / Wordmark Image */}
               <Link
                 to="/"
                 onClick={() => onOpenChange(false)}
-                className="absolute top-8 left-8 transition-opacity hover:opacity-80 z-20"
+                className="auth-hero-logo hover:opacity-80 z-20"
               >
                 <img src="/logo-white.png" className="h-10 w-auto" alt="CEKA Logo" />
               </Link>
 
-              {/* Centrally placed illustration (sized up to fit) */}
-              <div className="relative w-full flex-1 flex items-center justify-center mt-12 mb-6 min-h-[200px] md:min-h-[250px]">
+              {/* Centrally placed illustration */}
+              <div className="auth-hero-illustration-wrapper">
                 <img
                   src={panelIllustration}
                   alt="CEKA Illustration"
-                  className="w-full h-full object-contain max-h-[220px] md:max-h-[280px] drop-shadow-[0_12px_24px_rgba(0,0,0,0.35)] transition-all duration-500"
+                  className="auth-hero-illustration"
                   onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                 />
               </div>
 
               {/* Texts at the bottom of the hero panel */}
-              <div className="relative z-10 flex flex-col items-center text-center md:items-start md:text-left mt-auto">
-                <p className="text-[10px] px-1 font-black uppercase tracking-[0.2em] text-white/50 mb-1">
+              <div className="auth-hero-text-wrapper">
+                <p className="auth-hero-tag-label">
                   {tab === 'partner' ? 'Join Us as a' : panelTitle}
                 </p>
 
@@ -354,9 +582,9 @@ const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
                   </div>
                 ) : (
                   <div className="text-3xl md:text-4xl font-[900] leading-[1.1] text-white tracking-tighter mb-3 flex flex-wrap items-center justify-center md:justify-start gap-x-2">
-                    <span>{tab === 'signup' ? 'Jiunge.' : 'Get Back.'}</span>
+                    <span>{prefixText}</span>
                     <RotatingText
-                      texts={panelRotatingTexts}
+                      texts={rotatingTexts}
                       durations={[3000, 3000, 3500, 3000]}
                       staggerFrom="last"
                       initial={{ y: "100%" }}
@@ -365,19 +593,19 @@ const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
                       staggerDuration={0.025}
                       splitLevelClassName="overflow-hidden pb-1"
                       transition={{ type: "spring", damping: 30, stiffness: 400 }}
-                      mainClassName="text-kenya-green font-[900]"
+                      mainClassName="text-kenya-green pt-1 font-[900]"
                       fixedHeight="1.15em"
                     />
                   </div>
                 )}
 
-                <p className="text-white/60 text-[12px] leading-relaxed font-medium max-w-xs mx-auto md:mx-0">
+                <p className="auth-hero-subtitle">
                   {panelSubtitle}
                 </p>
               </div>
             </div>
 
-            {/* ── LEFT / FORM PANEL (Solid Pitch Dark, Internal Scroll Only) ── */}
+            {/* ── LEFT / FORM PANEL ── */}
             <div className="relative flex-1 bg-[#0a0a0a] p-8 md:p-12 flex flex-col overflow-hidden max-h-[90vh] md:max-h-none">
 
               {/* Request 2: Exit Button (Still backdrop on hover, only X animates) */}
@@ -404,30 +632,48 @@ const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
                   { key: 'signin', label: 'Log In' },
                   { key: 'signup', label: 'Sign Up' },
                   { key: 'partner', label: 'Partners' },
-                ] as { key: Tab; label: string }[]).map((t) => (
-                  <button
-                    key={t.key}
-                    onClick={() => handleTabChange(t.key)}
-                    className="relative flex-1 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-1.5 transition-colors duration-300 z-10"
-                  >
-                    {tab === t.key && (
-                      <motion.div
-                        layoutId="activeTabBackground"
-                        className={`absolute inset-0 rounded-xl -z-10 ${t.key === 'partner'
-                          ? 'bg-[#0f3b7c] shadow-lg shadow-[#0f3b7c]/20'
-                          : 'bg-kenya-green shadow-lg shadow-kenya-green/20'
-                          }`}
-                        transition={{
-                          type: "spring",
-                          stiffness: 420,
-                          damping: 26,
-                        }}
-                      />
-                    )}
-                    {t.key === 'partner' && <UsersIcon size={12} className={tab === t.key ? 'text-white' : 'text-white/30'} />}
-                    <span className={tab === t.key ? 'text-white' : 'text-white/30'}>{t.label}</span>
-                  </button>
-                ))}
+                ] as { key: Tab; label: string }[]).map((t) => {
+                  const isActive = tab === t.key;
+                  const colorClass = isActive ? 'text-white' : 'text-white/30';
+
+                  return (
+                    <button
+                      key={t.key}
+                      onClick={() => handleTabChange(t.key)}
+                      className="relative flex-1 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-1.5 transition-colors duration-300 z-10"
+                    >
+                      {isActive && (
+                        <motion.div
+                          layoutId="activeTabBackground"
+                          className={`absolute inset-0 rounded-xl -z-10 ${t.key === 'partner'
+                            ? 'bg-[#0f3b7c] shadow-lg shadow-[#0f3b7c]/20'
+                            : 'bg-kenya-green shadow-lg shadow-kenya-green/20'
+                            }`}
+                          transition={{
+                            type: "spring",
+                            stiffness: 420,
+                            damping: 26,
+                          }}
+                        />
+                      )}
+
+                      {windowWidth >= 480 ? (
+                        <>
+                          {t.key === 'partner' && <UsersIcon size={12} className={colorClass} />}
+                          <span className={colorClass}>{t.label}</span>
+                        </>
+                      ) : windowWidth >= 370 ? (
+                        <span className={colorClass}>{t.label}</span>
+                      ) : (
+                        <>
+                          {t.key === 'signin' && <SignInTabIcon className={colorClass} />}
+                          {t.key === 'signup' && <SignUpTabIcon className={colorClass} />}
+                          {t.key === 'partner' && <UsersIcon size={14} className={colorClass} />}
+                        </>
+                      )}
+                    </button>
+                  );
+                })}
               </div>
 
               {/* Form Content container (simple layout opacity fade to prevent layout projection bleed/scrollbar scroll triggers) */}
@@ -572,7 +818,7 @@ const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
                           </button>
 
                           <p className="text-[10px] text-white/25 text-center leading-relaxed">
-                            Applications are reviewed within 48 hours. An active Partner listing requires a partnership contribution to sustain CEKA's infrastructure.
+                            Submission Policy: By submitting, your organisation requests review for the CEKA Partnership Program. Applications are reviewed under the Data Protection Act (2019). Admission is not automatic; official status is pending review, verification, and co-signing of the CEKA Partnership Agreement.
                           </p>
                         </form>
                       </div>

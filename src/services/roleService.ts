@@ -1,6 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 
-export type UserRole = 'admin' | 'core_team' | null;
+export type UserRole = 'admin' | 'core_team' | 'ally' | null;
 
 export interface RolePermission {
   permission: string;
