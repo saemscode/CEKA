@@ -29,9 +29,12 @@ import {
   LogoutIcon as LogOut, 
   CameraIcon as Camera,
   SaveIcon as Save,
-  AlertIcon as AlertTriangle
+  AlertIcon as AlertTriangle,
+  SparklesIcon,
+  ShieldCheckIcon
 } from '@/components/ui/CustomIcons';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
+import { roleService } from '@/services/roleService';
 
 const ProfileSettings = () => {
   const { session, user } = useAuth();
@@ -49,6 +52,14 @@ const ProfileSettings = () => {
     location: ''
   });
   const [loading, setLoading] = useState(false);
+  const [userRole, setUserRole] = useState<string | null>(null);
+  const [allyOrg, setAllyOrg] = useState<any>(null);
+  const [allyName, setAllyName] = useState('');
+  const [allyWebsite, setAllyWebsite] = useState('');
+  const [allyDescription, setAllyDescription] = useState('');
+  const [allyFocusAreas, setAllyFocusAreas] = useState<string[]>([]);
+  const [savingAlly, setSavingAlly] = useState(false);
+
   const [notifications, setNotifications] = useState({
     email: true,
     push: true,
@@ -62,9 +73,28 @@ const ProfileSettings = () => {
       navigate('/auth');
       return;
     }
-    
     loadProfile();
+    loadRole();
   }, [session, navigate]);
+
+  const loadRole = async () => {
+    const role = await roleService.getUserRole(session?.user?.id, session?.user?.email);
+    setUserRole(role);
+    if (role === 'ally') {
+      // Load their org from civic_education_providers
+      const { data } = await (supabase.from('civic_education_providers') as any)
+        .select('*')
+        .eq('submitted_by_user_id', session?.user?.id)
+        .maybeSingle();
+      setAllyOrg(data);
+      if (data) {
+        setAllyName(data.name || '');
+        setAllyWebsite(data.website_url || '');
+        setAllyDescription(data.description || '');
+        setAllyFocusAreas(data.focus_areas || []);
+      }
+    }
+  };
 
   const loadProfile = async () => {
     try {
@@ -130,6 +160,49 @@ const ProfileSettings = () => {
     } finally {
       setLoading(false);
     }
+  const updateAllyProfile = async () => {
+    if (!session?.user?.id || !allyOrg) return;
+    setSavingAlly(true);
+    try {
+      const { error } = await (supabase.from('civic_education_providers') as any)
+        .update({
+          name: allyName,
+          website_url: allyWebsite,
+          description: allyDescription,
+          focus_areas: allyFocusAreas,
+        })
+        .eq('id', allyOrg.id);
+
+      if (error) throw error;
+
+      toast({
+        title: translate("Success", language),
+        description: "Organisation profile updated successfully"
+      });
+      
+      setAllyOrg({
+        ...allyOrg,
+        name: allyName,
+        website_url: allyWebsite,
+        description: allyDescription,
+        focus_areas: allyFocusAreas
+      });
+    } catch (error: any) {
+      console.error('Error updating ally profile:', error);
+      toast({
+        title: translate("Error", language),
+        description: error.message || "Failed to update organisation profile",
+        variant: "destructive"
+      });
+    } finally {
+      setSavingAlly(false);
+    }
+  };
+
+  const toggleAllyFocusArea = (area: string) => {
+    setAllyFocusAreas(prev =>
+      prev.includes(area) ? prev.filter(a => a !== area) : [...prev, area]
+    );
   };
 
   const handleSignOut = async () => {
@@ -202,10 +275,34 @@ const ProfileSettings = () => {
                       {profile.full_name?.charAt(0) || profile.username?.charAt(0) || 'U'}
                     </AvatarFallback>
                   </Avatar>
-                  <Button variant="outline" size="sm">
-                    <Camera className="h-4 w-4 mr-2" />
-                    {translate("Change Photo", language)}
-                  </Button>
+                  <div className="space-y-1">
+                    <Button variant="outline" size="sm">
+                      <Camera className="h-4 w-4 mr-2" />
+                      {translate("Change Photo", language)}
+                    </Button>
+                    {/* Role badge */}
+                    {userRole === 'ally' && (
+                      <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-kenya-green/10 border border-kenya-green/20 text-kenya-green text-[10px] font-black uppercase tracking-widest">
+                        <span className="w-1.5 h-1.5 rounded-full bg-kenya-green animate-pulse" />
+                        CEKA Partner
+                      </div>
+                    )}
+                    {(userRole === 'admin' || userRole === 'core_team') && (
+                      <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-kenya-red/10 border border-kenya-red/20 text-kenya-red text-[10px] font-black uppercase tracking-widest">
+                        {userRole === 'admin' ? (
+                          <>
+                            <SparklesIcon size={12} className="text-kenya-red" />
+                            <span>Admin</span>
+                          </>
+                        ) : (
+                          <>
+                            <ShieldCheckIcon size={12} className="text-kenya-red" />
+                            <span>Core Team</span>
+                          </>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 <div className="grid gap-4 sm:grid-cols-2">
@@ -249,6 +346,107 @@ const ProfileSettings = () => {
                 </Button>
               </CardContent>
             </Card>
+
+            {/* ── Ally Status Card — only visible to Allies ── */}
+            {userRole === 'ally' && (
+              <Card className="border-kenya-green/20 bg-gradient-to-br from-white to-kenya-green/[0.03] dark:from-[#0a0a0a] dark:to-kenya-green/[0.06] overflow-hidden">
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-kenya-green" />
+                        Your Partner Status
+                      </CardTitle>
+                      <CardDescription>Your CEKA partnership profile</CardDescription>
+                    </div>
+                    <Badge className="bg-kenya-green/10 text-kenya-green border-kenya-green/20 font-black text-[10px] uppercase tracking-widest">
+                      {allyOrg?.is_verified ? 'Active' : 'Pending Review'}
+                    </Badge>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {allyOrg ? (
+                    <>
+                      {!allyOrg.is_verified && (
+                        <div className="rounded-xl bg-amber-50 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-700/30 p-4">
+                          <p className="text-[11px] font-semibold text-amber-700 dark:text-amber-400 leading-relaxed">
+                            Your application is under review. We'll notify you within 48 hours. Questions? Reach us on WhatsApp.
+                          </p>
+                          <a
+                            href={`https://wa.me/254000000000?text=${encodeURIComponent('Hi CEKA, following up on my Partner application for ' + allyOrg.name)}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1.5 mt-3 text-[10px] font-black uppercase tracking-widest text-[#25D366] hover:opacity-80 transition-opacity"
+                          >
+                            <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                            Follow up on WhatsApp
+                          </a>
+                        </div>
+                      )}
+
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        <div className="space-y-2">
+                          <Label htmlFor="ally-name">Organisation Name</Label>
+                          <Input
+                            id="ally-name"
+                            value={allyName}
+                            onChange={(e) => setAllyName(e.target.value)}
+                            placeholder="Organisation Name"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="ally-web">Website URL</Label>
+                          <Input
+                            id="ally-web"
+                            value={allyWebsite}
+                            onChange={(e) => setAllyWebsite(e.target.value)}
+                            placeholder="https://yourorg.org"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="ally-desc">About the Organisation / Registration Details</Label>
+                        <Textarea
+                          id="ally-desc"
+                          value={allyDescription}
+                          onChange={(e) => setAllyDescription(e.target.value)}
+                          placeholder="Tell us about your organization's mission, registration numbers, or local verification references."
+                          className="min-h-[100px]"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label className="text-[11px] font-black uppercase tracking-widest text-muted-foreground">Focus Areas</Label>
+                        <div className="flex flex-wrap gap-2 pt-1">
+                          {['Civic Rights', 'Governance', 'Constitution', 'Public Finance', 'Elections', 'Advocacy'].map((area) => (
+                            <button
+                              key={area}
+                              type="button"
+                              onClick={() => toggleAllyFocusArea(area)}
+                              className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
+                                allyFocusAreas.includes(area)
+                                  ? 'bg-kenya-green text-white shadow-lg shadow-kenya-green/20'
+                                  : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                              }`}
+                            >
+                              {area}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <Button onClick={updateAllyProfile} disabled={savingAlly} className="w-full sm:w-auto bg-kenya-green hover:bg-kenya-green/90 text-white">
+                        <Save className="h-4 w-4 mr-2" />
+                        {savingAlly ? "Saving..." : "Save Organisation Profile"}
+                      </Button>
+                    </>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">Loading your organisation details...</p>
+                  )}
+                </CardContent>
+              </Card>
+            )}
           </TabsContent>
 
           <TabsContent value="notifications" className="space-y-6">

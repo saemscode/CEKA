@@ -1,113 +1,167 @@
-'use client';
-
 import React, { useState, useEffect } from 'react';
-import { X, Twitter, Github } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/providers/AuthProvider';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { useTheme } from '@/contexts/ThemeContext';
-import { translate } from '@/lib/utils';
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogClose
-} from "@/components/ui/dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import RotatingText from '@/components/ui/RotatingText';
+import { CloseIcon, EyeIcon, EyeOffIcon, Kenya2Icon, UsersIcon } from '@/components/ui/CustomIcons';
 
 interface AuthModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-interface InputFieldProps {
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-  id: string;
-  type?: string;
-  isDarkMode: boolean;
-  placeholder?: string;
-}
-
-const InputField = ({ label, value, onChange, id, type = "text", isDarkMode, placeholder }: InputFieldProps) => (
-  <div className="space-y-2">
-    <label htmlFor={id} className={`text-sm font-medium ${isDarkMode ? 'text-gray-200' : ''}`}>
-      {label}
-    </label>
-    <Input
-      id={id}
-      type={type}
-      placeholder={placeholder}
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      required
-      autoComplete={type === 'password' ? 'current-password' : id}
-      className={`transition-all focus:ring-2 focus:ring-primary/30 ${
-        isDarkMode ? 'bg-gray-700/70 border-gray-600 text-white' : 'bg-white/70'
-      }`}
-    />
-  </div>
+// Inline SVGs to avoid any asset loading or external dependency failures
+const GoogleIcon = () => (
+  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
+    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
+    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
+    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
+  </svg>
 );
+
+const GithubIcon = () => (
+  <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="currentColor">
+    <path fillRule="evenodd" clipRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482C19.138 20.193 22 16.44 22 12.017 22 6.484 17.522 2 12 2z" />
+  </svg>
+);
+
+const TwitterIcon = () => (
+  <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+  </svg>
+);
+
+const ArrowRightIcon = () => (
+  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="5" y1="12" x2="19" y2="12" />
+    <polyline points="12 5 19 12 12 19" />
+  </svg>
+);
+
+// Clean, high-contrast iOS-style text input
+const IosInput = ({
+  label, id, type = 'text', value, onChange, placeholder, autoComplete,
+}: {
+  label: string; id: string; type?: string; value: string;
+  onChange: (v: string) => void; placeholder?: string; autoComplete?: string;
+}) => {
+  const [show, setShow] = useState(false);
+  const isPassword = type === 'password';
+  return (
+    <div className="space-y-1.5">
+      <label htmlFor={id} className="block text-[11px] font-black uppercase tracking-[0.15em] text-white/60">
+        {label}
+      </label>
+      <div className="relative">
+        <input
+          id={id}
+          type={isPassword && show ? 'text' : type}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          autoComplete={autoComplete}
+          required
+          className="w-full h-12 rounded-2xl bg-white/5 border border-white/15 px-4 pr-12 text-[13px] font-semibold text-white placeholder:text-white/40 focus:outline-none focus:border-kenya-green focus:bg-white/10 transition-all duration-200"
+        />
+        {isPassword && (
+          <button
+            type="button"
+            onClick={() => setShow(!show)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/70 transition-colors focus:outline-none"
+          >
+            <div className="relative px-5 w-5 h-5 flex items-center justify-center overflow-hidden">
+              <AnimatePresence initial={false}>
+                {show ? (
+                  <motion.svg
+                    key="eye-open"
+                    initial={{ opacity: 0, scale: 0.8, rotate: -20 }}
+                    animate={{ opacity: 1, scale: 1, rotate: 0 }}
+                    exit={{ opacity: 0, scale: 0.8, rotate: 20 }}
+                    transition={{ type: "spring", stiffness: 700, damping: 28 }}
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    className="absolute w-5 h-5 text-white/50 hover:text-white"
+                  >
+                    <path d="M9.75 12C9.75 10.7574 10.7574 9.75 12 9.75C13.2426 9.75 14.25 10.7574 14.25 12C14.25 13.2426 13.2426 14.25 12 14.25C10.7574 14.25 9.75 13.2426 9.75 12Z" fill="currentColor" />
+                    <path fillRule="evenodd" clipRule="evenodd" d="M2 12C2 13.6394 2.42496 14.1915 3.27489 15.2957C4.97196 17.5004 7.81811 20 12 20C16.1819 20 19.028 17.5004 20.7251 15.2957C21.575 14.1915 22 13.6394 22 12C22 10.3606 21.575 9.80853 20.7251 8.70433C19.028 6.49956 16.1819 4 12 4C7.81811 4 4.97196 6.49956 3.27489 8.70433C2.42496 9.80853 2 10.3606 2 12ZM12 8.25C9.92893 8.25 8.25 9.92893 8.25 12C8.25 14.0711 9.92893 15.75 12 15.75C14.0711 15.75 15.75 14.0711 15.75 12C15.75 9.92893 14.0711 8.25 12 8.25Z" fill="currentColor" />
+                  </motion.svg>
+                ) : (
+                  <motion.svg
+                    key="eye-closed"
+                    initial={{ opacity: 0, scale: 0.8, rotate: -20 }}
+                    animate={{ opacity: 1, scale: 1, rotate: 0 }}
+                    exit={{ opacity: 0, scale: 0.8, rotate: 20 }}
+                    transition={{ type: "spring", stiffness: 700, damping: 28 }}
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    className="absolute w-5 h-5 text-white/30 hover:text-white/60"
+                  >
+                    <path fillRule="evenodd" clipRule="evenodd" d="M15.5778 13.6334C16.2396 12.1831 15.9738 10.4133 14.7803 9.21976C13.5868 8.02628 11.817 7.76042 10.3667 8.4222L11.5537 9.60918C12.315 9.46778 13.1307 9.69153 13.7196 10.2804C14.3085 10.8693 14.5323 11.6851 14.3909 12.4464L15.5778 13.6334Z" fill="currentColor" />
+                    <path fillRule="evenodd" clipRule="evenodd" d="M5.86339 7.80781C5.60443 8.02054 5.35893 8.23562 5.12798 8.44832C4.28009 9.22922 3.59623 10.0078 3.1244 10.5906C2.88801 10.8825 2.70365 11.1268 2.57733 11.2997C2.51414 11.3862 2.46539 11.4549 2.43184 11.5029C2.41506 11.5269 2.40207 11.5457 2.39297 11.559L2.38224 11.5747L2.37908 11.5794L2.37806 11.5809L2.09656 12L2.37741 12.4181L2.37806 12.4191L2.37908 12.4206L2.38224 12.4253L2.39297 12.441C2.40207 12.4543 2.41506 12.4731 2.43184 12.4971C2.46539 12.5451 2.51414 12.6138 2.57733 12.7003C2.70365 12.8732 2.88801 13.1175 3.1244 13.4094C3.59623 13.9922 4.28009 14.7708 5.12798 15.5517C6.79696 17.0888 9.22583 18.75 12 18.75C13.3694 18.75 14.6547 18.3452 15.806 17.7504L14.6832 16.6277C13.8289 17.0123 12.9256 17.25 12 17.25C9.80366 17.25 7.73254 15.9112 6.14416 14.4483C5.36337 13.7292 4.72921 13.0078 4.29019 12.4656C4.14681 12.2885 4.02475 12.1311 3.92572 12C4.02475 11.8689 4.14681 11.7115 4.29019 11.5344C4.72921 10.9922 5.36337 10.2708 6.14416 9.55168C6.39447 9.32114 6.65677 9.09369 6.92965 8.87408L5.86339 7.80781ZM17.0705 15.1258C17.3434 14.9063 17.6056 14.6788 17.8559 14.4483C18.6367 13.7292 19.2708 13.0078 19.7099 12.4656C19.8532 12.2885 19.9753 12.1311 20.0743 12C19.9753 11.8689 19.8532 11.7115 19.7099 11.5344C19.2708 10.9922 18.6367 10.2708 17.8559 9.55168C16.2675 8.08879 14.1964 6.75 12 6.75C11.0745 6.75 10.1712 6.98772 9.31694 7.37228L8.1942 6.24954C9.34544 5.65475 10.6307 5.25 12 5.25C14.7742 5.25 17.2031 6.91121 18.8721 8.44832C19.72 9.22922 20.4038 10.0078 20.8757 10.5906C21.112 10.8825 21.2964 11.1268 21.4227 11.2997C21.4859 11.3862 21.5347 11.4549 21.5682 11.5029C21.585 11.5269 21.598 11.5457 21.6071 11.559L21.6178 11.5747L21.621 11.5794L21.622 11.5809L21.9035 12L21.6224 12.4186L21.621 12.4206L21.6178 12.4253L21.6071 12.441C21.598 12.4543 21.585 12.4731 21.5682 12.4971C21.5347 12.5451 21.4859 12.6138 21.4227 12.7003C21.2964 12.8732 21.112 13.1175 20.8757 13.4094C20.4038 13.9922 19.72 14.7708 18.8721 15.5517C18.6412 15.7644 18.3957 15.9794 18.1368 16.1921L17.0705 15.1258Z" fill="currentColor" />
+                    <path fillRule="evenodd" clipRule="evenodd" d="M18.75 19.8107L3.75 4.81066L4.81066 3.75L19.8107 18.75L18.75 19.8107Z" fill="currentColor" />
+                  </motion.svg>
+                )}
+              </AnimatePresence>
+            </div>
+          </button>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// Focus area pills for Partner sign-up
+const CEKA_FOCUS_AREAS = [
+  'Constitutional Rights', 'Electoral Education', 'Public Participation',
+  'Governance & Accountability', 'Youth Civic Engagement', 'Legal Literacy',
+  'Budget Oversight', 'Human Rights',
+];
 
 const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
   const { session } = useAuth();
-  const navigate = useNavigate();
   const { toast } = useToast();
   const { language } = useLanguage();
-  const { theme } = useTheme();
+
+  type Tab = 'signin' | 'signup' | 'partner';
+  const [tab, setTab] = useState<Tab>('signin');
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [username, setUsername] = useState('');
   const [loading, setLoading] = useState(false);
-  
-  const isDarkMode = theme === 'dark';
 
-  // Auto-close modal if user is signed in
+  // Partner-specific
+  const [orgName, setOrgName] = useState('');
+  const [orgWebsite, setOrgWebsite] = useState('');
+  const [orgEmail, setOrgEmail] = useState('');
+  const [orgRegNo, setOrgRegNo] = useState('');
+  const [selectedAreas, setSelectedAreas] = useState<string[]>([]);
+  const [partnerSubmitted, setPartnerSubmitted] = useState(false);
+
+  // Freeze/lock background page scrolling while modal is open
   useEffect(() => {
-    if (session && open) {
-      onOpenChange(false);
+    if (open) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
     }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [open]);
+
+  useEffect(() => {
+    if (session && open) onOpenChange(false);
   }, [session, open, onOpenChange]);
 
-  const handleSignUp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    try {
-      const { error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            full_name: fullName,
-            username,
-          },
-        },
-      });
-      if (error) throw error;
-
-      toast({
-        title: translate("Success!", language),
-        description: translate("Check your email for the confirmation link.", language),
-      });
-    } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: translate("Error signing up", language),
-        description: error.message,
-      });
-    } finally {
-      setLoading(false);
-    }
+  const handleTabChange = (newTab: Tab) => {
+    setTab(newTab);
+    setPartnerSubmitted(false);
   };
 
   const handleSignIn = async (e: React.FormEvent) => {
@@ -118,33 +172,71 @@ const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
       if (error) throw error;
       onOpenChange(false);
     } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: translate("Error signing in", language),
-        description: error.message,
+      toast({ variant: 'destructive', title: 'Sign in failed', description: error.message });
+    } finally { setLoading(false); }
+  };
+
+  const handleSignUp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.signUp({
+        email, password,
+        options: { data: { full_name: fullName, username } },
       });
-    } finally {
-      setLoading(false);
-    }
+      if (error) throw error;
+      toast({ title: 'Check your email!', description: 'We sent you a confirmation link.' });
+    } catch (error: any) {
+      toast({ variant: 'destructive', title: 'Sign up failed', description: error.message });
+    } finally { setLoading(false); }
+  };
+
+  const handlePartnerSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!orgName || !orgEmail || !password) return;
+    setLoading(true);
+    try {
+      // 1. Create auth account for the partner
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: orgEmail, password,
+        options: { data: { full_name: orgName, username: orgName.toLowerCase().replace(/\s+/g, '_') } },
+      });
+      if (authError) throw authError;
+
+      // 2. Write to civic_education_providers — this IS the partner table
+      if (authData.user) {
+        await (supabase.from('civic_education_providers') as any).insert({
+          name: orgName,
+          website_url: orgWebsite || null,
+          contact_email: orgEmail,
+          focus_areas: [],
+          submitted_by_user_id: authData.user.id,
+          is_verified: false, // pending admin approval
+          description: null,
+        });
+
+        // 3. Write a pending ally role (retains the structural 'ally' database role value)
+        await (supabase.from('user_roles') as any).insert({
+          user_id: authData.user.id,
+          role: 'ally',
+        });
+      }
+
+      setPartnerSubmitted(true);
+    } catch (error: any) {
+      toast({ variant: 'destructive', title: 'Application failed', description: error.message });
+    } finally { setLoading(false); }
   };
 
   const handleGoogleSignIn = async () => {
     try {
       const { error } = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
-        },
+        provider: 'google',
+        options: { redirectTo: `${window.location.origin}/auth/callback` },
       });
-
       if (error) throw error;
     } catch (error: any) {
-      console.error("Google login error:", error);
-      toast({
-        title: translate("Login failed", language),
-        description: error.message || translate("Could not sign in with Google", language),
-        variant: "destructive",
-      });
+      toast({ variant: 'destructive', title: 'Google sign-in failed', description: error.message });
     }
   };
 
@@ -152,15 +244,11 @@ const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'github',
-        options: { redirectTo: window.location.origin },
+        options: { redirectTo: `${window.location.origin}/auth/callback` },
       });
       if (error) throw error;
     } catch (error: any) {
-      toast({
-        title: translate("Login failed", language),
-        description: error.message || translate("Could not sign in with Github", language),
-        variant: "destructive",
-      });
+      toast({ variant: 'destructive', title: 'GitHub sign-in failed', description: error.message });
     }
   };
 
@@ -168,198 +256,364 @@ const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'twitter',
-        options: { redirectTo: window.location.origin },
+        options: { redirectTo: `${window.location.origin}/auth/callback` },
       });
       if (error) throw error;
     } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: translate("Error", language),
-        description: error.message,
-      });
+      toast({ variant: 'destructive', title: 'Twitter sign-in failed', description: error.message });
     }
   };
 
-  const socialButtonVariants = {
-    hover: { scale: 1.05, transition: { duration: 0.2 } },
-    tap: { scale: 0.95, transition: { duration: 0.1 } }
+  const toggleArea = (area: string) => {
+    setSelectedAreas(prev =>
+      prev.includes(area) ? prev.filter(a => a !== area) : [...prev, area]
+    );
   };
 
+  if (!open) return null;
+
+  // Determine illustration and text dynamically to fit brand context perfectly
+  let panelIllustration = '/images/login.svg';
+  let panelTitle = 'Karibu Tena';
+  let panelSubtitle = 'Catch up on the latest Bills, gain CEKA points, and contribute to keeping CEKA on the airwaves.';
+  let panelRotatingTexts = ["Hold Accountable.", "Speak Up.", "Engage With Us.", "Empower Others."];
+
+  if (tab === 'signup') {
+    panelIllustration = '/images/undraw_group-selfie_uih0.svg';
+    panelTitle = 'Join CEKA Today';
+    panelSubtitle = 'Join our growing network of active citizens making real societal impact.';
+    panelRotatingTexts = ["Kuwa Organised.", "Kuwa Informed.", "Kutetea Haki.", "Kuinject."];
+  } else if (tab === 'partner') {
+    panelIllustration = partnerSubmitted
+      ? '/images/undraw_message-sent_iyz6.svg'
+      : '/images/partners.svg';
+    panelTitle = partnerSubmitted ? 'Application Sent!' : 'CEKA Partner';
+    panelSubtitle = partnerSubmitted
+      ? "Your application is submitted. We'll be in touch."
+      : 'Partner with Kenya\'s leading civic education platform. Let\'s get work done... together.';
+  }
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent 
-        className={`sm:max-w-md backdrop-blur-lg shadow-lg border border-primary/10 overflow-auto max-h-[90vh]
-          ${isDarkMode ? 
-            'bg-gray-800/90 text-white border-gray-700' : 
-            'bg-white/90 text-gray-900 border-gray-200'}`}
-      >
-        {/* Kenya-themed color gradient overlay - adjusted for dark mode */}
-        <div className={`absolute inset-0 ${
-          isDarkMode ? 
-            'bg-gradient-to-br from-[#006600]/20 via-[#1A1A1A]/10 to-[#BB1600]/20' : 
-            'bg-gradient-to-br from-[#006600]/10 via-[#EEEEEE]/5 to-[#BB1600]/10'
-        } pointer-events-none z-0`}></div>
-        
-        <DialogClose className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
-          <X className="h-4 w-4" />
-          <span className="sr-only">Close</span>
-        </DialogClose>
-        
-        <DialogHeader className="relative z-10">
-          <DialogTitle className={`text-2xl font-bold text-center ${isDarkMode ? 'text-white' : ''}`}>
-            {translate("Welcome to CEKA 🇰🇪", language)}
-          </DialogTitle>
-          <DialogDescription className={`text-center ${isDarkMode ? 'text-gray-300' : ''}`}>
-            {translate("Sign in to save your progress and access civic tools.", language)}
-          </DialogDescription>
-        </DialogHeader>
+    <AnimatePresence>
+      {open && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-[9999] flex items-center justify-center"
+          onClick={(e) => { if (e.target === e.currentTarget) onOpenChange(false); }}
+        >
+          {/* Backdrop Overlay */}
+          <div className="absolute inset-0 bg-black/85 backdrop-blur-md" />
 
-        <div className="flex flex-col gap-6 relative z-10">
-          {/* Social Login Buttons */}
-          <div className="flex flex-col gap-3">
-            <motion.button
-              className={`flex items-center justify-center gap-2 w-full p-3 rounded-md border transition-colors ${
-                isDarkMode ? 
-                'bg-gray-700 text-white border-gray-600 hover:bg-gray-600' : 
-                'bg-white text-gray-800 border-gray-300 hover:bg-gray-50'
-              }`}
-              onClick={handleGoogleSignIn}
-              variants={socialButtonVariants}
-              whileHover="hover"
-              whileTap="tap"
+          {/* Opaque, High-Contrast Split-Screen Container Card */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.96, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.96, y: 20 }}
+            transition={{ type: 'spring', damping: 28, stiffness: 260 }}
+            className="relative z-10 w-full max-w-[950px] mx-4 rounded-[32px] overflow-hidden shadow-[0_32px_80px_rgba(0,0,0,0.85)] flex flex-col md:flex-row max-h-[90vh] md:min-h-[580px] bg-[#0a0a0a]"
+          >
+            {/* ── RIGHT PANEL (Solid Opaque, Brand Green/Partners Royal Blue) ── */}
+            <div
+              className={`relative flex flex-col justify-between p-8 md:p-12 md:w-[42%] md:flex-shrink-0 overflow-hidden transition-all duration-500 border-r border-white/10 ${tab === 'partner' ? 'bg-[#0b2447]' : 'bg-[#004d00]'
+                }`}
             >
-              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
-                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
-              </svg>
-              <span>{translate("Continue with Google", language)}</span>
-            </motion.button> 
-            
-            <motion.button
-              className="flex items-center justify-center gap-2 w-full p-3 rounded-md bg-gray-900 text-white hover:bg-gray-800 transition-colors"
-              onClick={handleGithubSignIn}
-              variants={socialButtonVariants}
-              whileHover="hover"
-              whileTap="tap"
-            >
-              <Github className="w-5 h-5" />
-              <span>{translate("Continue with GitHub", language)}</span>
-            </motion.button>
-            
-            <motion.button
-              className="flex items-center justify-center gap-2 w-full p-3 rounded-md bg-[#1DA1F2] text-white hover:bg-[#1a91da] transition-colors"
-              onClick={handleTwitterSignIn}
-              variants={socialButtonVariants}
-              whileHover="hover"
-              whileTap="tap"
-            >
-              <Twitter className="w-5 h-5" />
-              <span>{translate("Continue with Twitter", language)}</span>
-            </motion.button>
-          </div>
+              {/* Ambient visual overlay elements */}
+              <div className="absolute -top-16 -right-16 w-48 h-48 bg-white/5 rounded-full blur-3xl pointer-events-none" />
+              <div className="absolute -bottom-12 -left-12 w-56 h-56 bg-black/20 rounded-full blur-3xl pointer-events-none" />
 
-          {/* Divider */}
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <span className={`w-full ${isDarkMode ? 'border-t border-gray-600' : 'border-t border-gray-300'}`} />
+              {/* Logo / Wordmark Image - Larger slightly (Request 3) */}
+              <Link
+                to="/"
+                onClick={() => onOpenChange(false)}
+                className="absolute top-8 left-8 transition-opacity hover:opacity-80 z-20"
+              >
+                <img src="/logo-white.png" className="h-10 w-auto" alt="CEKA Logo" />
+              </Link>
+
+              {/* Centrally placed illustration (sized up to fit) */}
+              <div className="relative w-full flex-1 flex items-center justify-center mt-12 mb-6 min-h-[200px] md:min-h-[250px]">
+                <img
+                  src={panelIllustration}
+                  alt="CEKA Illustration"
+                  className="w-full h-full object-contain max-h-[220px] md:max-h-[280px] drop-shadow-[0_12px_24px_rgba(0,0,0,0.35)] transition-all duration-500"
+                  onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                />
+              </div>
+
+              {/* Texts at the bottom of the hero panel */}
+              <div className="relative z-10 flex flex-col items-center text-center md:items-start md:text-left mt-auto">
+                <p className="text-[10px] px-1 font-black uppercase tracking-[0.2em] text-white/50 mb-1">
+                  {tab === 'partner' ? 'Join Us as a' : panelTitle}
+                </p>
+
+                {tab === 'partner' ? (
+                  <div className="text-3xl md:text-4xl font-[900] leading-[1.1] text-white tracking-tighter mb-3">
+                    {panelTitle}
+                  </div>
+                ) : (
+                  <div className="text-3xl md:text-4xl font-[900] leading-[1.1] text-white tracking-tighter mb-3 flex flex-wrap items-center justify-center md:justify-start gap-x-2">
+                    <span>{tab === 'signup' ? 'Jiunge.' : 'Get Back.'}</span>
+                    <RotatingText
+                      texts={panelRotatingTexts}
+                      durations={[3000, 3000, 3500, 3000]}
+                      staggerFrom="last"
+                      initial={{ y: "100%" }}
+                      animate={{ y: 0 }}
+                      exit={{ y: "-120%" }}
+                      staggerDuration={0.025}
+                      splitLevelClassName="overflow-hidden pb-1"
+                      transition={{ type: "spring", damping: 30, stiffness: 400 }}
+                      mainClassName="text-kenya-green font-[900]"
+                      fixedHeight="1.15em"
+                    />
+                  </div>
+                )}
+
+                <p className="text-white/60 text-[12px] leading-relaxed font-medium max-w-xs mx-auto md:mx-0">
+                  {panelSubtitle}
+                </p>
+              </div>
             </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className={`px-2 ${isDarkMode ? 'bg-gray-800/80 text-gray-300' : 'bg-white/80 text-foreground'}`}>
-                {translate("Or", language)}
-              </span>
+
+            {/* ── LEFT / FORM PANEL (Solid Pitch Dark, Internal Scroll Only) ── */}
+            <div className="relative flex-1 bg-[#0a0a0a] p-8 md:p-12 flex flex-col overflow-hidden max-h-[90vh] md:max-h-none">
+
+              {/* Request 2: Exit Button (Still backdrop on hover, only X animates) */}
+              <button
+                onClick={() => onOpenChange(false)}
+                className="absolute top-0 right-0 w-20 h-20 group z-20 overflow-hidden"
+                aria-label="Close"
+              >
+                <svg
+                  className="absolute top-0 right-0 w-full h-full text-kenya-red fill-current"
+                  viewBox="0 0 100 100"
+                  preserveAspectRatio="none"
+                >
+                  <path d="M 0 0 C 35 15, 65 65, 100 100 L 100 0 Z" />
+                </svg>
+                <div className="absolute top-4 right-4 text-white transition-all duration-300 group-hover:rotate-90 group-hover:scale-125 drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">
+                  <CloseIcon size={16} />
+                </div>
+              </button>
+
+              {/* Request 1: Shared Layout animations (pinch, glide, unpinch) ONLY on active tab indicators */}
+              <div className="flex bg-white/5 rounded-2xl p-1 mb-8 gap-1 mr-14 relative">
+                {([
+                  { key: 'signin', label: 'Log In' },
+                  { key: 'signup', label: 'Sign Up' },
+                  { key: 'partner', label: 'Partners' },
+                ] as { key: Tab; label: string }[]).map((t) => (
+                  <button
+                    key={t.key}
+                    onClick={() => handleTabChange(t.key)}
+                    className="relative flex-1 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-1.5 transition-colors duration-300 z-10"
+                  >
+                    {tab === t.key && (
+                      <motion.div
+                        layoutId="activeTabBackground"
+                        className={`absolute inset-0 rounded-xl -z-10 ${t.key === 'partner'
+                          ? 'bg-[#0f3b7c] shadow-lg shadow-[#0f3b7c]/20'
+                          : 'bg-kenya-green shadow-lg shadow-kenya-green/20'
+                          }`}
+                        transition={{
+                          type: "spring",
+                          stiffness: 420,
+                          damping: 26,
+                        }}
+                      />
+                    )}
+                    {t.key === 'partner' && <UsersIcon size={12} className={tab === t.key ? 'text-white' : 'text-white/30'} />}
+                    <span className={tab === t.key ? 'text-white' : 'text-white/30'}>{t.label}</span>
+                  </button>
+                ))}
+              </div>
+
+              {/* Form Content container (simple layout opacity fade to prevent layout projection bleed/scrollbar scroll triggers) */}
+              <div className="flex-1 overflow-y-auto pr-1">
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={tab + (tab === 'partner' && partnerSubmitted ? '-submitted' : '')}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.15 }}
+                    className="flex flex-col justify-center gap-6 min-h-full"
+                  >
+                    {/* ── LOG IN ── */}
+                    {tab === 'signin' && (
+                      <div className="flex flex-col gap-6">
+                        <div>
+                          <h2 className="text-2xl font-black text-white tracking-tighter mb-1">Welcome back.</h2>
+                          <p className="text-[12px] text-white/40 font-medium">Log in to your CEKA account.</p>
+                        </div>
+
+                        <form onSubmit={handleSignIn} className="space-y-4">
+                          <IosInput label="Email" id="signin-email" type="email" value={email} onChange={setEmail} placeholder="e.g. contact@civiceducationkenya.com" autoComplete="email" />
+                          <IosInput label="Password" id="signin-password" type="password" value={password} onChange={setPassword} placeholder="* * * * * * * * *" autoComplete="current-password" />
+                          <button
+                            type="submit"
+                            disabled={loading}
+                            className="w-full h-12 rounded-2xl bg-kenya-green hover:bg-kenya-green/90 text-white font-black text-[11px] uppercase tracking-widest transition-all active:scale-[0.98] shadow-lg shadow-kenya-green/20 flex items-center justify-center gap-2"
+                          >
+                            {loading ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <>Log In <ArrowRightIcon /></>}
+                          </button>
+                        </form>
+
+                        <div className="flex items-center gap-3">
+                          <div className="flex-1 h-px bg-white/10" />
+                          <span className="text-[10px] font-bold text-white/30 uppercase tracking-widest">or</span>
+                          <div className="flex-1 h-px bg-white/10" />
+                        </div>
+
+                        <div className="grid grid-cols-3 gap-3">
+                          <button
+                            onClick={handleGoogleSignIn}
+                            className="h-12 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center transition-all"
+                            title="Continue with Google"
+                          >
+                            <GoogleIcon />
+                          </button>
+                          <button
+                            onClick={handleGithubSignIn}
+                            className="h-12 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center transition-all"
+                            title="Continue with GitHub"
+                          >
+                            <GithubIcon />
+                          </button>
+                          <button
+                            onClick={handleTwitterSignIn}
+                            className="h-12 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center transition-all"
+                            title="Continue with Twitter"
+                          >
+                            <TwitterIcon />
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* ── SIGN UP ── */}
+                    {tab === 'signup' && (
+                      <div className="flex flex-col gap-5">
+                        <div>
+                          <h2 className="text-2xl font-black text-white tracking-tighter mb-1">Join the movement.</h2>
+                          <p className="text-[12px] text-white/40 font-medium">Create your free CEKA account.</p>
+                        </div>
+
+                        <form onSubmit={handleSignUp} className="space-y-4">
+                          <div className="grid grid-cols-2 gap-3">
+                            <IosInput label="Full Name" id="signup-name" value={fullName} onChange={setFullName} autoComplete="name" />
+                            <IosInput label="Username" id="signup-username" value={username} onChange={setUsername} autoComplete="username" />
+                          </div>
+                          <IosInput label="Email" id="signup-email" type="email" value={email} onChange={setEmail} placeholder="e.g. contact@civiceducationkenya.com" autoComplete="email" />
+                          <IosInput label="Password" id="signup-password" type="password" value={password} onChange={setPassword} placeholder="* * * * * * * * *" autoComplete="new-password" />
+                          <button
+                            type="submit"
+                            disabled={loading}
+                            className="w-full h-12 rounded-2xl bg-kenya-green hover:bg-kenya-green/90 text-white font-black text-[11px] uppercase tracking-widest transition-all active:scale-[0.98] shadow-lg shadow-kenya-green/20 flex items-center justify-center gap-2"
+                          >
+                            {loading ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <>Create Account <ArrowRightIcon /></>}
+                          </button>
+                        </form>
+
+                        <div className="flex items-center gap-3">
+                          <div className="flex-1 h-px bg-white/10" />
+                          <span className="text-[10px] font-bold text-white/30 uppercase tracking-widest">or</span>
+                          <div className="flex-1 h-px bg-white/10" />
+                        </div>
+
+                        <div className="grid grid-cols-3 gap-3">
+                          <button
+                            onClick={handleGoogleSignIn}
+                            className="h-12 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center transition-all"
+                            title="Continue with Google"
+                          >
+                            <GoogleIcon />
+                          </button>
+                          <button
+                            onClick={handleGithubSignIn}
+                            className="h-12 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center transition-all"
+                            title="Continue with GitHub"
+                          >
+                            <GithubIcon />
+                          </button>
+                          <button
+                            onClick={handleTwitterSignIn}
+                            className="h-12 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center transition-all"
+                            title="Continue with Twitter"
+                          >
+                            <TwitterIcon />
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* ── PARTNERS PROGRAM ── */}
+                    {tab === 'partner' && !partnerSubmitted && (
+                      <div className="flex flex-col gap-5 overflow-y-auto pb-2">
+                        <div>
+                          <h2 className="text-2xl font-black text-white tracking-tighter mb-1">Become a CEKA Partner.</h2>
+                          <p className="text-[12px] text-white/40 font-medium">Gain access to unique perks enjoyed by our partners.</p>
+                        </div>
+
+                        <form onSubmit={handlePartnerSubmit} className="space-y-4">
+                          <IosInput label="Organisation Name" id="partner-org" value={orgName} onChange={setOrgName} placeholder="e.g. Civic Education Kenya (CEKA)" />
+                          <IosInput label="Organisation Email" id="partner-email" type="email" value={orgEmail} onChange={setOrgEmail} placeholder="e.g. contact@civiceducationkenya.com" autoComplete="email" />
+                          <IosInput label="Website (optional)" id="partner-web" value={orgWebsite} onChange={setOrgWebsite} placeholder="e.g. https://civiceducationkenya.com" />
+                          <IosInput label="Password" id="partner-password" type="password" value={password} onChange={setPassword} placeholder="* * * * * * * * *" autoComplete="new-password" />
+
+                          <button
+                            type="submit"
+                            disabled={loading || !orgName || !orgEmail || !password}
+                            className="w-full h-12 rounded-2xl bg-gradient-to-r from-[#0b2447] to-[#0f3b7c] hover:opacity-90 text-white font-black text-[11px] uppercase tracking-widest transition-all active:scale-[0.98] shadow-xl flex items-center justify-center gap-2 disabled:opacity-40"
+                          >
+                            {loading ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <>Submit Application <ArrowRightIcon /></>}
+                          </button>
+
+                          <p className="text-[10px] text-white/25 text-center leading-relaxed">
+                            Applications are reviewed within 48 hours. An active Partner listing requires a partnership contribution to sustain CEKA's infrastructure.
+                          </p>
+                        </form>
+                      </div>
+                    )}
+
+                    {/* ── PARTNER SUBMITTED CONFIRMATION ── */}
+                    {tab === 'partner' && partnerSubmitted && (
+                      <div className="flex flex-col items-center justify-center text-center gap-6 py-6">
+                        <div className="relative w-full flex items-center justify-center max-h-[140px]">
+                          <img
+                            src="/images/undraw_message-sent_iyz6.svg"
+                            alt="Application sent"
+                            className="w-32 opacity-95 drop-shadow-lg"
+                            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                          />
+                        </div>
+                        <div>
+                          <h3 className="text-xl font-black text-white tracking-tighter mb-2">Application Received!</h3>
+                          <p className="text-[12px] text-white/55 max-w-[260px] mx-auto leading-relaxed font-medium">
+                            We'll review your application and reach out within 48 hours. In the meantime, check your email to confirm your account.
+                          </p>
+                        </div>
+                        <a
+                          href={`https://wa.me/254000000000?text=${encodeURIComponent(`Hi CEKA, I just applied to become a Partner. My org is ${orgName}. Looking forward to connecting!`)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-[#25D366]/10 border border-[#25D366]/20 text-[#25D366] font-black text-[10px] uppercase tracking-widest hover:bg-[#25D366]/20 transition-all"
+                        >
+                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" /></svg>
+                          <span>Follow up via WhatsApp</span>
+                        </a>
+                      </div>
+                    )}
+                  </motion.div>
+                </AnimatePresence>
+              </div>
             </div>
-          </div>
-
-          {/* Tabbed Forms */}
-          <Tabs defaultValue="signin" className="w-full">
-            <TabsList className={`grid w-full grid-cols-2 relative z-20 ${isDarkMode ? 'bg-gray-700/50' : 'bg-white/50'}`}>
-              <TabsTrigger value="signin" className={isDarkMode ? 'data-[state=active]:bg-gray-600' : ''}>
-                {translate("Sign In", language)}
-              </TabsTrigger>
-              <TabsTrigger value="signup" className={isDarkMode ? 'data-[state=active]:bg-gray-600' : ''}>
-                {translate("Sign Up", language)}
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="signin">
-              <form onSubmit={handleSignIn} className="space-y-4">
-                <InputField 
-                  label={translate("Email", language)}
-                  value={email} 
-                  onChange={setEmail} 
-                  id="email"
-                  isDarkMode={isDarkMode}
-                  placeholder="your.email@example.com"
-                />
-                <InputField 
-                  label={translate("Password", language)}
-                  value={password} 
-                  onChange={setPassword} 
-                  id="password" 
-                  type="password"
-                  isDarkMode={isDarkMode}
-                />
-                <Button 
-                  type="submit" 
-                  className={`w-full ${isDarkMode ? 
-                    'bg-kenya-green hover:bg-kenya-green/80 text-white' : 
-                    'bg-kenya-green hover:bg-kenya-green/90'}`} 
-                  disabled={loading}
-                >
-                  {loading ? translate("Signing in...", language) : translate("Sign In", language)}
-                </Button>
-              </form>
-            </TabsContent>
-
-            <TabsContent value="signup">
-              <form onSubmit={handleSignUp} className="space-y-4">
-                <InputField 
-                  label={translate("Full Name", language)}
-                  value={fullName} 
-                  onChange={setFullName} 
-                  id="fullname"
-                  isDarkMode={isDarkMode}
-                />
-                <InputField 
-                  label={translate("Username", language)}
-                  value={username} 
-                  onChange={setUsername} 
-                  id="username"
-                  isDarkMode={isDarkMode}
-                />
-                <InputField 
-                  label={translate("Email", language)}
-                  value={email} 
-                  onChange={setEmail} 
-                  id="signup-email"
-                  isDarkMode={isDarkMode}
-                  placeholder="your.email@example.com"
-                />
-                <InputField 
-                  label={translate("Password", language)}
-                  value={password} 
-                  onChange={setPassword} 
-                  id="signup-password" 
-                  type="password"
-                  isDarkMode={isDarkMode}
-                />
-                <Button 
-                  type="submit" 
-                  className={`w-full ${isDarkMode ? 
-                    'bg-kenya-green hover:bg-kenya-green/80 text-white' : 
-                    'bg-kenya-green hover:bg-kenya-green/90'}`} 
-                  disabled={loading}
-                >
-                  {loading ? translate("Creating account...", language) : translate("Sign Up", language)}
-                </Button>
-              </form>
-            </TabsContent>
-          </Tabs>
-        </div>
-      </DialogContent>
-    </Dialog>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 };
 

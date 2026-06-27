@@ -11,12 +11,22 @@ import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/providers/AuthProvider';
 import { translate } from '@/lib/utils';
+import { roleService } from '@/services/roleService';
 
 const BottomNavbar = () => {
   const location = useLocation();
   const { language } = useLanguage();
   const { session } = useAuth();
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+  const [isAlly, setIsAlly] = useState(false);
+
+  // Load ally role once when session is established
+  useEffect(() => {
+    if (!session?.user) return;
+    roleService.getUserRole(session.user.id, session.user.email).then(role => {
+      setIsAlly(role === 'ally');
+    });
+  }, [session]);
 
   // Update window width on resize
   useEffect(() => {
@@ -96,11 +106,15 @@ const BottomNavbar = () => {
                   : "text-muted-foreground/70 hover:text-primary transition-colors"
               )}
             >
-              <div className="flex flex-col items-center">
+              <div className="flex flex-col items-center relative">
                 {React.cloneElement(item.icon as React.ReactElement, {
                   size: 22,
                   className: cn("transition-all", isActive && "filter drop-shadow-[0_0_8px_rgba(34,197,94,0.3)]")
                 })}
+                {/* Ally indicator dot — only on Profile icon */}
+                {isAlly && item.path === '/profile/settings' && (
+                  <span className="absolute -top-0.5 -right-1.5 w-2 h-2 rounded-full bg-kenya-green shadow-[0_0_6px_rgba(0,128,0,0.6)] animate-pulse" />
+                )}
                 <span className={cn(
                   getTextSize(),
                   "mt-1 font-medium tracking-tight transition-all",

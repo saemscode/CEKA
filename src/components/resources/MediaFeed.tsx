@@ -2,10 +2,12 @@ import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { mediaService, type MediaContent } from '@/services/mediaService';
 import InstagramCarousel from '../carousel/InstagramCarousel';
 import { placeholderService } from '@/services/placeholderService';
-import { Grid2X2, List } from 'lucide-react';
+import { Grid2X2, List, Handshake } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { CEKALoader } from '@/components/ui/ceka-loader';
+import { useAuth } from '@/providers/AuthProvider';
+import { roleService } from '@/services/roleService';
 
 const ITEMS_PER_PAGE = 6;
 
@@ -16,8 +18,11 @@ const MediaFeed: React.FC = () => {
     const [hasMore, setHasMore] = useState(true);
     const [page, setPage] = useState(1);
     const [viewMode, setViewMode] = useState<'feed' | 'grid'>('feed');
+    const [isAlly, setIsAlly] = useState(false);
+    const [allyOrgName, setAllyOrgName] = useState('');
     const observerRef = useRef<IntersectionObserver | null>(null);
     const loadMoreRef = useRef<HTMLDivElement>(null);
+    const { user } = useAuth();
 
     // Initial fetch
     useEffect(() => {
@@ -45,6 +50,18 @@ const MediaFeed: React.FC = () => {
 
         fetchMedia();
     }, []);
+
+    // Check ally role once on mount
+    useEffect(() => {
+        if (!user) return;
+        roleService.getUserRole(user.id, user.email).then(role => {
+            if (role === 'ally') {
+                setIsAlly(true);
+                // Pull org name for the WhatsApp pre-fill
+                setAllyOrgName(user.user_metadata?.full_name || user.email || 'our organisation');
+            }
+        });
+    }, [user]);
 
     // Load more function
     const loadMore = useCallback(async () => {
@@ -153,6 +170,20 @@ const MediaFeed: React.FC = () => {
                                 )}
                             </div>
                             <InstagramCarousel content={item} />
+                            {/* Ally Collab Button — only for verified ally users */}
+                            {isAlly && (
+                                <div className="mt-4 flex items-center justify-end">
+                                    <a
+                                        href={`https://wa.me/254000000000?text=${encodeURIComponent(`Hi CEKA, ${allyOrgName} would like to propose a collaboration on the piece: "${item.title}". Let's discuss!`)}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl border border-kenya-green/20 bg-kenya-green/5 hover:bg-kenya-green/10 text-kenya-green text-[10px] font-black uppercase tracking-widest transition-all group"
+                                    >
+                                        <Handshake size={13} className="transition-transform group-hover:scale-110" />
+                                        Propose Collab
+                                    </a>
+                                </div>
+                            )}
                         </div>
                     )) : (
                         <div className="text-center py-20 border-2 border-dashed rounded-3xl opacity-50 bg-muted/20">

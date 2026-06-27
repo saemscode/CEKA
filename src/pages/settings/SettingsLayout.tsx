@@ -1,27 +1,39 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Outlet, useNavigate, Link, useLocation } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { translate } from '@/lib/utils';
 import { useAuth } from '@/providers/AuthProvider';
 import { motion } from 'framer-motion';
-import { User, Bell, Shield, Eye, Settings as SettingsIcon, Trophy } from 'lucide-react';
+import { User, Bell, Shield, Eye, Settings as SettingsIcon, Trophy, Handshake } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { roleService } from '@/services/roleService';
 
 const SettingsLayout = () => {
   const { language } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const [userRole, setUserRole] = useState<string | null>(null);
   const currentPath = location.pathname.split('/').pop() || 'account';
 
+  useEffect(() => {
+    if (user) {
+      roleService.getUserRole(user.id, user.email).then(setUserRole);
+    }
+  }, [user]);
+
   const tabs = [
-    { id: 'account',      label: translate("Account", language),       icon: User,    path: '/settings/account',       adminOnly: false, authRequired: true },
-    { id: 'notifications',label: translate("Notifications", language),  icon: Bell,    path: '/settings/notifications',  adminOnly: false, authRequired: false },
-    { id: 'appearance',   label: translate("Appearance", language),     icon: Eye,     path: '/settings/appearance',     adminOnly: false, authRequired: false },
-    { id: 'privacy',      label: translate("Privacy", language),        icon: Shield,  path: '/settings/privacy',        adminOnly: false, authRequired: false },
-    { id: 'civic-points', label: 'Points',                              icon: Trophy,  path: '/settings/civic-points',   adminOnly: false, authRequired: true },
+    { id: 'account',      label: translate("Account", language),       icon: User,      path: '/settings/account',       authRequired: true },
+    { id: 'notifications',label: translate("Notifications", language),  icon: Bell,      path: '/settings/notifications',  authRequired: false },
+    { id: 'appearance',   label: translate("Appearance", language),     icon: Eye,       path: '/settings/appearance',     authRequired: false },
+    { id: 'privacy',      label: translate("Privacy", language),        icon: Shield,    path: '/settings/privacy',        authRequired: false },
+    { id: 'civic-points', label: 'Points',                              icon: Trophy,    path: '/settings/civic-points',   authRequired: true },
+    // Ally tab — only rendered for ally-role users
+    ...(userRole === 'ally' ? [
+      { id: 'ally',       label: 'My Partnership',                      icon: Handshake, path: '/settings/ally',           authRequired: true },
+    ] : []),
   ];
 
   React.useEffect(() => {
@@ -59,7 +71,7 @@ const SettingsLayout = () => {
             <div className="bg-white/70 dark:bg-slate-900/70 backdrop-blur-2xl border border-white/20 dark:border-white/5 rounded-3xl shadow-ios-high p-1.5 flex flex-nowrap overflow-x-auto no-scrollbar gap-1">
               {tabs.map((tab) => {
                 const isActive = currentPath === tab.id;
-                if (tab.authRequired && !user) return null;
+              if (tab.authRequired && !user) return null;
 
                 return (
                   <Link

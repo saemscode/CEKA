@@ -12,6 +12,7 @@ import {
     Info,
     ArrowRight
 } from 'lucide-react';
+import { useMedia } from 'react-use';
 import { Drawer } from 'vaul';
 import { 
     Dialog, 
@@ -70,6 +71,8 @@ const DownloadPortal: React.FC<DownloadPortalProps> = ({ filePath, availableQual
     const [donationAmount, setDonationAmount] = useState<number>(100);
     const [isPaying, setIsPaying] = useState(false);
     const { toast } = useToast();
+    // Mount only the appropriate portal based on screen width — prevents double-render bug
+    const isDesktop = useMedia('(min-width: 768px)', false);
 
     // Filter tiers based on what was actually generated during Churn
     const activeTiers = DOWNLOAD_TIERS.filter(tier => 
@@ -324,8 +327,8 @@ const DownloadPortal: React.FC<DownloadPortalProps> = ({ filePath, availableQual
 
     return (
         <>
-            {/* Desktop View: Floating Glassmorphic Modal */}
-            <div className="hidden md:block">
+            {isDesktop ? (
+                /* Desktop: Floating Glassmorphic Modal */
                 <Dialog open={isOpen} onOpenChange={setIsOpen}>
                     <DialogTrigger asChild>{trigger}</DialogTrigger>
                     <DialogContent className="max-w-md bg-background/60 backdrop-blur-3xl border-white/10 shadow-3xl rounded-[40px] overflow-hidden p-10 ring-1 ring-white/20">
@@ -336,10 +339,8 @@ const DownloadPortal: React.FC<DownloadPortalProps> = ({ filePath, availableQual
                         {PortalContent}
                     </DialogContent>
                 </Dialog>
-            </div>
-
-            {/* Mobile View: High-End iOS Sheet */}
-            <div className="md:hidden">
+            ) : (
+                /* Mobile: High-End iOS Bottom Sheet — the ONLY portal on mobile */
                 <Drawer.Root open={isOpen} onOpenChange={setIsOpen}>
                     <Drawer.Trigger asChild>{trigger}</Drawer.Trigger>
                     <Drawer.Portal>
@@ -354,7 +355,7 @@ const DownloadPortal: React.FC<DownloadPortalProps> = ({ filePath, availableQual
                         </Drawer.Content>
                     </Drawer.Portal>
                 </Drawer.Root>
-            </div>
+            )}
         </>
     );
 };

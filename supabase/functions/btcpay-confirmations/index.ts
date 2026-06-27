@@ -105,6 +105,36 @@ serve(async (req: Request) => {
     }).catch(() => { });
   }
 
+  // ── Piece Download Grant ───────────────────────────────────────────────────
+  // If this payment was for a premium media download (piece_id + quality_tier
+  // set in metadata by DownloadPortal), write a time-limited grant so the
+  // frontend can serve the signed URL without re-prompting for payment.
+  const pieceId = metadata?.piece_id ?? null;
+  const qualityTier = metadata?.quality_tier ?? null;
+
+  if (status === 'settled' && userId && pieceId && qualityTier) {
+    const expiresAt = new Date(Date.now() + 72 * 60 * 60 * 1000).toISOString(); // 72 h
+    const { error: grantError } = await supabase
+      .from('piece_download_grants' as any)
+      .upsert(
+        {
+          user_id: userId,
+          piece_id: pieceId,
+          quality_tier: qualityTier,
+          invoice_id: invoiceId,
+          expires_at: expiresAt,
+          granted_at: new Date().toISOString(),
+        },
+        { onConflict: 'user_id,piece_id,quality_tier' }
+      );
+
+    if (grantError) {
+      console.error('[btcpay] Failed to write download grant:', grantError);
+    } else {
+      console.log(`[btcpay] Download grant issued → user:${userId} piece:${pieceId} tier:${qualityTier} expires:${expiresAt}`);
+    }
+  }
+
   console.log(`[btcpay] Invoice ${invoiceId} → ${status} (${paymentMethod ?? 'unknown rail'})`);
   return new Response(JSON.stringify({ ok: true, status }), {
     status: 200,
