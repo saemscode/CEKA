@@ -229,7 +229,9 @@ const CivicPointsPage: React.FC = () => {
                   <span className={`w-6 text-center text-xs font-black shrink-0 ${i === 0 ? 'text-amber-500' : i === 1 ? 'text-slate-400' : i === 2 ? 'text-amber-700' : 'text-slate-300 dark:text-white/20'}`}>
                     #{i + 1}
                   </span>
-                  <p className="flex-1 text-sm font-bold text-slate-700 dark:text-white truncate">{entry.full_name || 'Civic Citizen'}</p>
+                  <p className="flex-1 text-sm font-bold text-slate-700 dark:text-white truncate">
+                    {entry.username ? `@${entry.username}` : (entry.full_name || 'Civic Citizen')}
+                  </p>
                   <span className="text-xs font-black text-kenya-green">{(entry.total_points ?? 0).toLocaleString()} pts</span>
                 </div>
               ))}
