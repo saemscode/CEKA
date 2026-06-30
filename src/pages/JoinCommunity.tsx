@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
+import { Helmet } from 'react-helmet-async';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -231,6 +232,15 @@ const JoinCommunity = () => {
 
   return (
     <Layout>
+      <Helmet>
+        <title>Join the Community | Civic Education Kenya</title>
+        <meta name="description" content="Join Civic Education Kenya's community of active citizens. Connect, learn, and engage in meaningful discussions about Kenya's civic matters and governance." />
+        <link rel="canonical" href="https://www.civiceducationkenya.com/join-community" />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://www.civiceducationkenya.com/join-community" />
+        <meta property="og:title" content="Join the CEKA Community" />
+        <meta property="og:description" content="Be part of Kenya's growing network of active citizens committed to civic education and engagement." />
+      </Helmet>
       <div className="container py-12 max-w-7xl">
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold tracking-tight mb-4">

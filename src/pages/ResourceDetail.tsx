@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
+import { Helmet } from 'react-helmet-async';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -173,6 +174,24 @@ const ResourceDetail = () => {
 
   return (
     <Layout>
+      {resource && (() => {
+        const descText = (resource as any).description || (resource as any).summary || "Access resources on Civic Education Kenya.";
+        const seoDesc = descText.length > 155 ? descText.substring(0, 152) + '...' : descText;
+        return (
+          <Helmet>
+            <title>{`${resource.title} | Resources | CEKA`}</title>
+            <meta name="description" content={seoDesc} />
+            <link rel="canonical" href={`https://www.civiceducationkenya.com/resources/${resource.id}`} />
+            <meta property="og:type" content="website" />
+            <meta property="og:url" content={`https://www.civiceducationkenya.com/resources/${resource.id}`} />
+            <meta property="og:title" content={`${resource.title} | Resources | CEKA`} />
+            <meta property="og:description" content={seoDesc} />
+            <meta name="twitter:card" content="summary_large_image" />
+            <meta name="twitter:title" content={`${resource.title} | Resources | CEKA`} />
+            <meta name="twitter:description" content={seoDesc} />
+          </Helmet>
+        );
+      })()}
       <div className="container py-8 md:py-12">
         <Button variant="ghost" className="mb-6" asChild>
           <Link to="/resources" className="flex items-center">

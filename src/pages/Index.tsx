@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import { motion } from 'framer-motion';
 import Layout from '@/components/layout/Layout';
 import Hero from '@/components/home/Hero';
@@ -151,6 +152,20 @@ const Index = () => {
 
   return (
     <Layout>
+      <Helmet>
+        <title>Civic Education Kenya - Educate • Amplify • Empower</title>
+        <meta name="description" content="Comprehensive civic education platform for Kenyan citizens. Learn about governance, rights, responsibilities, and participate in democracy through interactive tools and resources." />
+        <link rel="canonical" href="https://www.civiceducationkenya.com/" />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://www.civiceducationkenya.com/" />
+        <meta property="og:title" content="Civic Education Kenya - Educate • Amplify • Empower" />
+        <meta property="og:description" content="Comprehensive civic education platform for Kenyan citizens. Learn about governance, rights, and democratic participation." />
+        <meta property="og:image" content="https://www.civiceducationkenya.com/lovable-uploads/1.webp" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="Civic Education Kenya - Educate • Amplify • Empower" />
+        <meta name="twitter:description" content="Comprehensive civic education platform for Kenyan citizens. Governance, rights, and democratic participation." />
+        <meta name="twitter:image" content="https://www.civiceducationkenya.com/lovable-uploads/3.webp" />
+      </Helmet>
       <div className="homepage-restored">
         <Hero />
 

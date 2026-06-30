@@ -20,6 +20,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn, translate } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { Helmet } from 'react-helmet-async';
 
 const BlogPostPage = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -206,6 +207,23 @@ const BlogPostPage = () => {
 
   return (
     <Layout>
+      {post && (() => {
+        const seoDesc = post.excerpt ? (post.excerpt.length > 155 ? post.excerpt.substring(0, 152) + '...' : post.excerpt) : "Read this article on Civic Education Kenya.";
+        return (
+          <Helmet>
+            <title>{`${post.title} | Blog | CEKA`}</title>
+            <meta name="description" content={seoDesc} />
+            <link rel="canonical" href={`https://www.civiceducationkenya.com/blog/${post.slug}`} />
+            <meta property="og:type" content="article" />
+            <meta property="og:url" content={`https://www.civiceducationkenya.com/blog/${post.slug}`} />
+            <meta property="og:title" content={`${post.title} | Blog | CEKA`} />
+            <meta property="og:description" content={seoDesc} />
+            <meta name="twitter:card" content="summary_large_image" />
+            <meta name="twitter:title" content={`${post.title} | Blog | CEKA`} />
+            <meta name="twitter:description" content={seoDesc} />
+          </Helmet>
+        );
+      })()}
       <div className="min-h-screen bg-slate-50/30 dark:bg-black">
         {/* HERO SECTION */}
         <section className="relative pt-24 pb-16 overflow-hidden">

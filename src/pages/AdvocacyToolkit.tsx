@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
+import { Helmet } from 'react-helmet-async';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -138,6 +139,15 @@ const AdvocacyToolkit = () => {
 
   return (
     <Layout>
+      <Helmet>
+        <title>Advocacy Toolkit | Civic Education Kenya</title>
+        <meta name="description" content="Access legal knowledge, human rights resources, and self-advocacy guides to defend justice and demand accountability in Kenya." />
+        <link rel="canonical" href="https://www.civiceducationkenya.com/advocacy-toolkit" />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://www.civiceducationkenya.com/advocacy-toolkit" />
+        <meta property="og:title" content="Advocacy & Rights Toolkit | CEKA" />
+        <meta property="og:description" content="Access legal knowledge, human rights resources, and self-advocacy guides." />
+      </Helmet>
       <div className="min-h-screen bg-slate-50 dark:bg-slate-950/20">
         {/* iOS style hero header */}
         <section className="relative pt-24 pb-12 overflow-hidden">

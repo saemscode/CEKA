@@ -58,7 +58,9 @@ const MaintenancePage: React.FC = () => {
     };
 
     fetchStats();
-    const interval = setInterval(fetchStats, 30000);
+    // Poll every 5 minutes — the server-side RPC aggregation is fast (~30 bytes),
+    // but polling more frequently than this causes unnecessary Supabase egress.
+    const interval = setInterval(fetchStats, 300000);
     return () => { document.title = prev; clearInterval(interval); };
   }, []);
 

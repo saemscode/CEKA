@@ -1,5 +1,8 @@
 {
   "rewrites": [
+    { "source": "/bill/:slug", "destination": "/api/seo-handler?type=bill&id=:slug" },
+    { "source": "/blog/:slug", "destination": "/api/seo-handler?type=blog&id=:slug" },
+    { "source": "/resources/:id", "destination": "/api/seo-handler?type=resource&id=:id" },
     { "source": "/(.*)", "destination": "/index.html" }
   ],
   "headers": [

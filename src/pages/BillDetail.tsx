@@ -364,6 +364,7 @@ const BillDetail = () => {
       <Helmet>
         <title>{`${bill.title} | Legislative Tracker | CEKA`}</title>
         <meta name="description" content={seoDesc} />
+        <link rel="canonical" href={`https://www.civiceducationkenya.com/bill/${bill.slug || bill.id}`} />
         <meta name="keywords" content={`${bill.title}, ${bill.category}, ${bill.bill_no || ''}, Kenya Memorandum Builder, Memorandum Builder Kenya, ${isFinanceBill ? 'Finance Bill 2026, Kenya Finance Bill 2026, Finance Bill memorandum builder, write a memorandum for Finance Bill,' : ''} public participation Kenya, submit memorandum Kenya, bill tracker Kenya, parliamentary process Kenya`} />
 
         {/* Open Graph / Facebook */}

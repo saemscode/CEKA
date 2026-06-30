@@ -6,6 +6,7 @@ import {
   ChevronDown, X, SortAsc, SortDesc, List, Grid3X3, Plus, RefreshCw, BookOpen
 } from 'lucide-react';
 import Layout from '@/components/layout/Layout';
+import { Helmet } from 'react-helmet-async';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -317,6 +318,15 @@ const ResourceLibrary = () => {
 
   return (
     <Layout>
+      <Helmet>
+        <title>Civic Resource Library | Documents, Videos & Guides | CEKA</title>
+        <meta name="description" content="Access Kenya's largest civic education resource library. PDFs, videos, legal documents, and guides on governance, the Constitution, voter rights, and democratic participation." />
+        <link rel="canonical" href="https://www.civiceducationkenya.com/resources" />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://www.civiceducationkenya.com/resources" />
+        <meta property="og:title" content="Civic Resource Library | CEKA" />
+        <meta property="og:description" content="Access Kenya's largest civic education resource library — PDFs, videos, legal documents, and guides on governance, rights, and democracy." />
+      </Helmet>
       <div className="container py-8">
         <div className="flex flex-col gap-8 mb-10">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">

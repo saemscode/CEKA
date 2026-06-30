@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
 import Layout from '@/components/layout/Layout';
+import { Helmet } from 'react-helmet-async';
 import { useBlog } from '@/hooks/useBlog';
 import { BlogList } from '@/components/blog/BlogList';
 import { BlogSidebar } from '@/components/blog/BlogSidebar';
@@ -117,6 +118,15 @@ const Blog = () => {
 
   return (
     <Layout>
+      <Helmet>
+        <title>Blog | Civic Insights & Governance Updates | CEKA</title>
+        <meta name="description" content="Read the latest civic education insights, governance updates, and democratic participation guides from Civic Education Kenya. Written by citizens, for citizens." />
+        <link rel="canonical" href="https://www.civiceducationkenya.com/blog" />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://www.civiceducationkenya.com/blog" />
+        <meta property="og:title" content="Blog | Civic Insights & Governance Updates | CEKA" />
+        <meta property="og:description" content="Read the latest civic education insights, governance updates, and democratic participation guides from Civic Education Kenya." />
+      </Helmet>
       <div className="container py-8">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4 overflow-hidden">
           <div className="max-w-full">
