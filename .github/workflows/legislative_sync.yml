@@ -31,6 +31,14 @@ on:
         description: 'Phase A: Force re-process ALL bills even if data is complete'
         type: boolean
         default: false
+      run_deep_relay:
+        description: 'Run Deep Intelligence Relay (wide-context multi-LLM Phase 2 analysis)'
+        type: boolean
+        default: false
+      deep_relay_bill_id:
+        description: 'Deep Relay: Target specific Bill UUID. Leave blank to process all pending bills.'
+        type: string
+        default: ''
 
 jobs:
   sync:
@@ -155,6 +163,24 @@ jobs:
         env:
           PYTHONIOENCODING: utf-8
 
+      - name: "Phase 2: Deep Intelligence Relay (Wide-Context Multi-LLM)"
+        # Runs on every scheduled sync (polls Supabase for pending bills automatically)
+        # OR when manually triggered with run_deep_relay=true
+        # OR when a specific bill ID is provided via deep_relay_bill_id
+        if: |
+          github.event.inputs.run_deep_relay == 'true' ||
+          github.event.inputs.deep_relay_bill_id != '' ||
+          github.event_name == 'schedule'
+        run: |
+          BILL_FLAG=""
+          if [ -n "${{ github.event.inputs.deep_relay_bill_id }}" ]; then
+            BILL_FLAG="${{ github.event.inputs.deep_relay_bill_id }}"
+          fi
+          python scripts/deep_intelligence_relay.py $BILL_FLAG
+        continue-on-error: true
+        env:
+          PYTHONIOENCODING: utf-8
+
       - name: "Phase A: Sovereign Refresh (Weekly — All Bills Broad Sweep)"
         # Runs every Monday at 06:00 EAT (03:00 UTC) OR when manually triggered with run_phase_a=true
         if: |
@@ -202,6 +228,7 @@ jobs:
           echo "- **Run:** #${{ github.run_number }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Time (UTC):** $(date -u)" >> $GITHUB_STEP_SUMMARY
           echo "- **News Sync:** $RUN_NEWS" >> $GITHUB_STEP_SUMMARY
+          echo "- **Deep Intelligence Relay:** ${{ github.event.inputs.run_deep_relay || 'scheduled' }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Triggered by:** ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
 
       - name: Persist Proxy Usage and Scraped Data
