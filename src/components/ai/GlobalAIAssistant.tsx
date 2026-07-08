@@ -10,6 +10,7 @@ import { useLocation } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import { cn } from '@/lib/utils';
 import { CEKALoader } from '@/components/ui/ceka-loader';
+import { SearchStatusIcon } from '@/components/ui/CustomIcons';
 
 const ChatRoundIcon = ({ size = 24, className = '' }: { size?: number; className?: string }) => (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" className={className} xmlns="http://www.w3.org/2000/svg">
@@ -406,9 +407,9 @@ const GlobalAIAssistant: React.FC<GlobalAIAssistantProps> = ({ isHidden, onHide 
                                     {/* Header */}
                                     <div className="bg-gradient-to-r from-kenya-green/10 to-primary/10 p-4 border-b border-white/10 dark:border-gray-700/10">
                                         <div className="flex justify-between items-center">
-                                            <h3 className="font-bold text-lg flex items-center text-slate-800 dark:text-white">
+                                            <h3 className="font-bold text-lg flex items-center text-fill-[#013001] dark:text-white">
                                                 <div className="relative mr-3">
-                                                    <Bot className="h-6 w-6 text-kenya-green drop-shadow-sm" />
+                                                    <SearchStatusIcon className="h-6 w-6 text-kenya-green drop-shadow-sm" />
                                                     <div className="absolute inset-0 bg-kenya-green/20 blur-sm rounded-full" />
                                                 </div>
                                                 CEKA AI
@@ -434,7 +435,7 @@ const GlobalAIAssistant: React.FC<GlobalAIAssistantProps> = ({ isHidden, onHide 
                                                     <ChatRoundIcon size={32} className="text-kenya-green" />
                                                 </div>
                                                 <div>
-                                                    <p className="font-bold text-slate-200 dark:text-white">Your Civic Assistant</p>
+                                                    <p className="font-bold text-fill-[#013001] dark:text-white">Your Civic Assistant</p>
                                                     <p className="text-xs text-slate-700 dark:text-gray-400 mt-1">Ask about legislation or the Constitution</p>
                                                 </div>
                                                 <div className="flex flex-wrap gap-2 justify-center min-h-[4rem]">
@@ -474,7 +475,7 @@ const GlobalAIAssistant: React.FC<GlobalAIAssistantProps> = ({ isHidden, onHide 
                                             >
                                                 <div className={`max-w-[90%] p-3 rounded-2xl text-xs md:text-sm shadow-lg backdrop-blur-md ${m.role === 'user'
                                                     ? 'bg-kenya-green text-white rounded-tr-none'
-                                                    : 'bg-white/10 dark:bg-gray-800/20 border border-white/20 dark:border-white/10 text-slate-800 dark:text-white rounded-tl-none'
+                                                    : 'bg-white/10 dark:bg-gray-800/20 border border-white/20 dark:border-white/10 text-fill-[#013001] dark:text-white rounded-tl-none'
                                                     }`}>
                                                     <div className={cn(
                                                         "prose prose-sm dark:prose-invert prose-headings:mt-3 prose-headings:mb-1 prose-p:my-1 prose-li:my-0.5 whitespace-pre-wrap break-words max-w-full overflow-hidden leading-snug",
