@@ -2,12 +2,13 @@ import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { mediaService, type MediaContent } from '@/services/mediaService';
 import InstagramCarousel from '../carousel/InstagramCarousel';
 import { placeholderService } from '@/services/placeholderService';
-import { Grid2X2, List, Handshake } from 'lucide-react';
+import { Grid2X2, List } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/skeleton';
 import { CEKALoader } from '@/components/ui/ceka-loader';
 import { useAuth } from '@/providers/AuthProvider';
 import { roleService } from '@/services/roleService';
+import { supabase } from '@/integrations/supabase/client';
+import ProposeCollab from '@/components/campaigns/ProposeCollab';
 
 const ITEMS_PER_PAGE = 6;
 
@@ -19,7 +20,10 @@ const MediaFeed: React.FC = () => {
     const [page, setPage] = useState(1);
     const [viewMode, setViewMode] = useState<'feed' | 'grid'>('feed');
     const [isAlly, setIsAlly] = useState(false);
-    const [allyOrgName, setAllyOrgName] = useState('');
+    const [allyPartnerId, setAllyPartnerId] = useState<string | null>(null);
+    const [allyUserId, setAllyUserId] = useState<string | null>(null);
+    // Map of media_item_id -> partner branding for co-authored pieces
+    const [coBrandedItems, setCoBrandedItems] = useState<Record<string, { org_name: string; org_logo_url: string | null }>>({});
     const observerRef = useRef<IntersectionObserver | null>(null);
     const loadMoreRef = useRef<HTMLDivElement>(null);
     const { user } = useAuth();
@@ -51,17 +55,43 @@ const MediaFeed: React.FC = () => {
         fetchMedia();
     }, []);
 
-    // Check ally role once on mount
+    // Check ally role + fetch partner record once on mount
     useEffect(() => {
         if (!user) return;
-        roleService.getUserRole(user.id, user.email).then(role => {
+        roleService.getUserRole(user.id, user.email).then(async role => {
             if (role === 'ally') {
                 setIsAlly(true);
-                // Pull org name for the WhatsApp pre-fill
-                setAllyOrgName(user.user_metadata?.full_name || user.email || 'our organisation');
+                setAllyUserId(user.id);
+                const { data: partnerData } = await (supabase.from('partners' as any) as any)
+                    .select('id')
+                    .eq('submitted_by_user_id', user.id)
+                    .maybeSingle();
+                if (partnerData?.id) setAllyPartnerId(partnerData.id);
             }
         });
     }, [user]);
+
+    // After content loads, fetch co-branding data for any linked pieces
+    useEffect(() => {
+        if (!content.length) return;
+        const fetchCoBranding = async () => {
+            const ids = content.map(c => c.id);
+            const { data } = await (supabase.from('campaign_collaborations' as any) as any)
+                .select('media_item_id, partner:partner_id (org_name, org_logo_url)')
+                .in('media_item_id', ids)
+                .eq('status', 'active');
+            if (data?.length) {
+                const map: Record<string, { org_name: string; org_logo_url: string | null }> = {};
+                data.forEach((row: any) => {
+                    if (row.media_item_id && row.partner) {
+                        map[row.media_item_id] = row.partner;
+                    }
+                });
+                setCoBrandedItems(map);
+            }
+        };
+        fetchCoBranding();
+    }, [content]);
 
     // Load more function
     const loadMore = useCallback(async () => {
@@ -161,30 +191,40 @@ const MediaFeed: React.FC = () => {
 
             {viewMode === 'feed' ? (
                 <div className="space-y-12 max-w-xl mx-auto">
-                    {content.length > 0 ? content.map((item) => (
+                    {content.length > 0 ? content.map((item) => {
+                        const coPartner = coBrandedItems[item.id];
+                        return (
                         <div key={item.id} className="animate-in fade-in slide-in-from-bottom-4 duration-500">
                             <div className="mb-4">
                                 <h3 className="text-xl font-black tracking-tight uppercase">{item.title}</h3>
                                 {item.description && (
                                     <p className="text-sm text-muted-foreground line-clamp-2 mt-1 font-medium">{item.description}</p>
                                 )}
+                                {/* Co-branding banner — shown when a verified partner is linked */}
+                                {coPartner && (
+                                    <div className="mt-2 flex items-center gap-2 px-3 py-1.5 rounded-xl bg-kenya-green/5 border border-kenya-green/15 w-fit">
+                                        {coPartner.org_logo_url && (
+                                            <img src={coPartner.org_logo_url} alt={coPartner.org_name} className="w-5 h-5 object-contain rounded" />
+                                        )}
+                                        <span className="text-[10px] font-black text-kenya-green uppercase tracking-widest">
+                                            Presented in Partnership with {coPartner.org_name}
+                                        </span>
+                                    </div>
+                                )}
                             </div>
                             <InstagramCarousel content={item} />
-                            {/* Ally Collab Button — only for verified ally users */}
-                            {isAlly && (
-                                <div className="mt-4 flex items-center justify-end">
-                                    <a
-                                        href={`https://wa.me/254000000000?text=${encodeURIComponent(`Hi CEKA, ${allyOrgName} would like to propose a collaboration on the piece: "${item.title}". Let's discuss!`)}`}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl border border-kenya-green/20 bg-kenya-green/5 hover:bg-kenya-green/10 text-kenya-green text-[10px] font-black uppercase tracking-widest transition-all group"
-                                    >
-                                        <Handshake size={13} className="transition-transform group-hover:scale-110" />
-                                        Propose Collab
-                                    </a>
-                                </div>
+                            {/* Native In-App Collab Proposal — only for verified ally users */}
+                            {isAlly && allyPartnerId && (
+                                <ProposeCollab
+                                    mediaItemId={item.id}
+                                    contentTitle={item.title}
+                                    partnerId={allyPartnerId}
+                                    partnerUserId={allyUserId || ''}
+                                />
                             )}
                         </div>
+                        );
+                    })
                     )) : (
                         <div className="text-center py-20 border-2 border-dashed rounded-3xl opacity-50 bg-muted/20">
                             <p className="font-bold">No visual media published yet.</p>

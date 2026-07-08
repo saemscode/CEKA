@@ -58,6 +58,7 @@ import PrivacySettings from '@/pages/settings/PrivacySettings';
 import PrivacyPolicy from '@/pages/PrivacyPolicy';
 import TermsConditions from '@/pages/TermsConditions';
 import Pieces from '@/pages/Pieces';
+import PartnerDashboard from '@/pages/PartnerDashboard';
 import Tools from '@/pages/Tools';
 import About from '@/pages/About';
 import TemplateViewerPage from '@/pages/TemplateViewerPage';
@@ -191,6 +192,11 @@ const AppContent = () => {
         <Route path="/campaign/:id" element={<CampaignDetail />} />
         <Route path="/search" element={<SearchResults />} />
         <Route path="/pieces" element={<Pieces />} />
+        <Route path="/partner/dashboard" element={
+          <ProtectedRoute>
+            <PartnerDashboard />
+          </ProtectedRoute>
+        } />
         <Route path="/tools" element={<Tools />} />
         <Route path="/about" element={<About />} />
         <Route path="/translate" element={<TranslatePage />} />

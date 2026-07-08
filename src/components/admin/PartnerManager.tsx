@@ -9,7 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import {
   Users, CheckCircle2, XCircle, AlertCircle, ShieldCheck, FileText, Upload, Download,
-  RefreshCw, Search, Award, Coins, Building, Clock, ArrowUpRight, Lock, ExternalLink
+  RefreshCw, Search, Award, Coins, Building, Clock, ArrowUpRight, Lock, ExternalLink,
+  MessageSquare, ChevronRight, Zap
 } from 'lucide-react';
 import { CEKALoader } from '@/components/ui/ceka-loader';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -30,16 +31,27 @@ interface Partner {
 
 const PartnerManager = () => {
   const [partners, setPartners] = useState<Partner[]>([]);
+  const [proposals, setProposals] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [selectedPartner, setSelectedPartner] = useState<Partner | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [converting, setConverting] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
     loadPartners();
   }, []);
+
+  const loadProposals = async (partnerId: string) => {
+    const { data } = await (supabase.from('collaboration_proposals' as any) as any)
+      .select(`*, media_item:media_item_id (id, title), campaign:campaign_id (id, title, slug)`)
+      .eq('partner_id', partnerId)
+      .eq('status', 'pending')
+      .order('created_at', { ascending: false });
+    setProposals(data || []);
+  };
 
   const loadPartners = async () => {
     try {
@@ -60,6 +72,41 @@ const PartnerManager = () => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleConvertProposal = async (proposal: any) => {
+    if (!selectedPartner) return;
+    setConverting(proposal.id);
+    try {
+      // 1. Build the invite record linked to the partner
+      const { data: invite, error: inviteErr } = await (supabase.from('collaboration_invites' as any) as any)
+        .insert({
+          from_campaign_id: proposal.campaign?.id || null,
+          to_campaign_id: proposal.campaign?.id || null,
+          partner_id: selectedPartner.id,
+          status: 'pending',
+        })
+        .select('id')
+        .single();
+      if (inviteErr) throw inviteErr;
+
+      // 2. Mark proposal as converted
+      await (supabase.from('collaboration_proposals' as any) as any)
+        .update({ status: 'converted', resolved_at: new Date().toISOString(), resulting_invite_id: invite.id })
+        .eq('id', proposal.id);
+
+      // 3. Trigger invite notification email
+      await supabase.functions.invoke('send-collab-invite', {
+        body: { invite_id: invite.id },
+      });
+
+      toast({ title: 'Invite Created & Email Sent!', description: `Collaboration invite sent to ${selectedPartner.org_name}` });
+      loadProposals(selectedPartner.id);
+    } catch (err: any) {
+      toast({ title: 'Convert Failed', description: err.message, variant: 'destructive' });
+    } finally {
+      setConverting(null);
     }
   };
 
@@ -322,7 +369,7 @@ const PartnerManager = () => {
               filteredPartners.map(partner => (
                 <div
                   key={partner.id}
-                  onClick={() => setSelectedPartner(partner)}
+                  onClick={() => { setSelectedPartner(partner); loadProposals(partner.id); }}
                   className={`p-5 rounded-[24px] border border-border/40 hover:border-primary/30 bg-card/60 backdrop-blur-xl shadow-sm transition-all cursor-pointer flex flex-col md:flex-row items-start md:items-center justify-between gap-4 ${
                     selectedPartner?.id === partner.id ? 'ring-2 ring-primary bg-primary/5 border-transparent' : ''
                   }`}
@@ -486,6 +533,33 @@ const PartnerManager = () => {
                           </Button>
                         </div>
                       </div>
+                    </div>
+
+                    {/* Proposals from this Partner */}
+                    <div className="space-y-4 pt-4 border-t border-border/40">
+                      <Label className="text-xs font-black uppercase tracking-wider text-muted-foreground flex items-center gap-2 block">
+                        <MessageSquare className="h-3.5 w-3.5" /> Pending Proposals ({proposals.length})
+                      </Label>
+                      {proposals.length === 0 ? (
+                        <p className="text-xs text-muted-foreground text-center py-3">No pending proposals from this partner.</p>
+                      ) : proposals.map((p: any) => (
+                        <div key={p.id} className="p-3 rounded-2xl bg-muted/30 border border-border/30 space-y-2">
+                          <p className="text-xs font-bold text-foreground">
+                            {p.media_item?.title || p.campaign?.title || 'General'}
+                          </p>
+                          <p className="text-[11px] text-muted-foreground line-clamp-2">{p.proposal_text}</p>
+                          <Button
+                            size="sm"
+                            onClick={() => handleConvertProposal(p)}
+                            disabled={converting === p.id}
+                            className="w-full rounded-xl h-8 text-xs font-bold gap-1.5 bg-[#0f3b7c] hover:bg-[#0f3b7c]/90 text-white"
+                          >
+                            {converting === p.id
+                              ? <div className="h-3.5 w-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                              : <><Zap className="h-3.5 w-3.5" /> Convert to Invite + Notify</>}
+                          </Button>
+                        </div>
+                      ))}
                     </div>
 
                     {/* Metadata */}
