@@ -224,8 +224,7 @@ const MediaFeed: React.FC = () => {
                             )}
                         </div>
                         );
-                    })
-                    )) : (
+                    }) : (
                         <div className="text-center py-20 border-2 border-dashed rounded-3xl opacity-50 bg-muted/20">
                             <p className="font-bold">No visual media published yet.</p>
                         </div>
