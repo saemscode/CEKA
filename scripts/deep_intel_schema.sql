@@ -29,3 +29,18 @@ CREATE INDEX IF NOT EXISTS idx_bills_deep_analysis_status
 --       deep_working_memory   = '{}'::jsonb,
 --       deep_insights         = NULL,
 --       deep_analysed_at      = NULL;
+
+-- ── OCR Worker Column ─────────────────────────────────────────────────────────
+-- Set by sovereign_corroborator.py when a bill has a scanned PDF needing heavy OCR.
+-- Cleared by ocr_worker.py once the text has been extracted and committed.
+ALTER TABLE public.bills
+  ADD COLUMN IF NOT EXISTS requires_heavy_ocr boolean NOT NULL DEFAULT false;
+
+-- Index so ocr_worker.py can poll efficiently without a full table scan
+CREATE INDEX IF NOT EXISTS idx_bills_requires_heavy_ocr
+  ON public.bills (requires_heavy_ocr)
+  WHERE requires_heavy_ocr = true;
+
+-- To manually flag a bill for OCR reprocessing:
+-- UPDATE public.bills SET requires_heavy_ocr = true WHERE id = '<bill-uuid>';
+

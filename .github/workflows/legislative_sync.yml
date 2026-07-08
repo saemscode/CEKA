@@ -221,6 +221,14 @@ jobs:
         env:
           PYTHONIOENCODING: utf-8
 
+      - name: "OCR Worker (Background — Heavy Scanned PDF Backlog)"
+        # Drains the queue of scanned PDFs that were deferred by the corroborator.
+        # Runs on every scheduled sync so the backlog never grows unbounded.
+        run: python scripts/ocr_worker.py
+        continue-on-error: true
+        env:
+          PYTHONIOENCODING: utf-8
+
       - name: Sync Summary
         if: always()
         run: |

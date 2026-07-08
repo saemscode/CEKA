@@ -17,16 +17,9 @@ except ImportError:
 # Add scripts directory to Python path to resolve local imports
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-# ── OCR: hardcode Tesseract + Poppler binary paths ──────────────────────────
+# ── OCR: hardcode Poppler binary paths ──────────────────────────
 import os as _os
-_TESSERACT = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
 _POPPLER   = r"C:\poppler\poppler-24.08.0\Library\bin"
-if _os.path.exists(_TESSERACT):
-    try:
-        import pytesseract as _pyt
-        _pyt.pytesseract.tesseract_cmd = _TESSERACT
-    except ImportError:
-        pass
 if _os.path.isdir(_POPPLER):
     _os.environ["PATH"] = _POPPLER + _os.pathsep + _os.environ.get("PATH", "")
 
@@ -175,20 +168,10 @@ class BatchIntelligenceUpgrader:
             except Exception:
                 pass
 
-            # OCR fallback (Tesseract + pdf2image)
-            try:
-                import pytesseract
-                from pdf2image import convert_from_bytes
-                if self.poppler_path is not None:
-                    pages = convert_from_bytes(content, dpi=200, poppler_path=self.poppler_path)
-                else:
-                    pages = convert_from_bytes(content, dpi=200)
-                text = "\n".join(pytesseract.image_to_string(p) for p in pages)
-                if text and len(text) >= 50:
-                    logger.info("    → Extracted via Tesseract OCR.")
-                    return text
-            except Exception as ocr_err:
-                logger.warning(f"    → OCR failed: {ocr_err}")
+            # If we reach here, it is a scanned PDF (image-based).
+            # Deflect to the asynchronous OCR worker instead of blocking.
+            logger.warning("    ⚠️ Scanned document detected. Deflecting to OCR Worker.")
+            return "REQUIRES_HEAVY_OCR"
 
         except Exception as e:
             logger.warning(f"    → PDF fetch failed: {e}")
@@ -332,6 +315,13 @@ class BatchIntelligenceUpgrader:
                 text = self._extract_pdf_text(pdf_url)
             else:
                 text = ""
+                
+            if text == "REQUIRES_HEAVY_OCR":
+                # Scanned PDF: Flag for the background OCR worker and bail out instantly
+                self.db.update("bills", {"requires_heavy_ocr": True}, eq="id", eq_val=bill_id)
+                logger.info("    → Flagged for background OCR Worker. Skipping AI synthesis for now.")
+                return
+
             if text and len(text) >= 50:
                 logger.info(f"    → Extracted {len(text)} chars from PDF.")
             else:

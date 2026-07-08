@@ -3,8 +3,10 @@ import re
 import io
 import json
 import time
+import random
 import logging
 import urllib3
+import requests
 from datetime import datetime, timezone
 from typing import List, Dict, Any, Optional, Tuple
 from pathlib import Path
@@ -415,6 +417,20 @@ class StageDetector:
         },
     ]
 
+    # ── Proxy Tier Configuration ───────────────────────────────────────────────
+    # Tier 1 – Rotating Webshare residential proxies (plain HTTP, no rendering)
+    # Tier 2 – ScraperAPI render mode (offloads headless browser to their infra)
+    # Tier 3 – BrightData Web Unlocker (TLS fingerprint + CAPTCHA solving)
+    #
+    # Which routes need rendering (JS-heavy, Cloudflare-protected):
+    RENDER_REQUIRED_ROUTES = {
+        "https://www.parliament.go.ke/the-national-assembly/house-business/votes-proceeding",
+        "https://www.parliament.go.ke/the-national-assembly/house-business/order-paper",
+        "https://www.parliament.go.ke/the-senate/house-business/order-paper",
+        "https://www.parliament.go.ke/fact-sheets-and-rulings",
+        "https://www.parliament.go.ke/the-national-assembly/resources/publications",
+    }
+
     def __init__(self):
         self.supabase = None
         if SUPABASE_OK:
@@ -423,6 +439,173 @@ class StageDetector:
             if url and key:
                 self.supabase = create_client(url, key)
                 logger.info("Supabase client initialized for stage detection.")
+
+        # ── Read proxy credentials from environment (injected by GitHub Actions) ──
+        self.scraperapi_key = os.getenv("SCRAPERAPI_KEY") or os.getenv("SCRAPERAPI_API_KEY")
+        self.brightdata_proxy_url = os.getenv("BRIGHTDATA_PROXY_URL")
+
+        # Parse Webshare proxies — expected as comma-separated host:port:user:pass strings
+        raw_webshare = os.getenv("WEBSHARE_PROXIES", "")
+        self.webshare_proxies: List[str] = [p.strip() for p in raw_webshare.split(",") if p.strip()]
+
+        logger.info(
+            f"Proxy config loaded — ScraperAPI: {'✅' if self.scraperapi_key else '❌'} "
+            f"| BrightData: {'✅' if self.brightdata_proxy_url else '❌'} "
+            f"| Webshare nodes: {len(self.webshare_proxies)}"
+        )
+
+    def _webshare_proxy_dict(self) -> Optional[Dict[str, str]]:
+        """Return a random Webshare proxy as a requests proxy dict, or None if unavailable."""
+        if not self.webshare_proxies:
+            return None
+        entry = random.choice(self.webshare_proxies)
+        parts = entry.split(":")
+        if len(parts) == 4:
+            host, port, user, password = parts
+            proxy_url = f"http://{user}:{password}@{host}:{port}"
+        elif len(parts) == 2:
+            host, port = parts
+            proxy_url = f"http://{host}:{port}"
+        else:
+            return None
+        return {"http": proxy_url, "https": proxy_url}
+
+    def _playwright_proxy_config(self) -> Optional[Dict[str, str]]:
+        """
+        Return a Playwright-compatible proxy config dict.
+        Prefers BrightData (residential, TLS-friendly), falls back to a random Webshare node.
+        """
+        if self.brightdata_proxy_url:
+            # BrightData URL format: http://user:pass@host:port
+            return {"server": self.brightdata_proxy_url}
+        if self.webshare_proxies:
+            proxy_dict = self._webshare_proxy_dict()
+            if proxy_dict:
+                return {"server": proxy_dict["http"]}
+        return None
+
+    def _fetch_html_tiered(self, url: str, timeout: int = 30) -> Optional[str]:
+        """
+        Tiered HTML fetcher for volatile, firewall-protected routes.
+
+        Tier 1: Plain HTTP request through a rotating Webshare residential proxy.
+                Cheapest, fastest. Works when the page is server-rendered HTML.
+        Tier 2: ScraperAPI with render=true&premium=true.
+                Offloads headless Chromium to ScraperAPI's anti-bot infrastructure.
+                Handles Cloudflare JS challenges without exposing local runner IP.
+        Tier 3: BrightData Web Unlocker via direct HTTPS proxy.
+                Handles TLS fingerprinting, CAPTCHA solving, and challenge pages.
+        """
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "Accept-Language": "en-GB,en;q=0.9,sw;q=0.8",
+            "Accept-Encoding": "gzip, deflate, br",
+            "DNT": "1",
+            "Connection": "keep-alive",
+            "Upgrade-Insecure-Requests": "1",
+            "sec-ch-ua": '"Google Chrome";v="131", "Chromium";v="131", "Not_A Brand";v="24"',
+            "sec-ch-ua-mobile": "?0",
+            "sec-ch-ua-platform": '"Windows"',
+        }
+
+        # ── Tier 1: Plain HTTP with Webshare residential proxy ──────────────────
+        proxy_dict = self._webshare_proxy_dict()
+        if proxy_dict:
+            try:
+                resp = requests.get(url, headers=headers, proxies=proxy_dict, timeout=timeout, verify=False)
+                if resp.status_code == 200 and len(resp.text) > 500:
+                    logger.info(f"    [Tier 1 ✅] Plain proxy succeeded for: {url}")
+                    return resp.text
+                else:
+                    logger.warning(f"    [Tier 1 ⚠️] Plain proxy returned {resp.status_code} for: {url}")
+            except Exception as e:
+                logger.warning(f"    [Tier 1 ❌] Plain proxy failed: {e}")
+        else:
+            logger.info("    [Tier 1 ⏭️] No Webshare proxies configured — skipping.")
+
+        # ── Tier 2: ScraperAPI render mode ──────────────────────────────────────
+        if self.scraperapi_key:
+            try:
+                scraper_url = (
+                    f"http://api.scraperapi.com"
+                    f"?api_key={self.scraperapi_key}"
+                    f"&url={requests.utils.quote(url, safe='')}"
+                    f"&render=true&premium=true&country_code=ke"
+                )
+                resp = requests.get(scraper_url, headers=headers, timeout=90, verify=False)
+                if resp.status_code == 200 and len(resp.text) > 500:
+                    logger.info(f"    [Tier 2 ✅] ScraperAPI render succeeded for: {url}")
+                    return resp.text
+                else:
+                    logger.warning(f"    [Tier 2 ⚠️] ScraperAPI returned {resp.status_code} for: {url}")
+            except Exception as e:
+                logger.warning(f"    [Tier 2 ❌] ScraperAPI failed: {e}")
+        else:
+            logger.info("    [Tier 2 ⏭️] No SCRAPERAPI_KEY configured — skipping.")
+
+        # ── Tier 3: BrightData Web Unlocker ─────────────────────────────────────
+        if self.brightdata_proxy_url:
+            try:
+                bd_proxies = {"http": self.brightdata_proxy_url, "https": self.brightdata_proxy_url}
+                resp = requests.get(url, headers=headers, proxies=bd_proxies, timeout=60, verify=False)
+                if resp.status_code == 200 and len(resp.text) > 500:
+                    logger.info(f"    [Tier 3 ✅] BrightData Unlocker succeeded for: {url}")
+                    return resp.text
+                else:
+                    logger.warning(f"    [Tier 3 ⚠️] BrightData returned {resp.status_code} for: {url}")
+            except Exception as e:
+                logger.warning(f"    [Tier 3 ❌] BrightData failed: {e}")
+        else:
+            logger.info("    [Tier 3 ⏭️] No BRIGHTDATA_PROXY_URL configured — skipping.")
+
+        logger.error(f"    [ALL TIERS EXHAUSTED] Could not fetch: {url}")
+        return None
+
+    def _fetch_pdf_bytes(self, pdf_url: str, timeout: int = 30) -> Optional[bytes]:
+        """
+        Download a PDF, routing through a rotating Webshare proxy first,
+        then ScraperAPI as fallback. Ensures PDF downloads are never naked.
+        """
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+            "Accept": "application/pdf,*/*",
+        }
+
+        # Tier 1: Webshare proxy
+        proxy_dict = self._webshare_proxy_dict()
+        if proxy_dict:
+            try:
+                resp = requests.get(pdf_url, headers=headers, proxies=proxy_dict, timeout=timeout, verify=False)
+                if resp.status_code == 200 and resp.content:
+                    return resp.content
+            except Exception as e:
+                logger.warning(f"    [PDF Tier 1 ❌] {e}")
+
+        # Tier 2: ScraperAPI (non-render, just proxy passthrough for binary)
+        if self.scraperapi_key:
+            try:
+                scraper_url = (
+                    f"http://api.scraperapi.com"
+                    f"?api_key={self.scraperapi_key}"
+                    f"&url={requests.utils.quote(pdf_url, safe='')}"
+                    f"&country_code=ke"
+                )
+                resp = requests.get(scraper_url, headers=headers, timeout=60, verify=False)
+                if resp.status_code == 200 and resp.content:
+                    return resp.content
+            except Exception as e:
+                logger.warning(f"    [PDF Tier 2 ❌] {e}")
+
+        # Tier 3: Naked fallback (last resort, no proxy)
+        try:
+            resp = requests.get(pdf_url, headers=headers, timeout=timeout, verify=False)
+            if resp.status_code == 200 and resp.content:
+                return resp.content
+        except Exception as e:
+            logger.warning(f"    [PDF Tier 3 ❌] {e}")
+
+        return None
 
     def get_active_bills(self) -> List[Dict[str, Any]]:
         """Fetch all bills that have NOT reached Presidential Assent."""
@@ -559,22 +742,18 @@ class StageDetector:
     def run_full_detection(self, max_pages: int = 3):
         """
         Main entry point: scrape all stage sources, detect stages, update DB.
-        """
-        if not PLAYWRIGHT_OK:
-            logger.error("Playwright not installed — cannot run stage detection.")
-            return
 
+        Strategy per source:
+        - Routes in RENDER_REQUIRED_ROUTES → _fetch_html_tiered() (Webshare → ScraperAPI render → BrightData).
+          No local Playwright used for these routes at all.
+        - All other routes → Playwright with proxy injected, wait_until=domcontentloaded (no networkidle hang).
+        """
         bills = self.get_active_bills()
         if not bills:
             logger.warning("No active bills found. Nothing to detect.")
             return
 
         logger.info(f"Running stage detection for {len(bills)} active bills...")
-
-        try:
-            import requests as req_lib
-        except ImportError:
-            req_lib = None
 
         try:
             import fitz
@@ -584,80 +763,140 @@ class StageDetector:
 
         updates_applied = 0
 
-        with sync_playwright() as p:
-            browser = p.chromium.launch(
-                headless=True,
-                args=["--disable-blink-features=AutomationControlled", "--ignore-certificate-errors"]   # SSL fix
-            )
-            ctx = browser.new_context(
-                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
-                ignore_https_errors=True   # SSL fix
-            )
-            page = ctx.new_page()
+        # ── Playwright proxy config (wired from env vars — NOT hardcoded) ──────
+        pw_proxy = self._playwright_proxy_config()
+        if pw_proxy:
+            logger.info(f"Playwright will route through proxy: {pw_proxy['server'].split('@')[-1]}")
+        else:
+            logger.warning("No proxy configured for Playwright — raw runner IP will be used (may be blocked).")
 
-            for source in self.STAGE_SOURCES:
-                logger.info(f"\n>>> Scanning: {source['name']}")
-                try:
-                    page.goto(source["url"], wait_until="networkidle", timeout=60000)
-                    time.sleep(1)
+        for source in self.STAGE_SOURCES:
+            logger.info(f"\n>>> Syncing: {source['name']}")
+            source_url = source["url"]
+            use_tiered_http = source_url in self.RENDER_REQUIRED_ROUTES
 
-                    # Extract PDF links from the listing page
-                    pdf_links = page.evaluate("""(sel) => {
-                        return Array.from(document.querySelectorAll(sel || 'a[href$=".pdf"]')).map(a => ({
-                            text: a.textContent.trim(),
-                            href: a.href
-                        })).filter(l => l.href.toLowerCase().endsWith('.pdf'));
-                    }""", source.get("selector"))
+            pdf_links: List[str] = []
 
-                    # Limit to recent documents
-                    pdf_links = pdf_links[:max_pages * 5]
+            try:
+                if use_tiered_http or not PLAYWRIGHT_OK:
+                    # ── Path A: Tiered HTTP fetch (no local Playwright) ─────────
+                    logger.info(f"  [Route] Volatile/Cloudflare route → tiered HTTP fetcher.")
+                    html_content = self._fetch_html_tiered(source_url)
+                    if html_content:
+                        raw = re.findall(r'href=["\']([^"\']*\.pdf)["\']', html_content, re.IGNORECASE)
+                        pdf_links = [
+                            ("https://www.parliament.go.ke" + u if u.startswith("/") else u)
+                            for u in raw
+                        ]
+                else:
+                    # ── Path B: Playwright with proxy injected ─────────────────
+                    if not PLAYWRIGHT_OK:
+                        logger.error("Playwright not installed — cannot run Path B.")
+                        continue
 
-                    for link in pdf_links:
-                        pdf_url = link["href"]
-                        doc_title = link["text"]
-                        logger.info(f"  Scanning PDF: {doc_title[:80]}...")
+                    logger.info(f"  [Route] Standard route → Playwright with proxy.")
+                    launch_args: Dict[str, Any] = {
+                        "headless": True,
+                        "args": [
+                            "--disable-blink-features=AutomationControlled",
+                            "--ignore-certificate-errors",
+                            "--no-sandbox",
+                            "--disable-setuid-sandbox",
+                        ],
+                    }
+                    if pw_proxy:
+                        launch_args["proxy"] = pw_proxy
 
-                        # Download PDF
-                        pdf_text = ""
-                        if req_lib:
+                    with sync_playwright() as p:
+                        browser = p.chromium.launch(**launch_args)
+                        # New context per source — rotates fingerprint/session identity
+                        ctx = browser.new_context(
+                            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+                            ignore_https_errors=True,
+                            locale="en-GB",
+                            timezone_id="Africa/Nairobi",
+                            extra_http_headers={
+                                "Accept-Language": "en-GB,en;q=0.9,sw;q=0.8",
+                                "sec-ch-ua": '"Google Chrome";v="131", "Chromium";v="131", "Not_A Brand";v="24"',
+                                "sec-ch-ua-mobile": "?0",
+                                "sec-ch-ua-platform": '"Windows"',
+                            },
+                        )
+                        page = ctx.new_page()
+                        try:
+                            # domcontentloaded avoids the infinite networkidle hang on Cloudflare pages
+                            page.goto(source_url, wait_until="domcontentloaded", timeout=45_000)
                             try:
-                                r = req_lib.get(pdf_url, timeout=30, allow_redirects=True, verify=False)   # SSL fix
-                                if r.content[:5] == b"%PDF-":
-                                    if FITZ_OK:
-                                        try:
-                                            doc = fitz.open(stream=r.content, filetype="pdf")
-                                            pdf_text = "\n".join(pg.get_text() for pg in doc)
-                                            doc.close()
-                                        except Exception:
-                                            pass
-                            except Exception as e:
-                                logger.warning(f"    PDF download failed: {e}")
-
-                        if not pdf_text.strip():
-                            continue
-
-                        # Detect stages for each active bill
-                        detections = self.detect_stages_from_document(pdf_text, bills)
-                        detected_date = extract_date_from_order_paper(pdf_text)
-
-                        for det in detections:
-                            logger.info(f"    🎯 Detected: '{det['bill_title'][:50]}...' at stage '{det['detected_stage']}' in '{doc_title[:50]}...'")
-                            updated = self.update_bill_stage(
-                                bill_id=det["bill_id"],
-                                stage_key=det["detected_stage"],
-                                source_name=source["name"],
-                                source_url=pdf_url,
-                                detected_date=detected_date,
+                                page.wait_for_selector("a[href$='.pdf']", timeout=10_000)
+                            except Exception:
+                                pass
+                            page.wait_for_timeout(1500)
+                            raw_links = page.eval_on_selector_all(
+                                "a[href$='.pdf']",
+                                "els => els.map(e => e.href || e.getAttribute('href')).filter(Boolean)"
                             )
-                            if updated:
-                                updates_applied += 1
+                            pdf_links = [
+                                ("https://www.parliament.go.ke" + u if u.startswith("/") else u)
+                                for u in raw_links
+                            ]
+                        except Exception as nav_err:
+                            logger.error(f"  Playwright navigation failed: {nav_err}")
+                        finally:
+                            browser.close()
 
-                        time.sleep(0.5)
+                if not pdf_links:
+                    logger.info(f"  No PDF links found — source yielded nothing.")
+                    continue
 
-                except Exception as e:
-                    logger.error(f"  Source '{source['name']}' failed: {e}")
+                logger.info(f"  Found {len(pdf_links)} PDF link(s). Processing up to {max_pages}.")
 
-            browser.close()
+                for pdf_url in pdf_links[:max_pages]:
+                    logger.info(f"  Fetching PDF: {pdf_url}")
+                    pdf_bytes = self._fetch_pdf_bytes(pdf_url)
+
+                    if not pdf_bytes:
+                        logger.warning(f"  Could not download PDF: {pdf_url}")
+                        continue
+
+                    text = ""
+                    if FITZ_OK:
+                        try:
+                            import fitz as _fitz
+                            doc = _fitz.open(stream=pdf_bytes, filetype="pdf")
+                            text = "\n".join(pg.get_text() for pg in doc)
+                            doc.close()
+                        except Exception as e:
+                            logger.warning(f"  fitz extraction failed: {e}")
+
+                    if not text.strip():
+                        try:
+                            import pdfplumber
+                            with pdfplumber.open(io.BytesIO(pdf_bytes)) as pdf:
+                                text = "\n".join(p_.extract_text() or "" for p_ in pdf.pages)
+                        except Exception as e:
+                            logger.warning(f"  pdfplumber extraction failed: {e}")
+
+                    if not text.strip():
+                        logger.info(f"  No text extracted from: {pdf_url}")
+                        continue
+
+                    detections = self.detect_stages_from_document(text, bills)
+                    for det in detections:
+                        logger.info(f"  🎯 Detected '{det['detected_stage']}' for: {det['bill_title'][:60]}")
+                        updated = self.update_bill_stage(
+                            bill_id=det["bill_id"],
+                            stage_key=det["detected_stage"],
+                            source_name=source["name"],
+                            source_url=pdf_url,
+                            detected_date=det.get("detected_date"),
+                        )
+                        if updated:
+                            updates_applied += 1
+
+                    time.sleep(random.uniform(0.5, 1.5))  # Randomised jitter between PDFs
+
+            except Exception as e:
+                logger.error(f"  Source '{source['name']}' failed: {e}")
 
         logger.info(f"\n=== Stage Detection Complete: {updates_applied} updates applied ===")
 
