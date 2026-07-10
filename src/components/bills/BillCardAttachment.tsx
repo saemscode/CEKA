@@ -33,7 +33,7 @@ export const BillCardAttachment: React.FC<BillCardAttachmentProps> = ({
 
   return (
     <Link
-      to={`/bills/${billId}`}
+      to={`/bill/${billId}`}
       role="button"
       tabIndex={0}
       style={{
@@ -127,8 +127,8 @@ export const BillCardAttachment: React.FC<BillCardAttachmentProps> = ({
                   corroborationScore >= 70
                     ? '#00e676'
                     : corroborationScore >= 40
-                    ? '#FFD54F'
-                    : '#FF7043',
+                      ? '#FFD54F'
+                      : '#FF7043',
               }}
             >
               {Math.round(corroborationScore)}

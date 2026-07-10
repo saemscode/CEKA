@@ -4,7 +4,7 @@ import { useAuth } from '@/providers/AuthProvider';
 import { useCivicPlayerStore } from '@/stores/useCivicPlayerStore';
 import { useCivicPlayerData } from '@/hooks/useCivicPlayerData';
 import { supabase } from '@/integrations/supabase/client';
-import { useNavigate } from 'react-router-dom';
+
 import { Deep2Icon, SearchIcon, NewspaperIcon, EyeIcon, ExternalLinkIcon } from '@/components/ui/CustomIcons';
 import {
   Bell, ChevronLeft, ChevronRight, Flame, Calendar,
@@ -277,7 +277,7 @@ const MiniPlayerBar: React.FC<{
   currentBill?: Bill;
 }> = ({ contentItems, temperature, unreadCount, slideIndex, onSwipeLeft, onSwipeRight, onExpand, onCollapse, currentBill }) => {
   const dragX = useMotionValue(0);
-  const navigate = useNavigate();
+
 
   // Auto-rotate content every 4 s
   const [curIdx, setCurIdx] = useState(0);
@@ -436,7 +436,7 @@ const FollowedBillsSlide: React.FC<{
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [showArchived, setShowArchived] = useState(false);
   const [archived, setArchived] = useState<Set<string>>(new Set());
-  const navigate = useNavigate();
+
 
   const active = followedBills.filter(b => !archived.has(b.id));
   const archivedList = followedBills.filter(b => archived.has(b.id));
