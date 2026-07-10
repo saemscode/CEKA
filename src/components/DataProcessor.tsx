@@ -22,7 +22,7 @@ L.Icon.Default.mergeOptions({
 });
 
 // Use Supabase edge functions
-const SUPABASE_URL = 'https://cajrvemigxghnfmyopiy.supabase.co';
+const SUPABASE_URL = 'https://iruahxgkrucidihnfytq.supabase.co';
 const API_BASE_URL = `${SUPABASE_URL}/functions/v1`;
 
 interface ProcessedDataset {

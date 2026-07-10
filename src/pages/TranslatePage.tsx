@@ -920,7 +920,7 @@ const AdminIngestion = () => {
     setExtracting(true);
     setSlides(prev => prev.map(s => s.url.trim() ? { ...s, status: 'extracting' } : s));
     try {
-      const res = await fetch('https://cajrvemigxghnfmyopiy.supabase.co/functions/v1/ingest-media', {
+      const res = await fetch('https://iruahxgkrucidihnfytq.supabase.co/functions/v1/ingest-media', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token}` },
         body: JSON.stringify({ title: batchTitle.trim(), images: slides.map(s => ({ url: s.url, slide_number: s.slide_number })) }),

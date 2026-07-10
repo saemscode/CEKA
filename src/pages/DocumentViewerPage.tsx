@@ -65,7 +65,7 @@ const DocumentViewerPage = () => {
               description: 'A comprehensive guide to the Constitution of Kenya 2010, covering fundamental rights, government structure, and key provisions.',
               type: 'document',
               category: 'Constitution',
-              url: 'https://cajrvemigxghnfmyopiy.supabase.co/storage/v1/object/public/resources/The_Constitution_of_Kenya_2010.pdf',
+              url: 'https://iruahxgkrucidihnfytq.supabase.co/storage/v1/object/public/resources/The_Constitution_of_Kenya_2010.pdf',
               is_downloadable: true,
               created_at: new Date().toISOString(),
               updated_at: new Date().toISOString(),

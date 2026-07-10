@@ -184,7 +184,7 @@ const BTCPayButton: React.FC = () => {
       form.append('checkoutDesc', activeRail.checkoutDesc);
       form.append('price', String(amount));
       form.append('currency', currency);
-      form.append('serverIpn', 'https://cajrvemigxghnfmyopiy.supabase.co/functions/v1/btcpay-confirmations');
+      form.append('serverIpn', 'https://iruahxgkrucidihnfytq.supabase.co/functions/v1/btcpay-confirmations');
       form.append('browserRedirect', 'https://civiceducationkenya.com/donation-success');
       form.append('notifyEmail', 'admin@civiceducationkenya.com');
 

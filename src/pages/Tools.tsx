@@ -64,7 +64,7 @@ const TOOLS: Tool[] = [
         icon: Smartphone,
         badge: 'Prototype',
         status: 'Available',
-        downloadUrl: 'https://cajrvemigxghnfmyopiy.supabase.co/storage/v1/object/public/projects-outputs/nasakawewe-android-official-x86_64-debug.apk',
+        downloadUrl: 'https://iruahxgkrucidihnfytq.supabase.co/storage/v1/object/public/projects-outputs/nasakawewe-android-official-x86_64-debug.apk',
         githubUrl: 'https://github.com/saemscodes/Nasaka-WEWE',
         features: [
             'End-to-end encrypted messages',

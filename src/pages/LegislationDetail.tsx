@@ -197,7 +197,7 @@ const LegislationDetail = () => {
   });
     
     const link = document.createElement("a");
-    link.href = "https://cajrvemigxghnfmyopiy.supabase.co/storage/v1/object/public/resources/Documents/Constitution/The%20Finance%20Bill%202025.pdf";
+    link.href = "https://iruahxgkrucidihnfytq.supabase.co/storage/v1/object/public/resources/Documents/Constitution/The%20Finance%20Bill%202025.pdf";
     link.download = "Finance_Bill_2025.pdf"; // Suggests a name for the downloaded file
     document.body.appendChild(link);
     link.click();
@@ -497,7 +497,7 @@ const LegislationDetail = () => {
                   <div className="flex items-center">
                     <FileText className="h-4 w-4 mr-2 text-muted-foreground" />
                     <a
-                  href="https://cajrvemigxghnfmyopiy.supabase.co/storage/v1/object/public/resources/Documents/Constitution/The%20Finance%20Bill%202025.pdf"
+                  href="https://iruahxgkrucidihnfytq.supabase.co/storage/v1/object/public/resources/Documents/Constitution/The%20Finance%20Bill%202025.pdf"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="hover:text-kenya-green"
