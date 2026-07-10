@@ -41,8 +41,12 @@ export default {
       },
     });
 
-    // 4. Return the PNG
-    return new Response(screenshot.body, {
+    // 4. Decode base64 and return the PNG
+    // The response is JSON: { success: true, result: { screenshot: "base64...", content: "html..." } }
+    const base64Image = screenshot.result.screenshot;
+    const imageBuffer = Uint8Array.from(atob(base64Image), c => c.charCodeAt(0));
+
+    return new Response(imageBuffer, {
       headers: {
         "Content-Type": "image/png",
         "Cache-Control": "public, max-age=86400, s-maxage=604800",
