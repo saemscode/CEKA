@@ -3,7 +3,7 @@
     { "source": "/bill/:slug", "destination": "/api/seo-handler?type=bill&id=:slug" },
     { "source": "/blog/:slug", "destination": "/api/seo-handler?type=blog&id=:slug" },
     { "source": "/resources/:id", "destination": "/api/seo-handler?type=resource&id=:id" },
-    { "source": "/(?!(?:.*\\.(?:ico|png|jpg|jpeg|gif|svg|css|js|xml|json|webp|woff|woff2)$)).*", "destination": "/index.html" }
+    { "source": "/(.*)", "destination": "/index.html" }
   ],
   "headers": [
     {
