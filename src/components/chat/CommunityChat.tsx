@@ -578,7 +578,6 @@ const CommunityChat = () => {
     }
 
     // ─── Render ───────────────────────────────────────────────────────────────
-
     return (
         <div className="grid lg:grid-cols-12 gap-6 h-[800px] font-sans">
 
