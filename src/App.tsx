@@ -192,6 +192,7 @@ const AppContent = () => {
         <Route path="/campaign/:id" element={<CampaignDetail />} />
         <Route path="/search" element={<SearchResults />} />
         <Route path="/pieces" element={<Pieces />} />
+        <Route path="/pieces/:slug" element={<Pieces />} />
         <Route path="/partner/dashboard" element={
           <ProtectedRoute>
             <PartnerDashboard />

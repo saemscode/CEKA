@@ -85,6 +85,24 @@ serve(async (req) => {
         })
 
       if (txError) console.error('[Paystack-Webhook] DB Error (Transaction):', txError)
+
+      if (data.reference?.startsWith('DL-')) {
+        console.log(`[Paystack-Webhook] Detected Pieces transaction: ${data.reference}`)
+        
+        const { error: pieceError } = await supabaseMain
+          .from('piece_transactions')
+          .update({
+            status: 'verified',
+            verified_at: new Date().toISOString(),
+          })
+          .eq('reference', data.reference)
+
+        if (pieceError) {
+          console.error('[Paystack-Webhook] Pieces verification failed:', pieceError)
+        } else {
+          console.log(`[Paystack-Webhook] Piece transaction ${data.reference} verified successfully.`)
+        }
+      }
     }
 
     else if (event === 'subscription.create' || event === 'subscription.enable') {

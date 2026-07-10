@@ -1986,3 +1986,123 @@ button.ios-control-btn {
     animation: none !important;
   }
 }
+
+/* ===== PIECES PAGE — SOCIAL UI SYSTEM ===== */
+
+/* ── Progress bar (TikTok / IG Stories style) ── */
+.pieces-progress-bar {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  width: 100%;
+  padding: 8px 4px 6px;
+  cursor: pointer;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.pieces-progress-segment {
+  flex: 1;
+  height: 2.5px;
+  border-radius: 9999px;
+  background: rgba(127, 127, 127, 0.25);
+  transition: background 0.2s ease, transform 0.15s ease;
+}
+
+.pieces-progress-segment--active {
+  background: hsl(var(--primary));
+  transform: scaleY(1.4);
+}
+
+.pieces-progress-segment--past {
+  background: rgba(127, 127, 127, 0.55);
+}
+
+/* ── Social action buttons ── */
+.pieces-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 10px;
+  border-radius: 9999px;
+  border: 1px solid transparent;
+  background: transparent;
+  cursor: pointer;
+  transition: background 0.18s ease, border-color 0.18s ease, transform 0.12s ease;
+  outline: none;
+}
+
+.pieces-action-btn:hover {
+  background: rgba(127, 127, 127, 0.08);
+}
+
+.pieces-action-btn:active {
+  transform: scale(0.93);
+}
+
+.pieces-action-btn--liked {
+  background: rgba(220, 38, 38, 0.06);
+  border-color: rgba(220, 38, 38, 0.15);
+}
+
+.pieces-action-btn--saved {
+  background: rgba(0, 102, 0, 0.06);
+  border-color: rgba(0, 102, 0, 0.15);
+}
+
+/* ── Download button ── */
+.pieces-download-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 9999px;
+  border: 1px solid rgba(127, 127, 127, 0.18);
+  background: rgba(127, 127, 127, 0.05);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: inherit;
+  cursor: pointer;
+  transition: background 0.18s ease, border-color 0.18s ease, transform 0.12s ease;
+  outline: none;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.pieces-download-btn:hover {
+  border-color: rgba(220, 38, 38, 0.4);
+  background: rgba(220, 38, 38, 0.04);
+}
+
+.pieces-download-btn:active {
+  transform: scale(0.95);
+}
+
+/* ── Deep-link highlight pulse ── */
+@keyframes pieces-deep-link-pulse {
+  0%   { box-shadow: 0 0 0 0 rgba(0, 102, 0, 0.4); }
+  60%  { box-shadow: 0 0 0 12px rgba(0, 102, 0, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(0, 102, 0, 0); }
+}
+
+.pieces-deep-link-highlight {
+  animation: pieces-deep-link-pulse 1.8s ease-out 2;
+  border-radius: 24px;
+}
+
+/* ── Carousel root — no horizontal overflow on mobile ── */
+.pieces-carousel-root {
+  overflow-x: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pieces-progress-segment,
+  .pieces-action-btn,
+  .pieces-download-btn {
+    transition: none !important;
+    animation: none !important;
+  }
+}

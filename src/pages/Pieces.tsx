@@ -1,6 +1,6 @@
-// Pieces.tsx (updated with realtime carousel deletion listener)
+// Pieces.tsx (updated with realtime carousel deletion listener + deep-link slug routing)
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useTheme } from '@/contexts/ThemeContext';
 import { cn } from '@/lib/utils';
 import Layout from '@/components/layout/Layout';
@@ -9,6 +9,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ExternalLink, Instagram, Facebook, Twitter, Users, Eye, Search } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
+import { Helmet } from 'react-helmet-async';
 
 // Upscrolled Logo SVG Component
 const UpscrolledLogo: React.FC<{ className?: string }> = ({ className = "w-5 h-5" }) => (
@@ -149,18 +150,31 @@ const CEKA_ABOUT = {
 
 const Pieces = () => {
     const navigate = useNavigate();
+    const { slug } = useParams<{ slug?: string }>();
     const { theme } = useTheme();
     const [refreshKey, setRefreshKey] = useState(0); // used to force MediaFeed re-fetch
 
-    // Listen for carousel deletion events from BulkUploadManager
+    // Listen for carousel deletion events from BulkUploadManager (same-tab, instant)
     useEffect(() => {
         const handleCarouselDeleted = (e: CustomEvent) => {
             console.log('Carousel deleted, refreshing feed', e.detail.carouselId);
             setRefreshKey(prev => prev + 1);
         };
-
         window.addEventListener('carousel-deleted', handleCarouselDeleted as EventListener);
         return () => window.removeEventListener('carousel-deleted', handleCarouselDeleted as EventListener);
+    }, []);
+
+    // Supabase Realtime: cross-session deletion for visitors in other tabs
+    useEffect(() => {
+        const channel = supabase
+            .channel('pieces-page-deletions')
+            .on(
+                'postgres_changes' as any,
+                { event: 'DELETE', schema: 'public', table: 'media_content' },
+                () => { setRefreshKey(prev => prev + 1); }
+            )
+            .subscribe();
+        return () => { supabase.removeChannel(channel); };
     }, []);
 
     const handleTagClick = (area: string) => {
@@ -223,7 +237,7 @@ const Pieces = () => {
                 <div className="grid lg:grid-cols-[1fr_320px] gap-8">
                     {/* Main Feed Area */}
                     <div key={refreshKey}>
-                        <MediaFeed />
+                        <MediaFeed targetSlug={slug || null} />
                     </div>
 
                     {/* Sidebar */}

@@ -1,25 +1,30 @@
 
-import React, { useState, useEffect } from 'react';
-import { 
-    Download, 
-    Heart, 
-    Smartphone, 
-    Monitor, 
-    Lock, 
-    CheckCircle2, 
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import {
+    Download,
+    Heart,
+    Smartphone,
+    Monitor,
+    Lock,
+    CheckCircle2,
     ChevronRight,
     Wallet,
     Info,
-    ArrowRight
+    ArrowRight,
+    Link2,
+    FileText,
+    Clock,
+    RefreshCw,
+    X
 } from 'lucide-react';
 import { useMedia } from 'react-use';
 import { Drawer } from 'vaul';
-import { 
-    Dialog, 
-    DialogContent, 
-    DialogHeader, 
-    DialogTitle, 
-    DialogTrigger 
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -28,18 +33,21 @@ import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import storageService from '@/services/storageService';
 import { CEKALoader } from '@/components/ui/ceka-loader';
+import { useAuth } from '@/providers/AuthProvider';
+import piecesTransactionService from '@/services/piecesTransactionService';
 
 interface DownloadPortalProps {
     filePath: string;
+    pdfPath?: string | null;
     availableQualities: string[];
     title: string;
+    contentSlug?: string;
+    contentId?: string;
     trigger: React.ReactNode;
 }
 
 declare global {
-  interface Window {
-    PaystackPop: any;
-  }
+    interface Window { PaystackPop: any; }
 }
 
 type Tier = {
@@ -48,169 +56,272 @@ type Tier = {
     sublabel: string;
     suffix: string;
     requiresDonation: boolean;
+    isPdf?: boolean;
 };
 
+// 90-second client-side timeout for payment verification polling
+const VERIFICATION_TIMEOUT_MS = 90_000;
+
 const DOWNLOAD_TIERS: Tier[] = [
-    { id: '320p', label: 'SD Quality', sublabel: '320p • Mobile Optimized', suffix: '320p', requiresDonation: false },
-    { id: '720p', label: 'HD Quality', sublabel: '720p • Standard High Def', suffix: '720p', requiresDonation: false },
-    { id: '1080p', label: 'Full HD', sublabel: '1080p • Crystal Sharp', suffix: '1080p', requiresDonation: true },
-    { id: '4k', label: 'Ultra HD', sublabel: '4K • Master Quality', suffix: '', requiresDonation: true },
+    { id: '320p',  label: 'SD Quality',  sublabel: '320p • Mobile Optimised', suffix: '320p',  requiresDonation: false },
+    { id: '720p',  label: 'HD Quality',  sublabel: '720p • Standard High Def', suffix: '720p',  requiresDonation: false },
+    { id: '1080p', label: 'Full HD',      sublabel: '1080p • Crystal Sharp',   suffix: '1080p', requiresDonation: true  },
+    { id: '4k',    label: 'Ultra HD',     sublabel: '4K • Master Quality',     suffix: '',      requiresDonation: true  },
+    { id: 'pdf',   label: 'PDF Document', sublabel: 'Full PDF • Print Ready',  suffix: '',      requiresDonation: true, isPdf: true },
 ];
 
 const DONATION_AMOUNTS = [
-    { label: '50', value: 50 },
+    { label: '50',  value: 50  },
     { label: '100', value: 100 },
     { label: '250', value: 250 },
     { label: '500', value: 500 },
 ];
 
-const DownloadPortal: React.FC<DownloadPortalProps> = ({ filePath, availableQualities, title, trigger }) => {
+const DownloadPortal: React.FC<DownloadPortalProps> = ({
+    filePath,
+    pdfPath,
+    availableQualities,
+    title,
+    contentSlug = '',
+    contentId = '',
+    trigger
+}) => {
     const [isOpen, setIsOpen] = useState(false);
     const [selectedTier, setSelectedTier] = useState<Tier | null>(null);
-    const [step, setStep] = useState<'selection' | 'donation' | 'downloading'>('selection');
+    const [step, setStep] = useState<'selection' | 'donation' | 'verifying' | 'timeout' | 'downloading'>('selection');
     const [donationAmount, setDonationAmount] = useState<number>(100);
     const [isPaying, setIsPaying] = useState(false);
+    const [pendingRef, setPendingRef] = useState<string | null>(null);
     const { toast } = useToast();
-    // Mount only the appropriate portal based on screen width — prevents double-render bug
+    const { user } = useAuth();
     const isDesktop = useMedia('(min-width: 768px)', false);
 
-    // Filter tiers based on what was actually generated during Churn
-    const activeTiers = DOWNLOAD_TIERS.filter(tier => 
-        availableQualities.includes(tier.id) || (tier.id === '4k' && !filePath.includes('_'))
-    );
+    const unsubscribeRef = useRef<(() => void) | null>(null);
+    const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-    // --- MIME-AWARE EXTENSION HELPERS ---
-    // Derives the real file extension from the asset path, never hardcodes .jpg
+    // Cleanup realtime + timeout on unmount or close
+    useEffect(() => {
+        return () => {
+            unsubscribeRef.current?.();
+            if (timeoutRef.current) clearTimeout(timeoutRef.current);
+        };
+    }, []);
+
+    const resetToSelection = useCallback(() => {
+        unsubscribeRef.current?.();
+        if (timeoutRef.current) clearTimeout(timeoutRef.current);
+        setStep('selection');
+        setSelectedTier(null);
+        setPendingRef(null);
+        setIsPaying(false);
+    }, []);
+
+    // Build tiers visible in this portal
+    const activeTiers = DOWNLOAD_TIERS.filter(tier => {
+        if (tier.isPdf) return !!pdfPath;
+        return availableQualities.includes(tier.id) || (tier.id === '4k' && !filePath.includes('_'));
+    });
+
     const getAssetExtension = (path: string): string => {
         if (!path) return 'jpg';
-        const cleanPath = path.split('?')[0]; // strip query params
+        const cleanPath = path.split('?')[0];
         const parts = cleanPath.split('.');
         if (parts.length < 2) return 'jpg';
         return parts[parts.length - 1].toLowerCase();
     };
 
-    // Builds the download filename using the real extension (preserves .pdf, .png, .webp, etc.)
     const buildDownloadFilename = (tier: Tier, path: string): string => {
         const ext = getAssetExtension(path);
         return `${title.toLowerCase().replace(/\s+/g, '-')}-${tier.id}.${ext}`;
     };
-    // --- END MIME-AWARE EXTENSION HELPERS ---
+
+    /**
+     * Blob download — resolves to actual bytes on disk, never a redirect.
+     */
+    const blobDownload = async (url: string, filename: string) => {
+        const response = await fetch(url);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const blob = await response.blob();
+        const blobUrl = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = blobUrl;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => window.URL.revokeObjectURL(blobUrl), 200);
+    };
+
+    /**
+     * Copy a signed link to clipboard with a toast confirming what was copied.
+     */
+    const copyLink = async (signedUrl: string, tierLabel: string) => {
+        await navigator.clipboard.writeText(signedUrl);
+        toast({
+            title: 'Link copied to clipboard',
+            description: `${tierLabel} link copied — valid for 1 hour.`,
+        });
+    };
+
+    /**
+     * Generate a signed URL for the given tier path. Signed URLs have a 1-hour
+     * expiry (corrected from the previous 5-minute toast copy which was wrong).
+     */
+    const getSignedUrl = async (tier: Tier): Promise<string> => {
+        let finalPath = tier.isPdf ? (pdfPath || '') : filePath;
+
+        if (!tier.isPdf && !filePath.startsWith('http')) {
+            if (tier.suffix) {
+                const base = filePath.split('/').pop()?.split('.').shift() || '';
+                const folder = filePath.split('/').slice(0, -1).join('/');
+                const ext = filePath.split('.').pop();
+                finalPath = `${folder}/${base}_${tier.suffix}.${ext}`;
+            }
+        }
+
+        const signedUrl = await storageService.getAuthorizedUrl(finalPath);
+        if (!signedUrl) throw new Error('Authorization failed');
+        return signedUrl;
+    };
+
+    const initiateDownload = async (tier: Tier) => {
+        setStep('downloading');
+        try {
+            const signedUrl = await getSignedUrl(tier);
+            await blobDownload(signedUrl, buildDownloadFilename(tier, tier.isPdf ? (pdfPath || '') : filePath));
+            toast({ title: 'Download started', description: `${tier.label} — saving to your device.` });
+            resetToSelection();
+            setIsOpen(false);
+        } catch (err) {
+            console.error('[Portal] Download error:', err);
+            toast({ title: 'Download failed', description: 'Could not generate a secure link. Please try again.', variant: 'destructive' });
+            setStep('selection');
+        }
+    };
+
+    const initiateCopyLink = async (tier: Tier) => {
+        try {
+            const signedUrl = await getSignedUrl(tier);
+            await copyLink(signedUrl, tier.label);
+        } catch (err) {
+            console.error('[Portal] CopyLink error:', err);
+            toast({ title: 'Could not generate link', description: 'Please try again.', variant: 'destructive' });
+        }
+    };
 
     const handleSelectTier = (tier: Tier) => {
         setSelectedTier(tier);
         if (tier.requiresDonation) {
             setStep('donation');
         } else {
-            setStep('downloading');
             initiateDownload(tier);
         }
     };
 
-    const initiateDownload = async (tier: Tier) => {
-        setStep('downloading');
-        try {
-            // PATH SANITIZER: Construct path before signing to avoid signature corruption
-            let finalPath = filePath;
-            
-            // If it's a full URL (legacy), we can't suffix it reliably
-            if (!filePath.startsWith('http')) {
-                if (tier.suffix) {
-                    const base = filePath.split('/').pop()?.split('.').shift() || '';
-                    const folder = filePath.split('/').slice(0, -1).join('/');
-                    const ext = filePath.split('.').pop();
-                    finalPath = `${folder}/${base}_${tier.suffix}.${ext}`;
-                    console.log(`[Portal] Resolved Path: ${finalPath}`);
-                }
-            }
-
-            const signedUrl = await storageService.getAuthorizedUrl(finalPath);
-            
-            if (!signedUrl) throw new Error('Authorization failed');
-
-            const link = document.createElement('a');
-            link.href = signedUrl;
-            // Use MIME-aware filename — preserves .pdf, .png, .jpg, .webp, etc.
-            link.download = buildDownloadFilename(tier, finalPath);
-            link.target = '_blank';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-
-            toast({
-                title: "Download Started",
-                description: `Successfully generated ${tier.label} link (Expires in 5 min).`,
-            });
-            setStep('selection');
-            setIsOpen(false);
-        } catch (err) {
-            console.error('Portal Download Error:', err);
-            toast({
-                title: "Download Failed",
-                description: "We couldn't generate a secure link. Please try again.",
-                variant: "destructive"
-            });
-            setStep('selection');
+    /**
+     * Check again after timeout — re-queries transaction row by reference.
+     */
+    const handleCheckAgain = async () => {
+        if (!pendingRef) return;
+        setStep('verifying');
+        const tx = await piecesTransactionService.getTransactionByReference(pendingRef);
+        if (tx?.status === 'verified') {
+            // Payment was confirmed, initiate delivery
+            if (selectedTier) await initiateDownload(selectedTier);
+        } else {
+            setStep('timeout');
+            toast({ title: 'Still processing', description: 'Your payment is still being confirmed. Check back shortly.' });
         }
     };
 
-    const handlePaystackPayment = () => {
+    const handlePaystackPayment = async () => {
         if (!window.PaystackPop) {
-            toast({ title: "System Busy", description: "Payment gateway is loading. Please try again in a moment.", variant: "destructive" });
+            toast({ title: 'System busy', description: 'Payment gateway loading. Please try in a moment.', variant: 'destructive' });
             return;
         }
+        if (!selectedTier) return;
 
         const publicKey = (import.meta.env.VITE_PAYSTACK_PUBLIC_KEY || '').trim().replace(/^["']|["']$/g, '');
+        const paymentRef = `DL-${Date.now()}-${Math.floor(Math.random() * 100000)}`;
+        const userEmail = user?.email || 'support@civiceducationkenya.com';
+
+        // 1. Write pending transaction row BEFORE opening popup
+        await piecesTransactionService.createPendingTransaction({
+            reference: paymentRef,
+            user_id: user?.id || null,
+            user_email: userEmail,
+            content_id: contentId || null,
+            content_slug: contentSlug,
+            asset_path: selectedTier.isPdf ? (pdfPath || '') : filePath,
+            tier: selectedTier.id,
+            amount_kes: donationAmount,
+        });
+
+        setPendingRef(paymentRef);
         setIsPaying(true);
 
         try {
-            // Generate a trackable reference so the backend webhook can verify this specific transaction
-            const paymentRef = `DL-${Date.now()}-${Math.floor(Math.random() * 100000)}`;
-
             const handler = window.PaystackPop.setup({
                 key: publicKey,
-                email: 'support@civiceducationkenya.com',
+                email: userEmail,
                 amount: Math.round(donationAmount * 100),
                 currency: 'KES',
                 ref: paymentRef,
-                metadata: { 
+                metadata: {
                     custom_fields: [
-                        { display_name: "Asset", variable_name: "asset_title", value: title },
-                        { display_name: "Quality", variable_name: "output_quality", value: selectedTier?.label },
-                        { display_name: "Asset Path", variable_name: "asset_path", value: filePath }
-                    ] 
+                        { display_name: 'Asset', variable_name: 'asset_title', value: title },
+                        { display_name: 'Quality', variable_name: 'output_quality', value: selectedTier.label },
+                        { display_name: 'Asset Path', variable_name: 'asset_path', value: filePath },
+                        { display_name: 'Content Slug', variable_name: 'content_slug', value: contentSlug },
+                    ]
                 },
-                callback: (response: any) => {
+                callback: () => {
                     setIsPaying(false);
-                    // SECURITY: Do NOT initiate the download from the client-side callback.
-                    // The Paystack webhook (paystack-webhook Edge Function) verifies the
-                    // HMAC SHA-512 signature and records the transaction in `transactions`.
-                    // Asset delivery for premium tiers is gated at the backend, not here.
-                    console.log(`[Portal] Payment reference ${response.reference} submitted — awaiting backend verification.`);
-                    toast({
-                        title: "Payment Received!",
-                        description: "Your transaction is being verified. Your download link will be ready shortly.",
-                    });
-                    setStep('selection');
-                    setIsOpen(false);
+                    // 2. Transition to 'verifying' — subscribe to Realtime for webhook confirmation
+                    setStep('verifying');
+
+                    // Subscribe to Supabase Realtime on this transaction row
+                    const unsub = piecesTransactionService.subscribeToVerification(
+                        paymentRef,
+                        async (tx) => {
+                            // Webhook confirmed — initiate delivery
+                            unsub();
+                            if (timeoutRef.current) clearTimeout(timeoutRef.current);
+                            if (selectedTier) await initiateDownload(selectedTier);
+                        }
+                    );
+                    unsubscribeRef.current = unsub;
+
+                    // 3. 90-second timeout fallback
+                    timeoutRef.current = setTimeout(() => {
+                        unsub();
+                        unsubscribeRef.current = null;
+                        setStep('timeout');
+                    }, VERIFICATION_TIMEOUT_MS);
                 },
-                onClose: () => setIsPaying(false)
+                onClose: () => {
+                    setIsPaying(false);
+                    // User closed Paystack without paying — stay on donation step
+                }
             });
             handler.openIframe();
         } catch (error) {
             setIsPaying(false);
-            console.error('Paystack Portal Error:', error);
-            toast({ title: "Payment Failed", description: "Could not initialize Paystack.", variant: "destructive" });
+            console.error('[Portal] Paystack error:', error);
+            toast({ title: 'Payment failed', description: 'Could not initialise Paystack.', variant: 'destructive' });
         }
     };
 
     const PortalContent = (
         <div className="flex flex-col gap-6 h-full min-h-[400px]">
             <AnimatePresence mode="wait">
+
+                {/* ── SELECTION STEP ── */}
                 {step === 'selection' && (
-                    <motion.div 
-                        key="selection" 
-                        initial={{ opacity: 0, y: 10 }} 
-                        animate={{ opacity: 1, y: 0 }} 
+                    <motion.div
+                        key="selection"
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -10 }}
                         className="space-y-3"
                     >
@@ -218,47 +329,70 @@ const DownloadPortal: React.FC<DownloadPortalProps> = ({ filePath, availableQual
                             <Info size={14} className="text-muted-foreground opacity-50" />
                             <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">Select Output Fidelity</p>
                         </div>
+
                         {activeTiers.map((tier) => (
-                            <button
-                                key={tier.id}
-                                onClick={() => handleSelectTier(tier)}
-                                className={cn(
-                                    "w-full flex items-center justify-between p-4 rounded-[22px] transition-all group active:scale-[0.98]",
-                                    "bg-muted/5 border border-white/10 hover:border-kenya-red/30 hover:bg-kenya-red/[0.03]",
-                                    "glass-card"
-                                )}
-                            >
-                                <div className="flex items-center gap-4">
-                                    <div className="w-10 h-10 rounded-full flex items-center justify-center bg-white/5 group-hover:bg-kenya-red/10 transition-colors shadow-inner">
-                                        {tier.id === '320p' ? <Smartphone size={18} /> : <Monitor size={18} />}
-                                    </div>
-                                    <div className="text-left">
-                                        <p className="font-bold text-sm tracking-tight">{tier.label}</p>
-                                        <p className="text-[9px] text-muted-foreground font-black uppercase tracking-widest opacity-60">{tier.sublabel}</p>
-                                    </div>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    {tier.requiresDonation && (
-                                        <Badge variant="outline" className="bg-kenya-red/10 text-kenya-red border-kenya-red/20 text-[8px] font-black tracking-widest uppercase px-1.5 py-0">Premium</Badge>
+                            <div key={tier.id} className="flex items-center gap-2">
+                                {/* Main tier button */}
+                                <button
+                                    onClick={() => handleSelectTier(tier)}
+                                    className={cn(
+                                        "flex-1 flex items-center justify-between p-4 rounded-[22px] transition-all group active:scale-[0.98]",
+                                        "bg-muted/5 border border-white/10 hover:border-kenya-red/30 hover:bg-kenya-red/[0.03]",
+                                        "glass-card"
                                     )}
-                                    <ChevronRight size={16} className="text-muted-foreground/40 group-hover:translate-x-1 group-hover:text-kenya-red/60 transition-all" />
-                                </div>
-                            </button>
+                                >
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-10 h-10 rounded-full flex items-center justify-center bg-white/5 group-hover:bg-kenya-red/10 transition-colors shadow-inner">
+                                            {tier.isPdf
+                                                ? <FileText size={18} />
+                                                : tier.id === '320p'
+                                                    ? <Smartphone size={18} />
+                                                    : <Monitor size={18} />
+                                            }
+                                        </div>
+                                        <div className="text-left">
+                                            <p className="font-bold text-sm tracking-tight">{tier.label}</p>
+                                            <p className="text-[9px] text-muted-foreground font-black uppercase tracking-widest opacity-60">{tier.sublabel}</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        {tier.requiresDonation && (
+                                            <Badge variant="outline" className="bg-kenya-red/10 text-kenya-red border-kenya-red/20 text-[8px] font-black tracking-widest uppercase px-1.5 py-0">
+                                                Premium
+                                            </Badge>
+                                        )}
+                                        <ChevronRight size={16} className="text-muted-foreground/40 group-hover:translate-x-1 group-hover:text-kenya-red/60 transition-all" />
+                                    </div>
+                                </button>
+
+                                {/* Copy Link button — side by side for free tiers only */}
+                                {!tier.requiresDonation && (
+                                    <button
+                                        onClick={() => initiateCopyLink(tier)}
+                                        title={`Copy ${tier.label} link to clipboard`}
+                                        aria-label={`Copy ${tier.label} link to clipboard`}
+                                        className="w-11 h-11 rounded-[16px] flex items-center justify-center bg-muted/10 border border-white/10 hover:border-white/20 hover:bg-white/5 transition-all shrink-0"
+                                    >
+                                        <Link2 size={15} className="text-muted-foreground" />
+                                    </button>
+                                )}
+                            </div>
                         ))}
-                        
+
                         <div className="pt-6 border-t border-white/5 mt-4">
                             <p className="text-[10px] text-center text-muted-foreground font-bold uppercase tracking-widest opacity-40">
-                                Secure Ephemeral Link System • 5m Expiry
+                                Signed Links • 1 Hour Expiry
                             </p>
                         </div>
                     </motion.div>
                 )}
 
+                {/* ── DONATION STEP ── */}
                 {step === 'donation' && (
-                    <motion.div 
+                    <motion.div
                         key="donation"
-                        initial={{ opacity: 0, scale: 0.95 }} 
-                        animate={{ opacity: 1, scale: 1 }} 
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
                         className="space-y-6 pt-2 pb-6"
                     >
                         <div className="text-center space-y-3">
@@ -267,7 +401,7 @@ const DownloadPortal: React.FC<DownloadPortalProps> = ({ filePath, availableQual
                             </div>
                             <h3 className="text-2xl font-black tracking-tighter">Support the Assets</h3>
                             <p className="text-xs text-muted-foreground max-w-[260px] mx-auto font-medium leading-relaxed">
-                                Our <span className="text-foreground font-bold">HQ Infrastructure</span> is powered by community tips. Unlock this asset with a small contribution.
+                                Our <span className="text-foreground font-bold">HQ Infrastructure</span> is powered by community tips. Unlock <span className="text-foreground font-bold">{selectedTier?.label}</span> with a small contribution.
                             </p>
                         </div>
 
@@ -278,8 +412,8 @@ const DownloadPortal: React.FC<DownloadPortalProps> = ({ filePath, availableQual
                                     onClick={() => setDonationAmount(amt.value)}
                                     className={cn(
                                         "py-4 rounded-2xl border transition-all text-sm font-black tracking-widest uppercase relative overflow-hidden",
-                                        donationAmount === amt.value 
-                                            ? "bg-kenya-green border-kenya-green text-white shadow-xl shadow-kenya-green/20" 
+                                        donationAmount === amt.value
+                                            ? "bg-kenya-green border-kenya-green text-white shadow-xl shadow-kenya-green/20"
                                             : "bg-white/5 border-white/10 hover:border-white/20 text-muted-foreground"
                                     )}
                                 >
@@ -292,7 +426,7 @@ const DownloadPortal: React.FC<DownloadPortalProps> = ({ filePath, availableQual
                         </div>
 
                         <div className="space-y-3">
-                            <Button 
+                            <Button
                                 onClick={handlePaystackPayment}
                                 disabled={isPaying}
                                 className="w-full h-16 rounded-[22px] bg-kenya-green hover:bg-kenya-green/90 text-white font-black text-xs uppercase tracking-[0.2em] shadow-2xl shadow-kenya-green/20 active:scale-95 transition-all"
@@ -300,8 +434,8 @@ const DownloadPortal: React.FC<DownloadPortalProps> = ({ filePath, availableQual
                                 {isPaying ? <CEKALoader variant="ios" size="xs" /> : <><Wallet size={16} className="mr-3" />Support &amp; Unlock</>}
                             </Button>
 
-                            <button 
-                                onClick={() => setStep('selection')}
+                            <button
+                                onClick={resetToSelection}
                                 className="w-full py-4 text-[10px] font-black text-muted-foreground/60 uppercase tracking-[0.25em] hover:text-kenya-red transition-colors flex items-center justify-center gap-2"
                             >
                                 <ArrowRight size={12} className="rotate-180" /> Change Quality
@@ -310,6 +444,65 @@ const DownloadPortal: React.FC<DownloadPortalProps> = ({ filePath, availableQual
                     </motion.div>
                 )}
 
+                {/* ── VERIFYING STEP ── */}
+                {step === 'verifying' && (
+                    <motion.div
+                        key="verifying"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="flex flex-col items-center justify-center py-20 space-y-8"
+                    >
+                        <CEKALoader variant="ios" size="lg" />
+                        <div className="text-center space-y-3">
+                            <p className="text-sm font-black uppercase tracking-[0.3em] mb-2">Confirming Payment</p>
+                            <p className="text-[10px] text-muted-foreground font-black uppercase tracking-widest opacity-50 px-8 leading-relaxed">
+                                Verifying with Paystack — this can take up to 90 seconds on slow networks...
+                            </p>
+                        </div>
+                        <button
+                            onClick={resetToSelection}
+                            className="flex items-center gap-1.5 text-[10px] font-black text-muted-foreground/40 uppercase tracking-widest hover:text-muted-foreground transition-colors"
+                        >
+                            <X size={11} /> Cancel
+                        </button>
+                    </motion.div>
+                )}
+
+                {/* ── TIMEOUT STEP ── */}
+                {step === 'timeout' && (
+                    <motion.div
+                        key="timeout"
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="flex flex-col items-center justify-center py-16 space-y-6 text-center"
+                    >
+                        <div className="w-16 h-16 rounded-full bg-muted/10 border border-white/10 flex items-center justify-center">
+                            <Clock size={28} className="text-muted-foreground/60" />
+                        </div>
+                        <div className="space-y-2">
+                            <p className="text-base font-black tracking-tight">Still processing</p>
+                            <p className="text-[11px] text-muted-foreground max-w-[240px] mx-auto font-medium leading-relaxed">
+                                We'll have this ready shortly. Check your email for a delivery link, or tap below to check now.
+                            </p>
+                        </div>
+                        <div className="flex flex-col gap-3 w-full max-w-xs">
+                            <Button
+                                onClick={handleCheckAgain}
+                                className="w-full rounded-[18px] bg-foreground text-background font-black text-xs uppercase tracking-widest"
+                            >
+                                <RefreshCw size={14} className="mr-2" /> Check Again
+                            </Button>
+                            <button
+                                onClick={resetToSelection}
+                                className="text-[10px] font-black text-muted-foreground/50 uppercase tracking-widest hover:text-muted-foreground transition-colors"
+                            >
+                                Back to Tiers
+                            </button>
+                        </div>
+                    </motion.div>
+                )}
+
+                {/* ── DOWNLOADING STEP ── */}
                 {step === 'downloading' && (
                     <motion.div key="loading" className="flex flex-col items-center justify-center py-20 space-y-8">
                         <CEKALoader variant="ios" size="lg" />
@@ -321,6 +514,7 @@ const DownloadPortal: React.FC<DownloadPortalProps> = ({ filePath, availableQual
                         </div>
                     </motion.div>
                 )}
+
             </AnimatePresence>
         </div>
     );
@@ -328,8 +522,7 @@ const DownloadPortal: React.FC<DownloadPortalProps> = ({ filePath, availableQual
     return (
         <>
             {isDesktop ? (
-                /* Desktop: Floating Glassmorphic Modal */
-                <Dialog open={isOpen} onOpenChange={setIsOpen}>
+                <Dialog open={isOpen} onOpenChange={(o) => { if (!o) resetToSelection(); setIsOpen(o); }}>
                     <DialogTrigger asChild>{trigger}</DialogTrigger>
                     <DialogContent className="max-w-md bg-background/60 backdrop-blur-3xl border-white/10 shadow-3xl rounded-[40px] overflow-hidden p-10 ring-1 ring-white/20">
                         <DialogHeader className="mb-6">
@@ -340,8 +533,7 @@ const DownloadPortal: React.FC<DownloadPortalProps> = ({ filePath, availableQual
                     </DialogContent>
                 </Dialog>
             ) : (
-                /* Mobile: High-End iOS Bottom Sheet — the ONLY portal on mobile */
-                <Drawer.Root open={isOpen} onOpenChange={setIsOpen}>
+                <Drawer.Root open={isOpen} onOpenChange={(o) => { if (!o) resetToSelection(); setIsOpen(o); }}>
                     <Drawer.Trigger asChild>{trigger}</Drawer.Trigger>
                     <Drawer.Portal>
                         <Drawer.Overlay className="fixed inset-0 bg-black/60 backdrop-blur-md z-[999] transition-opacity" />
