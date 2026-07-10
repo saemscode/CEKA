@@ -14,6 +14,7 @@ import SplashScreen from '@/components/SplashScreen';
 import { useAuth } from '@/providers/AuthProvider';
 import storageService from '@/services/storageService';
 import { GlobalActionModal } from '@/components/auth/GlobalActionModal';
+import { SEO } from '@/components/SEO';
 
 // Pages
 import Index from '@/pages/Index';
@@ -130,6 +131,7 @@ const AppContent = () => {
 
   return (
     <>
+      <SEO />
       {showSplash && <SplashScreen />}
       <ScrollToTop />
       {showWelcomeTour && <WelcomeTour onComplete={handleTourComplete} />}
