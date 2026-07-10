@@ -12,9 +12,12 @@ export type NotificationSourceType =
   | 'volunteer_opportunity'
   | 'volunteer_application'
   | 'bill_update'
+  | 'bill_follow'
+  | 'legislative'
   | 'campaign_update'
   | 'discussion_reply'
   | 'system'
+  | 'admin'
   | 'moderation';
 
 export type NotificationPriority = 'low' | 'normal' | 'high' | 'urgent';
