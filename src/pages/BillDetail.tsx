@@ -26,7 +26,7 @@ import { SignatureCounter } from '@/components/bills/SignatureCounter';
 import { analyticsService } from '@/services/analyticsService';
 import { useToast } from "@/hooks/use-toast";
 import ReactMarkdown from 'react-markdown';
-import { Helmet } from 'react-helmet-async';
+import { SEO } from '@/components/SEO';
 
 // Delegated to shared billStages utility — kept as thin alias
 const getStatusColor = (status: string) => getStageColor(status);
@@ -361,29 +361,12 @@ const BillDetail = () => {
 
   return (
     <Layout>
-      <Helmet>
-        <title>{`${bill.title} | Legislative Tracker | CEKA`}</title>
-        <meta name="description" content={seoDesc} />
-        <link rel="canonical" href={`https://www.civiceducationkenya.com/bill/${bill.slug || bill.id}`} />
-        <meta name="keywords" content={`${bill.title}, ${bill.category}, ${bill.bill_no || ''}, Kenya Memorandum Builder, Memorandum Builder Kenya, ${isFinanceBill ? 'Finance Bill 2026, Kenya Finance Bill 2026, Finance Bill memorandum builder, write a memorandum for Finance Bill,' : ''} public participation Kenya, submit memorandum Kenya, bill tracker Kenya, parliamentary process Kenya`} />
-
-        {/* Open Graph / Facebook */}
-        <meta property="og:type" content="article" />
-        <meta property="og:url" content={window.location.href} />
-        <meta property="og:title" content={`${bill.title} | Legislative Tracker | CEKA`} />
-        <meta property="og:description" content={seoDesc} />
-        <meta property="og:image" content={`https://civiceducationkenya.com/og/bill/${bill.slug || bill.id}.png`} />
-        <meta property="og:image:width" content="1200" />
-        <meta property="og:image:height" content="630" />
-        <meta property="og:image:type" content="image/png" />
-
-        {/* Twitter */}
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta property="twitter:url" content={window.location.href} />
-        <meta property="twitter:title" content={`${bill.title} | Legislative Tracker | CEKA`} />
-        <meta property="twitter:description" content={seoDesc} />
-        <meta name="twitter:image" content={`https://civiceducationkenya.com/og/bill/${bill.slug || bill.id}.png`} />
-      </Helmet>
+      <SEO 
+        title={`${bill.title}`} 
+        description={seoDesc} 
+        type="article"
+        image={`https://civiceducationkenya.com/og/bill/${bill.slug || bill.id}.png`}
+      />
 
       <div className="min-h-screen bg-slate-50/30 dark:bg-black">
         {/* HERO SECTION */}

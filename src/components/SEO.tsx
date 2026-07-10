@@ -6,14 +6,15 @@ interface SEOProps {
   title?: string;
   description?: string;
   type?: string;
+  image?: string;
 }
 
-export const SEO: React.FC<SEOProps> = ({ title, description, type = "website" }) => {
+export const SEO: React.FC<SEOProps> = ({ title, description, type = "website", image }) => {
   const location = useLocation();
   const currentUrl = `https://www.civiceducationkenya.com${location.pathname}`;
 
   // Use provided title or fallback to generic
-  const defaultTitle = "Civic Education Kenya - Educate • Amplify • Empower";
+  const defaultTitle = "Civic Education Kenya - Educate â€¢ Amplify â€¢ Empower";
   let finalTitle = title ? title : defaultTitle;
   
   // Clean up "Next Post " prefix if present (data bug workaround)
@@ -51,11 +52,13 @@ export const SEO: React.FC<SEOProps> = ({ title, description, type = "website" }
       <meta property="og:title" content={finalTitle} />
       <meta property="og:description" content={finalDescription} />
       <meta property="og:url" content={currentUrl} />
+      {image && <meta property="og:image" content={image} />}
       <meta property="og:site_name" content="Civic Education Kenya" />
       
       <meta name="twitter:card" content="summary_large_image" />
       <meta name="twitter:title" content={finalTitle} />
       <meta name="twitter:description" content={finalDescription} />
+      {image && <meta name="twitter:image" content={image} />}
     </Helmet>
   );
 };

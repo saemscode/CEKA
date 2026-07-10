@@ -229,9 +229,6 @@ User-agent: Exabot
 Disallow: /
 
 # Block SEO/Analysis Tools
-User-agent: AhrefsBot
-Disallow: /
-
 User-agent: SemrushBot
 Disallow: /
 
@@ -282,9 +279,6 @@ User-agent: Go-http-client
 Disallow: /
 
 # Block Monitoring Services
-User-agent: UptimeRobot
-Disallow: /
-
 User-agent: Pingdom
 Disallow: /
 
