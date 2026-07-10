@@ -4,7 +4,7 @@ import {
   NavHomeIcon,
   NavFilesIcon,
   NavSearchIcon,
-  NavCommentIcon,
+  NavPiecesIcon,
   NavProfileIcon
 } from '@/components/ui/CustomIcons';
 import { cn } from '@/lib/utils';
@@ -56,9 +56,9 @@ const BottomNavbar = () => {
       isCenter: true
     },
     {
-      name: 'Community',
-      path: '/community',
-      icon: <NavCommentIcon />
+      name: 'Pieces',
+      path: '/pieces',
+      icon: <NavPiecesIcon />
     },
     {
       name: session ? 'Profile' : 'Sign In',
@@ -123,7 +123,7 @@ const BottomNavbar = () => {
                   {translate(item.name, language)}
                 </span>
                 {isActive && (
-                  <div className="absolute bottom-1 w-1 h-1 rounded-full bg-primary animate-pulse" />
+                  <div className="absolute -bottom-1.5 w-1.5 h-1.5 rounded-full bg-primary shadow-[0_0_8px_rgba(34,197,94,0.6)] animate-pulse" />
                 )}
               </div>
             </Link>

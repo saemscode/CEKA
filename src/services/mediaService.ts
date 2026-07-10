@@ -124,6 +124,7 @@ export const mediaService = {
             .from('media_content')
             .select('*', { count: 'exact' })
             .eq('status', 'published')
+            .order('display_order', { ascending: false, nullsFirst: false })
             .order('created_at', { ascending: false })
             .range(from, to);
 
@@ -141,6 +142,26 @@ export const mediaService = {
         // HYDRATE cover URLs for the feed cards
         const results = data as unknown as MediaContent[];
         return await Promise.all(results.map(content => this.hydrateMediaUrls(content)));
+    },
+
+    /**
+     * Bulk update display_order for curated grid
+     */
+    async updateDisplayOrder(updates: { id: string, display_order: number }[]): Promise<boolean> {
+        try {
+            const { error } = await (supabase as any)
+                .from('media_content')
+                .upsert(updates, { onConflict: 'id' });
+                
+            if (error) {
+                console.error('[MediaService] Bulk update error:', error);
+                throw error;
+            }
+            return true;
+        } catch (error) {
+            console.error('[MediaService] Error updating display order:', error);
+            throw error;
+        }
     },
 
     /**

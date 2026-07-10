@@ -26,6 +26,7 @@ import LegislativeIntelligence from './LegislativeIntelligence';
 import BentoAnalyticsDashboard from './BentoAnalyticsDashboard';
 import PollManager from './PollManager';
 import PartnerManager from './PartnerManager';
+import { AdminGridCurator } from './AdminGridCurator';
 import { BroadcastCenter } from './broadcast/BroadcastCenter';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 import { supabase } from '@/integrations/supabase/client';
@@ -308,6 +309,12 @@ const EnhancedAdminDashboard = () => {
                                 )}
                             </TabsTrigger>
                         )}
+                        {permissions[PERMISSION_KEYS.MEDIA_APPRAISAL] && (
+                            <TabsTrigger value="grid" className="rounded-xl px-4 py-3 font-medium data-[state=active]:shadow-lg">
+                                <LayoutGrid className="h-4 w-4 mr-2" />
+                                Curation
+                            </TabsTrigger>
+                        )}
                         {permissions[PERMISSION_KEYS.VOLUNTEER_MANAGEMENT] && (
                             <TabsTrigger value="volunteers" className="rounded-xl px-4 py-3 font-medium data-[state=active]:shadow-lg">
                                 <Heart className="h-4 w-4 mr-2" />
@@ -550,6 +557,10 @@ const EnhancedAdminDashboard = () => {
 
                 <TabsContent value="appraisal">
                     <MediaAppraisal />
+                </TabsContent>
+
+                <TabsContent value="grid">
+                    <AdminGridCurator />
                 </TabsContent>
 
                 <TabsContent value="volunteers">

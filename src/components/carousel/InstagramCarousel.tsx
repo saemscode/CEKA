@@ -12,6 +12,7 @@ import DownloadPortal from '@/components/media/DownloadPortal';
 import { useAuth } from '@/providers/AuthProvider';
 import { useToast } from '@/hooks/use-toast';
 import piecesSocialService from '@/services/piecesSocialService';
+import SharePortal from '@/components/media/SharePortal';
 import {
   LikeOutlineIcon,
   LikeFilledIcon,
@@ -165,6 +166,13 @@ const InstagramCarousel: React.FC<InstagramCarouselProps> = ({
 
   const dragX = useMotionValue(0);
 
+  const [showSwipeTooltip, setShowSwipeTooltip] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setShowSwipeTooltip(false), 3500);
+    return () => clearTimeout(timer);
+  }, []);
+
   const getAspectRatioPadding = (ratio?: string | null): string => {
     if (!ratio || ratio.includes('Square')) return '100%';
     const ratioMap: Record<string, string> = {
@@ -176,7 +184,7 @@ const InstagramCarousel: React.FC<InstagramCarouselProps> = ({
     const parts = ratio.split(':');
     if (parts.length === 2) {
       const [w, h] = parts.map(Number);
-      if (w && h) return `${Math.min((h / w), 1.5) * 100}%`;
+      if (w && h) return `${(h / w) * 100}%`;
     }
     return '100%';
   };
@@ -186,7 +194,7 @@ const InstagramCarousel: React.FC<InstagramCarouselProps> = ({
     if (!masterRatio && currentIndex === 0) {
       const img = e.currentTarget;
       if (img.naturalWidth > 0) {
-        setMasterRatio((img.naturalHeight / img.naturalWidth).toString());
+        setMasterRatio(`${img.naturalWidth}:${img.naturalHeight}`);
       }
     }
   };
@@ -209,9 +217,9 @@ const InstagramCarousel: React.FC<InstagramCarouselProps> = ({
     else if (offset.x > SWIPE_THRESHOLD || velocity.x > SWIPE_VELOCITY_THRESHOLD) prevSlide();
   };
 
-  const handleProgressBarInteract = useCallback((clientX: number) => {
-    if (!progressBarRef.current || hydratedItems.length <= 1) return;
-    const bar = progressBarRef.current.getBoundingClientRect();
+  const handleProgressBarInteract = useCallback((clientX: number, target: HTMLElement) => {
+    if (hydratedItems.length <= 1) return;
+    const bar = target.getBoundingClientRect();
     const frac = Math.max(0, Math.min(1, (clientX - bar.left) / bar.width));
     goToSlide(Math.min(hydratedItems.length - 1, Math.floor(frac * hydratedItems.length)));
   }, [hydratedItems.length, goToSlide]);
@@ -253,17 +261,23 @@ const InstagramCarousel: React.FC<InstagramCarouselProps> = ({
     }
   };
 
-  const handleLike = async () => {
+  const likeDebounceTimer = useRef<NodeJS.Timeout | null>(null);
+
+  const handleLike = () => {
     if (!requireAuth()) return;
     const nextLiked = !liked;
     setLiked(nextLiked);
     setLikeCount(prev => nextLiked ? prev + 1 : Math.max(0, prev - 1));
     if (nextLiked) maybeTriggerLottie();
-    const confirmed = await piecesSocialService.toggleLike(user!.id, content.id, liked);
-    if (confirmed !== nextLiked) {
-      setLiked(confirmed);
-      setLikeCount(prev => confirmed ? prev + 1 : Math.max(0, prev - 1));
-    }
+    
+    if (likeDebounceTimer.current) clearTimeout(likeDebounceTimer.current);
+    likeDebounceTimer.current = setTimeout(async () => {
+      const confirmed = await piecesSocialService.toggleLike(user!.id, content.id, nextLiked);
+      if (confirmed !== nextLiked) {
+        setLiked(confirmed);
+        setLikeCount(prev => confirmed ? prev + 1 : Math.max(0, prev - 1));
+      }
+    }, 500);
   };
 
   const handleSave = async () => {
@@ -278,19 +292,7 @@ const InstagramCarousel: React.FC<InstagramCarouselProps> = ({
     if (confirmed !== nextSaved) setSaved(confirmed);
   };
 
-  const handleShare = async () => {
-    const shareUrl = `${window.location.origin}/pieces/${content.slug}`;
-    if (navigator.share) {
-      try {
-        await navigator.share({ title: content.title, text: content.description || 'Civic education by CEKA', url: shareUrl });
-        if (user) piecesSocialService.recordShare(user.id, content.id);
-        return;
-      } catch {}
-    }
-    await navigator.clipboard.writeText(shareUrl);
-    toast({ title: 'Link copied!', description: 'Piece link copied to clipboard.' });
-    if (user) piecesSocialService.recordShare(user.id, content.id);
-  };
+
 
   /**
    * Double-tap-to-like: Instagram-style trigger on media area.
@@ -336,10 +338,10 @@ const InstagramCarousel: React.FC<InstagramCarouselProps> = ({
       {hydratedItems.length > 1 && (
         <div
           ref={progressBarRef}
-          className="pieces-progress-bar"
-          onTouchStart={(e) => handleProgressBarInteract(e.touches[0].clientX)}
-          onTouchMove={(e) => { e.stopPropagation(); handleProgressBarInteract(e.touches[0].clientX); }}
-          onClick={(e) => handleProgressBarInteract(e.clientX)}
+          className="pieces-progress-bar relative"
+          onTouchStart={(e) => handleProgressBarInteract(e.touches[0].clientX, e.currentTarget)}
+          onTouchMove={(e) => { e.stopPropagation(); handleProgressBarInteract(e.touches[0].clientX, e.currentTarget); }}
+          onClick={(e) => handleProgressBarInteract(e.clientX, e.currentTarget)}
           role="slider"
           aria-label="Slide progress — tap to jump"
           aria-valuemin={0}
@@ -496,14 +498,31 @@ const InstagramCarousel: React.FC<InstagramCarouselProps> = ({
 
         {/* Dot row + counter */}
         <div className="flex justify-between items-center px-1">
-          <div className="flex gap-1.5 flex-wrap max-w-[70%]">
+          <div 
+            className="flex gap-1.5 flex-wrap max-w-[70%] relative py-2 -my-2"
+            onTouchStart={(e) => handleProgressBarInteract(e.touches[0].clientX, e.currentTarget)}
+            onTouchMove={(e) => { e.stopPropagation(); handleProgressBarInteract(e.touches[0].clientX, e.currentTarget); }}
+            onClick={(e) => handleProgressBarInteract(e.clientX, e.currentTarget)}
+          >
+            <AnimatePresence>
+              {showSwipeTooltip && hydratedItems.length > 1 && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10, scale: 0.9 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 5, scale: 0.95 }}
+                  className="absolute bottom-6 left-0 bg-black/60 backdrop-blur-xl border border-white/20 text-white text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full shadow-2xl z-50 pointer-events-none whitespace-nowrap"
+                >
+                  Swipe me to move faster
+                  <div className="absolute -bottom-1 left-4 w-2 h-2 bg-black/60 border-b border-r border-white/20 rotate-45" />
+                </motion.div>
+              )}
+            </AnimatePresence>
             {hydratedItems.length > 1 && Array.from({ length: hydratedItems.length }).map((_, i) => (
               <button
                 key={i}
-                onClick={() => goToSlide(i)}
                 className={cn(
-                  "h-1.5 rounded-full transition-all duration-300 cursor-pointer hover:opacity-80",
-                  i === currentIndex ? "w-6 bg-kenya-red" : "w-1.5 bg-muted-foreground/20 hover:bg-muted-foreground/40"
+                  "h-1.5 rounded-full transition-all duration-300 pointer-events-none",
+                  i === currentIndex ? "w-6 bg-kenya-red" : "w-1.5 bg-muted-foreground/20"
                 )}
                 aria-label={`Go to slide ${i + 1}`}
               />
@@ -561,13 +580,20 @@ const InstagramCarousel: React.FC<InstagramCarouselProps> = ({
           </button>
 
           {/* ── Share ── */}
-          <button
-            onClick={handleShare}
-            aria-label="Share this piece"
-            className="pieces-action-btn group/share"
-          >
-            <SendIcon size={19} className="text-muted-foreground group-hover/share:text-foreground transition-colors" />
-          </button>
+          <SharePortal
+            filePath={currentItem?.file_path || currentItem?.file_url || ''}
+            title={content.title}
+            contentSlug={content.slug}
+            contentId={content.id}
+            trigger={
+              <button
+                aria-label="Share this piece"
+                className="pieces-action-btn group/share"
+              >
+                <SendIcon size={19} className="text-muted-foreground group-hover/share:text-foreground transition-colors" />
+              </button>
+            }
+          />
 
           <div className="flex-1" />
 
