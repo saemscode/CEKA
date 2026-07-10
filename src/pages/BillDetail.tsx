@@ -372,14 +372,17 @@ const BillDetail = () => {
         <meta property="og:url" content={window.location.href} />
         <meta property="og:title" content={`${bill.title} | Legislative Tracker | CEKA`} />
         <meta property="og:description" content={seoDesc} />
-        <meta property="og:image" content="/icons/og-bill.png" />
+        <meta property="og:image" content={`https://civiceducationkenya.com/og/bill/${bill.slug || bill.id}.png`} />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+        <meta property="og:image:type" content="image/png" />
 
         {/* Twitter */}
-        <meta property="twitter:card" content="summary_large_image" />
+        <meta name="twitter:card" content="summary_large_image" />
         <meta property="twitter:url" content={window.location.href} />
         <meta property="twitter:title" content={`${bill.title} | Legislative Tracker | CEKA`} />
         <meta property="twitter:description" content={seoDesc} />
-        <meta property="twitter:image" content="/icons/og-bill.png" />
+        <meta name="twitter:image" content={`https://civiceducationkenya.com/og/bill/${bill.slug || bill.id}.png`} />
       </Helmet>
 
       <div className="min-h-screen bg-slate-50/30 dark:bg-black">
