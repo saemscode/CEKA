@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { Route, Routes, useLocation, Navigate, BrowserRouter } from 'react-router-dom';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { AuthProvider } from '@/providers/AuthProvider';
@@ -16,60 +16,60 @@ import storageService from '@/services/storageService';
 import { GlobalActionModal } from '@/components/auth/GlobalActionModal';
 import { SEO } from '@/components/SEO';
 
-// Pages
-import Index from '@/pages/Index';
-import AuthPage from '@/pages/AuthPage';
-import Blog from '@/pages/Blog';
-import BlogPost from '@/pages/BlogPost';
-import EventsCalendar from '@/pages/CivicCalendar';
-import AdminDashboard from '@/pages/AdminDashboard';
-import MaintenancePage from '@/pages/MaintenancePage';
-import ResourceLibrary from '@/pages/ResourceLibrary';
-import ResourceDetail from '@/pages/ResourceDetail';
-import OAuthConsent from '@/pages/OAuthConsent';
-import LegislativeTracker from '@/pages/LegislativeTracker';
-import LegislativeTrackerDetail from '@/pages/LegislativeTrackerDetail';
-import LegislationDetail from '@/pages/LegislationDetail';
-import BillDetail from '@/pages/BillDetail';
-import RejectFinanceBill from '@/pages/RejectFinanceBill';
-import SHAmbles from '@/pages/SHAmbles';
-import PeoplesAuditPage from '@/pages/PeoplesAuditPage';
-import NasakaPage from '@/pages/NasakaIEBCPage';
+// Pages (Lazy Loaded for Code Splitting)
+const Index = lazy(() => import('@/pages/Index'));
+const AuthPage = lazy(() => import('@/pages/AuthPage'));
+const Blog = lazy(() => import('@/pages/Blog'));
+const BlogPost = lazy(() => import('@/pages/BlogPost'));
+const EventsCalendar = lazy(() => import('@/pages/CivicCalendar'));
+const AdminDashboard = lazy(() => import('@/pages/AdminDashboard'));
+const MaintenancePage = lazy(() => import('@/pages/MaintenancePage'));
+const ResourceLibrary = lazy(() => import('@/pages/ResourceLibrary'));
+const ResourceDetail = lazy(() => import('@/pages/ResourceDetail'));
+const OAuthConsent = lazy(() => import('@/pages/OAuthConsent'));
+const LegislativeTracker = lazy(() => import('@/pages/LegislativeTracker'));
+const LegislativeTrackerDetail = lazy(() => import('@/pages/LegislativeTrackerDetail'));
+const LegislationDetail = lazy(() => import('@/pages/LegislationDetail'));
+const BillDetail = lazy(() => import('@/pages/BillDetail'));
+const RejectFinanceBill = lazy(() => import('@/pages/RejectFinanceBill'));
+const SHAmbles = lazy(() => import('@/pages/SHAmbles'));
+const PeoplesAuditPage = lazy(() => import('@/pages/PeoplesAuditPage'));
+const NasakaPage = lazy(() => import('@/pages/NasakaIEBCPage'));
 // Volunteer pages removed - functionality merged into JoinCommunity
-import Notifications from '@/pages/Notifications';
-import AdvocacyToolkit from '@/pages/AdvocacyToolkit';
-import AdvocacyToolkitDetail from '@/pages/AdvocacyToolkitDetail';
-import JoinCommunity from '@/pages/JoinCommunity';
-import ConstitutionPage from '@/pages/ConstitutionPage';
-import CommunityPortal from '@/pages/CommunityPortal';
-import LegalPage from '@/pages/LegalPage';
-import FeedbackPage from '@/pages/FeedbackPage';
-import DiscussionDetail from '@/pages/DiscussionDetail';
-import CampaignDetail from '@/pages/CampaignDetail';
-import SearchResults from '@/pages/SearchResults';
-import DocumentViewerPage from '@/pages/DocumentViewerPage';
-import ResourceUpload from '@/pages/ResourceUpload';
-import PendingResources from '@/pages/PendingResources';
-import ThumbnailDemo from '@/pages/ThumbnailDemo';
-import SettingsLayout from '@/pages/settings/SettingsLayout';
-import AccountSettings from '@/pages/settings/AccountSettings';
-import NotificationSettings from '@/pages/settings/NotificationSettings';
-import AppearanceSettings from '@/pages/settings/AppearanceSettings';
-import PrivacySettings from '@/pages/settings/PrivacySettings';
-import PrivacyPolicy from '@/pages/PrivacyPolicy';
-import TermsConditions from '@/pages/TermsConditions';
-import Pieces from '@/pages/Pieces';
-import PartnerDashboard from '@/pages/PartnerDashboard';
-import Tools from '@/pages/Tools';
-import About from '@/pages/About';
-import TemplateViewerPage from '@/pages/TemplateViewerPage';
-import NotFound from '@/pages/NotFound';
-import TransparencyManifesto from '@/pages/TransparencyManifesto';
-import InfrastructureDetails from '@/pages/InfrastructureDetails';
-import TranslatePage from '@/pages/TranslatePage';
-import ArticleViewer from '@/pages/ArticleViewer';
-import DonationSuccess from '@/pages/DonationSuccess';
-import CivicPointsPage from '@/pages/settings/CivicPointsPage';
+const Notifications = lazy(() => import('@/pages/Notifications'));
+const AdvocacyToolkit = lazy(() => import('@/pages/AdvocacyToolkit'));
+const AdvocacyToolkitDetail = lazy(() => import('@/pages/AdvocacyToolkitDetail'));
+const JoinCommunity = lazy(() => import('@/pages/JoinCommunity'));
+const ConstitutionPage = lazy(() => import('@/pages/ConstitutionPage'));
+const CommunityPortal = lazy(() => import('@/pages/CommunityPortal'));
+const LegalPage = lazy(() => import('@/pages/LegalPage'));
+const FeedbackPage = lazy(() => import('@/pages/FeedbackPage'));
+const DiscussionDetail = lazy(() => import('@/pages/DiscussionDetail'));
+const CampaignDetail = lazy(() => import('@/pages/CampaignDetail'));
+const SearchResults = lazy(() => import('@/pages/SearchResults'));
+const DocumentViewerPage = lazy(() => import('@/pages/DocumentViewerPage'));
+const ResourceUpload = lazy(() => import('@/pages/ResourceUpload'));
+const PendingResources = lazy(() => import('@/pages/PendingResources'));
+const ThumbnailDemo = lazy(() => import('@/pages/ThumbnailDemo'));
+const SettingsLayout = lazy(() => import('@/pages/settings/SettingsLayout'));
+const AccountSettings = lazy(() => import('@/pages/settings/AccountSettings'));
+const NotificationSettings = lazy(() => import('@/pages/settings/NotificationSettings'));
+const AppearanceSettings = lazy(() => import('@/pages/settings/AppearanceSettings'));
+const PrivacySettings = lazy(() => import('@/pages/settings/PrivacySettings'));
+const PrivacyPolicy = lazy(() => import('@/pages/PrivacyPolicy'));
+const TermsConditions = lazy(() => import('@/pages/TermsConditions'));
+const Pieces = lazy(() => import('@/pages/Pieces'));
+const PartnerDashboard = lazy(() => import('@/pages/PartnerDashboard'));
+const Tools = lazy(() => import('@/pages/Tools'));
+const About = lazy(() => import('@/pages/About'));
+const TemplateViewerPage = lazy(() => import('@/pages/TemplateViewerPage'));
+const NotFound = lazy(() => import('@/pages/NotFound'));
+const TransparencyManifesto = lazy(() => import('@/pages/TransparencyManifesto'));
+const InfrastructureDetails = lazy(() => import('@/pages/InfrastructureDetails'));
+const TranslatePage = lazy(() => import('@/pages/TranslatePage'));
+const ArticleViewer = lazy(() => import('@/pages/ArticleViewer'));
+const DonationSuccess = lazy(() => import('@/pages/DonationSuccess'));
+const CivicPointsPage = lazy(() => import('@/pages/settings/CivicPointsPage'));
 
 const queryClient = new QueryClient();
 
@@ -135,7 +135,8 @@ const AppContent = () => {
       {showSplash && <SplashScreen />}
       <ScrollToTop />
       {showWelcomeTour && <WelcomeTour onComplete={handleTourComplete} />}
-      <Routes>
+      <Suspense fallback={<SplashScreen />}>
+        <Routes>
         <Route path="/" element={<Index />} />
         <Route path="/auth" element={<AuthPage />} />
         <Route path="/blog" element={<Blog />} />
@@ -218,8 +219,9 @@ const AppContent = () => {
           <Route path="privacy" element={<PrivacySettings />} />
           <Route path="civic-points" element={<CivicPointsPage />} />
         </Route>
-        <Route path="*" element={<NotFound />} />
-      </Routes>
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </Suspense>
       <Toaster />
       <Sonner />
     </>

@@ -25,6 +25,20 @@ export default defineConfig(({ mode }) => {
         "@": path.resolve(__dirname, "./src"),
       },
     },
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+            'vendor-charts': ['recharts'],
+            'vendor-maps': ['leaflet'],
+            'vendor-pdf': ['pdf-parse', 'pdfjs-dist'],
+            'vendor-animation': ['lottie-react', 'gsap', 'framer-motion'],
+            'vendor-ui': ['@radix-ui/react-dialog', '@radix-ui/react-popover', '@radix-ui/react-tooltip', 'lucide-react']
+          }
+        }
+      }
+    },
     // Explicitly define env variables to ensure they're available to the client
     // We map each VITE_ variable individually to ensure maximum compatibility in both Dev and Prod
     define: Object.keys(env).reduce<Record<string, any>>((prev, key) => {
