@@ -13,6 +13,7 @@ import {
     PlusCircle, Edit3, Activity, TrendingUp, Eye, UserCheck, Clock, AlertTriangle, Download,
     RefreshCw, Plus, Sparkles, Zap, PieChart as LucidePieChart, Send, Building
 } from 'lucide-react';
+import { CEKALoader } from '@/components/ui/ceka-loader';
 import { adminService, AdminDashboardStats, UserActivityStats, ModerationQueueItem } from '@/services/adminService';
 import { roleService, PERMISSION_KEYS } from '@/services/roleService';
 import { AdminSessionManager } from './AdminSessionManager';
@@ -242,9 +243,9 @@ const EnhancedAdminDashboard = () => {
             <div className="flex items-center justify-center min-h-screen">
                 <div className="flex flex-col items-center gap-4">
                     <div className="h-12 w-12 rounded-2xl bg-primary/10 animate-pulse flex items-center justify-center">
-                        <Sparkles className="h-6 w-6 text-primary animate-spin" />
+                        <CEKALoader />
                     </div>
-                    <p className="text-lg font-medium text-muted-foreground">Loading command center...</p>
+                    <p className="text-lg font-medium text-muted-foreground">Loading...</p>
                 </div>
             </div>
         );
