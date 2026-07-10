@@ -341,9 +341,9 @@ const MiniPlayerBar: React.FC<{
             </div>
 
             {/* Centre: rotating content — title + type subtitle, tappable */}
-            <button
+            <Link
+              to={current.link}
               className="flex-1 min-w-0 text-left"
-              onClick={() => navigate(current.link)}
             >
               <AnimatePresence mode="wait" custom={dir}>
                 <motion.div
@@ -367,7 +367,7 @@ const MiniPlayerBar: React.FC<{
                   </p>
                 </motion.div>
               </AnimatePresence>
-            </button>
+            </Link>
 
             {/* Right: unread badge + dual-chevron control */}
             <div className="flex items-center gap-1.5 shrink-0">
@@ -507,13 +507,13 @@ const FollowedBillsSlide: React.FC<{
                   <span className="text-[9px] font-bold text-kenya-green bg-kenya-green/10 px-1.5 py-px rounded-full">{bill.status || 'Active'}</span>
                   <BillTrack status={bill.status} />
                   {bill.summary && <p className="text-[10px] text-slate-500 dark:text-white/40 mt-2 line-clamp-3">{bill.summary}</p>}
-                  <button
-                    onClick={() => navigate(`/bill/${bill.slug || bill.id}`)}
+                  <Link
+                    to={`/bill/${bill.slug || bill.id}`}
                     className="mt-2 inline-flex items-center gap-1 text-[9px] font-bold text-kenya-green hover:underline"
                   >
                     Full details
                     <Deep2Icon className="w-2.5 h-2.5" />
-                  </button>
+                  </Link>
                 </motion.div>
               ) : (
                 <motion.div

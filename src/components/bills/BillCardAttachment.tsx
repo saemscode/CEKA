@@ -1,5 +1,5 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 
 interface BillCardAttachmentProps {
   billId: string;
@@ -29,15 +29,13 @@ export const BillCardAttachment: React.FC<BillCardAttachmentProps> = ({
   corroborationScore,
   userResponseExcerpt,
 }) => {
-  const navigate = useNavigate();
   const statusColor = billStatus ? (STATUS_COLORS[billStatus] || '#8B92A5') : '#8B92A5';
 
   return (
-    <div
-      onClick={() => navigate(`/bills/${billId}`)}
+    <Link
+      to={`/bills/${billId}`}
       role="button"
       tabIndex={0}
-      onKeyDown={(e) => e.key === 'Enter' && navigate(`/bills/${billId}`)}
       style={{
         background: 'rgba(255,255,255,0.04)',
         border: '1px solid rgba(255,255,255,0.10)',
@@ -47,14 +45,16 @@ export const BillCardAttachment: React.FC<BillCardAttachmentProps> = ({
         transition: 'background 0.2s, transform 0.15s',
         maxWidth: 440,
         backdropFilter: 'blur(10px)',
+        display: 'block',
+        textDecoration: 'none',
       }}
       onMouseEnter={(e) => {
-        (e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.07)';
-        (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-1px)';
+        (e.currentTarget as HTMLAnchorElement).style.background = 'rgba(255,255,255,0.07)';
+        (e.currentTarget as HTMLAnchorElement).style.transform = 'translateY(-1px)';
       }}
       onMouseLeave={(e) => {
-        (e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.04)';
-        (e.currentTarget as HTMLDivElement).style.transform = 'translateY(0)';
+        (e.currentTarget as HTMLAnchorElement).style.background = 'rgba(255,255,255,0.04)';
+        (e.currentTarget as HTMLAnchorElement).style.transform = 'translateY(0)';
       }}
     >
       {/* Header row */}
@@ -204,7 +204,7 @@ export const BillCardAttachment: React.FC<BillCardAttachmentProps> = ({
           View full report →
         </span>
       </div>
-    </div>
+    </Link>
   );
 };
 

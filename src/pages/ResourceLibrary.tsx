@@ -545,8 +545,8 @@ const ResourceLibrary = () => {
                               {res.dateAdded}
                             </TableCell>
                             <TableCell className="text-right">
-                              <Button size="sm" variant="ghost" className="h-8 rounded-lg hover:bg-kenya-red/10 hover:text-kenya-red font-bold">
-                                View
+                              <Button asChild size="sm" variant="ghost" className="h-8 rounded-lg hover:bg-kenya-red/10 hover:text-kenya-red font-bold">
+                                <Link to={`/resources/${res.id}`}>View</Link>
                               </Button>
                             </TableCell>
                           </TableRow>
