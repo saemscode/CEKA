@@ -105,6 +105,7 @@ const BottomNavbar = () => {
                   ? "text-primary scale-105"
                   : "text-muted-foreground/70 hover:text-primary transition-colors"
               )}
+              {...(item.path === '/auth' || item.path.startsWith('/profile') ? { rel: 'nofollow' } : {})}
             >
               <div className="flex flex-col items-center relative">
                 {React.cloneElement(item.icon as React.ReactElement, {

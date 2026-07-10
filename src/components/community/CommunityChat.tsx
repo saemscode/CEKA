@@ -561,7 +561,7 @@ const CommunityChat = () => {
         <h3 className="text-2xl font-bold mb-3 tracking-tight">Join the Community</h3>
         <p className="text-muted-foreground text-center mb-8 max-w-sm px-4">Sign in to chat and connect with others.</p>
         <Button asChild size="lg" className="rounded-2xl px-12 h-14 text-lg font-bold shadow-xl">
-          <Link to="/auth">Sign In</Link>
+          <Link to="/auth" rel="nofollow">Sign In</Link>
         </Button>
       </Card>
     );

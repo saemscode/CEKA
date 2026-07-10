@@ -230,9 +230,9 @@ const Navbar = React.forwardRef<HTMLElement, NavbarProps>(({ isFixed }, ref) => 
                     </p>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator className="bg-slate-100 dark:bg-white/5 my-2" />
-                  <DropdownMenuItem asChild><Link to="/settings/account" className="rounded-xl p-3 cursor-pointer">Profile</Link></DropdownMenuItem>
-                  <DropdownMenuItem asChild><Link to="/settings" className="rounded-xl p-3 cursor-pointer">Settings</Link></DropdownMenuItem>
-                  {isAdmin && <DropdownMenuItem asChild><Link to="/admin/dashboard" className="rounded-xl p-3 cursor-pointer text-primary font-bold">Admin Console</Link></DropdownMenuItem>}
+                  <DropdownMenuItem asChild><Link to="/settings/account" className="rounded-xl p-3 cursor-pointer" rel="nofollow">Profile</Link></DropdownMenuItem>
+                  <DropdownMenuItem asChild><Link to="/settings" className="rounded-xl p-3 cursor-pointer" rel="nofollow">Settings</Link></DropdownMenuItem>
+                  {isAdmin && <DropdownMenuItem asChild><Link to="/admin/dashboard" className="rounded-xl p-3 cursor-pointer text-primary font-bold" rel="nofollow">Admin Console</Link></DropdownMenuItem>}
                   <DropdownMenuSeparator className="bg-slate-100 dark:bg-white/5 my-2" />
                   <DropdownMenuItem onClick={signOut} className="rounded-xl p-3 cursor-pointer text-red-500 focus:text-red-500 focus:bg-red-50 dark:focus:bg-red-950/20">Sign Out</DropdownMenuItem>
                 </DropdownMenuContent>

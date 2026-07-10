@@ -183,7 +183,7 @@ export default function VolunteerOpportunityDialog() {
               {translate('Create an account or sign in to contribute volunteer opportunities to the CEKA community.', language)}
             </p>
             <Button asChild className="w-full">
-              <Link to="/auth">{translate('Sign In', language)}</Link>
+              <Link to="/auth" rel="nofollow">{translate('Sign In', language)}</Link>
             </Button>
           </div>
         </DialogContent>

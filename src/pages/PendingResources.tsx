@@ -68,7 +68,7 @@ const PendingResources = () => {
           <h1 className="text-2xl font-bold mb-4">Authentication Required</h1>
           <p className="mb-6">Please sign in to view your pending resource submissions.</p>
           <Button asChild>
-            <Link to="/auth">Sign In</Link>
+            <Link to="/auth" rel="nofollow">Sign In</Link>
           </Button>
         </div>
       </Layout>
