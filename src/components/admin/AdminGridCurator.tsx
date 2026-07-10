@@ -4,8 +4,46 @@ import { type MediaContent } from '@/services/mediaService';
 import { useToast } from '@/hooks/use-toast';
 import { CEKALoader } from '@/components/ui/ceka-loader';
 import { Button } from '@/components/ui/button';
-import { Save, LayoutGrid, Info, Check, RefreshCw } from 'lucide-react';
+import { Save, LayoutGrid, Info, Check, RefreshCw, Smartphone, Monitor } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+
+const GridItem = ({ item, index, layoutPrefix, draggedIdx, handleDragStart, handleDragEnter, handleDragOver, handleDragEnd }: any) => {
+    return (
+        <motion.div
+            layout
+            layoutId={`${layoutPrefix}-${item.id}`}
+            transition={{ type: "spring", stiffness: 350, damping: 25 }}
+            draggable
+            onDragStart={(e) => handleDragStart(e, index)}
+            onDragEnter={(e) => handleDragEnter(e, index)}
+            onDragOver={handleDragOver}
+            onDragEnd={handleDragEnd}
+            className={`aspect-[4/5] relative group cursor-grab active:cursor-grabbing overflow-hidden bg-muted/20 border border-white/5 shadow-lg will-change-transform ${draggedIdx === index ? 'opacity-0 scale-95' : 'hover:scale-[1.02] hover:shadow-2xl hover:z-10 transition-transform duration-200'} ${layoutPrefix === 'desktop' ? 'rounded-xl' : ''}`}
+        >
+            <img
+                src={item.cover_url || item.items?.[0]?.file_url}
+                alt={item.title}
+                className="w-full h-full object-cover pointer-events-none"
+                draggable={false}
+            />
+            
+            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col items-center justify-center p-2 pointer-events-none backdrop-blur-[2px]">
+                <LayoutGrid className="text-white/80 mb-2" size={layoutPrefix === 'desktop' ? 24 : 16} />
+                <p className="text-white text-[8px] md:text-[10px] font-black text-center uppercase tracking-tight leading-tight line-clamp-3">
+                    {item.title}
+                </p>
+            </div>
+
+            <div className="absolute top-1 left-1 w-5 h-5 md:w-6 md:h-6 rounded-full bg-black/60 backdrop-blur-md border border-white/20 flex items-center justify-center text-[8px] md:text-[10px] font-black text-white pointer-events-none shadow-xl">
+                {index + 1}
+            </div>
+            
+            <div className="absolute bottom-1 right-1 px-1.5 py-0.5 rounded-sm bg-black/60 backdrop-blur-md border border-white/10 text-[6px] md:text-[8px] font-bold text-white/80 pointer-events-none">
+                {new Date(item.created_at || '').toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+            </div>
+        </motion.div>
+    );
+};
 
 export const AdminGridCurator = () => {
     const [items, setItems] = useState<MediaContent[]>([]);
@@ -158,48 +196,68 @@ export const AdminGridCurator = () => {
                 </motion.div>
             )}
 
-            <div className="grid grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-1 md:gap-2 p-2 bg-black/5 rounded-[2rem] border border-white/5 shadow-inner">
-                <AnimatePresence>
-                    {items.map((item, index) => (
-                        <motion.div
-                            key={item.id}
-                            layout
-                            layoutId={item.id}
-                            transition={{ type: "spring", stiffness: 350, damping: 25 }}
-                            draggable
-                            onDragStart={(e) => handleDragStart(e as any, index)}
-                            onDragEnter={(e) => handleDragEnter(e as any, index)}
-                            onDragOver={handleDragOver}
-                            onDragEnd={handleDragEnd}
-                            className={`aspect-[4/5] relative group cursor-grab active:cursor-grabbing overflow-hidden rounded-xl md:rounded-2xl bg-muted/20 border border-white/5 shadow-lg will-change-transform ${draggedIdx === index ? 'opacity-0 scale-95' : 'hover:scale-[1.02] hover:shadow-2xl hover:z-10 transition-transform duration-200'}`}
-                        >
-                            <img
-                                src={item.cover_url || item.items?.[0]?.file_url}
-                                alt={item.title}
-                                className="w-full h-full object-cover pointer-events-none"
-                                draggable={false}
-                            />
-                            
-                            {/* Glass overlay on hover */}
-                            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col items-center justify-center p-4 pointer-events-none backdrop-blur-[2px]">
-                                <LayoutGrid className="text-white/80 mb-2" size={24} />
-                                <p className="text-white text-[10px] md:text-xs font-black text-center uppercase tracking-tight leading-tight line-clamp-3">
-                                    {item.title}
-                                </p>
+            <div className="flex flex-col lg:flex-row gap-8 items-start pt-4">
+                
+                {/* ── MOBILE FRAME ── */}
+                <div className="w-full lg:w-[360px] xl:w-[390px] shrink-0 mx-auto">
+                    <div className="flex items-center justify-center gap-2 mb-4 text-xs font-black uppercase tracking-widest text-muted-foreground">
+                        <Smartphone size={16} /> Mobile View (3 Columns)
+                    </div>
+                    
+                    {/* Fake iPhone chassis */}
+                    <div className="relative border-[10px] md:border-[14px] border-black/90 dark:border-white/10 rounded-[2.5rem] md:rounded-[3.5rem] bg-background shadow-2xl overflow-hidden h-[750px] flex flex-col">
+                        {/* Notch */}
+                        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[40%] h-[25px] bg-black/90 dark:bg-white/10 rounded-b-3xl z-20" />
+                        
+                        {/* Inner Grid */}
+                        <div className="flex-1 overflow-y-auto p-1 pt-8 hide-scrollbar">
+                            <div className="grid grid-cols-3 gap-0.5">
+                                <AnimatePresence>
+                                    {items.map((item, index) => (
+                                        <GridItem 
+                                            key={`mobile-${item.id}`}
+                                            item={item} 
+                                            index={index} 
+                                            layoutPrefix="mobile"
+                                            draggedIdx={draggedIdx}
+                                            handleDragStart={handleDragStart}
+                                            handleDragEnter={handleDragEnter}
+                                            handleDragOver={handleDragOver}
+                                            handleDragEnd={handleDragEnd}
+                                        />
+                                    ))}
+                                </AnimatePresence>
                             </div>
+                        </div>
+                    </div>
+                </div>
 
-                            {/* Position Indicator */}
-                            <div className="absolute top-2 left-2 w-6 h-6 md:w-8 md:h-8 rounded-full bg-black/60 backdrop-blur-md border border-white/20 flex items-center justify-center text-[10px] md:text-xs font-black text-white pointer-events-none shadow-xl">
-                                {index + 1}
-                            </div>
-                            
-                            {/* Post date overlay */}
-                            <div className="absolute bottom-2 right-2 px-2 py-1 rounded-md bg-black/60 backdrop-blur-md border border-white/10 text-[8px] font-bold text-white/80 pointer-events-none">
-                                {new Date(item.created_at || '').toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-                            </div>
-                        </motion.div>
-                    ))}
-                </AnimatePresence>
+                {/* ── DESKTOP FRAME ── */}
+                <div className="flex-1 w-full hidden md:block">
+                    <div className="flex items-center justify-center gap-2 mb-4 text-xs font-black uppercase tracking-widest text-muted-foreground">
+                        <Monitor size={16} /> Desktop View (4-5 Columns)
+                    </div>
+                    
+                    <div className="bg-muted/10 border border-white/5 shadow-inner rounded-[2rem] p-4 lg:p-6 overflow-hidden">
+                        <div className="grid grid-cols-4 xl:grid-cols-5 gap-1.5 lg:gap-2">
+                            <AnimatePresence>
+                                {items.map((item, index) => (
+                                    <GridItem 
+                                        key={`desktop-${item.id}`}
+                                        item={item} 
+                                        index={index} 
+                                        layoutPrefix="desktop"
+                                        draggedIdx={draggedIdx}
+                                        handleDragStart={handleDragStart}
+                                        handleDragEnter={handleDragEnter}
+                                        handleDragOver={handleDragOver}
+                                        handleDragEnd={handleDragEnd}
+                                    />
+                                ))}
+                            </AnimatePresence>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     );
