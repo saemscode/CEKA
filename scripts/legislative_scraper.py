@@ -18,7 +18,7 @@ from pathlib import Path
 # B2 Vault Integration
 # ---------------------------------------------------------------------------
 try:
-    from backblaze_utils import BackblazeVault
+    from backblaze_utils import CloudVault
     B2_OK = True
 except ImportError:
     B2_OK = False
@@ -887,7 +887,7 @@ class LegislativeScraper:
         self.b2_vault = None
         if B2_OK:
             try:
-                self.b2_vault = BackblazeVault()
+                self.b2_vault = CloudVault()
                 logger.info("B2 Vault initialized for PDF mirroring.")
             except Exception as e:
                 logger.warning(f"B2 Vault init failed (non-fatal): {e}")

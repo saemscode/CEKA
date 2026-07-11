@@ -45,7 +45,7 @@ except ImportError as e:
     logger.error(f"Supabase module import failed: {e}")
 
 try:
-    from backblaze_utils import BackblazeVault
+    from backblaze_utils import CloudVault
     B2_OK = True
 except ImportError as e:
     B2_OK = False
@@ -88,7 +88,7 @@ class VaultGenerator:
             return
 
         try:
-            self.b2 = BackblazeVault()
+            self.b2 = CloudVault()
             # Test by checking if we can list buckets or a known file
             # (BackblazeVault may not have a direct test method; we'll try to get a dummy URL)
             if hasattr(self.b2, 'file_exists'):

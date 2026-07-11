@@ -7,7 +7,7 @@ from typing import Optional
 import PyPDF2
 import google.generativeai as genai
 from supabase import create_client, Client
-from backblaze_utils import BackblazeVault
+from backblaze_utils import CloudVault
 
 # Configuration
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -55,7 +55,7 @@ def generate_neural_summary(title: str, content: str) -> str:
 
 def process_pending_bills():
     supabase = get_supabase_client()
-    vault = BackblazeVault()
+    vault = CloudVault()
     
     # Query bills that need analysis
     res = supabase.table("bills").select("*").eq("analysis_status", "pending").execute()
