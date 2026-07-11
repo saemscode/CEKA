@@ -106,6 +106,13 @@ try:
 except ImportError:
     PDFPLUMBER_OK = False
 
+try:
+    from pdf2image import convert_from_bytes
+    PDF2IMAGE_OK = True
+except ImportError:
+    PDF2IMAGE_OK = False
+    logger.warning("pdf2image not installed – Gemini multimodal OCR will fail.")
+
 # ---------------------------------------------------------------------------
 # Load environment variables from .env if python-dotenv is available
 # ---------------------------------------------------------------------------
