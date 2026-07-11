@@ -18,7 +18,7 @@ from pathlib import Path
 # B2 Vault Integration
 # ---------------------------------------------------------------------------
 try:
-    from backblaze_utils import CloudVault
+    from backblaze_utils import CloudVault  # type: ignore
     B2_OK = True
 except ImportError:
     B2_OK = False
@@ -28,7 +28,7 @@ except ImportError:
 # Stage Detector Integration
 # ---------------------------------------------------------------------------
 try:
-    from stage_detector import detect_stage_from_text, extract_date_from_order_paper, normalize_stage_label
+    from stage_detector import detect_stage_from_text, extract_date_from_order_paper, normalize_stage_label  # type: ignore
     STAGE_DETECTOR_OK = True
 except ImportError:
     STAGE_DETECTOR_OK = False
@@ -38,7 +38,7 @@ except ImportError:
 # Multi-LLM & local OCR Integration
 # ---------------------------------------------------------------------------
 try:
-    from multi_llm_orchestrator import MultiLLMOrchestrator
+    from multi_llm_orchestrator import MultiLLMOrchestrator  # type: ignore
     ORCHESTRATOR_OK = True
 except ImportError:
     ORCHESTRATOR_OK = False
@@ -56,7 +56,7 @@ except ImportError:
 # Playwright Stealth (optional)
 # ---------------------------------------------------------------------------
 try:
-    from playwright_stealth import stealth_sync
+    from playwright_stealth import stealth_sync  # type: ignore
     STEALTH_OK = True
 except ImportError:
     STEALTH_OK = False
@@ -326,7 +326,7 @@ class RemoteOCREngine:
             # Use gemini-2.0-flash
             model = genai.GenerativeModel('gemini-2.0-flash')
             
-            contents = ["Extract all text from these document pages exactly as written. Preserve all tables, headers, and structure in markdown format. Output ONLY the extracted text, no conversational filler."]
+            contents: List[Any] = ["Extract all text from these document pages exactly as written. Preserve all tables, headers, and structure in markdown format. Output ONLY the extracted text, no conversational filler."]
             for i, img in enumerate(images[:5]):
                 contents.append(img)
                 pages.append(i + 1)
@@ -407,7 +407,7 @@ class RemoteOCREngine:
     def _try_easy_ocr(self, pdf_bytes: bytes) -> Optional[Dict[str, Any]]:
         logger.info("      [EasyOCR] Attempting Local EasyOCR fallback...")
         self.metrics["easyocr_requests"] += 1
-        try: import easyocr
+        try: import easyocr  # type: ignore
         except: self.metrics["easyocr_failed"] += 1; return None
         try:
             if not self._easyocr_reader:
@@ -446,6 +446,22 @@ class ProxyPool:
                 "priority": 1,
                 "limit": int(os.getenv("BRIGHTDATA_MONTHLY_LIMIT", 5000))
             })
+            
+        # Oxylabs
+        oxylabs_list = os.getenv("OXYLABS_PROXIES", "")
+        for item in oxylabs_list.split(","):
+            item = item.strip()
+            if ":" in item:
+                parts = item.split(":")
+                if len(parts) >= 4:
+                    ip, port, user, pwd = parts[0], parts[1], parts[2], parts[3]
+                    proxy_url = f"http://{user}:{pwd}@{ip}:{port}"
+                    self.proxies.append({
+                        "url": proxy_url,
+                        "type": "oxylabs",
+                        "priority": 2,
+                        "limit": None
+                    })
         
         # ScraperAPI
         scraper_key = os.getenv("SCRAPERAPI_KEY")
@@ -474,9 +490,31 @@ class ProxyPool:
                         "limit": None
                     })
         
+        self._fetch_free_proxies()
         random.shuffle(self.proxies)
         self._initial_health_check()
-    
+        
+    def _fetch_free_proxies(self):
+        try:
+            # Fetch dynamic free proxies (fallback tier)
+            url = os.getenv("FREE_PROXY_LIST_URL", "https://raw.githubusercontent.com/TheSpeedX/SOCKS-List/master/http.txt")
+            r = requests.get(url, timeout=10)
+            if r.status_code == 200:
+                lines = r.text.strip().split("\n")
+                sample = random.sample(lines, min(20, len(lines)))
+                for line in sample:
+                    line = line.strip()
+                    if line and ":" in line:
+                        self.proxies.append({
+                            "url": f"http://{line}",
+                            "type": "iproyal_free",
+                            "priority": 4,
+                            "limit": None
+                        })
+                logger.info(f"Loaded {len(sample)} dynamic free proxies.")
+        except Exception as e:
+            logger.warning(f"Failed to fetch dynamic free proxies: {e}")
+            
     def _initial_health_check(self):
         for proxy in self.proxies:
             if "url" in proxy:
@@ -486,9 +524,9 @@ class ProxyPool:
             0 if self.health_status.get(p.get("url", ""), {}).get("healthy", False) else 1
         ))
     
-    def _test_proxy(self, proxy_url):
+    def _test_proxy(self, proxy_url, timeout_override=None):
         test_url = os.getenv("PROXY_HEALTH_CHECK_URL", "https://api.ipify.org")
-        timeout = int(os.getenv("PROXY_HEALTH_TIMEOUT", 10))
+        timeout = timeout_override or int(os.getenv("PROXY_HEALTH_TIMEOUT", 10))
         try:
             proxies = {"http": proxy_url, "https": proxy_url}
             start = time.time()
@@ -530,11 +568,13 @@ class ProxyPool:
             except Exception as e:
                 logger.warning(f"Webshare refresh failed: {e}")
     
-    def get_proxy(self):
+    def get_proxy(self, for_document=False):
         self.refresh_webshare_proxies()
         
         available = []
         for p in self.proxies:
+            if for_document and p.get("priority", 99) >= 4:
+                continue
             limit = p.get("limit")
             used = self.usage_counts.get(p.get("type"), 0)
             if limit is None or used < limit:
@@ -543,7 +583,8 @@ class ProxyPool:
         for p in available:
             if "url" in p:
                 if not self.health_status.get(p["url"], {}).get("healthy", False):
-                    if not self._test_proxy(p["url"]):
+                    timeout = 3 if p.get("priority", 99) >= 4 else None
+                    if not self._test_proxy(p["url"], timeout_override=timeout):
                         p["skip"] = True
         
         available = [p for p in available if not p.get("skip")]
@@ -787,14 +828,24 @@ class LegislativeScraper:
         }
         # Get proxy from pool if available
         proxy_info = self.proxy_pool.get_proxy()
+        proxy_config = None
         if proxy_info and "url" in proxy_info:
             parsed = urlparse(proxy_info["url"])
-            launch_opts["proxy"] = {
+            proxy_config = {
                 "server": f"{parsed.scheme}://{parsed.hostname}:{parsed.port}",
-                "username": parsed.username,
-                "password": parsed.password
             }
+            if parsed.username:
+                proxy_config["username"] = parsed.username
+            if parsed.password:
+                proxy_config["password"] = parsed.password
             logger.info(f"[Browser] Using proxy: {proxy_info['type']}")
+        elif proxy_info and proxy_info.get("type") == "scraperapi" and proxy_info.get("api_key"):
+            proxy_config = {
+                "server": "http://proxy-server.scraperapi.com:8001",
+                "username": "scraperapi",
+                "password": proxy_info.get("api_key")
+            }
+            logger.info("[Browser] Using proxy: scraperapi")
         else:
             logger.info("[Browser] No proxy – direct connection.")
 
@@ -819,6 +870,10 @@ class LegislativeScraper:
             "bypass_csp": True,
             "ignore_https_errors": True,   # SSL fix
         }
+        
+        if proxy_config:
+            ctx_args["proxy"] = proxy_config
+            
         context = browser.new_context(**ctx_args)
 
         # Stealth init script (even if playwright-stealth not installed)
@@ -1583,7 +1638,7 @@ Return EXACTLY a JSON object with these keys:
 
     def _download_pdf(self, url: str, page=None) -> Optional[bytes]:
         pdf_bytes = None
-        proxy = self.proxy_pool.get_proxy()
+        proxy = self.proxy_pool.get_proxy(for_document=True)
 
         if proxy and "url" in proxy and REQUESTS_OK:
             try:
@@ -1706,7 +1761,7 @@ Return EXACTLY a JSON object with these keys:
                         if not table or len(table) < 2:
                             continue
                         # Detect header row
-                        header_raw = [str(c or "").strip().lower() for c in table[0]]
+                        header_raw = [(c or "").strip().lower() for c in table[0]]
                         # Map column names flexibly
                         col = {}
                         for i, h in enumerate(header_raw):
@@ -1734,7 +1789,7 @@ Return EXACTLY a JSON object with these keys:
                             continue
 
                         for data_row in table[1:]:
-                            if not data_row or all(c is None or str(c).strip() == "" for c in data_row):
+                            if not data_row or all(c is None or (c or "").strip() == "" for c in data_row):
                                 continue
                             safe = lambda i: str(data_row[i] or "").strip() if i < len(data_row) else ""
                             row = {

@@ -10,6 +10,7 @@ import requests
 from datetime import datetime, timezone
 from typing import List, Dict, Any, Optional, Tuple
 from pathlib import Path
+from urllib.parse import urlparse, quote
 
 # Disable SSL warnings
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -448,11 +449,31 @@ class StageDetector:
         raw_webshare = os.getenv("WEBSHARE_PROXIES", "")
         self.webshare_proxies: List[str] = [p.strip() for p in raw_webshare.split(",") if p.strip()]
 
+        # Parse Oxylabs proxies
+        raw_oxylabs = os.getenv("OXYLABS_PROXIES", "")
+        self.oxylabs_proxies: List[str] = [p.strip() for p in raw_oxylabs.split(",") if p.strip()]
+
         logger.info(
             f"Proxy config loaded — ScraperAPI: {'✅' if self.scraperapi_key else '❌'} "
             f"| BrightData: {'✅' if self.brightdata_proxy_url else '❌'} "
+            f"| Oxylabs nodes: {len(self.oxylabs_proxies)} "
             f"| Webshare nodes: {len(self.webshare_proxies)}"
         )
+
+    def _oxylabs_proxy_dict(self) -> Optional[Dict[str, str]]:
+        if not self.oxylabs_proxies:
+            return None
+        entry = random.choice(self.oxylabs_proxies)
+        parts = entry.split(":")
+        if len(parts) >= 4:
+            host, port, user, password = parts[0], parts[1], parts[2], parts[3]
+            proxy_url = f"http://{user}:{password}@{host}:{port}"
+        elif len(parts) == 2:
+            host, port = parts[0], parts[1]
+            proxy_url = f"http://{host}:{port}"
+        else:
+            return None
+        return {"http": proxy_url, "https": proxy_url}
 
     def _webshare_proxy_dict(self) -> Optional[Dict[str, str]]:
         """Return a random Webshare proxy as a requests proxy dict, or None if unavailable."""
@@ -460,11 +481,11 @@ class StageDetector:
             return None
         entry = random.choice(self.webshare_proxies)
         parts = entry.split(":")
-        if len(parts) == 4:
-            host, port, user, password = parts
+        if len(parts) >= 4:
+            host, port, user, password = parts[0], parts[1], parts[2], parts[3]
             proxy_url = f"http://{user}:{password}@{host}:{port}"
         elif len(parts) == 2:
-            host, port = parts
+            host, port = parts[0], parts[1]
             proxy_url = f"http://{host}:{port}"
         else:
             return None
@@ -475,13 +496,29 @@ class StageDetector:
         Return a Playwright-compatible proxy config dict.
         Prefers BrightData (residential, TLS-friendly), falls back to a random Webshare node.
         """
+        from urllib.parse import urlparse
+        proxy_url = None
         if self.brightdata_proxy_url:
-            # BrightData URL format: http://user:pass@host:port
-            return {"server": self.brightdata_proxy_url}
-        if self.webshare_proxies:
+            proxy_url = self.brightdata_proxy_url
+        elif self.oxylabs_proxies:
+            proxy_dict = self._oxylabs_proxy_dict()
+            if proxy_dict:
+                proxy_url = proxy_dict["http"]
+        elif self.webshare_proxies:
             proxy_dict = self._webshare_proxy_dict()
             if proxy_dict:
-                return {"server": proxy_dict["http"]}
+                proxy_url = proxy_dict["http"]
+                
+        if proxy_url:
+            parsed = urlparse(proxy_url)
+            proxy_config = {
+                "server": f"{parsed.scheme}://{parsed.hostname}:{parsed.port}",
+            }
+            if parsed.username:
+                proxy_config["username"] = parsed.username
+            if parsed.password:
+                proxy_config["password"] = parsed.password
+            return proxy_config
         return None
 
     def _fetch_html_tiered(self, url: str, timeout: int = 30) -> Optional[str]:
@@ -524,13 +561,28 @@ class StageDetector:
         else:
             logger.info("    [Tier 1 ⏭️] No Webshare proxies configured — skipping.")
 
+        # ── Tier 1.5: Plain HTTP with Oxylabs ──────────────────────────────────────
+        proxy_dict_oxy = self._oxylabs_proxy_dict()
+        if proxy_dict_oxy:
+            try:
+                resp = requests.get(url, headers=headers, proxies=proxy_dict_oxy, timeout=timeout, verify=False)
+                if resp.status_code == 200 and len(resp.text) > 500:
+                    logger.info(f"    [Tier 1.5 ✅] Oxylabs proxy succeeded for: {url}")
+                    return resp.text
+                else:
+                    logger.warning(f"    [Tier 1.5 ⚠️] Oxylabs returned {resp.status_code} for: {url}")
+            except Exception as e:
+                logger.warning(f"    [Tier 1.5 ❌] Oxylabs failed: {e}")
+        else:
+            logger.info("    [Tier 1.5 ⏭️] No Oxylabs proxies configured — skipping.")
+
         # ── Tier 2: ScraperAPI render mode ──────────────────────────────────────
         if self.scraperapi_key:
             try:
                 scraper_url = (
                     f"http://api.scraperapi.com"
                     f"?api_key={self.scraperapi_key}"
-                    f"&url={requests.utils.quote(url, safe='')}"
+                    f"&url={quote(url, safe='')}"
                     f"&render=true&premium=true&country_code=ke"
                 )
                 resp = requests.get(scraper_url, headers=headers, timeout=90, verify=False)
@@ -582,13 +634,23 @@ class StageDetector:
             except Exception as e:
                 logger.warning(f"    [PDF Tier 1 ❌] {e}")
 
+        # Tier 1.5: Oxylabs proxy
+        proxy_dict_oxy = self._oxylabs_proxy_dict()
+        if proxy_dict_oxy:
+            try:
+                resp = requests.get(pdf_url, headers=headers, proxies=proxy_dict_oxy, timeout=timeout, verify=False)
+                if resp.status_code == 200 and resp.content:
+                    return resp.content
+            except Exception as e:
+                logger.warning(f"    [PDF Tier 1.5 ❌] {e}")
+
         # Tier 2: ScraperAPI (non-render, just proxy passthrough for binary)
         if self.scraperapi_key:
             try:
                 scraper_url = (
                     f"http://api.scraperapi.com"
                     f"?api_key={self.scraperapi_key}"
-                    f"&url={requests.utils.quote(pdf_url, safe='')}"
+                    f"&url={quote(pdf_url, safe='')}"
                     f"&country_code=ke"
                 )
                 resp = requests.get(scraper_url, headers=headers, timeout=60, verify=False)
@@ -641,7 +703,7 @@ class StageDetector:
             # --- AGENTIC TEMPORAL GUARD ---
             # If we know the document year and it mismatch the bill's intended session_year, 
             # we ignore this document to prevent contamination (e.g., 2024 news affecting 2026 record).
-            if detected_year and bill_year and int(detected_year) != int(bill_year):
+            if detected_year and bill_year and str(detected_year) != str(bill_year):
                 logger.debug(f"      [Temporal Guard] Skipping '{title}' (Bill Year: {bill_year} vs Doc Year: {detected_year})")
                 continue
 
@@ -691,13 +753,13 @@ class StageDetector:
                 logger.info(f"🔒 LOCKED: Refusing stage update for bill {bill_id} — status_lock is active.")
                 return False
 
-            current_status = bill.get("status", "Publication")
+            current_status = str(bill.get("status") or "Publication")
             current_stages = bill.get("stages", {}) or {}
 
             # Map current status to order
             current_key = None
             for s in BILL_STAGES:
-                if s["label"].lower() == current_status.lower():
+                if str(s["label"]).lower() == current_status.lower():
                     current_key = s["key"]
                     break
             current_order = stage_order.get(current_key, 1) if current_key else 1
@@ -712,8 +774,10 @@ class StageDetector:
 
             # Mark all stages up to new_order as completed
             for s in BILL_STAGES:
-                sk = s["key"]
-                if s["order"] <= new_order:
+                sk = str(s["key"])
+                s_order = int(str(s["order"]))
+                new_order_int = int(str(new_order))
+                if s_order <= new_order_int:
                     if sk not in current_stages or current_stages[sk].get("status") != "completed":
                         current_stages[sk] = {
                             "status": "completed",
@@ -804,24 +868,27 @@ class StageDetector:
                             "--disable-setuid-sandbox",
                         ],
                     }
-                    if pw_proxy:
-                        launch_args["proxy"] = pw_proxy
 
                     with sync_playwright() as p:
                         browser = p.chromium.launch(**launch_args)
-                        # New context per source — rotates fingerprint/session identity
-                        ctx = browser.new_context(
-                            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
-                            ignore_https_errors=True,
-                            locale="en-GB",
-                            timezone_id="Africa/Nairobi",
-                            extra_http_headers={
+                        
+                        ctx_args = {
+                            "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+                            "ignore_https_errors": True,
+                            "locale": "en-GB",
+                            "timezone_id": "Africa/Nairobi",
+                            "extra_http_headers": {
                                 "Accept-Language": "en-GB,en;q=0.9,sw;q=0.8",
                                 "sec-ch-ua": '"Google Chrome";v="131", "Chromium";v="131", "Not_A Brand";v="24"',
                                 "sec-ch-ua-mobile": "?0",
                                 "sec-ch-ua-platform": '"Windows"',
                             },
-                        )
+                        }
+                        if pw_proxy:
+                            ctx_args["proxy"] = pw_proxy
+                            
+                        # New context per source — rotates fingerprint/session identity
+                        ctx = browser.new_context(**ctx_args)
                         page = ctx.new_page()
                         try:
                             # domcontentloaded avoids the infinite networkidle hang on Cloudflare pages

@@ -1,0 +1,356 @@
+lighthouse "https://www.civiceducationkenya.com/legislative-tracker" --channel wpt --enable-error-reporting --disable-full-page-screenshot --max-wait-for-load 80000 --hostname 127.0.0.1 --port 9232 --output html --output json --output-path "/home/wptagent/work/ip-172-31-15-248-10.10.2.146/260710_instant_c2b12bfa51dd44748aef90bf539697ac.1.0/lighthouse.json" --throttling-method provided --save-assets --emulatedUserAgent 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML like Gecko) Chrome/139.0.0.0 Mobile Safari/537.36 PTST/26.03'
+2026-07-10T22:05:10.990Z LH:ChromeLauncher Found existing Chrome already running using port 9232, using that.
+2026-07-10T22:05:11.850Z LH:status Connecting to browser
+2026-07-10T22:05:11.857Z LH:status Navigating to about:blank
+2026-07-10T22:05:11.866Z LH:status Benchmarking machine
+2026-07-10T22:05:12.879Z LH:status Preparing target for navigation mode
+2026-07-10T22:05:12.900Z LH:status Cleaning origin data
+2026-07-10T22:05:12.903Z LH:status Cleaning browser cache
+2026-07-10T22:05:12.914Z LH:status Preparing network conditions
+2026-07-10T22:05:12.954Z LH:status Navigating to https://www.civiceducationkenya.com/legislative-tracker
+2026-07-10T22:05:44.875Z LH:status Getting artifact: DevtoolsLog
+2026-07-10T22:05:44.875Z LH:status Getting artifact: Trace
+2026-07-10T22:05:44.880Z LH:NavigationRunner:error The page did not paint any content. Please ensure you keep the browser window in the foreground during the load and try again. (NO_FCP) https://www.civiceducationkenya.com/legislative-tracker
+2026-07-10T22:05:44.901Z LH:status Analyzing and running audits...
+2026-07-10T22:05:44.911Z LH:status Auditing: Uses HTTPS
+2026-07-10T22:05:44.913Z LH:is-on-https:warn Caught exception: NO_FCP
+2026-07-10T22:05:44.919Z LH:status Auditing: Has a `<meta name="viewport">` tag with `width` or `initial-scale`
+2026-07-10T22:05:44.920Z LH:viewport:warn Caught exception: NO_FCP
+2026-07-10T22:05:44.923Z LH:status Auditing: First Contentful Paint
+2026-07-10T22:05:44.923Z LH:first-contentful-paint:warn Caught exception: NO_FCP
+2026-07-10T22:05:44.925Z LH:status Auditing: Largest Contentful Paint
+2026-07-10T22:05:44.925Z LH:largest-contentful-paint:warn Caught exception: NO_FCP
+2026-07-10T22:05:44.927Z LH:status Auditing: First Meaningful Paint
+2026-07-10T22:05:44.927Z LH:first-meaningful-paint:warn Caught exception: NO_FCP
+2026-07-10T22:05:44.928Z LH:status Auditing: Speed Index
+2026-07-10T22:05:44.929Z LH:speed-index:warn Caught exception: NO_FCP
+2026-07-10T22:05:44.930Z LH:status Auditing: Screenshot Thumbnails
+2026-07-10T22:05:44.930Z LH:screenshot-thumbnails:warn Caught exception: NO_FCP
+2026-07-10T22:05:44.930Z LH:status Auditing: Final Screenshot
+2026-07-10T22:05:44.930Z LH:final-screenshot:warn Caught exception: NO_FCP
+2026-07-10T22:05:44.931Z LH:status Auditing: Total Blocking Time
+2026-07-10T22:05:44.931Z LH:total-blocking-time:warn Caught exception: NO_FCP
+2026-07-10T22:05:44.932Z LH:status Auditing: Max Potential First Input Delay
+2026-07-10T22:05:44.933Z LH:max-potential-fid:warn Caught exception: NO_FCP
+2026-07-10T22:05:44.934Z LH:status Auditing: Cumulative Layout Shift
+2026-07-10T22:05:44.934Z LH:cumulative-layout-shift:warn Caught exception: NO_FCP
+2026-07-10T22:05:44.935Z LH:status Auditing: No browser errors logged to the console
+2026-07-10T22:05:44.935Z LH:errors-in-console:warn Caught exception: NO_FCP
+2026-07-10T22:05:44.936Z LH:status Auditing: Initial server response time was short
+2026-07-10T22:05:44.937Z LH:server-response-time:warn Caught exception: NO_FCP
+2026-07-10T22:05:44.938Z LH:status Auditing: Time to Interactive
+2026-07-10T22:05:44.938Z LH:interactive:warn Caught exception: NO_FCP
+2026-07-10T22:05:44.939Z LH:status Auditing: User Timing marks and measures
+2026-07-10T22:05:44.939Z LH:user-timings:warn Caught exception: NO_FCP
+2026-07-10T22:05:44.940Z LH:status Auditing: Avoid chaining critical requests
+2026-07-10T22:05:44.940Z LH:critical-request-chains:warn Caught exception: NO_FCP
+2026-07-10T22:05:44.941Z LH:status Auditing: Avoid multiple page redirects
+2026-07-10T22:05:44.941Z LH:redirects:warn Caught exception: NO_FCP
+2026-07-10T22:05:44.942Z LH:status Auditing: Web app manifest and service worker meet the installability requirements
+2026-07-10T22:05:44.943Z LH:installable-manifest:warn Caught exception: NO_FCP
+2026-07-10T22:05:44.944Z LH:status Auditing: Configured for a custom splash screen
+2026-07-10T22:05:44.944Z LH:splash-screen:warn Caught exception: NO_FCP
+2026-07-10T22:05:44.946Z LH:status Auditing: Sets a theme color for the address bar.
+2026-07-10T22:05:44.946Z LH:themed-omnibox:warn Caught exception: NO_FCP
+2026-07-10T22:05:44.948Z LH:status Auditing: Manifest has a maskable icon
+2026-07-10T22:05:44.948Z LH:maskable-icon:warn Caught exception: NO_FCP
+2026-07-10T22:05:44.950Z LH:status Auditing: Content is sized correctly for the viewport
+2026-07-10T22:05:44.950Z LH:content-width:warn Caught exception: NO_FCP
+2026-07-10T22:05:44.951Z LH:status Auditing: Displays images with correct aspect ratio
+2026-07-10T22:05:44.951Z LH:image-aspect-ratio:warn Caught exception: NO_FCP
+2026-07-10T22:05:44.953Z LH:status Auditing: Serves images with appropriate resolution
+2026-07-10T22:05:44.953Z LH:image-size-responsive:warn Caught exception: NO_FCP
+2026-07-10T22:05:44.955Z LH:status Auditing: Fonts with `font-display: optional` are preloaded
+2026-07-10T22:05:44.955Z LH:preload-fonts:warn Caught exception: NO_FCP
+2026-07-10T22:05:44.971Z LH:status Auditing: Avoids deprecated APIs
+2026-07-10T22:05:44.971Z LH:deprecations:warn Caught exception: NO_FCP
+2026-07-10T22:05:44.972Z LH:status Auditing: Avoids third-party cookies
+2026-07-10T22:05:44.972Z LH:third-party-cookies:warn Caught exception: NO_FCP
+2026-07-10T22:05:44.973Z LH:status Auditing: Minimizes main-thread work
+2026-07-10T22:05:44.974Z LH:mainthread-work-breakdown:warn Caught exception: NO_FCP
+2026-07-10T22:05:44.975Z LH:status Auditing: JavaScript execution time
+2026-07-10T22:05:44.975Z LH:bootup-time:warn Caught exception: NO_FCP
+2026-07-10T22:05:44.976Z LH:status Auditing: Preload key requests
+2026-07-10T22:05:44.976Z LH:uses-rel-preload:warn Caught exception: NO_FCP
+2026-07-10T22:05:44.977Z LH:status Auditing: Preconnect to required origins
+2026-07-10T22:05:44.977Z LH:uses-rel-preconnect:warn Caught exception: NO_FCP
+2026-07-10T22:05:44.979Z LH:status Auditing: All text remains visible during webfont loads
+2026-07-10T22:05:44.981Z LH:font-display:warn Caught exception: NO_FCP
+2026-07-10T22:05:44.983Z LH:status Auditing: Diagnostics
+2026-07-10T22:05:44.983Z LH:diagnostics:warn Caught exception: NO_FCP
+2026-07-10T22:05:44.983Z LH:status Auditing: Network Requests
+2026-07-10T22:05:44.983Z LH:network-requests:warn Caught exception: NO_FCP
+2026-07-10T22:05:44.984Z LH:status Auditing: Network Round Trip Times
+2026-07-10T22:05:44.984Z LH:network-rtt:warn Caught exception: NO_FCP
+2026-07-10T22:05:44.986Z LH:status Auditing: Server Backend Latencies
+2026-07-10T22:05:44.986Z LH:network-server-latency:warn Caught exception: NO_FCP
+2026-07-10T22:05:44.988Z LH:status Auditing: Tasks
+2026-07-10T22:05:44.988Z LH:main-thread-tasks:warn Caught exception: NO_FCP
+2026-07-10T22:05:44.988Z LH:status Auditing: Metrics
+2026-07-10T22:05:44.988Z LH:metrics:warn Caught exception: NO_FCP
+2026-07-10T22:05:44.988Z LH:status Auditing: Performance budget
+2026-07-10T22:05:44.989Z LH:performance-budget:warn Caught exception: NO_FCP
+2026-07-10T22:05:44.990Z LH:status Auditing: Timing budget
+2026-07-10T22:05:44.991Z LH:timing-budget:warn Caught exception: NO_FCP
+2026-07-10T22:05:44.992Z LH:status Auditing: Resources Summary
+2026-07-10T22:05:44.992Z LH:resource-summary:warn Caught exception: NO_FCP
+2026-07-10T22:05:44.993Z LH:status Auditing: Minimize third-party usage
+2026-07-10T22:05:44.993Z LH:third-party-summary:warn Caught exception: NO_FCP
+2026-07-10T22:05:44.996Z LH:status Auditing: Lazy load third-party resources with facades
+2026-07-10T22:05:44.997Z LH:third-party-facades:warn Caught exception: NO_FCP
+2026-07-10T22:05:44.999Z LH:status Auditing: Largest Contentful Paint element
+2026-07-10T22:05:44.999Z LH:largest-contentful-paint-element:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.001Z LH:status Auditing: Largest Contentful Paint image was not lazily loaded
+2026-07-10T22:05:45.002Z LH:lcp-lazy-loaded:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.004Z LH:status Auditing: Avoid large layout shifts
+2026-07-10T22:05:45.004Z LH:layout-shift-elements:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.005Z LH:status Auditing: Avoid long main-thread tasks
+2026-07-10T22:05:45.006Z LH:long-tasks:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.007Z LH:status Auditing: Avoids `unload` event listeners
+2026-07-10T22:05:45.007Z LH:no-unload-listeners:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.009Z LH:status Auditing: Avoid non-composited animations
+2026-07-10T22:05:45.009Z LH:non-composited-animations:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.012Z LH:status Auditing: Image elements have explicit `width` and `height`
+2026-07-10T22:05:45.013Z LH:unsized-images:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.014Z LH:status Auditing: Page has valid source maps
+2026-07-10T22:05:45.014Z LH:valid-source-maps:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.015Z LH:status Auditing: Preload Largest Contentful Paint image
+2026-07-10T22:05:45.015Z LH:prioritize-lcp-image:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.017Z LH:status Auditing: Ensure CSP is effective against XSS attacks
+2026-07-10T22:05:45.017Z LH:csp-xss:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.037Z LH:status Auditing: Script Treemap Data
+2026-07-10T22:05:45.038Z LH:script-treemap-data:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.038Z LH:status Auditing: Site works cross-browser
+2026-07-10T22:05:45.040Z LH:pwa-cross-browser:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.041Z LH:status Auditing: Page transitions don't feel like they block on the network
+2026-07-10T22:05:45.041Z LH:pwa-page-transitions:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.042Z LH:status Auditing: Each page has a URL
+2026-07-10T22:05:45.043Z LH:pwa-each-page-has-url:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.044Z LH:status Auditing: `[accesskey]` values are unique
+2026-07-10T22:05:45.044Z LH:accesskeys:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.045Z LH:status Auditing: `[aria-*]` attributes match their roles
+2026-07-10T22:05:45.045Z LH:aria-allowed-attr:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.047Z LH:status Auditing: Values assigned to `role=""` are valid ARIA roles.
+2026-07-10T22:05:45.048Z LH:aria-allowed-role:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.049Z LH:status Auditing: `button`, `link`, and `menuitem` elements have accessible names
+2026-07-10T22:05:45.049Z LH:aria-command-name:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.050Z LH:status Auditing: Elements with `role="dialog"` or `role="alertdialog"` have accessible names.
+2026-07-10T22:05:45.051Z LH:aria-dialog-name:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.051Z LH:status Auditing: `[aria-hidden="true"]` is not present on the document `<body>`
+2026-07-10T22:05:45.052Z LH:aria-hidden-body:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.052Z LH:status Auditing: `[aria-hidden="true"]` elements do not contain focusable descendents
+2026-07-10T22:05:45.052Z LH:aria-hidden-focus:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.053Z LH:status Auditing: ARIA input fields have accessible names
+2026-07-10T22:05:45.053Z LH:aria-input-field-name:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.054Z LH:status Auditing: ARIA `meter` elements have accessible names
+2026-07-10T22:05:45.054Z LH:aria-meter-name:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.055Z LH:status Auditing: ARIA `progressbar` elements have accessible names
+2026-07-10T22:05:45.055Z LH:aria-progressbar-name:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.056Z LH:status Auditing: `[role]`s have all required `[aria-*]` attributes
+2026-07-10T22:05:45.056Z LH:aria-required-attr:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.057Z LH:status Auditing: Elements with an ARIA `[role]` that require children to contain a specific `[role]` have all required children.
+2026-07-10T22:05:45.057Z LH:aria-required-children:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.058Z LH:status Auditing: `[role]`s are contained by their required parent element
+2026-07-10T22:05:45.058Z LH:aria-required-parent:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.059Z LH:status Auditing: `[role]` values are valid
+2026-07-10T22:05:45.059Z LH:aria-roles:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.060Z LH:status Auditing: Elements with the `role=text` attribute do not have focusable descendents.
+2026-07-10T22:05:45.060Z LH:aria-text:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.061Z LH:status Auditing: ARIA toggle fields have accessible names
+2026-07-10T22:05:45.061Z LH:aria-toggle-field-name:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.062Z LH:status Auditing: ARIA `tooltip` elements have accessible names
+2026-07-10T22:05:45.063Z LH:aria-tooltip-name:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.064Z LH:status Auditing: ARIA `treeitem` elements have accessible names
+2026-07-10T22:05:45.064Z LH:aria-treeitem-name:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.065Z LH:status Auditing: `[aria-*]` attributes have valid values
+2026-07-10T22:05:45.065Z LH:aria-valid-attr-value:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.066Z LH:status Auditing: `[aria-*]` attributes are valid and not misspelled
+2026-07-10T22:05:45.067Z LH:aria-valid-attr:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.068Z LH:status Auditing: Buttons have an accessible name
+2026-07-10T22:05:45.068Z LH:button-name:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.069Z LH:status Auditing: The page contains a heading, skip link, or landmark region
+2026-07-10T22:05:45.069Z LH:bypass:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.070Z LH:status Auditing: Background and foreground colors have a sufficient contrast ratio
+2026-07-10T22:05:45.070Z LH:color-contrast:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.071Z LH:status Auditing: `<dl>`'s contain only properly-ordered `<dt>` and `<dd>` groups, `<script>`, `<template>` or `<div>` elements.
+2026-07-10T22:05:45.071Z LH:definition-list:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.072Z LH:status Auditing: Definition list items are wrapped in `<dl>` elements
+2026-07-10T22:05:45.072Z LH:dlitem:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.073Z LH:status Auditing: Document has a `<title>` element
+2026-07-10T22:05:45.073Z LH:document-title:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.074Z LH:status Auditing: `[id]` attributes on active, focusable elements are unique
+2026-07-10T22:05:45.074Z LH:duplicate-id-active:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.075Z LH:status Auditing: ARIA IDs are unique
+2026-07-10T22:05:45.075Z LH:duplicate-id-aria:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.076Z LH:status Auditing: All heading elements contain content.
+2026-07-10T22:05:45.076Z LH:empty-heading:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.077Z LH:status Auditing: No form fields have multiple labels
+2026-07-10T22:05:45.077Z LH:form-field-multiple-labels:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.078Z LH:status Auditing: `<frame>` or `<iframe>` elements have a title
+2026-07-10T22:05:45.078Z LH:frame-title:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.079Z LH:status Auditing: Heading elements appear in a sequentially-descending order
+2026-07-10T22:05:45.079Z LH:heading-order:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.081Z LH:status Auditing: `<html>` element has a `[lang]` attribute
+2026-07-10T22:05:45.081Z LH:html-has-lang:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.082Z LH:status Auditing: `<html>` element has a valid value for its `[lang]` attribute
+2026-07-10T22:05:45.082Z LH:html-lang-valid:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.098Z LH:status Auditing: `<html>` element has an `[xml:lang]` attribute with the same base language as the `[lang]` attribute.
+2026-07-10T22:05:45.098Z LH:html-xml-lang-mismatch:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.099Z LH:status Auditing: Identical links have the same purpose.
+2026-07-10T22:05:45.100Z LH:identical-links-same-purpose:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.100Z LH:status Auditing: Image elements have `[alt]` attributes
+2026-07-10T22:05:45.101Z LH:image-alt:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.101Z LH:status Auditing: Image elements do not have `[alt]` attributes that are redundant text.
+2026-07-10T22:05:45.102Z LH:image-redundant-alt:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.102Z LH:status Auditing: Input buttons have discernible text.
+2026-07-10T22:05:45.103Z LH:input-button-name:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.103Z LH:status Auditing: `<input type="image">` elements have `[alt]` text
+2026-07-10T22:05:45.104Z LH:input-image-alt:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.104Z LH:status Auditing: Elements with visible text labels have matching accessible names.
+2026-07-10T22:05:45.105Z LH:label-content-name-mismatch:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.105Z LH:status Auditing: Form elements have associated labels
+2026-07-10T22:05:45.105Z LH:label:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.106Z LH:status Auditing: Document has a main landmark.
+2026-07-10T22:05:45.106Z LH:landmark-one-main:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.107Z LH:status Auditing: Links have a discernible name
+2026-07-10T22:05:45.107Z LH:link-name:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.108Z LH:status Auditing: Links are distinguishable without relying on color.
+2026-07-10T22:05:45.108Z LH:link-in-text-block:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.109Z LH:status Auditing: Lists contain only `<li>` elements and script supporting elements (`<script>` and `<template>`).
+2026-07-10T22:05:45.109Z LH:list:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.110Z LH:status Auditing: List items (`<li>`) are contained within `<ul>`, `<ol>` or `<menu>` parent elements
+2026-07-10T22:05:45.110Z LH:listitem:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.111Z LH:status Auditing: The document does not use `<meta http-equiv="refresh">`
+2026-07-10T22:05:45.111Z LH:meta-refresh:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.112Z LH:status Auditing: `[user-scalable="no"]` is not used in the `<meta name="viewport">` element and the `[maximum-scale]` attribute is not less than 5.
+2026-07-10T22:05:45.112Z LH:meta-viewport:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.113Z LH:status Auditing: `<object>` elements have alternate text
+2026-07-10T22:05:45.113Z LH:object-alt:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.114Z LH:status Auditing: Select elements have associated label elements.
+2026-07-10T22:05:45.114Z LH:select-name:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.115Z LH:status Auditing: Skip links are focusable.
+2026-07-10T22:05:45.115Z LH:skip-link:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.116Z LH:status Auditing: No element has a `[tabindex]` value greater than 0
+2026-07-10T22:05:45.117Z LH:tabindex:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.118Z LH:status Auditing: Tables have different content in the summary attribute and `<caption>`.
+2026-07-10T22:05:45.118Z LH:table-duplicate-name:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.119Z LH:status Auditing: Tables use `<caption>` instead of cells with the `[colspan]` attribute to indicate a caption.
+2026-07-10T22:05:45.119Z LH:table-fake-caption:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.120Z LH:status Auditing: Touch targets have sufficient size and spacing.
+2026-07-10T22:05:45.120Z LH:target-size:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.121Z LH:status Auditing: `<td>` elements in a large `<table>` have one or more table headers.
+2026-07-10T22:05:45.121Z LH:td-has-header:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.122Z LH:status Auditing: Cells in a `<table>` element that use the `[headers]` attribute refer to table cells within the same table.
+2026-07-10T22:05:45.122Z LH:td-headers-attr:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.123Z LH:status Auditing: `<th>` elements and elements with `[role="columnheader"/"rowheader"]` have data cells they describe.
+2026-07-10T22:05:45.123Z LH:th-has-data-cells:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.124Z LH:status Auditing: `[lang]` attributes have a valid value
+2026-07-10T22:05:45.124Z LH:valid-lang:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.124Z LH:status Auditing: `<video>` elements contain a `<track>` element with `[kind="captions"]`
+2026-07-10T22:05:45.125Z LH:video-caption:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.125Z LH:status Auditing: Custom controls have associated labels
+2026-07-10T22:05:45.125Z LH:custom-controls-labels:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.125Z LH:status Auditing: Custom controls have ARIA roles
+2026-07-10T22:05:45.125Z LH:custom-controls-roles:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.125Z LH:status Auditing: User focus is not accidentally trapped in a region
+2026-07-10T22:05:45.125Z LH:focus-traps:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.126Z LH:status Auditing: Interactive controls are keyboard focusable
+2026-07-10T22:05:45.126Z LH:focusable-controls:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.126Z LH:status Auditing: Interactive elements indicate their purpose and state
+2026-07-10T22:05:45.126Z LH:interactive-element-affordance:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.126Z LH:status Auditing: The page has a logical tab order
+2026-07-10T22:05:45.126Z LH:logical-tab-order:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.126Z LH:status Auditing: The user's focus is directed to new content added to the page
+2026-07-10T22:05:45.126Z LH:managed-focus:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.126Z LH:status Auditing: Offscreen content is hidden from assistive technology
+2026-07-10T22:05:45.126Z LH:offscreen-content-hidden:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.126Z LH:status Auditing: HTML5 landmark elements are used to improve navigation
+2026-07-10T22:05:45.126Z LH:use-landmarks:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.126Z LH:status Auditing: Visual order on the page follows DOM order
+2026-07-10T22:05:45.126Z LH:visual-order-follows-dom:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.127Z LH:status Auditing: Uses efficient cache policy on static assets
+2026-07-10T22:05:45.127Z LH:uses-long-cache-ttl:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.144Z LH:status Auditing: Avoids enormous network payloads
+2026-07-10T22:05:45.145Z LH:total-byte-weight:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.146Z LH:status Auditing: Defer offscreen images
+2026-07-10T22:05:45.146Z LH:offscreen-images:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.146Z LH:status Auditing: Eliminate render-blocking resources
+2026-07-10T22:05:45.147Z LH:render-blocking-resources:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.147Z LH:status Auditing: Minify CSS
+2026-07-10T22:05:45.147Z LH:unminified-css:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.148Z LH:status Auditing: Minify JavaScript
+2026-07-10T22:05:45.148Z LH:unminified-javascript:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.149Z LH:status Auditing: Reduce unused CSS
+2026-07-10T22:05:45.149Z LH:unused-css-rules:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.149Z LH:status Auditing: Reduce unused JavaScript
+2026-07-10T22:05:45.149Z LH:unused-javascript:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.150Z LH:status Auditing: Serve images in next-gen formats
+2026-07-10T22:05:45.150Z LH:modern-image-formats:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.151Z LH:status Auditing: Efficiently encode images
+2026-07-10T22:05:45.151Z LH:uses-optimized-images:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.151Z LH:status Auditing: Enable text compression
+2026-07-10T22:05:45.152Z LH:uses-text-compression:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.152Z LH:status Auditing: Properly size images
+2026-07-10T22:05:45.152Z LH:uses-responsive-images:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.153Z LH:status Auditing: Use video formats for animated content
+2026-07-10T22:05:45.153Z LH:efficient-animated-content:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.154Z LH:status Auditing: Remove duplicate modules in JavaScript bundles
+2026-07-10T22:05:45.154Z LH:duplicated-javascript:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.154Z LH:status Auditing: Avoid serving legacy JavaScript to modern browsers
+2026-07-10T22:05:45.154Z LH:legacy-javascript:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.155Z LH:status Auditing: Page has the HTML doctype
+2026-07-10T22:05:45.155Z LH:doctype:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.157Z LH:status Auditing: Properly defines charset
+2026-07-10T22:05:45.157Z LH:charset:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.158Z LH:status Auditing: Avoids an excessive DOM size
+2026-07-10T22:05:45.158Z LH:dom-size:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.159Z LH:status Auditing: Avoids requesting the geolocation permission on page load
+2026-07-10T22:05:45.159Z LH:geolocation-on-start:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.160Z LH:status Auditing: No issues in the `Issues` panel in Chrome Devtools
+2026-07-10T22:05:45.160Z LH:inspector-issues:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.161Z LH:status Auditing: Avoids `document.write()`
+2026-07-10T22:05:45.161Z LH:no-document-write:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.162Z LH:status Auditing: Detected JavaScript libraries
+2026-07-10T22:05:45.162Z LH:js-libraries:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.162Z LH:status Auditing: Avoids requesting the notification permission on page load
+2026-07-10T22:05:45.163Z LH:notification-on-start:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.163Z LH:status Auditing: Allows users to paste into input fields
+2026-07-10T22:05:45.163Z LH:paste-preventing-inputs:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.164Z LH:status Auditing: Use HTTP/2
+2026-07-10T22:05:45.164Z LH:uses-http2:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.165Z LH:status Auditing: Uses passive listeners to improve scrolling performance
+2026-07-10T22:05:45.165Z LH:uses-passive-event-listeners:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.166Z LH:status Auditing: Document has a meta description
+2026-07-10T22:05:45.166Z LH:meta-description:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.167Z LH:status Auditing: Page has successful HTTP status code
+2026-07-10T22:05:45.167Z LH:http-status-code:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.168Z LH:status Auditing: Document uses legible font sizes
+2026-07-10T22:05:45.168Z LH:font-size:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.169Z LH:status Auditing: Links have descriptive text
+2026-07-10T22:05:45.169Z LH:link-text:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.170Z LH:status Auditing: Links are crawlable
+2026-07-10T22:05:45.170Z LH:crawlable-anchors:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.170Z LH:status Auditing: Page isn’t blocked from indexing
+2026-07-10T22:05:45.171Z LH:is-crawlable:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.172Z LH:status Auditing: robots.txt is valid
+2026-07-10T22:05:45.172Z LH:robots-txt:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.173Z LH:status Auditing: Tap targets are sized appropriately
+2026-07-10T22:05:45.173Z LH:tap-targets:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.174Z LH:status Auditing: Document has a valid `hreflang`
+2026-07-10T22:05:45.174Z LH:hreflang:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.175Z LH:status Auditing: Document avoids plugins
+2026-07-10T22:05:45.175Z LH:plugins:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.175Z LH:status Auditing: Document has a valid `rel=canonical`
+2026-07-10T22:05:45.176Z LH:canonical:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.176Z LH:status Auditing: Structured data is valid
+2026-07-10T22:05:45.176Z LH:structured-data:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.177Z LH:status Auditing: Page didn't prevent back/forward cache restoration
+2026-07-10T22:05:45.177Z LH:bf-cache:warn Caught exception: NO_FCP
+2026-07-10T22:05:45.178Z LH:status Generating results...
+2026-07-10T22:05:45.234Z LH:metrics-events:error Metrics collection had errors, not synthetizing trace events
+2026-07-10T22:05:45.278Z LH:saveAssets devtools log saved to disk: /home/wptagent/work/ip-172-31-15-248-10.10.2.146/260710_instant_c2b12bfa51dd44748aef90bf539697ac.1.0/lighthouse-0.devtoolslog.json
+2026-07-10T22:05:45.461Z LH:saveAssets trace file streamed to disk: /home/wptagent/work/ip-172-31-15-248-10.10.2.146/260710_instant_c2b12bfa51dd44748aef90bf539697ac.1.0/lighthouse-0.trace.json
+2026-07-10T22:05:45.463Z LH:Printer html output written to /home/wptagent/work/ip-172-31-15-248-10.10.2.146/260710_instant_c2b12bfa51dd44748aef90bf539697ac.1.0/lighthouse.report.html
+2026-07-10T22:05:45.463Z LH:CLI Protip: Run lighthouse with `--view` to immediately open the HTML report in your browser
+2026-07-10T22:05:45.464Z LH:Printer json output written to /home/wptagent/work/ip-172-31-15-248-10.10.2.146/260710_instant_c2b12bfa51dd44748aef90bf539697ac.1.0/lighthouse.report.json
+Runtime error encountered: The page did not paint any content. Please ensure you keep the browser window in the foreground during the load and try again. (NO_FCP)
