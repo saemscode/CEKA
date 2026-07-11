@@ -130,9 +130,10 @@ class RemoteOCREngine:
     Provider chain:
       1. PaddleOCR API (State of the art Vision-Language Model)
       2. Surya API (High accuracy backup)
-      3. OCR.space (Legacy fallback)
-      4. Cloudmersive (Legacy fallback)
-      5. EasyOCR (Local unkillable fallback)
+      3. Gemini Vision (Multimodal Fallback)
+      4. OCR.space (Legacy fallback)
+      5. Cloudmersive (Legacy fallback)
+      6. EasyOCR (Local unkillable fallback)
     """
 
     PADDLE_JOB_URL = "https://paddleocr.aistudio-app.com/api/v2/ocr/jobs"
@@ -148,6 +149,7 @@ class RemoteOCREngine:
 
     def __init__(self):
         self.paddle_token = os.environ.get("PADDLEOCR_TOKEN", "")
+        self.gemini_key = os.environ.get("CEKA_GEMINI_API_KEY", "")
         self.surya_key = os.environ.get("SURYA_API_KEY", "")
         self.ocr_space_key = os.environ.get("OCR_SPACE_API_KEY", "")
         self.cloudmersive_key = os.environ.get("CLOUDMERSIVE_API_KEY", "")
@@ -160,6 +162,7 @@ class RemoteOCREngine:
         self.metrics = {
             "paddle_requests": 0, "paddle_failed": 0,
             "surya_requests": 0, "surya_failed": 0,
+            "gemini_requests": 0, "gemini_failed": 0,
             "ocr_requests_total": 0, "ocr_requests_failed": 0, "ocr_requests_quota_exhausted": 0,
             "ocr_cloudmersive_total": 0, "ocr_cloudmersive_failed": 0,
             "easyocr_requests": 0, "easyocr_failed": 0,
@@ -207,7 +210,12 @@ class RemoteOCREngine:
             r = _handle_res(self._try_surya_ocr(pdf_bytes, pdf_url))
             if r: return r
 
-        # 3. OCR.space
+        # 3. Gemini Vision
+        if self.gemini_key:
+            r = _handle_res(self._try_gemini_vision_ocr(pdf_bytes))
+            if r: return r
+
+        # 4. OCR.space
         if self.ocr_space_key and file_size <= self.MAX_FILE_SIZE_BYTES:
             r = _handle_res(self._try_ocr_space(pdf_bytes))
             if r: return r
@@ -296,6 +304,45 @@ class RemoteOCREngine:
             return None
         except:
             self.metrics["surya_failed"] += 1
+            return None
+
+    def _try_gemini_vision_ocr(self, pdf_bytes: bytes) -> Optional[Dict[str, Any]]:
+        logger.info("      [Gemini] Attempting Gemini Vision Multimodal OCR...")
+        self.metrics["gemini_requests"] += 1
+        try:
+            import google.generativeai as genai
+            genai.configure(api_key=self.gemini_key)
+            
+            images = convert_from_bytes(pdf_bytes, dpi=200, fmt="jpeg")
+            pages = []
+            
+            # Use gemini-2.0-flash
+            model = genai.GenerativeModel('gemini-2.0-flash')
+            
+            contents = ["Extract all text from these document pages exactly as written. Preserve all tables, headers, and structure in markdown format. Output ONLY the extracted text, no conversational filler."]
+            for i, img in enumerate(images[:5]):
+                contents.append(img)
+                pages.append(i + 1)
+                
+            response = model.generate_content(contents)
+            text = response.text
+            
+            if text and len(text) > 50:
+                logger.info(f"      [Gemini] Success! Extracted {len(text)} chars from {len(pages)} pages.")
+                return {
+                    "text": text.strip(),
+                    "source": "gemini_vision",
+                    "engine": "gemini-2.0-flash",
+                    "pages": pages,
+                    "confidence_estimate": 0.95,
+                    "notes": "Gemini Vision extraction successful."
+                }
+            
+            self.metrics["gemini_failed"] += 1
+            return None
+        except Exception as e:
+            logger.warning(f"      [Gemini] Exception: {e}")
+            self.metrics["gemini_failed"] += 1
             return None
 
     def _try_ocr_space(self, pdf_bytes: bytes) -> Optional[Dict[str, Any]]:
