@@ -66,6 +66,13 @@ jobs:
       NVIDIA_API_KEY: ${{ secrets.NVIDIA_API_KEY }}
       HF_API_TOKEN: ${{ secrets.HF_API_TOKEN }}
       MANUS_API_KEY: ${{ secrets.MANUS_API_KEY }}
+      SAMBANOVA_API_KEY: ${{ secrets.SAMBANOVA_API_KEY }}
+      CEKA_GEMINI_API_KEY: ${{ secrets.CEKA_GEMINI_API_KEY }}
+      CEKA_GROQ_API_KEY: ${{ secrets.CEKA_GROQ_API_KEY }}
+      NEMOTRON_3_NVIDIA_API_KEY: ${{ secrets.NEMOTRON_3_NVIDIA_API_KEY }}
+      LLAMA_4_MAVERICK_NVIDIA_API_KEY: ${{ secrets.LLAMA_4_MAVERICK_NVIDIA_API_KEY }}
+      SILICON_FLOW_API_KEY: ${{ secrets.SILICON_FLOW_API_KEY }}
+      CEREBRAS_API_KEY_2: ${{ secrets.CEREBRAS_API_KEY_2 }}
 
       # ── Storage & Scraping ─────────────────────────────────────────────────
       B2_S3_ENDPOINT: ${{ secrets.B2_S3_ENDPOINT }}
@@ -116,7 +123,7 @@ jobs:
           pip install \
             playwright supabase requests pymupdf pdfplumber python-dotenv \
             beautifulsoup4 pillow pdf2image pytesseract \
-            google-genai google-search-results \
+            google-genai google-search-results google-generativeai \
             groq openai anthropic cohere \
             boto3 aiohttp lxml
           # Install cerebras SDK (may fail gracefully if not available)
