@@ -79,6 +79,8 @@ jobs:
       B2_KEY_ID: ${{ secrets.B2_KEY_ID }}
       B2_APPLICATION_KEY: ${{ secrets.B2_APPLICATION_KEY }}
       OCR_SPACE_API_KEY: ${{ secrets.OCR_SPACE_API_KEY }}
+      PADDLEOCR_TOKEN: ${{ secrets.PADDLEOCR_TOKEN }}
+      SURYA_API_KEY: ${{ secrets.SURYA_API_KEY }}
       SCRAPINGROBOT_API_KEY: ${{ secrets.SCRAPINGROBOT_API_KEY }}
       SCRAPINGDOG_API_KEY: ${{ secrets.SCRAPINGDOG_API_KEY }}
       SERPAPI_API_KEY: ${{ secrets.SERPAPI_API_KEY }}
@@ -122,7 +124,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install \
             playwright supabase requests pymupdf pdfplumber python-dotenv \
-            beautifulsoup4 pillow pdf2image pytesseract \
+            beautifulsoup4 pillow pdf2image easyocr \
             google-genai google-search-results google-generativeai \
             groq openai anthropic cohere \
             boto3 aiohttp lxml
