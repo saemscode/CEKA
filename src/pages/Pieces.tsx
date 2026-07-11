@@ -201,9 +201,9 @@ const Pieces = () => {
                                 initial={{ opacity: 0, scale: 0.95 }}
                                 animate={{ opacity: 1, scale: 1 }}
                                 transition={{ delay: 0.05 }}
-                                className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-kenya-red/10 dark:bg-kenya-red/20 border border-kenya-red/20 dark:border-kenya-red/30 text-kenya-red dark:text-kenya-red text-[11px] font-bold uppercase tracking-[0.15em]"
+                                className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-kenya-green/10 dark:bg-kenya-green/20 border border-kenya-green/20 dark:border-kenya-green/30 text-kenya-green dark:text-kenya-green text-[11px] font-bold uppercase tracking-[0.15em]"
                             >
-                                Civic Social Media
+                                Social Media
                             </motion.div>
 
                             {/* Title */}
