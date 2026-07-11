@@ -97,14 +97,96 @@ export const SearchEmptyState = () => {
       if (stored) setRecentSearches(JSON.parse(stored).slice(0, 5));
     }
 
-    // Live campaigns carousel
-    supabase
-      .from('campaigns')
-      .select('id, title, description')
-      .limit(6)
-      .then(({ data }) => {
-        if (data && data.length > 0) setCampaigns(data);
+    // Live campaigns carousel + Priority Hybrid Feed
+    const fetchFeed = async () => {
+      const [billsRes, blogsRes, campaignsRes] = await Promise.all([
+        supabase.from('bills').select('*').order('created_at', { ascending: false }).limit(5),
+        supabase.from('blog_posts').select('*').eq('status', 'published').order('created_at', { ascending: false }).limit(5),
+        supabase.from('campaigns').select('*').order('created_at', { ascending: false }).limit(5)
+      ]);
+
+      const feedItems: any[] = [];
+
+      // Slot 0: Sponsored Ad
+      feedItems.push({
+        id: 'ad-nasaka',
+        type: 'ad',
+        title: 'Nasaka IEBC Verification',
+        description: 'Verify your voter status ahead of the upcoming electoral cycle.',
+        label: 'SPONSORED',
+        targetUrl: 'https://nasakaiebc.civiceducationkenya.com',
+        isExternal: true
       });
+
+      // Slot 1: Highest Priority (Newest Campaign)
+      if (campaignsRes.data && campaignsRes.data.length > 0) {
+        const top = campaignsRes.data[0];
+        const dbImg = (top as any).image_url || (top as any).cover_image || (top as any).featured_image || (top as any).thumbnail_url || (top as any).thumbnail || (top as any).banner_image;
+        feedItems.push({
+          id: top.id,
+          type: 'campaign',
+          title: top.title,
+          description: top.description || '',
+          label: 'LIVE CAMPAIGN',
+          image_url: dbImg,
+          targetUrl: `/campaign/${top.id}`,
+          isExternal: false
+        });
+      } else {
+        feedItems.push({
+          id: 'fallback-campaign',
+          type: 'campaign',
+          title: 'The 2026 Finance Bill Analysis',
+          description: 'Simplified summary of the newest amendments.',
+          label: 'LIVE BREAKDOWN',
+          targetUrl: '/pieces',
+          isExternal: false
+        });
+      }
+
+      // Slots 2, 3, 4: Seeded Randomizer Archives
+      const today = new Date();
+      let seed = today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate();
+      const seededRandom = () => {
+        const x = Math.sin(seed++) * 10000;
+        return x - Math.floor(x);
+      };
+
+      const archivePool: any[] = [];
+      if (billsRes.data) {
+        billsRes.data.forEach(b => {
+          const dbImg = (b as any).image_url || (b as any).cover_image || (b as any).featured_image || (b as any).thumbnail_url || (b as any).thumbnail;
+          archivePool.push({
+            id: b.id, type: 'bill', title: b.title, description: b.summary || '',
+            label: 'LEGISLATIVE TRACKER', image_url: dbImg, targetUrl: `/bill/${(b as any).slug || b.id}`, isExternal: false
+          });
+        });
+      }
+      if (blogsRes.data) {
+        blogsRes.data.forEach(p => {
+          const dbImg = (p as any).image_url || (p as any).cover_image || (p as any).featured_image || (p as any).thumbnail_url || (p as any).thumbnail;
+          archivePool.push({
+            id: p.id, type: 'blog', title: p.title, description: p.excerpt || '',
+            label: 'PIECES POST', image_url: dbImg, targetUrl: `/blog/${(p as any).slug || p.id}`, isExternal: false
+          });
+        });
+      }
+      if (campaignsRes.data && campaignsRes.data.length > 1) {
+        campaignsRes.data.slice(1).forEach(c => {
+           const dbImg = (c as any).image_url || (c as any).cover_image || (c as any).featured_image || (c as any).thumbnail_url || (c as any).thumbnail || (c as any).banner_image;
+           archivePool.push({
+             id: c.id, type: 'campaign', title: c.title, description: c.description || '',
+             label: 'CAMPAIGN', image_url: dbImg, targetUrl: `/campaign/${c.id}`, isExternal: false
+           });
+        });
+      }
+
+      const shuffled = archivePool.sort(() => seededRandom() - 0.5);
+      feedItems.push(...shuffled.slice(0, 3));
+      setCampaigns(feedItems);
+    };
+
+    fetchFeed();
   }, [user]);
 
   // Auto-advance carousel
@@ -113,6 +195,24 @@ export const SearchEmptyState = () => {
     const t = setInterval(() => setCurrentSlideIndex(p => (p + 1) % campaigns.length), 4500);
     return () => clearInterval(t);
   }, [campaigns]);
+
+  // Ultra-smooth image preloading
+  useEffect(() => {
+    if (campaigns.length === 0) return;
+    const preloadNext = () => {
+      const nextIndex = (currentSlideIndex + 1) % campaigns.length;
+      const subIndex = (currentSlideIndex + 2) % campaigns.length;
+      [campaigns[nextIndex], campaigns[subIndex]].forEach(item => {
+        if (item) {
+          const targetImage = item.image_url || `https://images.civiceducationkenya.com/og/${item.type}/${item.id}.png`;
+          const img = new Image();
+          img.src = targetImage;
+        }
+      });
+    };
+    const timer = setTimeout(preloadNext, 300);
+    return () => clearTimeout(timer);
+  }, [currentSlideIndex, campaigns]);
 
   const removeRecentSearch = (e: React.MouseEvent, term: string) => {
     e.stopPropagation();
@@ -140,48 +240,95 @@ export const SearchEmptyState = () => {
 
   const currentCampaign = campaigns[currentSlideIndex];
 
+  const FeaturedItemIcon = ({ item }: { item: any }) => {
+    const [imgLoaded, setImgLoaded] = useState(false);
+    const targetImage = item.image_url || `https://images.civiceducationkenya.com/og/${item.type}/${item.id}.png`;
+
+    useEffect(() => {
+      let isMounted = true;
+      setImgLoaded(false); // Reset state when target image changes
+
+      const img = new Image();
+      img.src = targetImage;
+      img.onload = () => {
+        if (isMounted) setImgLoaded(true);
+      };
+      // Errors are silently discarded by the browser, preserving the SVG
+      return () => { isMounted = false; };
+    }, [targetImage]);
+
+    let SvgBase = <CampaignExclusiveIcon size={24} />;
+    if (item.type === 'bill') SvgBase = <BillsIcon size={24} />;
+    else if (item.type === 'blog') SvgBase = <PiecesIcon size={24} />;
+    else if (item.type === 'ad') SvgBase = <NasakaIcon size={24} />;
+
+    return (
+      <>
+        {SvgBase}
+        {imgLoaded && (
+          <img
+            src={targetImage}
+            alt={item.title}
+            className="absolute inset-0 w-full h-full object-cover animate-in fade-in duration-300"
+          />
+        )}
+      </>
+    );
+  };
+
+  const renderFeaturedContent = (item: any) => (
+    <>
+      <div className="w-12 h-12 rounded-xl bg-emerald-500 overflow-hidden flex items-center justify-center text-white shadow-lg shadow-emerald-500/20 flex-shrink-0 relative">
+        <FeaturedItemIcon item={item} />
+      </div>
+      <div className="flex-1 min-w-0 ml-4 flex flex-col justify-center text-left">
+        <div className="flex items-center gap-2 mb-1">
+          <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 tracking-wider uppercase">
+            {item.label}
+          </span>
+        </div>
+        <h3 className="text-sm font-bold text-slate-900 dark:text-white truncate leading-tight">
+          {item.title}
+        </h3>
+        <p className="text-[11px] text-slate-500 dark:text-white/50 truncate font-medium mt-0.5">
+          {item.description}
+        </p>
+      </div>
+      <ChevronRight size={16} className="text-slate-300 dark:text-white/20 flex-shrink-0 ml-2" />
+    </>
+  );
+
   return (
     <div className="w-full space-y-8 pb-20 animate-in fade-in slide-in-from-bottom-4 duration-700">
 
-      {/* 1. Live Breakdown Hero — dynamic campaign carousel */}
+      {/* 1. Live Breakdown Hero — dynamic featured feed */}
       <motion.div
         whileTap={{ scale: 0.98 }}
-        onClick={() => currentCampaign ? navigate(`/campaign/${currentCampaign.id}`) : navigate('/pieces')}
-        className="w-full h-24 rounded-2xl overflow-hidden relative cursor-pointer group shadow-ios-low border border-slate-200/50 dark:border-white/5 bg-white/40 dark:bg-black/20 backdrop-blur-xl"
+        className="w-full h-24 rounded-2xl overflow-hidden relative group shadow-ios-low border border-slate-200/50 dark:border-white/5 bg-white/40 dark:bg-black/20 backdrop-blur-xl"
       >
         <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/10 via-transparent to-blue-500/10 z-0" />
-        <div className="relative z-10 h-full flex items-center p-4 gap-4">
-          <div className="w-12 h-12 rounded-xl bg-emerald-500 flex items-center justify-center text-white shadow-lg shadow-emerald-500/20 flex-shrink-0">
-            <CampaignExclusiveIcon size={24} />
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1">
-              <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 tracking-wider uppercase">Live Breakdown</span>
-              <span className="w-1 h-1 rounded-full bg-slate-300 dark:bg-white/20" />
-              <span className="text-[10px] font-medium text-slate-400 dark:text-white/40 uppercase">CAMPAIGNS</span>
-            </div>
-            <div className="relative h-10 overflow-hidden">
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={currentSlideIndex}
-                  initial={{ y: 16, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  exit={{ y: -16, opacity: 0 }}
-                  transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
-                  className="absolute inset-0"
-                >
-                  <h3 className="text-sm font-bold text-slate-900 dark:text-white truncate leading-tight">
-                    {currentCampaign?.title ?? 'The 2026 Finance Bill Analysis'}
-                  </h3>
-                  <p className="text-[11px] text-slate-500 dark:text-white/50 truncate font-medium">
-                    {currentCampaign?.description ?? 'Simplified summary of the newest amendments.'}
-                  </p>
-                </motion.div>
-              </AnimatePresence>
-            </div>
-          </div>
-          <ChevronRight size={16} className="text-slate-300 dark:text-white/20 flex-shrink-0" />
-        </div>
+        <AnimatePresence mode="wait">
+          {currentCampaign && (
+            <motion.div
+              key={currentSlideIndex}
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: -20, opacity: 0 }}
+              transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+              className="absolute inset-0 z-10 w-full"
+            >
+              {currentCampaign.isExternal ? (
+                <a href={currentCampaign.targetUrl} target="_blank" rel="noopener noreferrer" className="h-full flex items-center p-4 gap-0 w-full cursor-pointer">
+                  {renderFeaturedContent(currentCampaign)}
+                </a>
+              ) : (
+                <div onClick={() => navigate(currentCampaign.targetUrl)} className="h-full flex items-center p-4 gap-0 w-full cursor-pointer">
+                  {renderFeaturedContent(currentCampaign)}
+                </div>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </motion.div>
 
       {/* 2. App Dock — 5 brand tools */}

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import {
   NavHomeIcon,
   NavFilesIcon,
@@ -109,7 +110,7 @@ const BottomNavbar = () => {
             >
               <div className="flex flex-col items-center relative">
                 {React.cloneElement(item.icon as React.ReactElement, {
-                  size: 22,
+                  size: item.name === 'Pieces' ? 27 : 22,
                   className: cn("transition-all", isActive && "filter drop-shadow-[0_0_8px_rgba(34,197,94,0.3)]")
                 })}
                 {/* Ally indicator dot — only on Profile icon */}
@@ -118,13 +119,18 @@ const BottomNavbar = () => {
                 )}
                 <span className={cn(
                   getTextSize(),
-                  "mt-1 font-medium tracking-tight transition-all",
+                  item.name === 'Pieces' ? "mt-0.5" : "mt-1",
+                  "font-medium tracking-tight transition-all",
                   isActive ? "opacity-100" : "opacity-80"
                 )}>
                   {translate(item.name, language)}
                 </span>
                 {isActive && (
-                  <div className="absolute -bottom-1.5 w-1.5 h-1.5 rounded-full bg-primary shadow-[0_0_8px_rgba(34,197,94,0.6)] animate-pulse" />
+                  <motion.div 
+                    layoutId="bottomNavDot" 
+                    transition={{ type: "spring", stiffness: 350, damping: 25 }}
+                    className="absolute -bottom-1.5 w-1 h-1 rounded-full bg-primary" 
+                  />
                 )}
               </div>
             </Link>
