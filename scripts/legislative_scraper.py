@@ -434,6 +434,7 @@ class ProxyPool:
         self.health_status = {}
         self.lock = threading.Lock()
         self.last_webshare_refresh = 0.0
+        self.last_free_proxy_refresh = 0.0
         self._load_proxies()
         
     def _load_proxies(self):
@@ -495,6 +496,11 @@ class ProxyPool:
         self._initial_health_check()
         
     def _fetch_free_proxies(self):
+        now = time.time()
+        # Cooldown: 20 minutes (1200 seconds)
+        if now - self.last_free_proxy_refresh < 1200:
+            return
+            
         try:
             # Fetch dynamic free proxies (fallback tier)
             url = os.getenv("FREE_PROXY_LIST_URL", "https://raw.githubusercontent.com/TheSpeedX/SOCKS-List/master/http.txt")
@@ -502,16 +508,21 @@ class ProxyPool:
             if r.status_code == 200:
                 lines = r.text.strip().split("\n")
                 sample = random.sample(lines, min(20, len(lines)))
+                new_proxies = []
                 for line in sample:
                     line = line.strip()
                     if line and ":" in line:
-                        self.proxies.append({
+                        new_proxies.append({
                             "url": f"http://{line}",
                             "type": "iproyal_free",
                             "priority": 4,
                             "limit": None
                         })
-                logger.info(f"Loaded {len(sample)} dynamic free proxies.")
+                with self.lock:
+                    self.proxies = [p for p in self.proxies if p.get("type") != "iproyal_free"]
+                    self.proxies.extend(new_proxies)
+                self.last_free_proxy_refresh = now
+                logger.info(f"Refreshed and loaded {len(new_proxies)} dynamic free proxies.")
         except Exception as e:
             logger.warning(f"Failed to fetch dynamic free proxies: {e}")
             
@@ -570,6 +581,7 @@ class ProxyPool:
     
     def get_proxy(self, for_document=False):
         self.refresh_webshare_proxies()
+        self._fetch_free_proxies()
         
         available = []
         for p in self.proxies:
