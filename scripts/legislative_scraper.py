@@ -125,297 +125,252 @@ except ImportError:
 import numpy as np
 class RemoteOCREngine:
     """
-    Production-grade OCR engine with tiered provider fallback.
+    Production-grade remote OCR engine with cascading provider fallback.
 
     Provider chain:
       1. PaddleOCR API (State of the art Vision-Language Model)
       2. Surya API (High accuracy backup)
-      3. EasyOCR (Local unkillable fallback)
+      3. OCR.space (Legacy fallback)
+      4. Cloudmersive (Legacy fallback)
+      5. EasyOCR (Local unkillable fallback)
     """
+
     PADDLE_JOB_URL = "https://paddleocr.aistudio-app.com/api/v2/ocr/jobs"
     PADDLE_MODEL = "PaddleOCR-VL-1.6"
-
-    # Assume Datalab format for Surya
     SURYA_ENDPOINT = "https://www.datalab.to/api/v1/ocr"
+    OCR_SPACE_ENDPOINT = "https://api.ocr.space/parse/image"
+    CLOUDMERSIVE_ENDPOINT = "https://api.cloudmersive.com/ocr/pdf/toText"
+
+    # Free-tier limits
+    OCR_SPACE_DAILY_LIMIT = 500
+    MAX_CONCURRENT_FREE = 2
+    MAX_FILE_SIZE_BYTES = 1 * 1024 * 1024
 
     def __init__(self):
         self.paddle_token = os.environ.get("PADDLEOCR_TOKEN", "")
         self.surya_key = os.environ.get("SURYA_API_KEY", "")
         self.ocr_space_key = os.environ.get("OCR_SPACE_API_KEY", "")
+        self.cloudmersive_key = os.environ.get("CLOUDMERSIVE_API_KEY", "")
+
+        self._daily_counter_lock = threading.Lock()
+        self._daily_counter = 0
+        self._daily_counter_date = datetime.now(timezone.utc).date()
+        self._ocr_space_semaphore = threading.Semaphore(self.MAX_CONCURRENT_FREE)
 
         self.metrics = {
-            "paddle_requests": 0,
-            "surya_requests": 0,
-            "easyocr_requests": 0,
-            "paddle_failed": 0,
-            "surya_failed": 0,
-            "easyocr_failed": 0,
+            "paddle_requests": 0, "paddle_failed": 0,
+            "surya_requests": 0, "surya_failed": 0,
+            "ocr_requests_total": 0, "ocr_requests_failed": 0, "ocr_requests_quota_exhausted": 0,
+            "ocr_cloudmersive_total": 0, "ocr_cloudmersive_failed": 0,
+            "easyocr_requests": 0, "easyocr_failed": 0,
             "total_processing_time_ms": 0,
         }
-
-        # For EasyOCR lazy loading
+        self._audit_log = []
         self._easyocr_reader = None
 
-        if not self.paddle_token:
-            logger.warning("PADDLEOCR_TOKEN not set – PaddleOCR fallback disabled.")
-        if not self.surya_key:
-            logger.warning("SURYA_API_KEY not set – Surya fallback disabled.")
+    def _is_quota_exhausted(self) -> bool:
+        with self._daily_counter_lock:
+            if datetime.now(timezone.utc).date() > self._daily_counter_date:
+                self._daily_counter = 0
+                self._daily_counter_date = datetime.now(timezone.utc).date()
+            return self._daily_counter >= self.OCR_SPACE_DAILY_LIMIT
+
+    def _increment_daily_counter(self):
+        with self._daily_counter_lock:
+            self._daily_counter += 1
 
     def ocr_fallback(self, pdf_bytes: bytes, pdf_url: str = "", title: str = "") -> Dict[str, Any]:
         start_time = time.time()
-        result = {
-            "text": "",
-            "source": "none",
-            "engine": None,
-            "pages": [],
-            "confidence_estimate": None,
-            "notes": "",
-            "metadata": {}
-        }
+        result = {"text": "", "source": "none", "engine": None, "pages": [], "confidence_estimate": None, "notes": "", "metadata": {}}
 
         file_size = len(pdf_bytes)
         if file_size == 0:
             result["notes"] = "Empty PDF bytes provided."
             return result
 
-        # 1. Try PaddleOCR
+        def _handle_res(res):
+            if res and res.get("text"):
+                elapsed_ms = int((time.time() - start_time) * 1000)
+                self.metrics["total_processing_time_ms"] += elapsed_ms
+                result.update(res)
+                result["metadata"]["processing_time_ms"] = elapsed_ms
+                return result
+            return None
+
+        # 1. PaddleOCR
         if self.paddle_token:
-            paddle_res = self._try_paddle_ocr(pdf_bytes, pdf_url)
-            if paddle_res and paddle_res.get("text"):
-                elapsed_ms = int((time.time() - start_time) * 1000)
-                self.metrics["total_processing_time_ms"] += elapsed_ms
-                result.update(paddle_res)
-                result["metadata"]["processing_time_ms"] = elapsed_ms
-                return result
+            r = _handle_res(self._try_paddle_ocr(pdf_bytes, pdf_url))
+            if r: return r
 
-        # 2. Try Surya
+        # 2. Surya
         if self.surya_key:
-            surya_res = self._try_surya_ocr(pdf_bytes, pdf_url)
-            if surya_res and surya_res.get("text"):
-                elapsed_ms = int((time.time() - start_time) * 1000)
-                self.metrics["total_processing_time_ms"] += elapsed_ms
-                result.update(surya_res)
-                result["metadata"]["processing_time_ms"] = elapsed_ms
-                return result
+            r = _handle_res(self._try_surya_ocr(pdf_bytes, pdf_url))
+            if r: return r
 
-        # 3. Try Local EasyOCR
-        easy_res = self._try_easy_ocr(pdf_bytes)
-        if easy_res and easy_res.get("text"):
-            elapsed_ms = int((time.time() - start_time) * 1000)
-            self.metrics["total_processing_time_ms"] += elapsed_ms
-            result.update(easy_res)
-            result["metadata"]["processing_time_ms"] = elapsed_ms
-            return result
-        
-        # 4. Total Failure
+        # 3. OCR.space
+        if self.ocr_space_key and file_size <= self.MAX_FILE_SIZE_BYTES:
+            r = _handle_res(self._try_ocr_space(pdf_bytes))
+            if r: return r
+
+        # 4. Cloudmersive
+        if self.cloudmersive_key:
+            r = _handle_res(self._try_cloudmersive(pdf_bytes))
+            if r: return r
+
+        # 5. EasyOCR
+        r = _handle_res(self._try_easy_ocr(pdf_bytes))
+        if r: return r
+
         elapsed_ms = int((time.time() - start_time) * 1000)
         self.metrics["total_processing_time_ms"] += elapsed_ms
         result["notes"] = "All OCR providers failed."
         result["metadata"]["processing_time_ms"] = elapsed_ms
         return result
 
-    # -------------------------------------------------------------------
-    #  PaddleOCR Implementation
-    # -------------------------------------------------------------------
     def _try_paddle_ocr(self, pdf_bytes: bytes, pdf_url: str) -> Optional[Dict[str, Any]]:
         logger.info("      [PaddleOCR] Attempting PaddleOCR-VL-1.6...")
         self.metrics["paddle_requests"] += 1
         headers = {"Authorization": f"bearer {self.paddle_token}"}
-        optional_payload = {
-            "useDocOrientationClassify": False,
-            "useDocUnwarping": False,
-            "useChartRecognition": False,
-        }
-
+        optional_payload = {"useDocOrientationClassify": False, "useDocUnwarping": False, "useChartRecognition": False}
         try:
-            # We prefer URL if available to save bandwidth
             if pdf_url and pdf_url.startswith("http"):
                 headers["Content-Type"] = "application/json"
-                payload = {
-                    "fileUrl": pdf_url,
-                    "model": self.PADDLE_MODEL,
-                    "optionalPayload": optional_payload
-                }
+                payload = {"fileUrl": pdf_url, "model": self.PADDLE_MODEL, "optionalPayload": optional_payload}
                 resp = requests.post(self.PADDLE_JOB_URL, json=payload, headers=headers, timeout=30)
             else:
-                data = {
-                    "model": self.PADDLE_MODEL,
-                    "optionalPayload": json.dumps(optional_payload)
-                }
+                data = {"model": self.PADDLE_MODEL, "optionalPayload": json.dumps(optional_payload)}
                 files = {"file": ("document.pdf", io.BytesIO(pdf_bytes), "application/pdf")}
                 resp = requests.post(self.PADDLE_JOB_URL, headers=headers, data=data, files=files, timeout=30)
-
             if resp.status_code != 200:
-                logger.warning(f"      [PaddleOCR] Job submission failed ({resp.status_code}): {resp.text}")
                 self.metrics["paddle_failed"] += 1
                 return None
-
             job_id = resp.json().get("data", {}).get("jobId")
-            if not job_id:
-                logger.warning("      [PaddleOCR] No jobId returned.")
-                self.metrics["paddle_failed"] += 1
-                return None
-
-            logger.info(f"      [PaddleOCR] Job {job_id} submitted. Polling...")
-
-            # Poll for result
+            if not job_id: return None
             poll_attempts = 0
             jsonl_url = ""
-            while poll_attempts < 60:  # Max 5 minutes
+            while poll_attempts < 60:
                 poll_resp = requests.get(f"{self.PADDLE_JOB_URL}/{job_id}", headers=headers, timeout=20)
-                if poll_resp.status_code != 200:
-                    time.sleep(5)
-                    poll_attempts += 1
-                    continue
-                
-                state = poll_resp.json().get("data", {}).get("state")
-                if state == "done":
-                    jsonl_url = poll_resp.json().get("data", {}).get("resultUrl", {}).get("jsonUrl")
-                    break
-                elif state == "failed":
-                    logger.warning(f"      [PaddleOCR] Job failed: {poll_resp.json().get('data', {}).get('errorMsg')}")
-                    self.metrics["paddle_failed"] += 1
-                    return None
-
+                if poll_resp.status_code == 200:
+                    state = poll_resp.json().get("data", {}).get("state")
+                    if state == "done":
+                        jsonl_url = poll_resp.json().get("data", {}).get("resultUrl", {}).get("jsonUrl")
+                        break
+                    elif state == "failed":
+                        self.metrics["paddle_failed"] += 1
+                        return None
                 time.sleep(5)
                 poll_attempts += 1
-
             if not jsonl_url:
-                logger.warning("      [PaddleOCR] Polling timed out.")
                 self.metrics["paddle_failed"] += 1
                 return None
-
-            # Download and parse JSONL
             res_jsonl = requests.get(jsonl_url, timeout=30)
             res_jsonl.raise_for_status()
-            
             lines = res_jsonl.text.strip().split('\n')
-            combined_md = []
-            pages_processed = []
-
+            combined_md, pages_processed = [], []
             for i, line in enumerate(lines, start=1):
-                line = line.strip()
-                if not line: continue
+                if not line.strip(): continue
                 try:
                     data_row = json.loads(line)
                     results = data_row.get("result", {}).get("layoutParsingResults", [])
                     for p in results:
                         text = p.get("markdown", {}).get("text", "")
-                        if text:
-                            combined_md.append(text)
+                        if text: combined_md.append(text)
                     pages_processed.append(i)
-                except Exception:
-                    continue
-
-            final_text = "\n\n".join(combined_md)
-            logger.info(f"      [PaddleOCR] Success! Extracted {len(final_text)} chars from {len(pages_processed)} pages.")
-            
-            return {
-                "text": final_text,
-                "source": "paddleocr",
-                "engine": "VL-1.6",
-                "pages": pages_processed,
-                "confidence_estimate": 0.95,
-                "notes": "PaddleOCR extraction successful."
-            }
-            
-        except Exception as e:
-            logger.error(f"      [PaddleOCR] Exception: {e}")
+                except: continue
+            return {"text": "\n\n".join(combined_md), "source": "paddleocr", "engine": "VL-1.6", "pages": pages_processed, "confidence_estimate": 0.95, "notes": "PaddleOCR extraction successful."}
+        except:
             self.metrics["paddle_failed"] += 1
             return None
 
-    # -------------------------------------------------------------------
-    #  Surya Implementation
-    # -------------------------------------------------------------------
     def _try_surya_ocr(self, pdf_bytes: bytes, pdf_url: str) -> Optional[Dict[str, Any]]:
         logger.info("      [Surya] Attempting Surya backup...")
         self.metrics["surya_requests"] += 1
-        # Fallback to Datalab endpoint (Assumed standard)
-        headers = {
-            "Authorization": f"Bearer {self.surya_key}",
-            "x-api-key": self.surya_key
-        }
+        headers = {"Authorization": f"Bearer {self.surya_key}", "x-api-key": self.surya_key}
         try:
-            # We assume a direct POST for simplicity
             files = {"file": ("document.pdf", io.BytesIO(pdf_bytes), "application/pdf")}
             resp = requests.post(self.SURYA_ENDPOINT, headers=headers, files=files, timeout=60)
             if resp.status_code == 200:
-                data = resp.json()
-                text = data.get("text", "")
-                if text:
-                    logger.info(f"      [Surya] Success! Extracted {len(text)} chars.")
-                    return {
-                        "text": text,
-                        "source": "surya",
-                        "engine": "v1",
-                        "pages": [],
-                        "confidence_estimate": 0.90,
-                        "notes": "Surya extraction successful."
-                    }
-            logger.warning(f"      [Surya] Failed ({resp.status_code}): {resp.text}")
+                text = resp.json().get("text", "")
+                if text: return {"text": text, "source": "surya", "engine": "v1", "pages": [], "confidence_estimate": 0.90, "notes": "Surya extraction successful."}
             self.metrics["surya_failed"] += 1
             return None
-        except Exception as e:
-            logger.warning(f"      [Surya] Exception: {e}")
+        except:
             self.metrics["surya_failed"] += 1
             return None
 
-    # -------------------------------------------------------------------
-    #  EasyOCR Implementation
-    # -------------------------------------------------------------------
+    def _try_ocr_space(self, pdf_bytes: bytes) -> Optional[Dict[str, Any]]:
+        if self._is_quota_exhausted():
+            self.metrics["ocr_requests_quota_exhausted"] += 1
+            return None
+        logger.info("      [OCR.space] Attempting Engine 2...")
+        self.metrics["ocr_requests_total"] += 1
+        with self._ocr_space_semaphore:
+            try:
+                b64_data = base64.b64encode(pdf_bytes).decode('utf-8')
+                b64_string = f"data:application/pdf;base64,{b64_data}"
+                response = requests.post(
+                    self.OCR_SPACE_ENDPOINT,
+                    headers={"apikey": self.ocr_space_key},
+                    data={"base64Image": b64_string, "language": "eng", "isOverlayRequired": "false", "scale": "true", "OCREngine": "2"},
+                    timeout=120, verify=False
+                )
+                self._increment_daily_counter()
+                rj = response.json()
+                if not rj.get("IsErroredOnProcessing", True):
+                    all_text, pages = [], []
+                    for pr in rj.get("ParsedResults", []):
+                        pt = pr.get("ParsedText", "")
+                        if pt.strip(): all_text.append(pt); pages.append(1)
+                    final = "\n".join(all_text)
+                    if len(final) > 200:
+                        return {"text": final, "source": "ocr.space", "engine": 2, "pages": pages, "confidence_estimate": 0.85, "notes": ""}
+                self.metrics["ocr_requests_failed"] += 1
+                return None
+            except:
+                self.metrics["ocr_requests_failed"] += 1
+                return None
+
+    def _try_cloudmersive(self, pdf_bytes: bytes) -> Optional[Dict[str, Any]]:
+        logger.info("      [Cloudmersive] Attempting Cloudmersive fallback...")
+        self.metrics["ocr_cloudmersive_total"] += 1
+        try:
+            response = requests.post(
+                self.CLOUDMERSIVE_ENDPOINT,
+                headers={"Apikey": self.cloudmersive_key},
+                files={"inputFile": ("document.pdf", io.BytesIO(pdf_bytes), "application/pdf")},
+                timeout=180
+            )
+            if response.status_code == 200:
+                rj = response.json()
+                if rj.get("Successful"):
+                    return {"text": rj.get("TextResult", ""), "source": "cloudmersive", "engine": "default", "pages": [], "confidence_estimate": 0.90, "notes": ""}
+            self.metrics["ocr_cloudmersive_failed"] += 1
+            return None
+        except:
+            self.metrics["ocr_cloudmersive_failed"] += 1
+            return None
+
     def _try_easy_ocr(self, pdf_bytes: bytes) -> Optional[Dict[str, Any]]:
         logger.info("      [EasyOCR] Attempting Local EasyOCR fallback...")
         self.metrics["easyocr_requests"] += 1
-        try:
-            import easyocr
-        except ImportError:
-            logger.warning("      [EasyOCR] easyocr package not installed. Skipping local OCR.")
-            self.metrics["easyocr_failed"] += 1
-            return None
-            
+        try: import easyocr
+        except: self.metrics["easyocr_failed"] += 1; return None
         try:
             if not self._easyocr_reader:
-                logger.info("      [EasyOCR] Loading model into memory (first run)...")
-                # Lazy load reader, use GPU if available, fallback to CPU
                 self._easyocr_reader = easyocr.Reader(['en'], gpu=False)
-
-            # Convert PDF to images
-            logger.info("      [EasyOCR] Converting PDF to images...")
             images = convert_from_bytes(pdf_bytes, dpi=200, fmt="jpeg")
-            
-            # Read first 5 pages max to save CPU
-            all_text = []
-            pages = []
+            all_text, pages = [], []
             for i, img in enumerate(images[:5]):
-                img_np = np.array(img)
-                res = self._easyocr_reader.readtext(img_np, detail=0)
-                if res:
-                    all_text.append(" ".join(res))
-                pages.append(i + 1)
-            
+                res = self._easyocr_reader.readtext(np.array(img), detail=0)
+                if res: all_text.append(" ".join(res)); pages.append(i + 1)
             final_text = "\n".join(all_text)
-            logger.info(f"      [EasyOCR] Success! Extracted {len(final_text)} chars from {len(pages)} pages.")
-            
-            return {
-                "text": final_text,
-                "source": "easyocr",
-                "engine": "local_cpu",
-                "pages": pages,
-                "confidence_estimate": 0.85,
-                "notes": f"Local EasyOCR extracted from {len(pages)} pages."
-            }
-
-        except Exception as e:
-            logger.error(f"      [EasyOCR] Exception: {e}")
+            return {"text": final_text, "source": "easyocr", "engine": "local_cpu", "pages": pages, "confidence_estimate": 0.85, "notes": f"Local EasyOCR extracted from {len(pages)} pages."}
+        except:
             self.metrics["easyocr_failed"] += 1
             return None
 
     def get_metrics(self) -> Dict[str, Any]:
-        return self.metrics
-
-    def _record_audit(self, source, file_size, elapsed, success):
-        pass
-
+        return {**self.metrics, "daily_requests_used": self._daily_counter, "daily_requests_remaining": max(0, self.OCR_SPACE_DAILY_LIMIT - self._daily_counter)}
 
 
 class ProxyPool:
@@ -1057,11 +1012,42 @@ class LegislativeScraper:
             else:
                 logger.warning(f"      [OCR] PDF-based OCR failed for: {title}")
 
+        # 3. Screenshot-based OCR
+        if is_scanned and (pdf_url or detail_url):
+            target_url = detail_url or pdf_url
+            logger.info(f"      [OCR] Attempting screenshot-based OCR on: {target_url}")
+            screenshot_text, screenshot_meta = self._ocr_page_screenshots(page, target_url, title)
+            if screenshot_text.strip():
+                text = screenshot_text
+                method = f"screenshot_ocr:{screenshot_meta.get('source', 'ocr.space')}"
+                is_scanned = False
+                ocr_metadata = screenshot_meta
+                logger.info(f"      [OCR] Screenshot OCR SUCCESS: {len(text)} chars")
+            else:
+                logger.warning(f"      [OCR] Screenshot OCR also failed for: {title}")
+
         # 4. HTML metadata fallback
         html_metadata = {}
         if is_scanned and detail_url:
             html_metadata = self._scrape_bill_detail_page(page, detail_url)
         
+        # 5. Local Tesseract last resort
+        if is_scanned and not text.strip() and pdf_bytes and TESSERACT_OK:
+            try:
+                doc = fitz.open(stream=pdf_bytes, filetype="pdf")
+                if len(doc) > 0:
+                    page0 = doc[0]
+                    pix = page0.get_pixmap(matrix=fitz.Matrix(2, 2))
+                    img = Image.frombytes("RGB", (pix.width, pix.height), pix.samples)
+                    text = pytesseract.image_to_string(img)
+                    if text.strip():
+                        method = "local_tesseract"
+                        is_scanned = False
+                        logger.info(f"      [OCR] Local Tesseract SUCCESS: {len(text)} chars")
+                doc.close()
+            except Exception as e:
+                logger.warning(f"      [OCR] Local Tesseract failed: {e}")
+
         # 6. Multi-LLM distillation
         intel = {}
         if text.strip() and self.orchestrator:
@@ -1199,6 +1185,83 @@ Return EXACTLY a JSON object with these keys:
         except Exception as e:
             logger.error(f"      [INTEL] Distillation failed: {e}")
             return {}
+
+    def _ocr_page_screenshots(self, page, url: str, title: str) -> Tuple[str, dict]:
+        if not self.ocr_engine.ocr_space_key:
+            return "", {}
+        try:
+            dp = page.context.new_page()
+            dp.goto(url, wait_until="domcontentloaded", timeout=30000)
+            time.sleep(1)
+            viewport_height = dp.viewport_size["height"]
+            page_height = dp.evaluate("document.body.scrollHeight")
+            max_screenshots = min(3, max(1, page_height // viewport_height + 1))
+            all_text = []
+            pages_processed = []
+            for i in range(max_screenshots):
+                scroll_y = i * viewport_height
+                dp.evaluate(f"window.scrollTo(0, {scroll_y})")
+                time.sleep(0.3)
+                screenshot_bytes = dp.screenshot(type="png")
+                if len(screenshot_bytes) > self.ocr_engine.MAX_FILE_SIZE_BYTES:
+                    logger.warning(f"      [Screenshot OCR] Screenshot {i+1} exceeds 1MB, skipping.")
+                    continue
+                if self.ocr_engine._is_quota_exhausted():
+                    logger.warning("      [Screenshot OCR] OCR.space daily quota exhausted.")
+                    break
+                try:
+                    b64_data = base64.b64encode(screenshot_bytes).decode('utf-8')
+                    b64_string = f"data:image/png;base64,{b64_data}"
+                    response = requests.post(
+                        self.ocr_engine.OCR_SPACE_ENDPOINT,
+                        headers={"apikey": self.ocr_engine.ocr_space_key},
+                        data={
+                            "base64Image": b64_string,
+                            "language": "eng",
+                            "isOverlayRequired": "false",
+                            "scale": "true",
+                            "OCREngine": "1",
+                        },
+                        timeout=120,
+                        verify=False   # SSL fix
+                    )
+                    self.ocr_engine._increment_daily_counter()
+                    self.ocr_engine.metrics["ocr_requests_total"] += 1
+                    rj = response.json()
+                    if not rj.get("IsErroredOnProcessing", True):
+                        for pr in rj.get("ParsedResults", []):
+                            exit_code = pr.get("FileParseExitCode")
+                            if isinstance(exit_code, str):
+                                try:
+                                    exit_code = int(exit_code)
+                                except:
+                                    exit_code = -1
+                            if exit_code == 1:
+                                pt = pr.get("ParsedText", "")
+                                if pt.strip():
+                                    all_text.append(pt)
+                                    pages_processed.append(i + 1)
+                        logger.info(f"      [Screenshot OCR] Page {i+1}: {len(all_text[-1]) if all_text else 0} chars")
+                    else:
+                        err = rj.get("ErrorMessage", "Unknown")
+                        logger.warning(f"      [Screenshot OCR] Page {i+1} error: {err}")
+                        self.ocr_engine.metrics["ocr_requests_failed"] += 1
+                except Exception as e:
+                    logger.warning(f"      [Screenshot OCR] Request failed for page {i+1}: {e}")
+                    self.ocr_engine.metrics["ocr_requests_failed"] += 1
+            dp.close()
+            combined = "\n".join(all_text).strip()
+            meta = {
+                "ocr_source": "ocr.space",
+                "ocr_engine": 1,
+                "ocr_method": "screenshot",
+                "ocr_pages": pages_processed,
+                "ocr_notes": f"Screenshot-based OCR on {len(pages_processed)} viewport captures",
+            }
+            return combined, meta
+        except Exception as e:
+            logger.warning(f"      [Screenshot OCR] Failed: {e}")
+            return "", {}
 
     def _scrape_bill_detail_page(self, page, url) -> dict:
         try:

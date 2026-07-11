@@ -124,7 +124,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install \
             playwright supabase requests pymupdf pdfplumber python-dotenv \
-            beautifulsoup4 pillow pdf2image easyocr \
+            beautifulsoup4 pillow pdf2image pytesseract easyocr \
             google-genai google-search-results google-generativeai \
             groq openai anthropic cohere \
             boto3 aiohttp lxml
