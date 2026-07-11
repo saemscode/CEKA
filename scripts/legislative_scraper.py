@@ -739,7 +739,7 @@ class ProxyPool:
             self.health_status[proxy["url"]] = {"healthy": False, "last_check": time.time()}
             proxy["priority"] = 999
 
-    def _load_usage_counts(self):
+    def _load_usage_counts(self) -> Dict[str, Any]:
         try:
             fpath = os.path.join(os.path.dirname(os.path.abspath(__file__)), "proxy_usage.json")
             if os.path.exists(fpath):
@@ -807,7 +807,7 @@ class BillStructuralExtractor:
 
         try:
             doc = fitz.open(stream=pdf_bytes, filetype="pdf")
-            toc = doc.get_toc()
+            toc = doc.get_toc()  # type: ignore
             memo_page = -1
             if toc:
                 result["has_toc"] = True
@@ -951,7 +951,7 @@ class LegislativeScraper:
     #  Stealth browser builder (with optional proxy)
     # -------------------------------------------------------------------
     def _build_stealth_browser(self, playwright):
-        launch_opts = {
+        launch_opts: Dict[str, Any] = {
             "headless": self.headless,
             "args": [
                 "--disable-blink-features=AutomationControlled",
