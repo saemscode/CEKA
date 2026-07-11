@@ -417,6 +417,31 @@ const dismissAdById = (id: string) => {
   localStorage.setItem(AD_PREFIX + id, Date.now().toString());
 };
 
+const trackAdEvent = async (adId: string, eventType: 'impression' | 'click') => {
+  if (typeof window === 'undefined') return;
+  // Only track real DB ads with UUIDs
+  const isDbUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(adId);
+  if (!isDbUUID) return;
+
+  const sessionKey = 'ceka_session_id';
+  let sessionId = sessionStorage.getItem(sessionKey);
+  if (!sessionId) {
+    sessionId = Math.random().toString(36).substring(2, 15);
+    sessionStorage.setItem(sessionKey, sessionId);
+  }
+  
+  try {
+    const { supabase } = await import('@/integrations/supabase/client');
+    await (supabase as any).from('ad_analytics').insert({
+      ad_id: adId,
+      event_type: eventType,
+      session_id: sessionId
+    });
+  } catch (e) {
+    // Ignore analytics errors silently
+  }
+};
+
 /** ──────── New Background Decorations ──────── */
 const BitcoinBackground = ({ className }: { className?: string }) => (
   <div className={cn("absolute inset-0 overflow-hidden opacity-10 pointer-events-none", className)}>
@@ -476,6 +501,7 @@ const LEGISLATIVE_AD: AdContent = {
 /** ──────── Generic Ad Components (re‑use the same structure as Nasaka) ──────── */
 const AdFeedBanner: React.FC<{ ad: AdContent }> = ({ ad }) => {
   const [isVisible, setIsVisible] = useState(false);
+  const [tracked, setTracked] = useState(false);
 
   useEffect(() => {
     setIsVisible(shouldShowAdById(ad.id));
@@ -494,6 +520,12 @@ const AdFeedBanner: React.FC<{ ad: AdContent }> = ({ ad }) => {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
+      onViewportEnter={() => {
+        if (!tracked) {
+          trackAdEvent(ad.id, 'impression');
+          setTracked(true);
+        }
+      }}
       className="relative w-full overflow-hidden rounded-[32px] border border-slate-200/50 dark:border-white/10 bg-white/40 dark:bg-slate-950/40 p-6 shadow-ios-high backdrop-blur-3xl"
     >
       {BackgroundDecor && <BackgroundDecor className="opacity-[0.25]" />}
@@ -501,9 +533,15 @@ const AdFeedBanner: React.FC<{ ad: AdContent }> = ({ ad }) => {
       <div className="relative z-10 flex flex-col lg:flex-row gap-6 lg:gap-8 items-center">
         <div className="flex-1 space-y-4 min-w-0">
           <div className="flex items-center gap-2">
-            <span className="rounded-full bg-blue-500/10 border border-blue-500/20 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-widest text-[#1A6BFF]">
-              CEKA
-            </span>
+            {ad.subtitle?.includes('Sponsored') ? (
+              <span className="rounded-full bg-amber-500/10 border border-amber-500/20 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-widest text-amber-600 dark:text-amber-400">
+                SPONSORED
+              </span>
+            ) : (
+              <span className="rounded-full bg-blue-500/10 border border-blue-500/20 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-widest text-[#1A6BFF]">
+                CEKA
+              </span>
+            )}
             <div className="h-1 w-1 rounded-full bg-slate-300 dark:bg-white/20" />
             <span className="text-[10px] font-black text-slate-500 dark:text-white/40 uppercase tracking-widest z-10">{ad.subtitle || "CEKA"}</span>
           </div>
@@ -540,6 +578,7 @@ const AdFeedBanner: React.FC<{ ad: AdContent }> = ({ ad }) => {
               href={ad.cta.url}
               target="_blank"
               rel="noopener"
+              onClick={() => trackAdEvent(ad.id, 'click')}
               className="group relative flex items-center justify-center gap-2 rounded-2xl px-6 py-3.5 text-[11px] font-black uppercase tracking-widest text-white transition-all hover:scale-[1.02] active:scale-[0.98] shadow-lg"
               style={{ backgroundColor: ad.backgroundColor || '#1A6BFF', boxShadow: `0 8px 20px ${ad.backgroundColor}30` }}
             >
@@ -580,7 +619,10 @@ const AdSidebarWidget: React.FC<{ ad: AdContent; dwellDelayMs?: number }> = ({ a
 
     const timer = setTimeout(() => {
       setShouldRender(true);
-      setTimeout(() => setIsVisible(true), 100);
+      setTimeout(() => {
+        setIsVisible(true);
+        trackAdEvent(ad.id, 'impression');
+      }, 100);
     }, dwellDelayMs);
 
     return () => clearTimeout(timer);
@@ -617,7 +659,11 @@ const AdSidebarWidget: React.FC<{ ad: AdContent; dwellDelayMs?: number }> = ({ a
               <ad.brandIcon className="h-6 w-6 text-white" />
             </div>
             <div>
-              <p className="text-[9px] font-black uppercase tracking-widest" style={{ color: ad.backgroundColor || '#1A6BFF' }}>{ad.subtitle || "CEKA"}</p>
+              {ad.subtitle?.includes('Sponsored') ? (
+                <p className="text-[9px] font-black uppercase tracking-widest text-amber-500">SPONSORED PARTNER</p>
+              ) : (
+                <p className="text-[9px] font-black uppercase tracking-widest" style={{ color: ad.backgroundColor || '#1A6BFF' }}>{ad.subtitle || "CEKA"}</p>
+              )}
               <h4 className="font-bold text-slate-900 dark:text-white tracking-tight leading-none">{ad.title}</h4>
             </div>
           </div>
@@ -630,6 +676,7 @@ const AdSidebarWidget: React.FC<{ ad: AdContent; dwellDelayMs?: number }> = ({ a
             href={ad.cta.url}
             target="_blank"
             rel="noopener"
+            onClick={() => trackAdEvent(ad.id, 'click')}
             className="flex items-center justify-center gap-2 w-full rounded-2xl py-3 text-[10px] font-black uppercase tracking-widest text-white transition-all shadow-lg"
             style={{ backgroundColor: ad.backgroundColor || '#1A6BFF', boxShadow: `0 4px 12px ${ad.backgroundColor}40` }}
           >
@@ -642,7 +689,9 @@ const AdSidebarWidget: React.FC<{ ad: AdContent; dwellDelayMs?: number }> = ({ a
   );
 };
 
-const AdToolsCard: React.FC<{ ad: AdContent }> = ({ ad }) => (
+const AdToolsCard: React.FC<{ ad: AdContent }> = ({ ad }) => {
+  useEffect(() => { trackAdEvent(ad.id, 'impression'); }, [ad.id]);
+  return (
   <div className="group relative overflow-hidden rounded-2xl border border-slate-200 dark:border-white/5 bg-white dark:bg-slate-900/20 p-5 transition-all hover:border-blue-500/30">
     <div className="absolute left-0 top-0 h-full w-1.5" style={{ backgroundColor: ad.backgroundColor || '#3B82F6' }} />
 
@@ -669,6 +718,7 @@ const AdToolsCard: React.FC<{ ad: AdContent }> = ({ ad }) => (
         href={ad.cta.url}
         target="_blank"
         rel="noopener"
+        onClick={() => trackAdEvent(ad.id, 'click')}
         className="flex h-10 items-center gap-2 rounded-xl border border-white/5 px-4 text-[10px] font-black uppercase tracking-widest transition-all"
         style={{
           backgroundColor: `${ad.backgroundColor}15`,
@@ -692,6 +742,7 @@ const AdToolsCard: React.FC<{ ad: AdContent }> = ({ ad }) => (
     </div>
   </div>
 );
+}
 
 /** ──────── New Exported Ad Placements ──────── */
 
@@ -726,6 +777,10 @@ type DbAd = {
   background_color?: string;
   image_url?: string;
   logo_url?: string;
+  priority_weight?: number;
+  ad_category?: string;
+  start_at?: string;
+  end_at?: string;
   tier?: 'standard' | 'premium' | 'collab';
   campaign_id?: string;
   campaign?: { title: string; slug?: string };
@@ -733,24 +788,113 @@ type DbAd = {
   external?: boolean;
 };
 
-function useDbAds(tier?: string): { ads: DbAd[]; loading: boolean } {
+const MAX_SESSION_ADS = 3;
+const getSessionAdCount = () => {
+  if (typeof window === 'undefined') return 0;
+  return parseInt(sessionStorage.getItem('ceka_session_ad_count') || '0', 10);
+};
+
+const incrementSessionAdCount = () => {
+  if (typeof window === 'undefined') return;
+  sessionStorage.setItem('ceka_session_ad_count', (getSessionAdCount() + 1).toString());
+};
+
+const getShownCategories = (): string[] => {
+  if (typeof window === 'undefined') return [];
+  return JSON.parse(sessionStorage.getItem('ceka_shown_categories') || '[]');
+};
+
+const markCategoryShown = (category?: string) => {
+  if (typeof window === 'undefined' || !category) return;
+  const shown = getShownCategories();
+  if (!shown.includes(category)) {
+    shown.push(category);
+    sessionStorage.setItem('ceka_shown_categories', JSON.stringify(shown));
+  }
+};
+
+const getCachedAdForSlot = (slotCategory: string): DbAd | null => {
+  if (typeof window === 'undefined') return null;
+  const cached = sessionStorage.getItem(`ceka_ad_slot_${slotCategory}`);
+  return cached ? JSON.parse(cached) : null;
+};
+
+const cacheAdForSlot = (slotCategory: string, ad: DbAd) => {
+  if (typeof window === 'undefined') return;
+  sessionStorage.setItem(`ceka_ad_slot_${slotCategory}`, JSON.stringify(ad));
+};
+
+function useDbAds(categoryFilter?: string): { ads: DbAd[]; loading: boolean } {
   const [ads, setAds] = React.useState<DbAd[]>([]);
   const [loading, setLoading] = React.useState(true);
 
   React.useEffect(() => {
+    const slotKey = categoryFilter || 'general';
+    const cachedAd = getCachedAdForSlot(slotKey);
+    if (cachedAd && shouldShowAdById(cachedAd.id)) {
+      setAds([cachedAd]);
+      setLoading(false);
+      return;
+    }
+
+    if (getSessionAdCount() >= MAX_SESSION_ADS) {
+      setLoading(false);
+      return;
+    }
+
+    const now = new Date().toISOString();
+
     let q = (supabase as any)
       .from('promo_ads')
       .select('*, campaign:campaigns(title, slug)')
-      .eq('is_active', true)
-      .order('tier', { ascending: false })
-      .limit(6);
-    if (tier) q = q.eq('tier', tier);
+      .eq('is_active', true);
 
-    q.then(({ data }: { data: DbAd[] | null }) => {
-      setAds(data || []);
+    q.then(({ data, error }: { data: DbAd[] | null; error: any }) => {
+      if (error || !data || data.length === 0) {
+        setLoading(false);
+        return;
+      }
+
+      const shownCats = getShownCategories();
+
+      // Filter by scheduling, dismissal, and cross-category stacking
+      const validAds = data.filter(a => {
+        // JS natively handles NULLs properly here. If start_at is null, this evaluates to false, which means it passes the filter.
+        if (a.start_at && a.start_at > now) return false;
+        if (a.end_at && a.end_at < now) return false;
+        if (categoryFilter && a.ad_category && a.ad_category !== categoryFilter) return false;
+        // Block if we've already shown an ad from this category during this session, unless we specifically asked for it.
+        if (!categoryFilter && a.ad_category && shownCats.includes(a.ad_category)) return false;
+        if (!shouldShowAdById(a.id)) return false;
+        return true;
+      });
+
+      if (validAds.length === 0) {
+        setLoading(false);
+        return;
+      }
+
+      // Weighted Lottery Rotation
+      const totalWeight = validAds.reduce((sum, a) => sum + (a.priority_weight || 1), 0);
+      let randomVal = Math.random() * totalWeight;
+      let selectedAd = validAds[0];
+      
+      for (const a of validAds) {
+        randomVal -= (a.priority_weight || 1);
+        if (randomVal <= 0) {
+          selectedAd = a;
+          break;
+        }
+      }
+
+      cacheAdForSlot(slotKey, selectedAd);
+      markCategoryShown(selectedAd.ad_category);
+      incrementSessionAdCount();
+
+      setAds([selectedAd]);
       setLoading(false);
     });
-  }, [tier]);
+  }, [categoryFilter]);
 
   return { ads, loading };
 }
@@ -775,7 +919,7 @@ function dbAdToContent(ad: DbAd): AdContent {
   return {
     id: ad.id,
     title: ad.title,
-    subtitle: ad.subtitle || (ad.is_collab ? 'CEKA Collab' : ad.tier === 'premium' ? 'Premium Partner' : 'CEKA Partner'),
+    subtitle: ad.subtitle || (ad.ad_category === 'partner' ? 'Sponsored Partner' : ad.is_collab ? 'CEKA Collab' : 'CEKA Tool'),
     description: ad.description,
     cta: { label: ad.cta_label, url: ad.campaign_id ? campaignUrl : ad.cta_url },
     brandIcon: LogoIcon,
@@ -785,21 +929,21 @@ function dbAdToContent(ad: DbAd): AdContent {
 }
 
 /**
- * DbAdFeedBanner — renders the top-ranked active DB ad as a feed banner.
+ * DbAdFeedBanner — renders the rotated active DB ad as a feed banner.
  * Falls back to the static Nasaka ad if no DB ads are available.
  */
-export const DbAdFeedBanner: React.FC<{ tier?: string }> = ({ tier }) => {
-  const { ads, loading } = useDbAds(tier);
+export const DbAdFeedBanner: React.FC<{ category?: string }> = ({ category }) => {
+  const { ads, loading } = useDbAds(category);
   if (loading) return null;
   if (!ads.length) return <NasakaFeedBanner />;
   return <AdFeedBanner ad={dbAdToContent(ads[0])} />;
 };
 
 /**
- * DbAdSidebarWidget — delays, then shows the top-ranked DB ad as a floating sidebar widget.
+ * DbAdSidebarWidget — delays, then shows the rotated DB ad as a floating sidebar widget.
  */
-export const DbAdSidebarWidget: React.FC<{ tier?: string; dwellDelayMs?: number }> = ({ tier, dwellDelayMs }) => {
-  const { ads, loading } = useDbAds(tier);
+export const DbAdSidebarWidget: React.FC<{ category?: string; dwellDelayMs?: number }> = ({ category, dwellDelayMs }) => {
+  const { ads, loading } = useDbAds(category);
   if (loading) return null;
   if (!ads.length) return <NasakaSidebarWidget dwellDelayMs={dwellDelayMs} />;
   return <AdSidebarWidget ad={dbAdToContent(ads[0])} dwellDelayMs={dwellDelayMs} />;
@@ -807,7 +951,6 @@ export const DbAdSidebarWidget: React.FC<{ tier?: string; dwellDelayMs?: number 
 
 /**
  * CampaignCollabBanner — specifically renders collab campaign ads (is_collab=true).
- * Used to highlight higher-tier and partner campaigns inside feeds.
  */
 export const CampaignCollabBanner: React.FC = () => {
   const [ad, setAd] = React.useState<DbAd | null>(null);
@@ -827,3 +970,6 @@ export const CampaignCollabBanner: React.FC = () => {
   if (!ad) return null;
   return <AdFeedBanner ad={dbAdToContent(ad)} />;
 };
+
+export const SmartAdFeedBanner = DbAdFeedBanner;
+export const SmartAdSidebarWidget = DbAdSidebarWidget;

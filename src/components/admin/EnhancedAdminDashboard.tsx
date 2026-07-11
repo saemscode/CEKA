@@ -11,7 +11,7 @@ import {
     Menu, X, ChevronDown, Bell, User, MoreVertical, Globe, Settings, Shield, Search, ChevronRight,
     FileText, PenTool, MessageSquare, Calendar, Heart, LayoutGrid, Radio, Users, Home, BookOpen,
     PlusCircle, Edit3, Activity, TrendingUp, Eye, UserCheck, Clock, AlertTriangle, Download,
-    RefreshCw, Plus, Sparkles, Zap, PieChart as LucidePieChart, Send, Building
+    RefreshCw, Plus, Sparkles, Zap, PieChart as LucidePieChart, Send, Building, Target
 } from 'lucide-react';
 import { CEKALoader } from '@/components/ui/ceka-loader';
 import { adminService, AdminDashboardStats, UserActivityStats, ModerationQueueItem } from '@/services/adminService';
@@ -29,6 +29,7 @@ import PollManager from './PollManager';
 import PartnerManager from './PartnerManager';
 import { AdminGridCurator } from './AdminGridCurator';
 import { BroadcastCenter } from './broadcast/BroadcastCenter';
+import SmartAdManager from './SmartAdManager';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -366,6 +367,10 @@ const EnhancedAdminDashboard = () => {
                             <Send className="h-4 w-4 mr-2" />
                             Broadcast
                         </TabsTrigger>
+                        <TabsTrigger value="ads" className="rounded-xl px-4 py-3 font-medium data-[state=active]:shadow-lg bg-amber-500/5 text-amber-600">
+                            <Target className="h-4 w-4 mr-2" />
+                            Ad Engine
+                        </TabsTrigger>
                     </TabsList>
                 </div>
 
@@ -594,6 +599,10 @@ const EnhancedAdminDashboard = () => {
 
                 <TabsContent value="broadcast">
                     <BroadcastCenter />
+                </TabsContent>
+
+                <TabsContent value="ads">
+                    <SmartAdManager />
                 </TabsContent>
             </Tabs>
         </div>
