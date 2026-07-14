@@ -127,17 +127,42 @@ const PartnerManager = () => {
         description: `Partner status updated to ${status}`
       });
 
-      // If partner is selected, update local view
       if (selectedPartner?.id === id) {
         setSelectedPartner(prev => prev ? { ...prev, verification_status: status } : null);
       }
 
-      // If approved as credible or premium, check if role needs to be updated to ally
       const partner = partners.find(p => p.id === id);
+
+      // Approved → grant ally role + dispatch approval email with MOU signing link
       if (partner && (status === 'credible' || status === 'premium')) {
+        // 1. Upsert ally role
         await supabase
           .from('user_roles')
           .upsert({ user_id: partner.submitted_by_user_id, role: 'ally' }, { onConflict: 'user_id,role' });
+
+        // 2. Fire approval + MOU signing email via edge function
+        try {
+          const { error: fnErr } = await supabase.functions.invoke('send-partner-approved', {
+            body: {
+              partner_id: partner.id,
+              org_name: partner.org_name,
+              org_email: partner.org_email,
+              new_status: status,
+            },
+          });
+          if (fnErr) throw fnErr;
+          toast({
+            title: '📧 Approval Email Sent',
+            description: `MOU signing link dispatched to ${partner.org_email}`,
+          });
+        } catch (emailErr: any) {
+          console.error('[PartnerManager] Approval email failed:', emailErr);
+          toast({
+            title: 'Email dispatch failed',
+            description: 'Status updated but approval email could not be sent. ' + emailErr.message,
+            variant: 'destructive',
+          });
+        }
       }
 
       loadPartners();
@@ -444,6 +469,22 @@ const PartnerManager = () => {
                           </SelectContent>
                         </Select>
                       </div>
+
+                      {/* Copy MOU link for approved partners */}
+                      {(selectedPartner.verification_status === 'credible' || selectedPartner.verification_status === 'premium') && (
+                        <button
+                          onClick={() => {
+                            const link = `${window.location.origin}/partner/mou`;
+                            navigator.clipboard.writeText(link).then(() => {
+                              toast({ title: '📋 MOU Link Copied', description: 'Paste into your approval reply email.' });
+                            });
+                          }}
+                          className="w-full h-9 rounded-xl border-2 border-dashed border-[#006633]/30 text-[#006633] text-[11px] font-black uppercase tracking-wider hover:bg-[#006633]/5 transition-all flex items-center justify-center gap-2"
+                        >
+                          <Lock className="h-3.5 w-3.5" />
+                          Copy MOU Signing Link
+                        </button>
+                      )}
 
                       <div className="space-y-1.5">
                         <Label className="text-xs font-black uppercase tracking-wider text-muted-foreground">Partnership Tier</Label>

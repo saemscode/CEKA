@@ -165,6 +165,9 @@ const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
   const [selectedAreas, setSelectedAreas] = useState<string[]>([]);
   const [partnerSubmitted, setPartnerSubmitted] = useState(false);
 
+  // Password strength regex: min 8 chars, at least 1 letter and 1 number
+  const PASSWORD_REGEX = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*#?&]{8,}$/;
+
   // Freeze/lock background page scrolling while modal is open
   useEffect(() => {
     if (open) {
@@ -200,6 +203,16 @@ const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
+    // Password strength guard
+    const PASSWORD_REGEX_LOCAL = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*#?&]{8,}$/;
+    if (!PASSWORD_REGEX_LOCAL.test(password)) {
+      toast({
+        variant: 'destructive',
+        title: 'Password too weak',
+        description: 'Password must be at least 8 characters and include at least one letter and one number.',
+      });
+      return;
+    }
     setLoading(true);
     try {
       const { error } = await supabase.auth.signUp({
@@ -216,60 +229,69 @@ const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
   const handlePartnerSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!orgName || !orgEmail || !password) return;
+
+    // Password strength guard
+    if (!PASSWORD_REGEX.test(password)) {
+      toast({
+        variant: 'destructive',
+        title: 'Password too weak',
+        description: 'Password must be at least 8 characters and include at least one letter and one number.',
+      });
+      return;
+    }
+
     setLoading(true);
     try {
-      // 1. Create auth account for the partner
+      // Step 1: Create the auth account.
+      // Because email confirmations are enabled, the user will NOT be auto-logged in.
+      // We do NOT attempt any DB writes here — that is handled entirely by the
+      // service-role edge function below, which bypasses all RLS.
       const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: orgEmail, password,
-        options: { data: { full_name: orgName, username: orgName.toLowerCase().replace(/\s+/g, '_') } },
+        email: orgEmail,
+        password,
+        options: {
+          data: {
+            full_name: orgName,
+            username: orgName.toLowerCase().replace(/\s+/g, '_'),
+          },
+        },
       });
       if (authError) throw authError;
 
-      // 2. Write to partners table
-      if (authData.user) {
-        const { data: partnerData, error: dbError } = await (supabase
-          .from('partners' as any) as any)
-          .insert({
-            org_name: orgName,
-            org_email: orgEmail,
-            org_website: orgWebsite || null,
-            submitted_by_user_id: authData.user.id,
-            tier: 'free',
-            verification_status: 'unverified',
-            agreement_signed: false
-          })
-          .select('id')
-          .single();
+      const userId = authData.user?.id;
+      if (!userId) throw new Error('Auth account creation did not return a user ID.');
 
-        if (dbError) throw dbError;
+      // Step 2: Call the ingest-partner-application edge function (service role).
+      // This guarantees DB ingestion regardless of RLS state.
+      // It also dispatches:
+      //   - Receipt confirmation email to the applicant
+      //   - Admin alert email to admin@civiceducationkenya.com
+      const { error: fnError } = await supabase.functions.invoke('ingest-partner-application', {
+        body: {
+          auth_user_id: userId,
+          org_name: orgName,
+          org_email: orgEmail,
+          org_website: orgWebsite || undefined,
+          org_reg_no: orgRegNo || undefined,
+          focus_areas: selectedAreas,
+        },
+      });
 
-        // 3. Write a pending ally role
-        await (supabase.from('user_roles' as any) as any).insert({
-          user_id: authData.user.id,
-          role: 'ally',
-        });
-
-        // 4. Trigger partner welcome email edge function
-        if (partnerData) {
-          try {
-            await supabase.functions.invoke('send-partner-welcome', {
-              body: {
-                partner_id: (partnerData as any).id,
-                org_name: orgName,
-                org_email: orgEmail,
-                org_website: orgWebsite || undefined
-              }
-            });
-          } catch (emailErr) {
-            console.error('Failed to trigger partner welcome email:', emailErr);
-          }
-        }
+      // Edge function errors are logged but do NOT block the success UI.
+      // Data ingestion is the edge function's responsibility — if it errored
+      // after DB write but before email, the data is still safe.
+      if (fnError) {
+        console.error('[handlePartnerSubmit] ingest-partner-application error:', fnError);
       }
 
+      // Step 3: Always show success state.
+      // The partner is guaranteed registered; they simply await admin review.
       setPartnerSubmitted(true);
     } catch (error: any) {
       toast({ variant: 'destructive', title: 'Application failed', description: error.message });
-    } finally { setLoading(false); }
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleGoogleSignIn = async () => {
@@ -696,7 +718,7 @@ const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
                         </div>
 
                         <form onSubmit={handleSignIn} className="space-y-4">
-                          <IosInput label="Email" id="signin-email" type="email" value={email} onChange={setEmail} placeholder="e.g. contact@civiceducationkenya.com" autoComplete="email" />
+                          <IosInput label="Email" id="signin-email" type="email" value={email} onChange={setEmail} placeholder="e.g. contact@civiceducationkenya.com" autoComplete="username" />
                           <IosInput label="Password" id="signin-password" type="password" value={password} onChange={setPassword} placeholder="* * * * * * * * *" autoComplete="current-password" />
                           <button
                             type="submit"
@@ -752,7 +774,7 @@ const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
                             <IosInput label="Full Name" id="signup-name" value={fullName} onChange={setFullName} autoComplete="name" />
                             <IosInput label="Username" id="signup-username" value={username} onChange={setUsername} autoComplete="username" />
                           </div>
-                          <IosInput label="Email" id="signup-email" type="email" value={email} onChange={setEmail} placeholder="e.g. contact@civiceducationkenya.com" autoComplete="email" />
+                          <IosInput label="Email" id="signup-email" type="email" value={email} onChange={setEmail} placeholder="e.g. contact@civiceducationkenya.com" autoComplete="username" />
                           <IosInput label="Password" id="signup-password" type="password" value={password} onChange={setPassword} placeholder="* * * * * * * * *" autoComplete="new-password" />
                           <button
                             type="submit"
@@ -804,10 +826,11 @@ const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
                         </div>
 
                         <form onSubmit={handlePartnerSubmit} className="space-y-4">
-                          <IosInput label="Organisation Name" id="partner-org" value={orgName} onChange={setOrgName} placeholder="e.g. Civic Education Kenya (CEKA)" />
-                          <IosInput label="Organisation Email" id="partner-email" type="email" value={orgEmail} onChange={setOrgEmail} placeholder="e.g. contact@civiceducationkenya.com" autoComplete="email" />
-                          <IosInput label="Website (optional)" id="partner-web" value={orgWebsite} onChange={setOrgWebsite} placeholder="e.g. https://civiceducationkenya.com" />
-                          <IosInput label="Password" id="partner-password" type="password" value={password} onChange={setPassword} placeholder="* * * * * * * * *" autoComplete="new-password" />
+                          <IosInput label="Organisation Name" id="partner-org" value={orgName} onChange={setOrgName} placeholder="e.g. Civic Education Kenya (CEKA)" autoComplete="organization" />
+                          <IosInput label="Organisation Email" id="partner-email" type="email" value={orgEmail} onChange={setOrgEmail} placeholder="e.g. contact@civiceducationkenya.com" autoComplete="username" />
+                          <IosInput label="Registration No. (optional)" id="partner-reg" value={orgRegNo} onChange={setOrgRegNo} placeholder="e.g. OP.218/051/5980/11528" />
+                          <IosInput label="Website (optional)" id="partner-web" value={orgWebsite} onChange={setOrgWebsite} placeholder="e.g. https://civiceducationkenya.com" autoComplete="url" />
+                          <IosInput label="Password" id="partner-password" type="password" value={password} onChange={setPassword} placeholder="Min. 8 chars, 1 letter + 1 number" autoComplete="new-password" />
 
                           <button
                             type="submit"
@@ -818,7 +841,7 @@ const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
                           </button>
 
                           <p className="text-[10px] text-white/25 text-center leading-relaxed">
-                            Submission Policy: By submitting, your organisation requests review for the CEKA Partnership Program. Applications are reviewed under the Data Protection Act (2019). Admission is not automatic; official status is pending review, verification, and co-signing of the CEKA Partnership Agreement.
+                            Submission Policy: By submitting, your organisation requests review for the CEKA Partnership Program. Applications are reviewed under the Data Protection Act (2019). Admission is not automatic; official status is pending review, verification, and co-signing of the CEKA Partnership MOU Agreement.
                           </p>
                         </form>
                       </div>

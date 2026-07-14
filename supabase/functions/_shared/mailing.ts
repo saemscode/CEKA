@@ -39,11 +39,13 @@ const getKeys = (prefix: string): string[] => {
 // Discover Fleets
 const RESEND_KEYS = getKeys("RESEND_API_KEY");
 const BREVO_KEYS = getKeys("BREVO_API_KEY");
+const CLOUDFLARE_KEYS = getKeys("CEKA_EMAILS_CLOUDFLARE_API_TOKEN");
+const CLOUDFLARE_ACCOUNT_ID = Deno.env.get("CLOUDFLARE_ACCOUNT_ID") || Deno.env.get("VITE_CLOUDFLARE_ACCOUNT_ID");
 
 // Emergency Protocol Flags
 const BYPASS_MODE = Deno.env.get("MAILING_MESH_BYPASS") === "true";
 
-export type EmailProvider = 'resend' | 'brevo' | 'auto';
+export type EmailProvider = 'resend' | 'brevo' | 'cloudflare' | 'auto';
 
 interface EmailOptions {
   from?: { name: string; email: string };
@@ -198,6 +200,59 @@ async function sendWithBrevo(options: EmailOptions) {
 }
 
 /**
+ * Sends an email using Cloudflare Email Sending REST API with dynamic multi-key rotation
+ */
+async function sendWithCloudflare(options: EmailOptions) {
+  if (CLOUDFLARE_KEYS.length === 0) throw new Error("CEKA_EMAILS_CLOUDFLARE_API_TOKEN fleet is empty");
+  if (!CLOUDFLARE_ACCOUNT_ID) throw new Error("CLOUDFLARE_ACCOUNT_ID is missing");
+
+  const recipients = Array.isArray(options.to) ? options.to : [options.to];
+  
+  let lastError: any;
+  for (const key of CLOUDFLARE_KEYS) {
+    try {
+      console.log(`[MailingMesh] Attempting Cloudflare with key ${key.substring(0, 8)}...`);
+      const response = await fetch(`https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/email/sending/send`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${key}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          from: {
+            address: options.from?.email || DEFAULT_FROM.email,
+            name: options.from?.name || DEFAULT_FROM.name
+          },
+          to: recipients,
+          subject: options.subject,
+          html: options.html,
+          text: options.text || options.html.replace(/<[^>]*>?/gm, ''),
+        }),
+      });
+
+      const resultText = await response.text();
+      if (!response.ok) {
+        console.error(`[MailingMesh] Cloudflare Key ${key.substring(0, 8)}... FAILED (${response.status}): ${resultText}`);
+        
+        // If unauthorized/forbidden or rate limited (429), ROTATE to next key
+        if (response.status === 401 || response.status === 403 || response.status === 429) {
+          console.warn(`[MailingMesh] Cloudflare Key ${key.substring(0, 8)}... status ${response.status}. Rotating...`);
+          continue;
+        }
+        throw new Error(`Cloudflare API Error (${response.status}): ${resultText}`);
+      }
+
+      console.log(`[MailingMesh] Cloudflare success with current fleet member. Sent to: ${recipients.join(', ')}`);
+      return JSON.parse(resultText);
+    } catch (err: any) {
+      lastError = err;
+      console.error(`[MailingMesh] Cloudflare fleet member encounter:`, err.message);
+    }
+  }
+  throw lastError || new Error("All Cloudflare keys in fleet exhausted");
+}
+
+/**
  * Main dispatch function with fallback logic, fleet rotation, and bypass protocols.
  */
 export async function sendEmail(options: EmailOptions) {
@@ -221,15 +276,20 @@ export async function sendEmail(options: EmailOptions) {
     return withRetry(() => sendWithBrevo(options));
   }
 
+  if (provider === 'cloudflare') {
+    return withRetry(() => sendWithCloudflare(options));
+  }
+
   // 3. Auto/Mesh Logic (Intelligent Multi-Fleet Failover)
   const canUseResend = RESEND_KEYS.length > 0;
   const canUseBrevo = BREVO_KEYS.length > 0;
+  const canUseCloudflare = CLOUDFLARE_KEYS.length > 0 && !!CLOUDFLARE_ACCOUNT_ID;
 
-  if (!canUseResend && !canUseBrevo) {
-    throw new Error("Mailing Mesh TOTAL BLACKOUT: No keys found in either Resend or Brevo fleets.");
+  if (!canUseResend && !canUseBrevo && !canUseCloudflare) {
+    throw new Error("Mailing Mesh TOTAL BLACKOUT: No keys found in any configured fleet.");
   }
 
-  // UPDATED PRIORITY (Step 259): Brevo Fleet (Primary/Paid) -> Resend Fleet (Fallback/Limited)
+  // UPDATED PRIORITY (Step 259): Brevo Fleet (Primary/Paid) -> Resend Fleet (Fallback/Limited) -> Cloudflare Fleet (Tertiary)
   if (canUseBrevo) {
     try {
       console.log(`[MailingMesh] Strategy: Fleet Primary (Brevo, keys: ${BREVO_KEYS.length})`);
@@ -237,18 +297,54 @@ export async function sendEmail(options: EmailOptions) {
     } catch (brevoError: any) {
       console.error("[MailingMesh] Brevo fleet TOTAL exhaustion. Pivoting to fallback fleet...");
 
-      if (!canUseResend) throw brevoError;
-
-      try {
-        console.log(`[MailingMesh] Strategy: Fleet Fallback (Resend, keys: ${RESEND_KEYS.length})`);
-        return await withRetry(() => sendWithResend(options));
-      } catch (resendError: any) {
-        throw new Error(`Mailing Mesh TOTAL Blackout. Brevo Fleet: ${brevoError.message} | Resend Fleet: ${resendError.message}`);
+      if (canUseResend) {
+        try {
+          console.log(`[MailingMesh] Strategy: Fleet Fallback (Resend, keys: ${RESEND_KEYS.length})`);
+          return await withRetry(() => sendWithResend(options));
+        } catch (resendError: any) {
+          console.error("[MailingMesh] Resend fleet TOTAL exhaustion. Pivoting to tertiary fleet...");
+          if (canUseCloudflare) {
+             try {
+               console.log(`[MailingMesh] Strategy: Fleet Tertiary (Cloudflare, keys: ${CLOUDFLARE_KEYS.length})`);
+               return await withRetry(() => sendWithCloudflare(options));
+             } catch (cloudflareError: any) {
+               throw new Error(`Mailing Mesh TOTAL Blackout. Brevo: ${brevoError.message} | Resend: ${resendError.message} | Cloudflare: ${cloudflareError.message}`);
+             }
+          }
+          throw new Error(`Mailing Mesh TOTAL Blackout. Brevo Fleet: ${brevoError.message} | Resend Fleet: ${resendError.message}`);
+        }
+      } else if (canUseCloudflare) {
+         try {
+           console.log(`[MailingMesh] Strategy: Fleet Tertiary (Cloudflare, keys: ${CLOUDFLARE_KEYS.length})`);
+           return await withRetry(() => sendWithCloudflare(options));
+         } catch (cloudflareError: any) {
+           throw new Error(`Mailing Mesh TOTAL Blackout. Brevo: ${brevoError.message} | Cloudflare: ${cloudflareError.message}`);
+         }
       }
+      throw brevoError;
     }
   }
 
-  // If only Resend is provisioned
-  console.log(`[MailingMesh] Strategy: Standalone Fleet (Resend, keys: ${RESEND_KEYS.length})`);
-  return withRetry(() => sendWithResend(options));
+  // If Brevo is unavailable, start with Resend
+  if (canUseResend) {
+    try {
+      console.log(`[MailingMesh] Strategy: Standalone Fleet (Resend, keys: ${RESEND_KEYS.length})`);
+      return await withRetry(() => sendWithResend(options));
+    } catch (resendError: any) {
+      console.error("[MailingMesh] Resend fleet TOTAL exhaustion. Pivoting to tertiary fleet...");
+      if (canUseCloudflare) {
+        try {
+          console.log(`[MailingMesh] Strategy: Fleet Tertiary (Cloudflare, keys: ${CLOUDFLARE_KEYS.length})`);
+          return await withRetry(() => sendWithCloudflare(options));
+        } catch (cloudflareError: any) {
+          throw new Error(`Mailing Mesh TOTAL Blackout. Resend: ${resendError.message} | Cloudflare: ${cloudflareError.message}`);
+        }
+      }
+      throw resendError;
+    }
+  }
+
+  // If only Cloudflare is provisioned
+  console.log(`[MailingMesh] Strategy: Standalone Fleet (Cloudflare, keys: ${CLOUDFLARE_KEYS.length})`);
+  return withRetry(() => sendWithCloudflare(options));
 }

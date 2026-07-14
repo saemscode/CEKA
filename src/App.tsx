@@ -60,6 +60,7 @@ const PrivacyPolicy = lazy(() => import('@/pages/PrivacyPolicy'));
 const TermsConditions = lazy(() => import('@/pages/TermsConditions'));
 const Pieces = lazy(() => import('@/pages/Pieces'));
 const PartnerDashboard = lazy(() => import('@/pages/PartnerDashboard'));
+const PartnerMOU = lazy(() => import('@/pages/PartnerMOU'));
 const Tools = lazy(() => import('@/pages/Tools'));
 const About = lazy(() => import('@/pages/About'));
 const TemplateViewerPage = lazy(() => import('@/pages/TemplateViewerPage'));
@@ -199,6 +200,11 @@ const AppContent = () => {
         <Route path="/partner/dashboard" element={
           <ProtectedRoute>
             <PartnerDashboard />
+          </ProtectedRoute>
+        } />
+        <Route path="/partner/mou" element={
+          <ProtectedRoute>
+            <PartnerMOU />
           </ProtectedRoute>
         } />
         <Route path="/tools" element={<Tools />} />
