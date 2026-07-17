@@ -9,9 +9,14 @@ const corsHeaders = {
 };
 
 interface IngestPartnerRequest {
-  auth_user_id: string;
-  org_name: string;
-  org_email: string;
+  _audit_only?: boolean;
+  action?: string;
+  partner_id?: string;
+  mou_version?: string;
+  signed_at?: string;
+  auth_user_id?: string;
+  org_name?: string;
+  org_email?: string;
   org_website?: string;
   org_reg_no?: string;
   focus_areas?: string[];
@@ -30,6 +35,36 @@ serve(async (req) => {
     );
 
     const body: IngestPartnerRequest = await req.json();
+
+    // -- NEW: Handle audit-only requests (e.g. from MOU signing) --
+    if (body._audit_only) {
+      if (!body.auth_user_id || !body.action || !body.partner_id) {
+        return new Response(
+          JSON.stringify({ error: "Missing required fields for audit log" }),
+          { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        );
+      }
+      
+      const { error: auditErr } = await supabaseAdmin.from('admin_audit_log').insert({
+        action: body.action,
+        resource_type: 'partner',
+        resource_id: body.partner_id,
+        user_id: body.auth_user_id, // Map actor to user_id since that is what the original table expects
+        details: {
+          mou_version: body.mou_version,
+          signed_at: body.signed_at
+        }
+      });
+
+      if (auditErr) throw auditErr;
+
+      return new Response(
+        JSON.stringify({ success: true, audit_logged: true }),
+        { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+    // -------------------------------------------------------------
+
     const { auth_user_id, org_name, org_email, org_website, org_reg_no, focus_areas } = body;
 
     if (!auth_user_id || !org_name || !org_email) {
@@ -119,7 +154,7 @@ serve(async (req) => {
   } catch (error) {
     console.error("[ingest-partner-application] Unhandled error:", error);
     return new Response(
-      JSON.stringify({ error: String(error) }),
+      JSON.stringify({ error: error.message || JSON.stringify(error) }),
       { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );
   }
