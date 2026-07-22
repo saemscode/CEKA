@@ -8653,19 +8653,21 @@ function postProcessResponse(answer: string, tier?: number): string {
    // 3. Humanize overconfident first-person markers
    processed = processed.replace(/\bI (think|believe|feel|it seems)\b/gi, 'Current public records show');
 
-   // 4. Strip rigid structural section headers that turn every response into a formatted report.
-   //    These headers are removed entirely; their content below them is preserved.
-   //    Pattern: **HeaderName** or **HeaderName:** on its own line (case-insensitive)
-   processed = processed.replace(
-      /^\*\*(Summary|Key Concepts|Legal Basis|How It Works(?: in Practice)?|Citizen Action|Swahili Terms|Sources|Notes|Process \/ How It Works|How This Works|Key Takeaways|Background|Context|Overview|What This Means)\*\*:?\s*$/gim,
-      ''
-   );
+   // 4. RELAXED header stripping — only strip rigid AI boilerplate headers on SHORT responses.
+   //    For full Tier 4 responses, preserve all formatting structure.
+   //    Only strip headers when response is under 400 chars (these are usually unnecessary scaffolding).
+   if (processed.length < 400) {
+      processed = processed.replace(
+         /^\*\*(Summary|Key Concepts|Legal Basis|How It Works(?: in Practice)?|Citizen Action|Swahili Terms|Sources|Notes|Process \/ How It Works|How This Works|Key Takeaways|Background|Context|Overview|What This Means)\*\*:?\s*$/gim,
+         ''
+      );
+   }
 
-   // 5. Spacing: collapse excess blank lines left by removed headers, strip leading/trailing whitespace
+   // 5. Spacing: collapse excess blank lines, strip leading/trailing whitespace
    processed = processed.trim().replace(/\n{3,}/g, "\n\n");
 
-   // 6. For very short responses, collapse into a single paragraph
-   if (processed.length < 200 && processed.split('\n').length > 2) {
+   // 6. For very short responses (under 150 chars), collapse into a single paragraph
+   if (processed.length < 150 && processed.split('\n').length > 2) {
       processed = processed.replace(/\n+/g, " ");
    }
 
@@ -8687,6 +8689,74 @@ function postProcessResponse(answer: string, tier?: number): string {
    }
 
    return processed;
+}
+
+// ============================================================================
+// DYNAMIC SITEMAP PARSER (Cached in Edge memory)
+// ============================================================================
+let cachedSitemapText = "";
+let sitemapCacheTime = 0;
+
+async function getLiveSitemap(): Promise<string> {
+   const TTL = 24 * 60 * 60 * 1000;
+   if (cachedSitemapText && (Date.now() - sitemapCacheTime < TTL)) {
+      return cachedSitemapText;
+   }
+   
+   try {
+      const res = await fetch('https://www.civiceducationkenya.com/sitemap.xml');
+      if (!res.ok) throw new Error("Failed to fetch");
+      const text = await res.text();
+      const locRegex = /<loc>(.*?)<\/loc>/g;
+      const urls = [];
+      let match;
+      while ((match = locRegex.exec(text)) !== null) {
+         try {
+            const url = new URL(match[1]);
+            // Filter out individual bill details to save context window tokens
+            if (!url.pathname.includes('/bill/')) { 
+               urls.push(url.pathname);
+            }
+         } catch(e) {}
+      }
+      
+      cachedSitemapText = `
+═══════════════════════════════════════════════════════════════
+CEKA SITE MAP — LIVE ROUTES (Fetched dynamically)
+═══════════════════════════════════════════════════════════════
+${urls.join('\n')}
+/bill/[uuid] → Individual Bill Detail (dynamic, not listed to save space)
+/constitution/article/[id] → Single Article Viewer (dynamic)
+═══════════════════════════════════════════════════════════════
+NAVIGATION RULES:
+- If the user asks to "go to", "show me", "take me to", "open", or "navigate to" any page above, emit an ACTION block.
+- If your answer is best demonstrated by a specific CEKA page, add an ACTION block.
+- Do NOT emit an action if the user is asking a general knowledge question.
+- Do NOT emit more than one ACTION per response.
+- ACTION format (last line of response, nothing after it): ACTION:{"type":"navigate_to","target":"/route"}
+═══════════════════════════════════════════════════════════════`;
+      sitemapCacheTime = Date.now();
+      return cachedSitemapText;
+   } catch (e) {
+      // Fallback
+      return `
+═══════════════════════════════════════════════════════════════
+CEKA SITE MAP — FALLBACK
+═══════════════════════════════════════════════════════════════
+/
+/legislative-tracker
+/constitution
+/blog
+/resources
+═══════════════════════════════════════════════════════════════
+NAVIGATION RULES:
+- If the user asks to "go to", "show me", "take me to", "open", or "navigate to" any page above, emit an ACTION block.
+- If your answer is best demonstrated by a specific CEKA page, add an ACTION block.
+- Do NOT emit an action if the user is asking a general knowledge question.
+- Do NOT emit more than one ACTION per response.
+- ACTION format (last line of response, nothing after it): ACTION:{"type":"navigate_to","target":"/route"}
+═══════════════════════════════════════════════════════════════`;
+   }
 }
 
 // @ts-ignore
@@ -8721,6 +8791,8 @@ Deno.serve(async (req) => {
       const context = body.context || 'general';
       const billId = body.billId || null;
       const pageTitle = body.pageTitle || null;
+      const conversationHistory: Array<{role: string; content: string}> = Array.isArray(body.conversationHistory) ? body.conversationHistory.slice(-10) : [];
+      const pageSnapshot = body.pageSnapshot || null;
 
       if (!query || query.trim().length < 1) {
          return new Response(
@@ -8729,11 +8801,44 @@ Deno.serve(async (req) => {
          );
       }
 
-      // Prepare the system prompt with context and date
       const todayISO = new Date().toISOString().split('T')[0];
       let systemPromptWithDate = SYSTEM_PROMPT.replace('%CONTEXT%', context)
          .replace(/YYYY-MM-DD/g, todayISO)
-         + `\n\nTODAY'S DATE: ${todayISO}. You MUST use this exact date for any "Information current as of" lines. Never use a date from your training data.`;
+         + `\n\nTODAY'S DATE: ${todayISO}.`;
+
+      const CEKA_SITE_MAP = await getLiveSitemap();
+      systemPromptWithDate += `\n${CEKA_SITE_MAP}`;
+
+      // ── CURRENT PAGE CONTEXT INJECTION ──────────────────────────────────────
+      if (pageSnapshot) {
+         const headingsList = Array.isArray(pageSnapshot.headings) && pageSnapshot.headings.length > 0
+            ? pageSnapshot.headings.join(' | ')
+            : 'None detected';
+         systemPromptWithDate += `
+═══════════════════════════════════════════════════════════════
+[CURRENT PAGE CONTEXT — What the user is looking at right now]
+URL Path: ${context}
+Page Title: ${pageSnapshot.title || pageTitle || 'Unknown'}
+Meta Description: ${pageSnapshot.description || 'None'}
+Visible Headings: ${headingsList}
+Visible Text Excerpt: ${pageSnapshot.textExcerpt || 'None'}
+═══════════════════════════════════════════════════════════════
+Use this context to give page-specific answers. If the user asks about "this page" or "what is here", refer to the above.`;
+      }
+
+      // ── CONVERSATION HISTORY INJECTION ─────────────────────────────────────
+      if (conversationHistory.length > 1) {
+         const historyText = conversationHistory
+            .slice(0, -1) // exclude the current message (last item)
+            .map(m => `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content}`)
+            .join('\n');
+         systemPromptWithDate += `
+═══════════════════════════════════════════════════════════════
+[CONVERSATION HISTORY — For context continuity]
+${historyText}
+═══════════════════════════════════════════════════════════════
+Use this history to maintain context. The user may refer to previous messages.`;
+      }
 
       // --- RAG INTEGRATION: RETRIEVE CONSTITUTIONAL CONTEXT ---
       let ragContext = "";
@@ -8894,8 +8999,23 @@ Deno.serve(async (req) => {
       }
 
       if (answer) {
+         // ── NAVIGATION ACTION PARSER ─────────────────────────────────────────
+         // Strips ACTION:{...} from the answer text and returns it as a
+         // structured action object to the client for execution.
+         let navigationAction: {type: string; target: string} | null = null;
+         const actionMatch = answer.match(/\nACTION:(\{[^}]+\})\s*$/);
+         if (actionMatch) {
+            try {
+               const parsed = JSON.parse(actionMatch[1]);
+               if (parsed.type && parsed.target) {
+                  navigationAction = parsed;
+                  // Remove the action block from the answer text
+                  answer = answer.replace(actionMatch[0], '').trim();
+               }
+            } catch (_) { /* malformed action — ignore */ }
+         }
          return new Response(
-            JSON.stringify({ answer, provider: usedProvider, model: usedModel }),
+            JSON.stringify({ answer, provider: usedProvider, model: usedModel, action: navigationAction }),
             { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
          );
       }

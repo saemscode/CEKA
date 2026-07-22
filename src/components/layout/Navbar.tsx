@@ -59,17 +59,17 @@ const getItemIcon = (path: string) => {
 
 // Category color mapping
 const getCategoryColor = (categoryName: string) => {
-  if (categoryName.includes('Discover')) return 'text-primary';
-  if (categoryName.includes('Engage')) return 'text-slate-800';
-  if (categoryName.includes('Tools')) return 'text-green-700';
-  return 'text-primary';
+  if (categoryName.includes('Discover')) return 'text-primary dark:text-blue-400';
+  if (categoryName.includes('Engage')) return 'text-slate-800 dark:text-slate-200';
+  if (categoryName.includes('Tools')) return 'text-green-700 dark:text-green-400';
+  return 'text-primary dark:text-blue-400';
 };
 
 const getCategoryBgColor = (categoryName: string) => {
-  if (categoryName.includes('Discover')) return 'bg-primary/10';
-  if (categoryName.includes('Engage')) return 'bg-kenya-green/10';
-  if (categoryName.includes('Tools')) return 'bg-slate-500/10';
-  return 'bg-primary/10';
+  if (categoryName.includes('Discover')) return 'bg-primary/10 dark:bg-blue-500/10';
+  if (categoryName.includes('Engage')) return 'bg-kenya-green/10 dark:bg-kenya-green/20';
+  if (categoryName.includes('Tools')) return 'bg-slate-500/10 dark:bg-slate-400/10';
+  return 'bg-primary/10 dark:bg-blue-500/10';
 };
 
 interface NavbarProps {

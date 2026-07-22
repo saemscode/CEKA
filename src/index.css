@@ -1,4 +1,5 @@
 /* ===== UNIFIED CEKA + NASAKA IEBC CSS ===== */
+@import url('https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible&display=swap');
 /* Import Leaflet CSS for OpenStreetMap */
 @import 'leaflet/dist/leaflet.css';
 
@@ -973,7 +974,20 @@
 }
 
 /* ===== ACCESSIBILITY OVERRIDES ===== */
-.high-contrast {
+
+html.high-contrast:not(.dark) {
+  --background: 0 0% 100%;
+  --foreground: 0 0% 0%;
+  --primary: 0 0% 0%;
+  --primary-foreground: 0 0% 100%;
+  --card: 0 0% 100%;
+  --card-foreground: 0 0% 0%;
+  --border: 0 0% 0%;
+  --kenya-green: 120 100% 20%;
+  --kenya-red: 0 100% 35%;
+}
+
+html.high-contrast.dark {
   --background: 0 0% 0%;
   --foreground: 0 0% 100%;
   --primary: 0 0% 100%;
@@ -981,19 +995,28 @@
   --card: 0 0% 0%;
   --card-foreground: 0 0% 100%;
   --border: 0 0% 100%;
-  --kenya-green: 120 100% 25%;
-  --kenya-red: 0 100% 40%;
+  --kenya-green: 120 100% 40%;
+  --kenya-red: 0 100% 60%;
 }
 
-.high-contrast * {
-  /* Force stronger outlines for focus */
-  outline-color: #FFF !important;
+html.high-contrast:not(.dark) body {
+  background-color: white !important;
+  color: black !important;
 }
 
-.high-contrast body {
+html.high-contrast.dark body {
   background-color: black !important;
   color: white !important;
 }
+
+html.high-contrast:not(.dark) * {
+  outline-color: #000 !important;
+}
+
+html.high-contrast.dark * {
+  outline-color: #FFF !important;
+}
+
 
 .reduce-motion * {
   transition: none !important;
@@ -1981,6 +2004,40 @@ button.ios-control-btn {
   }
 }
 
+/* ==========================================================================
+   ENHANCED ACCESSIBILITY GLOBALS
+   ========================================================================== */
+
+/* Dyslexia-Friendly Font */
+.ceka-dyslexia-font * {
+  font-family: 'Atkinson Hyperlegible', 'Comic Sans MS', sans-serif !important;
+  letter-spacing: 0.05em !important;
+  line-height: 1.6 !important;
+}
+
+/* Highlight Links for low vision */
+.ceka-highlight-links a, 
+.ceka-highlight-links button, 
+.ceka-highlight-links [role="button"] {
+  background-color: yellow !important;
+  color: black !important;
+  text-decoration: underline !important;
+  font-weight: bold !important;
+  outline: 3px solid black !important;
+  outline-offset: 2px !important;
+  box-shadow: none !important;
+}
+
+/* Hide Images / Text-Only mode */
+.ceka-hide-images img, 
+.ceka-hide-images video, 
+.ceka-hide-images svg, 
+.ceka-hide-images [role="img"],
+.ceka-hide-images canvas {
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
 @keyframes rotate-shimmer {
   from {
     transform: rotate(0deg);
@@ -2142,4 +2199,4 @@ button.ios-control-btn {
     transition: none !important;
     animation: none !important;
   }
-}
+}

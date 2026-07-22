@@ -65,6 +65,7 @@
     "@types/pdf-parse": "^1.1.5",
     "@types/pg": "^8.20.0",
     "@types/uuid": "^10.0.0",
+    "@vercel/node": "^5.8.22",
     "axios": "^1.16.1",
     "boring-avatars": "^2.0.4",
     "class-variance-authority": "^0.7.1",
@@ -111,8 +112,7 @@
     "uuid": "^14.0.0",
     "vaul": "^0.9.3",
     "zod": "^3.23.8",
-    "zustand": "^5.0.14",
-    "@vercel/node": "^5.8.22"
+    "zustand": "^5.0.14"
   },
   "devDependencies": {
     "@eslint/js": "^9.9.0",
@@ -127,7 +127,6 @@
     "eslint-plugin-react-hooks": "^5.1.0-rc.0",
     "eslint-plugin-react-refresh": "^0.4.9",
     "globals": "^15.9.0",
-    "lovable-tagger": "^1.1.7",
     "postcss": "^8.4.47",
     "tailwindcss": "^3.4.11",
     "typescript": "^5.5.3",

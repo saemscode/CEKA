@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Sparkles, Send, X, Bot, HelpCircle, AlertTriangle, Flame } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate, Link } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import { cn } from '@/lib/utils';
 import { CEKALoader } from '@/components/ui/ceka-loader';
@@ -175,6 +175,105 @@ const CounterBadge: React.FC<CounterBadgeProps> = ({ remaining, total }) => {
 };
 
 // ============================================================================
+// PAGE DICTIONARY — CEKA site map for fuzzy links
+// ============================================================================
+let PAGE_DICTIONARY: Record<string, string> = {
+    'home': '/',
+    'bills': '/legislative-tracker',
+    'constitution': '/constitution'
+};
+let PAGE_KEYS = Object.keys(PAGE_DICTIONARY);
+let FUZZY_REGEX = new RegExp(`\\b(${PAGE_KEYS.sort((a, b) => b.length - a.length).map(k => k.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&')).join('|')})\\b`, 'gi');
+
+const SITEMAP_CACHE_KEY = 'ceka_sitemap_dictionary_cache';
+const SITEMAP_CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
+
+async function initializeSitemapDictionary() {
+    try {
+        const cached = localStorage.getItem(SITEMAP_CACHE_KEY);
+        if (cached) {
+            const { dictionary, timestamp } = JSON.parse(cached);
+            if (Date.now() - timestamp < SITEMAP_CACHE_TTL) {
+                PAGE_DICTIONARY = dictionary;
+                PAGE_KEYS = Object.keys(PAGE_DICTIONARY);
+                if (PAGE_KEYS.length > 0) {
+                    FUZZY_REGEX = new RegExp(`\\b(${PAGE_KEYS.sort((a, b) => b.length - a.length).map(k => k.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&')).join('|')})\\b`, 'gi');
+                }
+                return;
+            }
+        }
+
+        const res = await fetch('/sitemap.xml');
+        if (!res.ok) return;
+        const text = await res.text();
+        
+        const locRegex = /<loc>(.*?)<\/loc>/g;
+        const newDict: Record<string, string> = {
+            'home': '/', 'about': '/about', 'tools': '/tools', 'community': '/community', 'calendar': '/calendar'
+        };
+        
+        let match;
+        while ((match = locRegex.exec(text)) !== null) {
+            try {
+                const path = new URL(match[1]).pathname;
+                if (path === '/' || path.includes('/bill/')) continue; // Skip massive bill list
+                const key = path.split('/').pop()?.replace(/-/g, ' ').toLowerCase();
+                if (key && key.length > 2) newDict[key] = path;
+            } catch (e) {}
+        }
+        
+        // Add manual aliases for critical pages
+        Object.assign(newDict, {
+            'bills': '/legislative-tracker', 'bills tracker': '/legislative-tracker',
+            'legislative tracker': '/legislative-tracker', 'visual insights': '/pieces',
+            'events': '/calendar', 'civic calendar': '/calendar',
+            'nasaka': '/nasaka-iebc', 'iebc': '/nasaka-iebc',
+            'volunteer': '/join-community?tab=volunteer',
+            'peoples audit': '/peoples-audit'
+        });
+
+        PAGE_DICTIONARY = newDict;
+        PAGE_KEYS = Object.keys(PAGE_DICTIONARY);
+        if (PAGE_KEYS.length > 0) {
+            FUZZY_REGEX = new RegExp(`\\b(${PAGE_KEYS.sort((a, b) => b.length - a.length).map(k => k.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&')).join('|')})\\b`, 'gi');
+        }
+
+        localStorage.setItem(SITEMAP_CACHE_KEY, JSON.stringify({
+            dictionary: PAGE_DICTIONARY,
+            timestamp: Date.now()
+        }));
+    } catch (err) {
+        console.error("[CEKA AI] Sitemap parsing failed", err);
+    }
+}
+
+// ============================================================================
+// LIVE PAGE DISCOVERY
+// ============================================================================
+interface PageSnapshot {
+    title: string;
+    description: string;
+    headings: string[];
+    textExcerpt: string;
+}
+
+function capturePageSnapshot(): PageSnapshot {
+    const title = document.title || '';
+    const metaDesc = document.querySelector('meta[name="description"]') as HTMLMetaElement;
+    const description = metaDesc?.content || '';
+    const headings = Array.from(document.querySelectorAll('h1, h2, [data-ai-context]'))
+        .map(el => el.textContent?.trim() || '')
+        .filter(Boolean)
+        .slice(0, 8);
+    const paras = Array.from(document.querySelectorAll('p, [data-ai-excerpt]'))
+        .map(el => el.textContent?.trim() || '')
+        .filter(t => t.length > 40)
+        .slice(0, 3);
+    const textExcerpt = paras.join(' ').slice(0, 500);
+    return { title, description, headings, textExcerpt };
+}
+
+// ============================================================================
 // TYPES
 // ============================================================================
 interface Message {
@@ -219,12 +318,14 @@ const GlobalAIAssistant: React.FC<GlobalAIAssistantProps> = ({ isHidden, onHide 
     const [isIdle, setIsIdle] = useState(false);
     const [showPulse, setShowPulse] = useState(false);
     const [isHovering, setIsHovering] = useState(false);
+    const [navLabel, setNavLabel] = useState<string | null>(null);
 
     const queryRef = React.useRef(query);
     const usageRef = React.useRef(usage);
     const loadingRef = React.useRef(loading);
 
     const location = useLocation();
+    const navigate = useNavigate();
 
     const remaining = FLAGS.DAILY_LIMIT - usage;
     const isExhausted = usage >= FLAGS.DAILY_LIMIT;
@@ -255,6 +356,8 @@ const GlobalAIAssistant: React.FC<GlobalAIAssistantProps> = ({ isHidden, onHide 
 
     useEffect(() => {
         setUsage(getUsageToday());
+        
+        initializeSitemapDictionary();
 
         const handleTrigger = (e: any) => {
             const { query: triggerQuery } = e.detail;
@@ -301,9 +404,13 @@ const GlobalAIAssistant: React.FC<GlobalAIAssistantProps> = ({ isHidden, onHide 
         }
 
         const userMsg = activeQuery;
-        setMessages(prev => [...prev, { role: 'user', content: userMsg }]);
+        const updatedMessages: Message[] = [...messages, { role: 'user', content: userMsg }];
+        setMessages(updatedMessages);
         setQuery('');
         setLoading(true);
+
+        const pageSnapshot = capturePageSnapshot();
+        const conversationHistory = updatedMessages.slice(-10).map(m => ({ role: m.role, content: m.content }));
 
         try {
             const { data, error } = await supabase.functions.invoke('ceka-ai-assistant', {
@@ -311,7 +418,9 @@ const GlobalAIAssistant: React.FC<GlobalAIAssistantProps> = ({ isHidden, onHide 
                     query: userMsg,
                     context: location.pathname,
                     billId: extractBillIdFromPath(location.pathname) || null,
-                    pageTitle: document.title || null
+                    pageTitle: document.title || null,
+                    conversationHistory,
+                    pageSnapshot
                 }
             });
 
@@ -340,6 +449,18 @@ const GlobalAIAssistant: React.FC<GlobalAIAssistantProps> = ({ isHidden, onHide 
                 role: 'ai',
                 content: data.answer || "I couldn't process that request. Please try again."
             }]);
+
+            if (data.action && data.action.type === 'navigate_to' && data.action.target) {
+                const target = data.action.target;
+                if (location.pathname !== target) {
+                    const pageName = target.replace('/', '').replace(/-/g, ' ') || 'home';
+                    setNavLabel(`Opening ${pageName}…`);
+                    setTimeout(() => {
+                        navigate(target);
+                        setTimeout(() => setNavLabel(null), 1200);
+                    }, 1400);
+                }
+            }
         } catch (err: any) {
             let errorMessage: string;
             if (err?.message?.includes('FetchError') || err?.message?.includes('network') || err?.message?.includes('Failed to fetch')) {
@@ -425,6 +546,17 @@ const GlobalAIAssistant: React.FC<GlobalAIAssistantProps> = ({ isHidden, onHide 
                                                 </button>
                                             </div>
                                         </div>
+                                        <AnimatePresence>
+                                            {navLabel && (
+                                                <motion.div
+                                                    initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
+                                                    className="mt-2 flex items-center gap-2 text-[11px] text-kenya-green font-semibold"
+                                                >
+                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12H19M13 6L19 12L13 18"/></svg>
+                                                    {navLabel}
+                                                </motion.div>
+                                            )}
+                                        </AnimatePresence>
                                     </div>
 
                                     {/* Messages */}
@@ -481,7 +613,39 @@ const GlobalAIAssistant: React.FC<GlobalAIAssistantProps> = ({ isHidden, onHide 
                                                         "prose prose-sm dark:prose-invert prose-headings:mt-3 prose-headings:mb-1 prose-p:my-1 prose-li:my-0.5 whitespace-pre-wrap break-words max-w-full overflow-hidden leading-snug",
                                                         m.role === 'user' && "text-white prose-p:text-white prose-headings:text-white prose-strong:text-white prose-em:text-white prose-code:text-white"
                                                     )}>
-                                                        <ReactMarkdown>
+                                                        <ReactMarkdown
+                                                            components={{
+                                                                a: ({ href, children }) => {
+                                                                    if (!href) return <span>{children}</span>;
+                                                                    const isInternal = href.startsWith('/') && !href.startsWith('//');
+                                                                    if (isInternal) {
+                                                                        return (
+                                                                            <Link to={href} onClick={() => setIsOpen(false)} className="underline font-semibold text-kenya-green hover:opacity-80 transition-colors">
+                                                                                {children}
+                                                                            </Link>
+                                                                        );
+                                                                    }
+                                                                    return <a href={href} target="_blank" rel="noopener noreferrer" className="underline font-semibold text-kenya-green hover:opacity-80 transition-colors">{children}</a>;
+                                                                },
+                                                                p: ({ children }) => {
+                                                                    const processChildren = (kids: React.ReactNode): React.ReactNode => {
+                                                                        if (typeof kids === 'string') {
+                                                                            const parts = kids.split(FUZZY_REGEX);
+                                                                            if (parts.length === 1) return kids;
+                                                                            return parts.map((p, i) => {
+                                                                                const url = PAGE_DICTIONARY[p.toLowerCase()];
+                                                                                return url ? (
+                                                                                    <Link key={i} to={url} onClick={() => setIsOpen(false)} className="underline font-semibold text-kenya-green hover:opacity-80 transition-colors">{p}</Link>
+                                                                                ) : p;
+                                                                            });
+                                                                        }
+                                                                        if (Array.isArray(kids)) return kids.map(processChildren);
+                                                                        return kids;
+                                                                    };
+                                                                    return <p className="my-1">{processChildren(children)}</p>;
+                                                                }
+                                                            }}
+                                                        >
                                                             {m.content}
                                                         </ReactMarkdown>
                                                     </div>
