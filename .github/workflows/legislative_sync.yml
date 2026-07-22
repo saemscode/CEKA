@@ -26,10 +26,12 @@ on:
         description: 'Phase B Column Sweep target (e.g. constitutional_section). Leave blank for full matrix.'
         type: string
         required: false
+        default: ''
       phase_b_bill_id:
         description: 'Phase B Row Full-Ham target Bill UUID. Leave blank for all bills.'
         type: string
         required: false
+        default: ''
       phase_a_force:
         description: 'Phase A: Force re-process ALL bills even if data is complete'
         type: boolean
@@ -44,6 +46,7 @@ on:
         description: 'Deep Relay: Target specific Bill UUID. Leave blank to process all pending bills.'
         type: string
         required: false
+        default: ''
 
 jobs:
   sync:
