@@ -564,11 +564,11 @@ const CommunityChat = () => {
 
     if (!session) {
         return (
-            <Card className="h-[700px] flex flex-col items-center justify-center border-none shadow-2xl rounded-[40px] bg-white/50 backdrop-blur-3xl animate-in fade-in zoom-in-95 duration-500">
-                <div className="bg-primary/10 p-6 rounded-[32px] mb-8 shadow-inner">
-                    <MessageCircle className="h-16 w-16 text-primary" />
+            <Card className="h-[700px] flex flex-col items-center justify-center border-none shadow-2xl rounded-[40px] bg-white/80 dark:bg-[#1C1C1E]/90 backdrop-blur-3xl border border-slate-200/50 dark:border-white/10 animate-in fade-in zoom-in-95 duration-500">
+                <div className="bg-emerald-500/10 dark:bg-emerald-500/20 p-6 rounded-[32px] mb-8 shadow-inner">
+                    <MessageCircle className="h-16 w-16 text-emerald-600 dark:text-emerald-400" />
                 </div>
-                <h3 className="text-2xl font-bold mb-3 tracking-tight">Join the Community</h3>
+                <h3 className="text-2xl font-bold mb-3 tracking-tight text-slate-900 dark:text-white">Join the Community</h3>
                 <p className="text-muted-foreground text-center mb-8 max-w-sm px-4">Sign in to chat and connect with others.</p>
                 <Button asChild size="lg" className="rounded-2xl px-12 h-14 text-lg font-bold shadow-xl">
                     <Link to="/auth" rel="nofollow">Sign In</Link>

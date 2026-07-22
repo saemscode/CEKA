@@ -60,14 +60,14 @@ const getItemIcon = (path: string) => {
 // Category color mapping
 const getCategoryColor = (categoryName: string) => {
   if (categoryName.includes('Discover')) return 'text-primary dark:text-blue-400';
-  if (categoryName.includes('Engage')) return 'text-slate-800 dark:text-slate-200';
+  if (categoryName.includes('Engage')) return 'text-emerald-600 dark:text-emerald-400';
   if (categoryName.includes('Tools')) return 'text-green-700 dark:text-green-400';
   return 'text-primary dark:text-blue-400';
 };
 
 const getCategoryBgColor = (categoryName: string) => {
   if (categoryName.includes('Discover')) return 'bg-primary/10 dark:bg-blue-500/10';
-  if (categoryName.includes('Engage')) return 'bg-kenya-green/10 dark:bg-kenya-green/20';
+  if (categoryName.includes('Engage')) return 'bg-emerald-500/10 dark:bg-emerald-500/20';
   if (categoryName.includes('Tools')) return 'bg-slate-500/10 dark:bg-slate-400/10';
   return 'bg-primary/10 dark:bg-blue-500/10';
 };
