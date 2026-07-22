@@ -10,35 +10,40 @@ on:
       force_news:
         description: 'Force news corroboration search'
         type: boolean
+        required: false
         default: false
       run_phase_a:
         description: 'Run Phase A: Sovereign Refresh (broad sweep, all bills)'
         type: boolean
+        required: false
         default: false
       run_phase_b:
         description: 'Run Phase B: Matrix Solvency (surgical NULL fill)'
         type: boolean
+        required: false
         default: false
       phase_b_column:
         description: 'Phase B Column Sweep target (e.g. constitutional_section). Leave blank for full matrix.'
         type: string
-        default: ''
+        required: false
       phase_b_bill_id:
         description: 'Phase B Row Full-Ham target Bill UUID. Leave blank for all bills.'
         type: string
-        default: ''
+        required: false
       phase_a_force:
         description: 'Phase A: Force re-process ALL bills even if data is complete'
         type: boolean
+        required: false
         default: false
       run_deep_relay:
         description: 'Run Deep Intelligence Relay (wide-context multi-LLM Phase 2 analysis)'
         type: boolean
+        required: false
         default: false
       deep_relay_bill_id:
         description: 'Deep Relay: Target specific Bill UUID. Leave blank to process all pending bills.'
         type: string
-        default: ''
+        required: false
 
 jobs:
   sync:
@@ -137,7 +142,7 @@ jobs:
         id: news_check
         run: |
           HOUR=$(date +%H)
-          if [[ "$HOUR" == "06" || "$HOUR" == "12" || "$HOUR" == "18" || "${{ github.event.inputs.force_news }}" == "true" ]]; then
+          if [[ "$HOUR" == "06" || "$HOUR" == "12" || "$HOUR" == "18" || "${{ inputs.force_news }}" == "true" || "${{ github.event.inputs.force_news }}" == "true" ]]; then
             echo "RUN_NEWS=true" >> $GITHUB_ENV
             echo "run_news=true" >> $GITHUB_OUTPUT
             echo "✅ News Corroboration ENABLED."
@@ -182,13 +187,12 @@ jobs:
         # Runs on every scheduled sync (polls Supabase for pending bills automatically)
         # OR when manually triggered with run_deep_relay=true
         # OR when a specific bill ID is provided via deep_relay_bill_id
-        if: |
-          github.event.inputs.run_deep_relay == 'true' ||
-          github.event.inputs.deep_relay_bill_id != '' ||
-          github.event_name == 'schedule'
+        if: ${{ inputs.run_deep_relay == true || github.event.inputs.run_deep_relay == 'true' || inputs.deep_relay_bill_id != '' || github.event.inputs.deep_relay_bill_id != '' || github.event_name == 'schedule' }}
         run: |
           BILL_FLAG=""
-          if [ -n "${{ github.event.inputs.deep_relay_bill_id }}" ]; then
+          if [ -n "${{ inputs.deep_relay_bill_id }}" ]; then
+            BILL_FLAG="${{ inputs.deep_relay_bill_id }}"
+          elif [ -n "${{ github.event.inputs.deep_relay_bill_id }}" ]; then
             BILL_FLAG="${{ github.event.inputs.deep_relay_bill_id }}"
           fi
           python scripts/deep_intelligence_relay.py $BILL_FLAG
@@ -198,12 +202,10 @@ jobs:
 
       - name: "Phase A: Sovereign Refresh (Weekly — All Bills Broad Sweep)"
         # Runs every Monday at 06:00 EAT (03:00 UTC) OR when manually triggered with run_phase_a=true
-        if: |
-          github.event.inputs.run_phase_a == 'true' ||
-          (github.event_name == 'schedule' && startsWith(github.event.schedule, '0 3'))
+        if: ${{ inputs.run_phase_a == true || github.event.inputs.run_phase_a == 'true' || (github.event_name == 'schedule' && github.event.schedule != null && contains(github.event.schedule, '0 3')) }}
         run: |
           FORCE_FLAG=""
-          if [ "${{ github.event.inputs.phase_a_force }}" == "true" ]; then
+          if [ "${{ inputs.phase_a_force }}" == "true" ] || [ "${{ github.event.inputs.phase_a_force }}" == "true" ]; then
             FORCE_FLAG="--force"
           fi
           python scripts/sovereign_refresh.py $FORCE_FLAG
@@ -213,16 +215,18 @@ jobs:
 
       - name: "Phase B: Matrix Solvency (Weekly — Surgical NULL Fill)"
         # Runs every Monday at 08:00 EAT (05:00 UTC) OR when manually triggered with run_phase_b=true
-        if: |
-          github.event.inputs.run_phase_b == 'true' ||
-          (github.event_name == 'schedule' && startsWith(github.event.schedule, '0 5'))
+        if: ${{ inputs.run_phase_b == true || github.event.inputs.run_phase_b == 'true' || (github.event_name == 'schedule' && github.event.schedule != null && contains(github.event.schedule, '0 5')) }}
         run: |
           COL_FLAG=""
           BILL_FLAG=""
-          if [ -n "${{ github.event.inputs.phase_b_column }}" ]; then
+          if [ -n "${{ inputs.phase_b_column }}" ]; then
+            COL_FLAG="--column ${{ inputs.phase_b_column }}"
+          elif [ -n "${{ github.event.inputs.phase_b_column }}" ]; then
             COL_FLAG="--column ${{ github.event.inputs.phase_b_column }}"
           fi
-          if [ -n "${{ github.event.inputs.phase_b_bill_id }}" ]; then
+          if [ -n "${{ inputs.phase_b_bill_id }}" ]; then
+            BILL_FLAG="--bill-id ${{ inputs.phase_b_bill_id }}"
+          elif [ -n "${{ github.event.inputs.phase_b_bill_id }}" ]; then
             BILL_FLAG="--bill-id ${{ github.event.inputs.phase_b_bill_id }}"
           fi
           python scripts/matrix_solvency.py $COL_FLAG $BILL_FLAG
