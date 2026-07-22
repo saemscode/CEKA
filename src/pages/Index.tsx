@@ -166,11 +166,11 @@ const Index = () => {
         <meta name="twitter:description" content="Comprehensive civic education platform for Kenyan citizens. Governance, rights, and democratic participation." />
         <meta name="twitter:image" content="https://www.civiceducationkenya.com/lovable-uploads/3.webp" />
       </Helmet>
-      <div className="homepage-restored">
+      <main id="main-content" className="homepage-restored">
         <Hero />
 
         {/* Campaign Spotlight / Ad Space (Dynamic) */}
-        <section className="container mx-auto py-8">
+        <section className="container mx-auto py-8" aria-label="Campaign spotlight">
           <CampaignSpotlight section="home_hero" />
         </section>
 
@@ -183,18 +183,18 @@ const Index = () => {
         </div>
         <FeaturedLegislation />
 
-        <section className="container mx-auto py-8">
+        <section className="container mx-auto py-8" aria-label="Featured partner tools">
           <NasakaFeedBanner />
         </section>
 
         {/* Featured Instagram-style Carousel Section */}
         {featuredMedia && (
-          <section className="bg-background py-16 scroll-mt-20 overflow-hidden">
+          <section className="bg-background py-16 scroll-mt-20 overflow-hidden" aria-label="Pieces — Civic Education Series">
             <div className="container mx-auto px-4">
               <div className="flex flex-col lg:flex-row items-center gap-12 max-w-6xl mx-auto">
                 {/* Text Side */}
                 <div className="flex-1 space-y-6 text-center lg:text-left">
-                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-kenya-red/10 text-kenya-red text-xs font-bold uppercase tracking-widest">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-kenya-red/10 text-kenya-red text-xs font-bold uppercase tracking-widest" aria-hidden="true">
                     <span className="animate-pulse">●</span> Education Series
                   </div>
                   <h2 className="text-3xl md:text-4xl lg:text-5xl font-black tracking-tighter text-kenya-black dark:text-white uppercase leading-tight">
@@ -206,7 +206,7 @@ const Index = () => {
                   </p>
                   <div className="pt-4 flex flex-wrap justify-center lg:justify-start gap-4">
                     <Link to="/pieces">
-                      <Button className="rounded-full bg-kenya-green hover:bg-kenya-green/90 text-white font-bold px-8 h-12 shadow-lg shadow-kenya-green/20">
+                      <Button className="rounded-full bg-kenya-green hover:bg-kenya-green/90 text-white font-bold px-8 h-12 shadow-lg shadow-kenya-green/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-kenya-green focus-visible:ring-offset-2">
                         EXPLORE ALL PIECES
                       </Button>
                     </Link>
@@ -223,14 +223,14 @@ const Index = () => {
         )}
 
         {/* Secondary Ad Space: Between Legislation and Resources */}
-        <section className="container mx-auto py-8">
+        <section className="container mx-auto py-8" aria-label="Mid-page spotlight">
           <CampaignSpotlight section="home_mid" />
         </section>
 
         <ResourceHighlights />
         <CommunitySection />
         <VolunteerOpportunities />
-      </div>
+      </main>
     </Layout>
   );
 };

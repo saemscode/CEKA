@@ -559,8 +559,9 @@ const LegislativeTracker = () => {
                     <Input
                       id="bill-search"
                       name="bill_search"
+                      aria-label="Search bills by title, year or keyword"
                       placeholder="Title | Year | Keyword"
-                      className="h-14 rounded-2xl bg-white dark:bg-[#111] border-slate-200 dark:border-white/5 shadow-sm focus:ring-primary/20 pr-12"
+                      className="h-14 rounded-2xl bg-white dark:bg-[#111] border-slate-200 dark:border-white/5 shadow-sm focus-visible:ring-2 focus-visible:ring-primary/50 pr-12"
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
                     />
@@ -579,6 +580,7 @@ const LegislativeTracker = () => {
                           className="sr-only peer"
                           checked={deepSearch}
                           onChange={() => setDeepSearch(!deepSearch)}
+                          aria-label="Enable Deep Intelligence Search"
                         />
                         <div
                           className="
@@ -685,8 +687,9 @@ const LegislativeTracker = () => {
                       <button
                         key={cat}
                         onClick={() => setSelectedCategory(cat)}
+                        aria-pressed={selectedCategory === cat}
                         className={cn(
-                          "w-full text-left px-5 py-3 rounded-2xl text-sm font-bold transition-all",
+                          "w-full text-left px-5 py-3 rounded-2xl text-sm font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
                           selectedCategory === cat
                             ? "bg-primary text-white shadow-lg shadow-primary/20 scale-[1.02]"
                             : "bg-slate-50 dark:bg-white/5 hover:bg-slate-100 dark:hover:bg-white/10"

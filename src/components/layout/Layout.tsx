@@ -4,6 +4,7 @@ import Footer from './Footer';
 import BottomNavbar from './BottomNavbar';
 import DonationWidget from '@/components/donation/DonationWidget';
 import GlobalAIAssistant from '@/components/ai/GlobalAIAssistant';
+import AccessibilityWidget from '@/components/accessibility/AccessibilityWidget';
 import InAppBrowserBanner from '@/components/ui/InAppBrowserBanner';
 import MaintenanceBanner from '@/components/MaintenanceBanner';
 import CivicMiniPlayer from '@/components/civic/CivicMiniPlayer';
@@ -27,6 +28,7 @@ const Layout = ({ children, hideBottomNav, hideBackButton }: LayoutProps) => {
   const [isAIHidden, setIsAIHidden] = useState(false);
   const [isDonationHidden, setIsDonationHidden] = useState(false);
   const [isCivicHidden, setIsCivicHidden] = useState(false);
+  const [isA11yHidden, setIsA11yHidden] = useState(false);
 
   // PRECISE SCROLL HANDOFF LOGIC
   const { bannerRef, navbarRef, isFixed, navbarHeight } = useMaintenanceScroll();
@@ -49,7 +51,7 @@ const Layout = ({ children, hideBottomNav, hideBackButton }: LayoutProps) => {
       {!hideBottomNav && <BottomNavbar />}
 
       <AnimatePresence>
-        {(isAIHidden || isDonationHidden || isCivicHidden) && (
+        {(isAIHidden || isDonationHidden || isCivicHidden || isA11yHidden) && (
           <motion.div
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
@@ -64,12 +66,14 @@ const Layout = ({ children, hideBottomNav, hideBackButton }: LayoutProps) => {
                   setIsAIHidden(false);
                   setIsDonationHidden(false);
                   setIsCivicHidden(false);
+                  setIsA11yHidden(false);
                 }
               }}
               onClick={() => {
                 setIsAIHidden(false);
                 setIsDonationHidden(false);
                 setIsCivicHidden(false);
+                setIsA11yHidden(false);
               }}
               className="w-3 sm:w-1.5 h-24 bg-black/80 dark:bg-white/80 sm:bg-black/20 sm:dark:bg-white/20 rounded-l-xl transition-all cursor-pointer group relative border border-black/20 dark:border-white/30 shadow-[0_0_15px_rgba(0,0,0,0.25)]"
               title="Swipe left to restore"
@@ -88,6 +92,12 @@ const Layout = ({ children, hideBottomNav, hideBackButton }: LayoutProps) => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Accessibility FAB - positioned highest */}
+      <AccessibilityWidget
+        isHidden={isA11yHidden}
+        onHide={() => setIsA11yHidden(true)}
+      />
 
       {/* AI Assistant FAB - positioned above donation widget */}
       <GlobalAIAssistant

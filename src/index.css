@@ -969,6 +969,43 @@
 .geojson-office-marker,
 .geojson-office-marker-detailed {
   background: transparent !important;
+  box-shadow: none !important;
+}
+
+/* ===== ACCESSIBILITY OVERRIDES ===== */
+.high-contrast {
+  --background: 0 0% 0%;
+  --foreground: 0 0% 100%;
+  --primary: 0 0% 100%;
+  --primary-foreground: 0 0% 0%;
+  --card: 0 0% 0%;
+  --card-foreground: 0 0% 100%;
+  --border: 0 0% 100%;
+  --kenya-green: 120 100% 25%;
+  --kenya-red: 0 100% 40%;
+}
+
+.high-contrast * {
+  /* Force stronger outlines for focus */
+  outline-color: #FFF !important;
+}
+
+.high-contrast body {
+  background-color: black !important;
+  color: white !important;
+}
+
+.reduce-motion * {
+  transition: none !important;
+  animation: none !important;
+  scroll-behavior: auto !important;
+}
+
+.office-marker,
+.user-location-marker,
+.geojson-office-marker,
+.geojson-office-marker-detailed {
+  background: transparent !important;
   border: none !important;
   z-index: var(--z-index-map-markers) !important;
 }

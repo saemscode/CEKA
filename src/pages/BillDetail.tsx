@@ -368,13 +368,13 @@ const BillDetail = () => {
         image={`https://civiceducationkenya.com/og/bill/${bill.slug || bill.id}.png`}
       />
 
-      <div className="min-h-screen bg-slate-50/30 dark:bg-black">
+      <main className="min-h-screen bg-slate-50/30 dark:bg-black">
         {/* HERO SECTION */}
         <section className="relative pt-24 pb-16 overflow-hidden">
           <div className="absolute inset-0 bg-white/40 dark:bg-slate-900/20 backdrop-blur-3xl -z-10" />
           <div className="absolute top-0 right-0 w-full h-[500px] bg-gradient-to-b from-kenya-green/5 to-transparent -z-10" />
 
-          <div className="container relative px-4">
+          <article className="container relative px-4" aria-labelledby="bill-title">
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -396,7 +396,7 @@ const BillDetail = () => {
                 </Badge>
               </div>
 
-              <h1 className="text-2xl md:text-5xl lg:text-6xl font-[1000] tracking-tighter uppercase leading-[0.9] text-kenya-black dark:text-white">
+              <h1 id="bill-title" className="text-2xl md:text-5xl lg:text-6xl font-[1000] tracking-tighter uppercase leading-[0.9] text-kenya-black dark:text-white">
                 {bill.title}
               </h1>
 
@@ -824,9 +824,9 @@ const BillDetail = () => {
               </div>
             </aside>
 
-          </div>
-        </div>
-      </div>
+          </article>
+        </section>
+      </main>
     </Layout>
   );
 };

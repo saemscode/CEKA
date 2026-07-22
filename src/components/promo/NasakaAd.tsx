@@ -240,10 +240,11 @@ export const NasakaFeedBanner: React.FC = () => {
             <a
               href={PLAY_STORE_URL}
               target="_blank"
-              rel="noopener"
-              className="group relative flex items-center justify-center gap-2 rounded-2xl bg-[#1A6BFF] px-6 py-3.5 text-[11px] font-black uppercase tracking-widest text-white transition-all hover:bg-[#1A6BFF]/90 hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-blue-600/20"
+              rel="noopener noreferrer"
+              aria-label="Download Nasaka IEBC Office Finder on Google Play Store (opens in new tab)"
+              className="group relative flex items-center justify-center gap-2 rounded-2xl bg-[#1A6BFF] px-6 py-3.5 text-[11px] font-black uppercase tracking-widest text-white transition-all hover:bg-[#1A6BFF]/90 hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-blue-600/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1A6BFF] focus-visible:ring-offset-2"
             >
-              <IconDownload className="w-4 h-4" />
+              <IconDownload className="w-4 h-4" aria-hidden="true" />
               Download on Play Store
             </a>
           </div>
@@ -272,9 +273,10 @@ export const NasakaFeedBanner: React.FC = () => {
       {/* Dismiss */}
       <button
         onClick={handleDismiss}
-        className="absolute top-4 right-4 p-2.5 rounded-full bg-slate-100/50 dark:bg-white/5 border border-slate-200/50 dark:border-white/10 hover:bg-slate-200/50 dark:hover:bg-white/10 text-slate-400 dark:text-white/40 hover:text-slate-600 dark:hover:text-white transition-all shadow-sm"
+        aria-label="Dismiss Nasaka IEBC advertisement"
+        className="absolute top-4 right-4 p-2.5 rounded-full bg-slate-100/50 dark:bg-white/5 border border-slate-200/50 dark:border-white/10 hover:bg-slate-200/50 dark:hover:bg-white/10 text-slate-400 dark:text-white/40 hover:text-slate-600 dark:hover:text-white transition-all shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1A6BFF]"
       >
-        <IconX className="w-4 h-4 z-20" />
+        <IconX className="w-4 h-4 z-20" aria-hidden="true" />
       </button>
     </motion.div>
   );
@@ -314,9 +316,10 @@ export const NasakaSidebarWidget: React.FC<{ dwellDelayMs?: number }> = ({ dwell
 
         <button
           onClick={handleDismiss}
-          className="absolute top-3 right-3 p-2 rounded-full hover:bg-slate-100 dark:hover:bg-white/5 text-slate-400 dark:text-white/30 transition-all border border-slate-200 dark:border-white/5"
+          aria-label="Dismiss Nasaka IEBC advertisement"
+          className="absolute top-3 right-3 p-2 rounded-full hover:bg-slate-100 dark:hover:bg-white/5 text-slate-400 dark:text-white/30 transition-all border border-slate-200 dark:border-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1A6BFF]"
         >
-          <IconX className="w-3 h-3" />
+          <IconX className="w-3 h-3" aria-hidden="true" />
         </button>
 
         <div className="space-y-4">
@@ -337,10 +340,11 @@ export const NasakaSidebarWidget: React.FC<{ dwellDelayMs?: number }> = ({ dwell
           <a
             href={PLAY_STORE_URL}
             target="_blank"
-            rel="noopener"
-            className="flex items-center justify-center gap-2 w-full rounded-2xl bg-[#1A6BFF] py-3 text-[10px] font-black uppercase tracking-widest text-white transition-all hover:bg-[#1A6BFF]/90 shadow-lg shadow-blue-600/10"
+            rel="noopener noreferrer"
+            aria-label="Install Nasaka IEBC on Google Play Store (opens in new tab)"
+            className="flex items-center justify-center gap-2 w-full rounded-2xl bg-[#1A6BFF] py-3 text-[10px] font-black uppercase tracking-widest text-white transition-all hover:bg-[#1A6BFF]/90 shadow-lg shadow-blue-600/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1A6BFF] focus-visible:ring-offset-2"
           >
-            <IconHand className="w-5 h-5" />
+            <IconHand className="w-5 h-5" aria-hidden="true" />
             Install Nasaka
           </a>
         </div>
@@ -352,10 +356,10 @@ export const NasakaSidebarWidget: React.FC<{ dwellDelayMs?: number }> = ({ dwell
 /** PLACEMENT 3: Tools Directory Card */
 export const NasakaToolsCard: React.FC = () => (
   <div className="group relative overflow-hidden rounded-2xl border border-slate-200 dark:border-white/5 bg-white dark:bg-slate-900/20 p-5 transition-all hover:border-blue-500/30">
-    <div className="absolute left-0 top-0 h-full w-1.5 bg-blue-500" />
+    <div className="absolute left-0 top-0 h-full w-1.5 bg-blue-500" aria-hidden="true" />
 
     <div className="flex items-center gap-5">
-      <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-[#1A6BFF] p-2 transition-transform group-hover:scale-105">
+      <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-[#1A6BFF] p-2 transition-transform group-hover:scale-105" aria-hidden="true">
         <NasakaLogo className="h-full w-full" />
       </div>
 
@@ -374,10 +378,11 @@ export const NasakaToolsCard: React.FC = () => (
       <a
         href={PLAY_STORE_URL}
         target="_blank"
-        rel="noopener"
-        className="flex h-10 items-center gap-2 rounded-xl bg-blue-600/10 border border-white/5 px-4 text-[10px] font-black uppercase tracking-widest text-[#1A6BFF] transition-all hover:bg-[#1A6BFF] hover:text-white"
+        rel="noopener noreferrer"
+        aria-label="Get Nasaka IEBC Office Finder on Google Play Store (opens in new tab)"
+        className="flex h-10 items-center gap-2 rounded-xl bg-blue-600/10 border border-white/5 px-4 text-[10px] font-black uppercase tracking-widest text-[#1A6BFF] transition-all hover:bg-[#1A6BFF] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1A6BFF] focus-visible:ring-offset-2"
       >
-        <IconArrowRight className="w-3 h-3" />
+        <IconArrowRight className="w-3 h-3" aria-hidden="true" />
         Get It
       </a>
     </div>
@@ -602,9 +607,10 @@ const AdFeedBanner: React.FC<{ ad: AdContent }> = ({ ad }) => {
 
       <button
         onClick={handleDismiss}
-        className="absolute top-4 right-4 p-2.5 rounded-full bg-slate-100/50 dark:bg-white/5 border border-slate-200/50 dark:border-white/10 hover:bg-slate-200/50 dark:hover:bg-white/10 text-slate-400 dark:text-white/40 hover:text-slate-600 dark:hover:text-white transition-all shadow-sm z-20"
+        aria-label={`Dismiss ${ad.title} advertisement`}
+        className="absolute top-4 right-4 p-2.5 rounded-full bg-slate-100/50 dark:bg-white/5 border border-slate-200/50 dark:border-white/10 hover:bg-slate-200/50 dark:hover:bg-white/10 text-slate-400 dark:text-white/40 hover:text-slate-600 dark:hover:text-white transition-all shadow-sm z-20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
       >
-        <IconX className="w-4 h-4" />
+        <IconX className="w-4 h-4" aria-hidden="true" />
       </button>
     </motion.div>
   );
@@ -648,9 +654,10 @@ const AdSidebarWidget: React.FC<{ ad: AdContent; dwellDelayMs?: number }> = ({ a
 
         <button
           onClick={handleDismiss}
-          className="absolute top-3 right-3 p-2 rounded-full hover:bg-slate-100 dark:hover:bg-white/5 text-slate-400 dark:text-white/30 transition-all border border-slate-200 dark:border-white/5 z-20"
+          aria-label={`Dismiss ${ad.title} advertisement`}
+          className="absolute top-3 right-3 p-2 rounded-full hover:bg-slate-100 dark:hover:bg-white/5 text-slate-400 dark:text-white/30 transition-all border border-slate-200 dark:border-white/5 z-20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
         >
-          <IconX className="w-3 h-3" />
+          <IconX className="w-3 h-3" aria-hidden="true" />
         </button>
 
         <div className="space-y-4">
@@ -717,9 +724,10 @@ const AdToolsCard: React.FC<{ ad: AdContent }> = ({ ad }) => {
       <a
         href={ad.cta.url}
         target="_blank"
-        rel="noopener"
+        rel="noopener noreferrer"
+        aria-label={`${ad.cta.label} (opens in new tab)`}
         onClick={() => trackAdEvent(ad.id, 'click')}
-        className="flex h-10 items-center gap-2 rounded-xl border border-white/5 px-4 text-[10px] font-black uppercase tracking-widest transition-all"
+        className="flex h-10 items-center gap-2 rounded-xl border border-white/5 px-4 text-[10px] font-black uppercase tracking-widest transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
         style={{
           backgroundColor: `${ad.backgroundColor}15`,
           color: ad.backgroundColor || '#1A6BFF',
@@ -736,7 +744,7 @@ const AdToolsCard: React.FC<{ ad: AdContent }> = ({ ad }) => {
           el.style.color = ad.backgroundColor || '#1A6BFF';
         }}
       >
-        <IconArrowRight className="w-3 h-3" />
+        <IconArrowRight className="w-3 h-3" aria-hidden="true" />
         Get It
       </a>
     </div>

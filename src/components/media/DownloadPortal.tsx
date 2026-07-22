@@ -92,9 +92,12 @@ const DownloadPortal: React.FC<DownloadPortalProps> = ({
     const [donationAmount, setDonationAmount] = useState<number>(100);
     const [isPaying, setIsPaying] = useState(false);
     const [pendingRef, setPendingRef] = useState<string | null>(null);
+    const [liveAnnouncement, setLiveAnnouncement] = useState('');
     const { toast } = useToast();
     const { user } = useAuth();
     const isDesktop = useMedia('(min-width: 768px)', false);
+
+    const announce = (message: string) => setLiveAnnouncement(message);
 
     const unsubscribeRef = useRef<(() => void) | null>(null);
     const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -186,14 +189,17 @@ const DownloadPortal: React.FC<DownloadPortalProps> = ({
 
     const initiateDownload = async (tier: Tier) => {
         setStep('downloading');
+        announce('Generating secure download link, please wait.');
         try {
             const signedUrl = await getSignedUrl(tier);
             await blobDownload(signedUrl, buildDownloadFilename(tier, tier.isPdf ? (pdfPath || '') : filePath));
+            announce('Download started. Saving to your device.');
             toast({ title: 'Download started', description: `${tier.label} — saving to your device.` });
             resetToSelection();
             setIsOpen(false);
         } catch (err) {
             console.error('[Portal] Download error:', err);
+            announce('Download failed. Please try again.');
             toast({ title: 'Download failed', description: 'Could not generate a secure link. Please try again.', variant: 'destructive' });
             setStep('selection');
         }
@@ -279,6 +285,7 @@ const DownloadPortal: React.FC<DownloadPortalProps> = ({
                     setIsPaying(false);
                     // 2. Transition to 'verifying' — subscribe to Realtime for webhook confirmation
                     setStep('verifying');
+                    announce('Payment received. Confirming with Paystack, please wait up to 90 seconds.');
 
                     // Subscribe to Supabase Realtime on this transaction row
                     const unsub = piecesTransactionService.subscribeToVerification(
@@ -301,6 +308,7 @@ const DownloadPortal: React.FC<DownloadPortalProps> = ({
                 },
                 onClose: () => {
                     setIsPaying(false);
+                    announce('Payment window closed.');
                     // User closed Paystack without paying — stay on donation step
                 }
             });
@@ -314,6 +322,15 @@ const DownloadPortal: React.FC<DownloadPortalProps> = ({
 
     const PortalContent = (
         <div className="flex flex-col gap-6 h-full min-h-[400px]">
+            {/* ARIA live region — screen reader announcement for dynamic step changes */}
+            <div
+                role="status"
+                aria-live="polite"
+                aria-atomic="true"
+                className="sr-only"
+            >
+                {liveAnnouncement}
+            </div>
             <AnimatePresence mode="wait">
 
                 {/* ── SELECTION STEP ── */}
@@ -335,10 +352,11 @@ const DownloadPortal: React.FC<DownloadPortalProps> = ({
                                 {/* Main tier button */}
                                 <button
                                     onClick={() => handleSelectTier(tier)}
+                                    aria-label={`Select ${tier.label} — ${tier.sublabel}${tier.requiresDonation ? ', requires donation' : ', free'}`}
                                     className={cn(
                                         "flex-1 flex items-center justify-between p-4 rounded-[22px] transition-all group active:scale-[0.98]",
                                         "bg-muted/5 border border-white/10 hover:border-kenya-red/30 hover:bg-kenya-red/[0.03]",
-                                        "glass-card"
+                                        "glass-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-kenya-red focus-visible:ring-offset-2"
                                     )}
                                 >
                                     <div className="flex items-center gap-4">
@@ -410,8 +428,10 @@ const DownloadPortal: React.FC<DownloadPortalProps> = ({
                                 <button
                                     key={amt.value}
                                     onClick={() => setDonationAmount(amt.value)}
+                                    aria-pressed={donationAmount === amt.value}
+                                    aria-label={`Donate KES ${amt.label}`}
                                     className={cn(
-                                        "py-4 rounded-2xl border transition-all text-sm font-black tracking-widest uppercase relative overflow-hidden",
+                                        "py-4 rounded-2xl border transition-all text-sm font-black tracking-widest uppercase relative overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-kenya-green focus-visible:ring-offset-2",
                                         donationAmount === amt.value
                                             ? "bg-kenya-green border-kenya-green text-white shadow-xl shadow-kenya-green/20"
                                             : "bg-white/5 border-white/10 hover:border-white/20 text-muted-foreground"
@@ -461,9 +481,10 @@ const DownloadPortal: React.FC<DownloadPortalProps> = ({
                         </div>
                         <button
                             onClick={resetToSelection}
-                            className="flex items-center gap-1.5 text-[10px] font-black text-muted-foreground/40 uppercase tracking-widest hover:text-muted-foreground transition-colors"
+                            aria-label="Cancel payment verification"
+                            className="flex items-center gap-1.5 text-[10px] font-black text-muted-foreground/40 uppercase tracking-widest hover:text-muted-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-muted-foreground"
                         >
-                            <X size={11} /> Cancel
+                            <X size={11} aria-hidden="true" /> Cancel
                         </button>
                     </motion.div>
                 )}

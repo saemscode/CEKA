@@ -37,9 +37,12 @@ const SharePortal: React.FC<SharePortalProps> = ({
     const [isPaying, setIsPaying] = useState(false);
     const [pendingRef, setPendingRef] = useState<string | null>(null);
     const [selectedTier, setSelectedTier] = useState<'standard' | 'premium' | null>(null);
+    const [liveAnnouncement, setLiveAnnouncement] = useState('');
     const { toast } = useToast();
     const { user } = useAuth();
     const isDesktop = useMedia('(min-width: 768px)', false);
+
+    const announce = (message: string) => setLiveAnnouncement(message);
 
     const unsubscribeRef = useRef<(() => void) | null>(null);
     const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -159,6 +162,7 @@ const SharePortal: React.FC<SharePortalProps> = ({
                 callback: () => {
                     setIsPaying(false);
                     setStep('verifying');
+                    announce('Payment received. Confirming with Paystack, please wait up to 90 seconds.');
                     const unsub = piecesTransactionService.subscribeToVerification(paymentRef, async (tx) => {
                         unsub();
                         if (timeoutRef.current) clearTimeout(timeoutRef.current);
@@ -185,6 +189,15 @@ const SharePortal: React.FC<SharePortalProps> = ({
 
     const PortalContent = (
         <div className="flex flex-col gap-6 h-full min-h-[400px]">
+            {/* ARIA live region — screen reader announcement for dynamic step changes */}
+            <div
+                role="status"
+                aria-live="polite"
+                aria-atomic="true"
+                className="sr-only"
+            >
+                {liveAnnouncement}
+            </div>
             <AnimatePresence mode="wait">
                 {step === 'selection' && (
                     <motion.div key="selection" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="space-y-3">
@@ -194,7 +207,11 @@ const SharePortal: React.FC<SharePortalProps> = ({
                         </div>
 
                         {/* Standard Share */}
-                        <button onClick={handleStandardShare} className="w-full flex items-center justify-between p-4 rounded-[22px] transition-all group active:scale-[0.98] bg-muted/5 border border-white/10 hover:border-white/20 glass-card">
+                        <button
+                            onClick={handleStandardShare}
+                            aria-label="Share standard compressed preview — free"
+                            className="w-full flex items-center justify-between p-4 rounded-[22px] transition-all group active:scale-[0.98] bg-muted/5 border border-white/10 hover:border-white/20 glass-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-muted-foreground"
+                        >
                             <div className="flex items-center gap-4">
                                 <div className="w-10 h-10 rounded-full flex items-center justify-center bg-white/5 group-hover:bg-white/10 transition-colors shadow-inner">
                                     <Smartphone size={18} />
@@ -208,7 +225,11 @@ const SharePortal: React.FC<SharePortalProps> = ({
                         </button>
 
                         {/* Premium Share */}
-                        <button onClick={() => { setSelectedTier('premium'); setStep('donation'); }} className="w-full flex items-center justify-between p-4 rounded-[22px] transition-all group active:scale-[0.98] bg-muted/5 border border-white/10 hover:border-kenya-red/30 hover:bg-kenya-red/[0.03] glass-card">
+                        <button
+                            onClick={() => { setSelectedTier('premium'); setStep('donation'); }}
+                            aria-label="Share High-Fidelity 4K — premium, requires donation"
+                            className="w-full flex items-center justify-between p-4 rounded-[22px] transition-all group active:scale-[0.98] bg-muted/5 border border-white/10 hover:border-kenya-red/30 hover:bg-kenya-red/[0.03] glass-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-kenya-red"
+                        >
                             <div className="flex items-center gap-4">
                                 <div className="w-10 h-10 rounded-full flex items-center justify-center bg-white/5 group-hover:bg-kenya-red/10 transition-colors shadow-inner">
                                     <Monitor size={18} />
@@ -240,7 +261,13 @@ const SharePortal: React.FC<SharePortalProps> = ({
 
                         <div className="grid grid-cols-2 gap-3">
                             {[50, 100, 250, 500].map((amt) => (
-                                <button key={amt} onClick={() => setDonationAmount(amt)} className={cn("py-4 rounded-2xl border transition-all text-sm font-black tracking-widest uppercase relative overflow-hidden", donationAmount === amt ? "bg-kenya-green border-kenya-green text-white shadow-xl shadow-kenya-green/20" : "bg-white/5 border-white/10 hover:border-white/20 text-muted-foreground")}>
+                                <button
+                                    key={amt}
+                                    onClick={() => setDonationAmount(amt)}
+                                    aria-pressed={donationAmount === amt}
+                                    aria-label={`Donate KES ${amt}`}
+                                    className={cn("py-4 rounded-2xl border transition-all text-sm font-black tracking-widest uppercase relative overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-kenya-green focus-visible:ring-offset-2", donationAmount === amt ? "bg-kenya-green border-kenya-green text-white shadow-xl shadow-kenya-green/20" : "bg-white/5 border-white/10 hover:border-white/20 text-muted-foreground")}
+                                >
                                     KES {amt}
                                     {donationAmount === amt && <motion.div layoutId="active" className="absolute inset-0 bg-white/10" />}
                                 </button>
