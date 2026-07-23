@@ -59,6 +59,8 @@ const IconPauseCircle = ({ className }: { className?: string }) => (
   </svg>
 );
 
+import { motion, AnimatePresence } from 'framer-motion';
+
 const MAX_WIDGET_DISPLAY_TIME = 20 * 60 * 1000;
 
 interface AccessibilityWidgetProps {
@@ -191,8 +193,17 @@ const AccessibilityWidget: React.FC<AccessibilityWidgetProps> = ({ onTimedOut, i
   if (hasTimedOut || !isVisible) return null;
 
   return (
-    <div
-      className="fixed z-30 transition-all duration-500 ease-out"
+  return (
+    <motion.div
+      drag={!isExpanded ? "x" : false}
+      dragConstraints={{ left: 0, right: 300 }}
+      dragElastic={0.1}
+      onDragEnd={(_, info) => {
+        if (!isExpanded && info.offset.x > 80) {
+          if (onHide) onHide();
+        }
+      }}
+      className="fixed z-30 transition-all duration-500 ease-out touch-none"
       style={{
         zIndex: 30,
         opacity,
@@ -298,14 +309,14 @@ const AccessibilityWidget: React.FC<AccessibilityWidgetProps> = ({ onTimedOut, i
                 className="w-full group relative p-4 rounded-xl flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-800/10 transition-all duration-300 border border-transparent dark:border-gray-700/10 backdrop-blur-sm"
               >
                 <div className={`absolute inset-0 rounded-xl transition-opacity duration-300 ${highContrast ? 'bg-blue-100 dark:bg-blue-500/20 opacity-100' : 'bg-gradient-to-r from-transparent via-gray-100 dark:via-gray-700/5 to-transparent opacity-0 group-hover:opacity-100'}`} />
-                <div className="flex items-center relative z-10">
-                  <IconEye className={`h-6 w-6 mr-4 transition-transform duration-300 group-hover:scale-110 ${highContrast ? 'text-blue-500' : 'text-gray-700 dark:text-gray-300'}`} />
-                  <div className="text-left">
-                    <h4 className="font-bold text-gray-900 dark:text-white">High Contrast</h4>
-                    <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5">Increase color distinction - unstable & being fixed</p>
+                <div className="flex items-center relative z-10 flex-1 min-w-0">
+                  <IconEye className={`h-6 w-6 mr-4 transition-transform duration-300 group-hover:scale-110 shrink-0 ${highContrast ? 'text-blue-500' : 'text-gray-700 dark:text-gray-300'}`} />
+                  <div className="text-left flex-1 min-w-0">
+                    <h4 className="font-bold text-gray-900 dark:text-white truncate">High Contrast</h4>
+                    <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5 truncate">Increase color distinction - unstable & being fixed</p>
                   </div>
                 </div>
-                <div className={`relative z-10 w-4 h-4 rounded-full border-2 ${highContrast ? 'border-blue-500 bg-blue-500' : 'border-gray-400'}`} />
+                <div className={`relative z-10 w-4 h-4 shrink-0 rounded-full border-2 ml-4 ${highContrast ? 'border-blue-500 bg-blue-500' : 'border-gray-400'}`} />
               </button>
 
               <button
@@ -314,14 +325,14 @@ const AccessibilityWidget: React.FC<AccessibilityWidgetProps> = ({ onTimedOut, i
                 className="w-full group relative p-4 rounded-xl flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-800/10 transition-all duration-300 border border-transparent dark:border-gray-700/10 backdrop-blur-sm"
               >
                 <div className={`absolute inset-0 rounded-xl transition-opacity duration-300 ${textScale > 100 ? 'bg-blue-100 dark:bg-blue-500/20 opacity-100' : 'bg-gradient-to-r from-transparent via-gray-100 dark:via-gray-700/5 to-transparent opacity-0 group-hover:opacity-100'}`} />
-                <div className="flex items-center relative z-10">
-                  <IconFontSize className={`h-6 w-6 mr-4 transition-transform duration-300 group-hover:scale-110 ${textScale > 100 ? 'text-blue-500' : 'text-gray-700 dark:text-gray-300'}`} />
-                  <div className="text-left">
-                    <h4 className="font-bold text-gray-900 dark:text-white">Large Text</h4>
-                    <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5">Scale typography up</p>
+                <div className="flex items-center relative z-10 flex-1 min-w-0">
+                  <IconFontSize className={`h-6 w-6 mr-4 transition-transform duration-300 group-hover:scale-110 shrink-0 ${textScale > 100 ? 'text-blue-500' : 'text-gray-700 dark:text-gray-300'}`} />
+                  <div className="text-left flex-1 min-w-0">
+                    <h4 className="font-bold text-gray-900 dark:text-white truncate">Large Text</h4>
+                    <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5 truncate">Scale typography up</p>
                   </div>
                 </div>
-                <div className={`relative z-10 w-4 h-4 rounded-full border-2 ${textScale > 100 ? 'border-blue-500 bg-blue-500' : 'border-gray-400'}`} />
+                <div className={`relative z-10 w-4 h-4 shrink-0 rounded-full border-2 ml-4 ${textScale > 100 ? 'border-blue-500 bg-blue-500' : 'border-gray-400'}`} />
               </button>
 
               <button
@@ -330,14 +341,14 @@ const AccessibilityWidget: React.FC<AccessibilityWidgetProps> = ({ onTimedOut, i
                 className="w-full group relative p-4 rounded-xl flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-800/10 transition-all duration-300 border border-transparent dark:border-gray-700/10 backdrop-blur-sm"
               >
                 <div className={`absolute inset-0 rounded-xl transition-opacity duration-300 ${dyslexiaFont ? 'bg-blue-100 dark:bg-blue-500/20 opacity-100' : 'bg-gradient-to-r from-transparent via-gray-100 dark:via-gray-700/5 to-transparent opacity-0 group-hover:opacity-100'}`} />
-                <div className="flex items-center relative z-10">
-                  <IconGlasses className={`h-6 w-6 mr-4 transition-transform duration-300 group-hover:scale-110 ${dyslexiaFont ? 'text-blue-500' : 'text-gray-700 dark:text-gray-300'}`} />
-                  <div className="text-left">
-                    <h4 className="font-bold text-gray-900 dark:text-white">Dyslexia Font</h4>
-                    <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5">Highly readable typography</p>
+                <div className="flex items-center relative z-10 flex-1 min-w-0">
+                  <IconGlasses className={`h-6 w-6 mr-4 transition-transform duration-300 group-hover:scale-110 shrink-0 ${dyslexiaFont ? 'text-blue-500' : 'text-gray-700 dark:text-gray-300'}`} />
+                  <div className="text-left flex-1 min-w-0">
+                    <h4 className="font-bold text-gray-900 dark:text-white truncate">Dyslexia Font</h4>
+                    <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5 truncate">Highly readable typography</p>
                   </div>
                 </div>
-                <div className={`relative z-10 w-4 h-4 rounded-full border-2 ${dyslexiaFont ? 'border-blue-500 bg-blue-500' : 'border-gray-400'}`} />
+                <div className={`relative z-10 w-4 h-4 shrink-0 rounded-full border-2 ml-4 ${dyslexiaFont ? 'border-blue-500 bg-blue-500' : 'border-gray-400'}`} />
               </button>
 
               <button
@@ -346,14 +357,14 @@ const AccessibilityWidget: React.FC<AccessibilityWidgetProps> = ({ onTimedOut, i
                 className="w-full group relative p-4 rounded-xl flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-800/10 transition-all duration-300 border border-transparent dark:border-gray-700/10 backdrop-blur-sm"
               >
                 <div className={`absolute inset-0 rounded-xl transition-opacity duration-300 ${readingMask ? 'bg-blue-100 dark:bg-blue-500/20 opacity-100' : 'bg-gradient-to-r from-transparent via-gray-100 dark:via-gray-700/5 to-transparent opacity-0 group-hover:opacity-100'}`} />
-                <div className="flex items-center relative z-10">
-                  <IconRectangleTool className={`h-6 w-6 mr-4 transition-transform duration-300 group-hover:scale-110 ${readingMask ? 'text-blue-500' : 'text-gray-700 dark:text-gray-300'}`} />
-                  <div className="text-left">
-                    <h4 className="font-bold text-gray-900 dark:text-white">Reading Mask</h4>
-                    <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5">Focus ruler for reading</p>
+                <div className="flex items-center relative z-10 flex-1 min-w-0">
+                  <IconRectangleTool className={`h-6 w-6 mr-4 transition-transform duration-300 group-hover:scale-110 shrink-0 ${readingMask ? 'text-blue-500' : 'text-gray-700 dark:text-gray-300'}`} />
+                  <div className="text-left flex-1 min-w-0">
+                    <h4 className="font-bold text-gray-900 dark:text-white truncate">Reading Mask</h4>
+                    <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5 truncate">Focus ruler for reading</p>
                   </div>
                 </div>
-                <div className={`relative z-10 w-4 h-4 rounded-full border-2 ${readingMask ? 'border-blue-500 bg-blue-500' : 'border-gray-400'}`} />
+                <div className={`relative z-10 w-4 h-4 shrink-0 rounded-full border-2 ml-4 ${readingMask ? 'border-blue-500 bg-blue-500' : 'border-gray-400'}`} />
               </button>
 
               <button
@@ -362,14 +373,14 @@ const AccessibilityWidget: React.FC<AccessibilityWidgetProps> = ({ onTimedOut, i
                 className="w-full group relative p-4 rounded-xl flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-800/10 transition-all duration-300 border border-transparent dark:border-gray-700/10 backdrop-blur-sm"
               >
                 <div className={`absolute inset-0 rounded-xl transition-opacity duration-300 ${highlightLinks ? 'bg-blue-100 dark:bg-blue-500/20 opacity-100' : 'bg-gradient-to-r from-transparent via-gray-100 dark:via-gray-700/5 to-transparent opacity-0 group-hover:opacity-100'}`} />
-                <div className="flex items-center relative z-10">
-                  <IconLinkSquare className={`h-6 w-6 mr-4 transition-transform duration-300 group-hover:scale-110 ${highlightLinks ? 'text-blue-500' : 'text-gray-700 dark:text-gray-300'}`} />
-                  <div className="text-left">
-                    <h4 className="font-bold text-gray-900 dark:text-white">Highlight Links</h4>
-                    <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5">Make interactive elements pop</p>
+                <div className="flex items-center relative z-10 flex-1 min-w-0">
+                  <IconLinkSquare className={`h-6 w-6 mr-4 transition-transform duration-300 group-hover:scale-110 shrink-0 ${highlightLinks ? 'text-blue-500' : 'text-gray-700 dark:text-gray-300'}`} />
+                  <div className="text-left flex-1 min-w-0">
+                    <h4 className="font-bold text-gray-900 dark:text-white truncate">Highlight Links</h4>
+                    <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5 truncate">Make interactive elements pop</p>
                   </div>
                 </div>
-                <div className={`relative z-10 w-4 h-4 rounded-full border-2 ${highlightLinks ? 'border-blue-500 bg-blue-500' : 'border-gray-400'}`} />
+                <div className={`relative z-10 w-4 h-4 shrink-0 rounded-full border-2 ml-4 ${highlightLinks ? 'border-blue-500 bg-blue-500' : 'border-gray-400'}`} />
               </button>
 
               <button
@@ -378,14 +389,14 @@ const AccessibilityWidget: React.FC<AccessibilityWidgetProps> = ({ onTimedOut, i
                 className="w-full group relative p-4 rounded-xl flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-800/10 transition-all duration-300 border border-transparent dark:border-gray-700/10 backdrop-blur-sm"
               >
                 <div className={`absolute inset-0 rounded-xl transition-opacity duration-300 ${hideImages ? 'bg-blue-100 dark:bg-blue-500/20 opacity-100' : 'bg-gradient-to-r from-transparent via-gray-100 dark:via-gray-700/5 to-transparent opacity-0 group-hover:opacity-100'}`} />
-                <div className="flex items-center relative z-10">
-                  <IconImageMissing className={`h-6 w-6 mr-4 transition-transform duration-300 group-hover:scale-110 ${hideImages ? 'text-blue-500' : 'text-gray-700 dark:text-gray-300'}`} />
-                  <div className="text-left">
-                    <h4 className="font-bold text-gray-900 dark:text-white">Hide Images</h4>
-                    <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5">Text-only mode</p>
+                <div className="flex items-center relative z-10 flex-1 min-w-0">
+                  <IconImageMissing className={`h-6 w-6 mr-4 transition-transform duration-300 group-hover:scale-110 shrink-0 ${hideImages ? 'text-blue-500' : 'text-gray-700 dark:text-gray-300'}`} />
+                  <div className="text-left flex-1 min-w-0">
+                    <h4 className="font-bold text-gray-900 dark:text-white truncate">Hide Images</h4>
+                    <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5 truncate">Text-only mode</p>
                   </div>
                 </div>
-                <div className={`relative z-10 w-4 h-4 rounded-full border-2 ${hideImages ? 'border-blue-500 bg-blue-500' : 'border-gray-400'}`} />
+                <div className={`relative z-10 w-4 h-4 shrink-0 rounded-full border-2 ml-4 ${hideImages ? 'border-blue-500 bg-blue-500' : 'border-gray-400'}`} />
               </button>
 
               <button
@@ -394,20 +405,20 @@ const AccessibilityWidget: React.FC<AccessibilityWidgetProps> = ({ onTimedOut, i
                 className="w-full group relative p-4 rounded-xl flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-800/10 transition-all duration-300 border border-transparent dark:border-gray-700/10 backdrop-blur-sm"
               >
                 <div className={`absolute inset-0 rounded-xl transition-opacity duration-300 ${reducedMotion ? 'bg-blue-100 dark:bg-blue-500/20 opacity-100' : 'bg-gradient-to-r from-transparent via-gray-100 dark:via-gray-700/5 to-transparent opacity-0 group-hover:opacity-100'}`} />
-                <div className="flex items-center relative z-10">
-                  <IconPauseCircle className={`h-6 w-6 mr-4 transition-transform duration-300 group-hover:scale-110 ${reducedMotion ? 'text-blue-500' : 'text-gray-700 dark:text-gray-300'}`} />
-                  <div className="text-left">
-                    <h4 className="font-bold text-gray-900 dark:text-white">Reduce Motion</h4>
-                    <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5">Disable animations</p>
+                <div className="flex items-center relative z-10 flex-1 min-w-0">
+                  <IconPauseCircle className={`h-6 w-6 mr-4 transition-transform duration-300 group-hover:scale-110 shrink-0 ${reducedMotion ? 'text-blue-500' : 'text-gray-700 dark:text-gray-300'}`} />
+                  <div className="text-left flex-1 min-w-0">
+                    <h4 className="font-bold text-gray-900 dark:text-white truncate">Reduce Motion</h4>
+                    <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5 truncate">Disable animations</p>
                   </div>
                 </div>
-                <div className={`relative z-10 w-4 h-4 rounded-full border-2 ${reducedMotion ? 'border-blue-500 bg-blue-500' : 'border-gray-400'}`} />
+                <div className={`relative z-10 w-4 h-4 shrink-0 rounded-full border-2 ml-4 ${reducedMotion ? 'border-blue-500 bg-blue-500' : 'border-gray-400'}`} />
               </button>
             </div>
           </div>
         </div>
       )}
-    </div>
+    </motion.div>
   );
 };
 

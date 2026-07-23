@@ -154,12 +154,12 @@ const CounterBadge: React.FC<CounterBadgeProps> = ({ remaining, total }) => {
     const tier = getWarningTier(remaining);
 
     const colourClass = tier === 'low'
-        ? 'text-red-500 dark:text-red-400'
+        ? 'text-red-600 dark:text-red-400 bg-red-100 dark:bg-red-900/30 border-red-200 dark:border-red-800/50'
         : tier === 'mid'
-            ? 'text-orange-500 dark:text-orange-400'
+            ? 'text-orange-600 dark:text-orange-400 bg-orange-100 dark:bg-orange-900/30 border-orange-200 dark:border-orange-800/50'
             : tier === 'high'
-                ? 'text-amber-600 dark:text-amber-400'
-                : 'text-slate-00 dark:text-slate-400';
+                ? 'text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/30 border-amber-200 dark:border-amber-800/50'
+                : 'text-kenya-green dark:text-green-400 bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800/30';
 
     return (
         <motion.span
@@ -167,7 +167,7 @@ const CounterBadge: React.FC<CounterBadgeProps> = ({ remaining, total }) => {
             initial={{ scale: 1.3, opacity: 0.6 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ duration: 0.2, ease: 'easeOut' }}
-            className={cn('text-[10px] font-semibold tabular-nums', colourClass)}
+            className={cn('text-[10px] font-bold tabular-nums px-2 py-0.5 rounded-full border shadow-sm backdrop-blur-md', colourClass)}
         >
             {remaining}/{total}
         </motion.span>
