@@ -452,7 +452,7 @@ const BillDetail = () => {
                 </Button>
               )}
             </div>
-          </div>
+            </article>
         </section>
 
         <div className="container relative px-4 pb-24 group">
@@ -824,8 +824,8 @@ const BillDetail = () => {
               </div>
             </aside>
 
-          </article>
-        </section>
+          </div>
+        </div>
       </main>
     </Layout>
   );
