@@ -193,7 +193,6 @@ const AccessibilityWidget: React.FC<AccessibilityWidgetProps> = ({ onTimedOut, i
   if (hasTimedOut || !isVisible) return null;
 
   return (
-  return (
     <motion.div
       drag={!isExpanded ? "x" : false}
       dragConstraints={{ left: 0, right: 300 }}
