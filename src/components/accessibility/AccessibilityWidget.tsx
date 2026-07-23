@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
 import { useAccessibility } from '@/contexts/AccessibilityContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { useToast } from '@/hooks/use-toast';
 
 const DisabilityIcon = ({ className }: { className?: string }) => (
@@ -84,8 +85,12 @@ const AccessibilityWidget: React.FC<AccessibilityWidgetProps> = ({ onTimedOut, i
     dyslexiaFont, setDyslexiaFont,
     highlightLinks, setHighlightLinks,
     hideImages, setHideImages,
-    readingMask, setReadingMask
+    readingMask, setReadingMask,
+    textToSpeech, setTextToSpeech,
+    speakText, stopSpeech
   } = useAccessibility();
+
+  const { language, setLanguage } = useLanguage();
 
   const { toast } = useToast();
 
@@ -190,7 +195,41 @@ const AccessibilityWidget: React.FC<AccessibilityWidgetProps> = ({ onTimedOut, i
     toast({ title: `Reading Mask ${!readingMask ? 'Enabled' : 'Disabled'}` });
   };
 
+  const handleToggleTextToSpeech = () => {
+    const next = !textToSpeech;
+    setTextToSpeech(next);
+    if (!next) stopSpeech();
+    toast({ title: next ? '🔊 Text-to-Speech Enabled — tap any text to hear it' : '🔇 Text-to-Speech Disabled' });
+  };
+
+  const handleToggleLanguage = () => {
+    const next = language === 'sw' ? 'en' : 'sw';
+    setLanguage(next);
+    toast({ title: next === 'sw' ? '🇰🇪 Swahili Enabled — Lugha imebadilishwa' : '🇬🇧 English Restored' });
+  };
+
+  // Click-to-read: when TTS is on, any click on a text node speaks it
+  useEffect(() => {
+    if (!textToSpeech) return;
+    const handleClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      // Walk up to find meaningful text, skipping buttons/inputs/links
+      let el: HTMLElement | null = target;
+      while (el && ['BUTTON', 'A', 'INPUT', 'TEXTAREA', 'SELECT'].includes(el.tagName)) {
+        el = el.parentElement;
+      }
+      const text = el?.innerText?.trim();
+      if (text && text.length > 1) {
+        const lang = language === 'sw' ? 'sw-KE' : 'en-GB';
+        speakText(text, lang);
+      }
+    };
+    document.addEventListener('click', handleClick);
+    return () => document.removeEventListener('click', handleClick);
+  }, [textToSpeech, language, speakText]);
+
   if (hasTimedOut || !isVisible) return null;
+
 
   return (
     <motion.div
@@ -422,6 +461,50 @@ const AccessibilityWidget: React.FC<AccessibilityWidgetProps> = ({ onTimedOut, i
                     </div>
                   </div>
                   <div className={`relative z-10 w-4 h-4 shrink-0 rounded-full border-2 ml-4 ${reducedMotion ? 'border-blue-500 bg-blue-500' : 'border-gray-400'}`} />
+                </button>
+
+                {/* ── Text-to-Speech ──────────────────────────── */}
+                <button
+                  onClick={handleToggleTextToSpeech}
+                  aria-pressed={textToSpeech}
+                  className="w-full group relative p-4 rounded-xl flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-800/10 transition-all duration-300 border border-transparent dark:border-gray-700/10 backdrop-blur-sm"
+                >
+                  <div className={`absolute inset-0 rounded-xl transition-opacity duration-300 ${textToSpeech ? 'bg-emerald-100 dark:bg-emerald-500/20 opacity-100' : 'bg-gradient-to-r from-transparent via-gray-100 dark:via-gray-700/5 to-transparent opacity-0 group-hover:opacity-100'}`} />
+                  <div className="flex items-center relative z-10 flex-1 min-w-0">
+                    <svg viewBox="0 0 24 24" fill="currentColor" className={`h-6 w-6 mr-4 transition-transform duration-300 group-hover:scale-110 shrink-0 ${textToSpeech ? 'text-emerald-500' : 'text-gray-700 dark:text-gray-300'}`}>
+                      <path d="M13 3a1 1 0 0 0-1.707-.707L6.586 7H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2.586l4.707 4.707A1 1 0 0 0 13 21V3ZM18.364 4.636a1 1 0 0 1 1.414 0 9 9 0 0 1 0 12.728 1 1 0 1 1-1.414-1.414 7 7 0 0 0 0-9.9 1 1 0 0 1 0-1.414ZM16.243 7.757a1 1 0 1 0-1.415 1.415 4 4 0 0 1 0 5.656 1 1 0 0 0 1.415 1.414 6 6 0 0 0 0-8.485Z"/>
+                    </svg>
+                    <div className="text-left flex-1 min-w-0">
+                      <h4 className="font-bold text-gray-900 dark:text-white truncate">Text-to-Speech</h4>
+                      <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5 truncate">{textToSpeech ? 'Tap any text to hear it' : 'Read page content aloud'}</p>
+                    </div>
+                  </div>
+                  <div className={`relative z-10 w-4 h-4 shrink-0 rounded-full border-2 ml-4 ${textToSpeech ? 'border-emerald-500 bg-emerald-500' : 'border-gray-400'}`} />
+                </button>
+
+                {/* ── Swahili / English toggle ─────────────────── */}
+                <button
+                  onClick={handleToggleLanguage}
+                  aria-pressed={language === 'sw'}
+                  className="w-full group relative p-4 rounded-xl flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-800/10 transition-all duration-300 border border-transparent dark:border-gray-700/10 backdrop-blur-sm"
+                >
+                  <div className={`absolute inset-0 rounded-xl transition-opacity duration-300 ${language === 'sw' ? 'bg-red-100 dark:bg-red-500/20 opacity-100' : 'bg-gradient-to-r from-transparent via-gray-100 dark:via-gray-700/5 to-transparent opacity-0 group-hover:opacity-100'}`} />
+                  <div className="flex items-center relative z-10 flex-1 min-w-0">
+                    <svg viewBox="0 0 24 24" fill="currentColor" className={`h-6 w-6 mr-4 transition-transform duration-300 group-hover:scale-110 shrink-0 ${language === 'sw' ? 'text-red-500' : 'text-gray-700 dark:text-gray-300'}`}>
+                      <path d="M12 2a10 10 0 1 0 0 20A10 10 0 0 0 12 2Zm-1 17.93V19a1 1 0 0 0-1-1H8a2 2 0 0 1-2-2v-1a2 2 0 0 0-2-2H2.07A8.003 8.003 0 0 1 4 7.1V8a2 2 0 0 0 2 2h1a2 2 0 0 1 2 2 2 2 0 0 0 4 0 .5.5 0 0 1 .5-.5H16a2 2 0 0 0 2-2v-.48a.5.5 0 0 1 .31-.46l.98-.39A8.008 8.008 0 0 1 11 19.93ZM17.7 7.5l-.7.3A2 2 0 0 0 15.5 9.5v.5H15a2 2 0 0 0-2 2 .5.5 0 0 1-.5.5.5.5 0 0 1 0-1 2 2 0 0 0-2-2H9a.5.5 0 0 1-.5-.5V8a.5.5 0 0 1 .5-.5h2a2 2 0 0 0 2-2V4.07A8.008 8.008 0 0 1 17.7 7.5Z"/>
+                    </svg>
+                    <div className="text-left flex-1 min-w-0">
+                      <h4 className="font-bold text-gray-900 dark:text-white truncate">
+                        {language === 'sw' ? 'Kiswahili Kimewashwa' : 'Switch to Swahili'}
+                      </h4>
+                      <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5 truncate">
+                        {language === 'sw' ? 'Bonyeza kubadili Kingereza' : 'Badilisha lugha ya tovuti'}
+                      </p>
+                    </div>
+                  </div>
+                  <span className={`relative z-10 text-sm font-black ml-4 shrink-0 ${language === 'sw' ? 'text-red-500' : 'text-gray-400'}`}>
+                    {language === 'sw' ? '🇰🇪' : '🇬🇧'}
+                  </span>
                 </button>
               </div>
             </div>

@@ -5,7 +5,7 @@
  * Manages text scaling, high contrast mode, and autoplay preferences.
  */
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import ReadingMask from '@/components/accessibility/ReadingMask';
 
 interface AccessibilitySettings {
@@ -17,6 +17,7 @@ interface AccessibilitySettings {
     highlightLinks: boolean;
     hideImages: boolean;
     readingMask: boolean;
+    textToSpeech: boolean;
 }
 
 interface AccessibilityContextValue extends AccessibilitySettings {
@@ -28,6 +29,9 @@ interface AccessibilityContextValue extends AccessibilitySettings {
     setHighlightLinks: (enabled: boolean) => void;
     setHideImages: (enabled: boolean) => void;
     setReadingMask: (enabled: boolean) => void;
+    setTextToSpeech: (enabled: boolean) => void;
+    speakText: (text: string, lang?: string) => void;
+    stopSpeech: () => void;
     resetToDefaults: () => void;
 }
 
@@ -39,7 +43,8 @@ const defaultSettings: AccessibilitySettings = {
     dyslexiaFont: false,
     highlightLinks: false,
     hideImages: false,
-    readingMask: false
+    readingMask: false,
+    textToSpeech: false
 };
 
 const AccessibilityContext = createContext<AccessibilityContextValue | undefined>(undefined);
@@ -53,7 +58,8 @@ const STORAGE_KEYS = {
     DYSLEXIA_FONT: 'ceka_dyslexia_font',
     HIGHLIGHT_LINKS: 'ceka_highlight_links',
     HIDE_IMAGES: 'ceka_hide_images',
-    READING_MASK: 'ceka_reading_mask'
+    READING_MASK: 'ceka_reading_mask',
+    TEXT_TO_SPEECH: 'ceka_text_to_speech'
 };
 
 export const AccessibilityProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
@@ -69,7 +75,8 @@ export const AccessibilityProvider: React.FC<{ children: ReactNode }> = ({ child
             dyslexiaFont: localStorage.getItem(STORAGE_KEYS.DYSLEXIA_FONT) === 'true',
             highlightLinks: localStorage.getItem(STORAGE_KEYS.HIGHLIGHT_LINKS) === 'true',
             hideImages: localStorage.getItem(STORAGE_KEYS.HIDE_IMAGES) === 'true',
-            readingMask: localStorage.getItem(STORAGE_KEYS.READING_MASK) === 'true'
+            readingMask: localStorage.getItem(STORAGE_KEYS.READING_MASK) === 'true',
+            textToSpeech: localStorage.getItem(STORAGE_KEYS.TEXT_TO_SPEECH) === 'true'
         };
     });
 
@@ -128,6 +135,14 @@ export const AccessibilityProvider: React.FC<{ children: ReactNode }> = ({ child
         localStorage.setItem(STORAGE_KEYS.READING_MASK, settings.readingMask.toString());
     }, [settings.readingMask]);
 
+    useEffect(() => {
+        localStorage.setItem(STORAGE_KEYS.TEXT_TO_SPEECH, settings.textToSpeech.toString());
+        // If TTS gets disabled, stop any ongoing speech
+        if (!settings.textToSpeech && typeof window !== 'undefined' && window.speechSynthesis) {
+            window.speechSynthesis.cancel();
+        }
+    }, [settings.textToSpeech]);
+
     const setTextScale = (scale: number) => {
         setSettings(prev => ({ ...prev, textScale: Math.min(150, Math.max(80, scale)) }));
     };
@@ -148,6 +163,22 @@ export const AccessibilityProvider: React.FC<{ children: ReactNode }> = ({ child
     const setHighlightLinks = (enabled: boolean) => setSettings(prev => ({ ...prev, highlightLinks: enabled }));
     const setHideImages = (enabled: boolean) => setSettings(prev => ({ ...prev, hideImages: enabled }));
     const setReadingMask = (enabled: boolean) => setSettings(prev => ({ ...prev, readingMask: enabled }));
+    const setTextToSpeech = (enabled: boolean) => setSettings(prev => ({ ...prev, textToSpeech: enabled }));
+
+    // Speak given text using the browser's Speech Synthesis API
+    const speakText = useCallback((text: string, lang = 'en-GB') => {
+        if (!('speechSynthesis' in window)) return;
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = lang;
+        utterance.rate = 0.95;
+        utterance.pitch = 1;
+        window.speechSynthesis.speak(utterance);
+    }, []);
+
+    const stopSpeech = useCallback(() => {
+        if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+    }, []);
 
     const resetToDefaults = () => {
         setSettings(defaultSettings);
@@ -165,6 +196,9 @@ export const AccessibilityProvider: React.FC<{ children: ReactNode }> = ({ child
                 setHighlightLinks,
                 setHideImages,
                 setReadingMask,
+                setTextToSpeech,
+                speakText,
+                stopSpeech,
                 resetToDefaults
             }}
         >
