@@ -136,7 +136,7 @@ jobs:
             beautifulsoup4 pillow pdf2image pytesseract easyocr \
             google-genai google-search-results google-generativeai \
             groq openai anthropic cohere \
-            boto3 aiohttp lxml
+            boto3 aiohttp lxml scrapling[fetchers]
           # Install cerebras SDK (may fail gracefully if not available)
           pip install cerebras-cloud-sdk || echo "⚠️ cerebras-cloud-sdk not available — skipping"
           playwright install chromium --with-deps

@@ -289,10 +289,11 @@ interface Message {
 interface GlobalAIAssistantProps {
     isHidden?: boolean;
     onHide?: () => void;
+    offsetY?: number;
 }
 
 const GlobalAIAssistant = ({ offsetY = 200 }: GlobalAIAssistantProps) => {
-    const { language, translate } = useLanguage();
+    const { language } = useLanguage();
     const [isOpen, setIsOpen] = useState(false);
     const [count, setCount] = useState<number | null>(null);
     const [cycleIndex, setCycleIndex] = useState(0);

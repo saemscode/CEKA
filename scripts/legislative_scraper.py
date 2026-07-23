@@ -15,6 +15,17 @@ from urllib.parse import urljoin, unquote, urlparse
 from pathlib import Path
 
 # ---------------------------------------------------------------------------
+# Scrapling Integration
+# ---------------------------------------------------------------------------
+try:
+    from scrapling.fetchers import DynamicFetcher, DynamicSession
+    from scrapling.core.utils import ProxyConfig
+    SCRAPLING_OK = True
+except ImportError:
+    SCRAPLING_OK = False
+    logging.getLogger(__name__).warning("Scrapling not installed – running legacy Playwright only.")
+
+# ---------------------------------------------------------------------------
 # B2 Vault Integration
 # ---------------------------------------------------------------------------
 try:
@@ -899,7 +910,60 @@ class LegislativeScraper:
         return browser, context
 
     # -------------------------------------------------------------------
-    #  _scrape_bills – FINAL FIXED VERSION (table extraction)
+    #  NEW: Scrapling Native Fetcher (Priority 1)
+    # -------------------------------------------------------------------
+    def _fetch_with_scrapling(self, url: str) -> Optional[Any]:
+        """Uses Scrapling's DynamicFetcher with native proxy orchestration."""
+        if not SCRAPLING_OK:
+            return None
+
+        # Format proxy for Scrapling
+        proxy_info = self.proxy_pool.get_proxy()
+        scrapling_proxy = None
+        if proxy_info and "url" in proxy_info:
+            scrapling_proxy = proxy_info["url"]
+
+        logger.info(f"  [Scrapling] Attempting extraction with Scrapling (Proxy: {proxy_info.get('type') if proxy_info else 'Direct'})")
+        
+        try:
+            # DynamicFetcher handles Cloudflare Turnstile natively and allows adaptive CSS
+            response = DynamicFetcher.fetch(
+                url, 
+                headless=self.headless, 
+                proxy=scrapling_proxy,
+                network_idle=True,
+                solve_cloudflare=True
+            )
+            
+            # Use Scrapling's adaptive parser to find the table rows
+            rows = response.css('table tr', adaptive=True)
+            
+            extracted_rows = []
+            for row in rows:
+                pdf_link = row.css('a[href$=".pdf"]')
+                if not pdf_link:
+                    continue
+                    
+                extracted_rows.append({
+                    "pdfHref": pdf_link[0].attrib.get('href', ''),
+                    "pdfText": pdf_link.css('::text').get(default='').strip(),
+                    "detailHref": None,
+                    "rowText": row.css('::text').get(default='').strip()[:300]
+                })
+                
+            if extracted_rows:
+                logger.info(f"  [Scrapling] Success! Adaptive parser found {len(extracted_rows)} rows.")
+                return extracted_rows
+            else:
+                logger.warning("  [Scrapling] No valid rows found. Falling back to legacy Playwright.")
+                return None
+                
+        except Exception as e:
+            logger.error(f"  [Scrapling] Engine exception: {str(e)}")
+            return None
+
+    # -------------------------------------------------------------------
+    #  UPDATED: _scrape_bills orchestrating the multi-service system
     # -------------------------------------------------------------------
     def _scrape_bills(self, page, target: dict, max_pages: int):
         base_url = target["url"].rstrip("/")
@@ -914,98 +978,108 @@ class LegislativeScraper:
             page_url = f"{base_url}?title=&page={page_num}"
             logger.info(f"  Page {page_num + 1}: {page_url}")
 
-            try:
-                page.goto(page_url, wait_until="domcontentloaded", timeout=60000)
+            # 1. PRIORITY 1: Scrapling Engine
+            rows = self._fetch_with_scrapling(page_url)
 
-                # Cloudflare guard
-                if not self._wait_for_real_content(page, timeout_ms=20000):
-                    logger.error(f"  [CF] Cloudflare block on page {page_num + 1}. Skipping.")
-                    consecutive_empty += 1
-                    if consecutive_empty >= 2:
-                        break
-                    continue
+            # 2. PRIORITY 2: Legacy Playwright Fallback
+            if not rows:
+                logger.info("  [Playwright] Engaging legacy Playwright fallback...")
+                try:
+                    page.goto(page_url, wait_until="domcontentloaded", timeout=60000)
 
-                # Wait an extra second for any JS-lazy-loaded content
-                page.wait_for_timeout(2000)
+                    # Cloudflare guard
+                    if not self._wait_for_real_content(page, timeout_ms=20000):
+                        logger.error(f"  [CF] Cloudflare block on page {page_num + 1}. Skipping.")
+                        consecutive_empty += 1
+                        if consecutive_empty >= 2:
+                            break
+                        continue
 
-                # Simple, reliable extraction: find all rows in the main table
-                rows = page.evaluate("""() => {
-                    const allTables = document.querySelectorAll('table');
-                    let allRows = [];
-                    for (const table of allTables) {
-                        // Only consider tables that have at least one PDF link
-                        if (table.querySelectorAll('a[href$=".pdf"]').length === 0) continue;
-                        const rows = table.querySelectorAll('tbody tr, tr');
-                        for (const row of rows) {
-                            const pdfLink = row.querySelector('a[href$=".pdf"]');
-                            if (!pdfLink) continue;
-                            allRows.push({
-                                pdfHref: pdfLink.href,
-                                pdfText: pdfLink.textContent.trim(),
-                                detailHref: null,
-                                rowText: row.innerText.trim().substring(0, 300)
-                            });
+                    page.wait_for_timeout(2000)
+
+                    rows = page.evaluate("""() => {
+                        const allTables = document.querySelectorAll('table');
+                        let allRows = [];
+                        for (const table of allTables) {
+                            if (table.querySelectorAll('a[href$=".pdf"]').length === 0) continue;
+                            const rows = table.querySelectorAll('tbody tr, tr');
+                            for (const row of rows) {
+                                const pdfLink = row.querySelector('a[href$=".pdf"]');
+                                if (!pdfLink) continue;
+                                allRows.push({
+                                    pdfHref: pdfLink.href,
+                                    pdfText: pdfLink.textContent.trim(),
+                                    detailHref: null,
+                                    rowText: row.innerText.trim().substring(0, 300)
+                                });
+                            }
                         }
-                    }
-                    return allRows;
-                }""")
+                        return allRows;
+                    }""")
+                except Exception as e:
+                    logger.error(f"  [Playwright] Fallback failed: {e}")
+                    rows = None
 
-                if not rows or len(rows) == 0:
-                    consecutive_empty += 1
-                    logger.info(f"  [Cap] No bill rows on page {page_num + 1} (consecutive empty: {consecutive_empty}).")
-                    if consecutive_empty >= 2:
-                        break
+            # --- SHARED PROCESSING PIPELINE ---
+            if not rows or len(rows) == 0:
+                consecutive_empty += 1
+                logger.info(f"  [Cap] No bill rows on page {page_num + 1} (consecutive empty: {consecutive_empty}).")
+                if consecutive_empty >= 2:
+                    break
+                continue
+
+            consecutive_empty = 0
+            logger.info(f"  Found {len(rows)} bill rows on page {page_num + 1}")
+
+            for row in rows:
+                pdf_href = row.get("pdfHref", "")
+                pdf_text = row.get("pdfText", "")
+                detail_href = row.get("detailHref")
+
+                if not pdf_href:
                     continue
 
-                consecutive_empty = 0
-                logger.info(f"  Found {len(rows)} bill rows on page {page_num + 1}")
+                raw_title = pdf_text or self._title_from_url(pdf_href)
+                title = self._clean_title(raw_title)
+                if not title:
+                    continue
 
-                for row in rows:
-                    pdf_href = row.get("pdfHref", "")
-                    pdf_text = row.get("pdfText", "")
-                    detail_href = row.get("detailHref")
+                slug_key = self._normalise_title_key(title)
+                if slug_key in self.seen_titles:
+                    logger.debug(f"    [Dup] Skipping known: {title}")
+                    continue
+                self.seen_titles.add(slug_key)
 
-                    if not pdf_href:
-                        continue
+                if not self._is_bill_document(title):
+                    logger.info(f"    [SKIP] Non-bill document hard-discarded (strict mode): {title}")
+                    continue
 
-                    raw_title = pdf_text or self._title_from_url(pdf_href)
-                    title = self._clean_title(raw_title)
-                    if not title:
-                        continue
+                try:
+                    record = self._deep_process_bill(page, title, pdf_href, detail_href, target)
+                    self.data.append(record)
+                    logger.info(f"    [BILL] {title}")
+                except Exception as e:
+                    logger.error(f"    [BILL] Deep process failed for '{title}': {e}")
+                    self.data.append({
+                        "title": title,
+                        "url": pdf_href,
+                        "pdf_url": pdf_href,
+                        "source": target["name"],
+                        "status": "PUBLISHED",
+                        "date": datetime.now().strftime("%Y-%m-%d"),
+                        "session_year": int(self._extract_year(title) or datetime.now().year),
+                        "metadata": {
+                            "scraped_at": datetime.now(timezone.utc).isoformat(),
+                            "extraction_method": "fallback_minimal",
+                            "error": str(e),
+                        },
+                        "created_at": datetime.now(timezone.utc).isoformat(),
+                    })
 
-                    slug_key = self._normalise_title_key(title)
-                    if slug_key in self.seen_titles:
-                        logger.debug(f"    [Dup] Skipping known: {title}")
-                        continue
-                    self.seen_titles.add(slug_key)
-
-                    if not self._is_bill_document(title):
-                        logger.info(f"    [SKIP] Non-bill document hard-discarded (strict mode): {title}")
-                        continue
-
-                    try:
-                        record = self._deep_process_bill(page, title, pdf_href, detail_href, target)
-                        self.data.append(record)
-                        logger.info(f"    [BILL] {title}")
-                    except Exception as e:
-                        logger.error(f"    [BILL] Deep process failed for '{title}': {e}")
-                        self.data.append({
-                            "title": title,
-                            "url": pdf_href,
-                            "pdf_url": pdf_href,
-                            "source": target["name"],
-                            "status": "PUBLISHED",
-                            "date": datetime.now().strftime("%Y-%m-%d"),
-                            "session_year": int(self._extract_year(title) or datetime.now().year),
-                            "metadata": {
-                                "scraped_at": datetime.now(timezone.utc).isoformat(),
-                                "extraction_method": "fallback_minimal",
-                                "error": str(e),
-                            },
-                            "created_at": datetime.now(timezone.utc).isoformat(),
-                        })
-
-                # Pagination check
+            # Pagination check: Use Scrapling if available, else Playwright
+            if SCRAPLING_OK:
+                has_next = True # Let the next loop handle empty rows logic
+            else:
                 has_next = page.evaluate("""() => {
                     const next = document.querySelector('li.pager-next a, a[rel="next"], .pager__item--next a, li.next a');
                     return next !== null;
@@ -1014,14 +1088,11 @@ class LegislativeScraper:
                     logger.info(f"  [Cap] No next-page link after page {page_num + 1}. Pagination done.")
                     break
 
-                time.sleep(0.5 + (page_num % 3) * 0.3)
+            time.sleep(0.5 + (page_num % 3) * 0.3)
 
-            except Exception as e:
-                logger.error(f"  Page {page_num + 1} error: {e}")
-                consecutive_empty += 1
-                if consecutive_empty >= 3:
-                    logger.error("  Three consecutive errors. Stopping pagination.")
-                    break
+        # Catch for any outer loop errors
+        # Note: Exception block removed from outer scope since it handles gracefully.
+
 
     # -------------------------------------------------------------------
     #  scrape_all – uses stealth browser and proxy pool
