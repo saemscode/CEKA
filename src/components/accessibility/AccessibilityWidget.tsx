@@ -202,16 +202,18 @@ const AccessibilityWidget: React.FC<AccessibilityWidgetProps> = ({ onTimedOut, i
           if (onHide) onHide();
         }
       }}
-      className="fixed z-30 transition-all duration-500 ease-out touch-none"
+      className={`fixed transition-all duration-500 ease-out touch-none ${
+        isExpanded ? "inset-0 flex items-center justify-center z-[9999]" : "z-30"
+      }`}
       style={{
         opacity,
-        bottom: `${offsetY}px`,
         ...(isExpanded ? {
-          top: '50%',
-          bottom: 'auto',
-          left: '50%',
-          transform: 'translate(-50%, -50%)'
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0
         } : {
+          bottom: `${offsetY}px`,
           right: '2rem',
         })
       }}
@@ -276,145 +278,155 @@ const AccessibilityWidget: React.FC<AccessibilityWidgetProps> = ({ onTimedOut, i
           )}
         </div>
       ) : (
-        <div className="w-80 bg-white/95 dark:bg-gray-900/10 backdrop-blur-xl border border-gray-200 dark:border-gray-700/20 rounded-2xl shadow-2xl overflow-hidden">
-          <div className="bg-gradient-to-r from-blue-50/50 to-indigo-50/50 dark:from-blue-400/10 dark:to-indigo-500/10 p-4 border-b border-gray-200 dark:border-gray-700/10">
-            <div className="flex justify-between items-center">
-              <h3 className="font-bold text-lg flex items-center text-gray-900 dark:text-white">
-                <div className="relative mr-3">
-                  <DisabilityIcon className="h-6 w-6 text-blue-500 dark:text-blue-400 drop-shadow-sm" />
-                  <div className="absolute inset-0 bg-blue-400 blur-sm opacity-30 rounded-full" />
-                </div>
-                Accessibility
-              </h3>
-              <button
-                className="relative group rounded-full p-2 hover:bg-gray-100 dark:hover:bg-gray-800/10 transition-all duration-300 backdrop-blur-sm"
-                onClick={handleCollapse}
-                aria-label="Close Accessibility Menu"
-              >
-                <X className="h-4 w-4 text-gray-500 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-200 transition-colors" />
-                <div className="absolute inset-0 rounded-full bg-gray-200/50 dark:bg-white/5 scale-0 group-hover:scale-100 transition-transform duration-300" />
-              </button>
+        <>
+          {/* Dimming Backdrop — click outside to close */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={handleCollapse}
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm z-[-1]"
+          />
+          <div className="w-80 max-h-[90vh] bg-white/95 dark:bg-gray-900/10 backdrop-blur-xl border border-gray-200 dark:border-gray-700/20 rounded-2xl shadow-2xl overflow-hidden flex flex-col">
+            <div className="bg-gradient-to-r from-blue-50/50 to-indigo-50/50 dark:from-blue-400/10 dark:to-indigo-500/10 p-4 border-b border-gray-200 dark:border-gray-700/10">
+              <div className="flex justify-between items-center">
+                <h3 className="font-bold text-lg flex items-center text-gray-900 dark:text-white">
+                  <div className="relative mr-3">
+                    <DisabilityIcon className="h-6 w-6 text-blue-500 dark:text-blue-400 drop-shadow-sm" />
+                    <div className="absolute inset-0 bg-blue-400 blur-sm opacity-30 rounded-full" />
+                  </div>
+                  Accessibility
+                </h3>
+                <button
+                  className="relative group rounded-full p-2 hover:bg-gray-100 dark:hover:bg-gray-800/10 transition-all duration-300 backdrop-blur-sm"
+                  onClick={handleCollapse}
+                  aria-label="Close Accessibility Menu"
+                >
+                  <X className="h-4 w-4 text-gray-500 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-200 transition-colors" />
+                  <div className="absolute inset-0 rounded-full bg-gray-200/50 dark:bg-white/5 scale-0 group-hover:scale-100 transition-transform duration-300" />
+                </button>
+              </div>
+            </div>
+            <div className="p-4 overflow-y-auto">
+              <p className="text-sm text-gray-800 dark:text-gray-200 mb-4 leading-relaxed font-medium">
+                Adjust display settings to improve readability and visual comfort.
+              </p>
+              <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
+                <button
+                  onClick={handleToggleHighContrast}
+                  aria-pressed={highContrast}
+                  className="w-full group relative p-4 rounded-xl flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-800/10 transition-all duration-300 border border-transparent dark:border-gray-700/10 backdrop-blur-sm"
+                >
+                  <div className={`absolute inset-0 rounded-xl transition-opacity duration-300 ${highContrast ? 'bg-blue-100 dark:bg-blue-500/20 opacity-100' : 'bg-gradient-to-r from-transparent via-gray-100 dark:via-gray-700/5 to-transparent opacity-0 group-hover:opacity-100'}`} />
+                  <div className="flex items-center relative z-10 flex-1 min-w-0">
+                    <IconEye className={`h-6 w-6 mr-4 transition-transform duration-300 group-hover:scale-110 shrink-0 ${highContrast ? 'text-blue-500' : 'text-gray-700 dark:text-gray-300'}`} />
+                    <div className="text-left flex-1 min-w-0">
+                      <h4 className="font-bold text-gray-900 dark:text-white truncate">High Contrast</h4>
+                      <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5 truncate">Increase color distinction - unstable & being fixed</p>
+                    </div>
+                  </div>
+                  <div className={`relative z-10 w-4 h-4 shrink-0 rounded-full border-2 ml-4 ${highContrast ? 'border-blue-500 bg-blue-500' : 'border-gray-400'}`} />
+                </button>
+
+                <button
+                  onClick={handleToggleLargeText}
+                  aria-pressed={textScale > 100}
+                  className="w-full group relative p-4 rounded-xl flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-800/10 transition-all duration-300 border border-transparent dark:border-gray-700/10 backdrop-blur-sm"
+                >
+                  <div className={`absolute inset-0 rounded-xl transition-opacity duration-300 ${textScale > 100 ? 'bg-blue-100 dark:bg-blue-500/20 opacity-100' : 'bg-gradient-to-r from-transparent via-gray-100 dark:via-gray-700/5 to-transparent opacity-0 group-hover:opacity-100'}`} />
+                  <div className="flex items-center relative z-10 flex-1 min-w-0">
+                    <IconFontSize className={`h-6 w-6 mr-4 transition-transform duration-300 group-hover:scale-110 shrink-0 ${textScale > 100 ? 'text-blue-500' : 'text-gray-700 dark:text-gray-300'}`} />
+                    <div className="text-left flex-1 min-w-0">
+                      <h4 className="font-bold text-gray-900 dark:text-white truncate">Large Text</h4>
+                      <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5 truncate">Scale typography up</p>
+                    </div>
+                  </div>
+                  <div className={`relative z-10 w-4 h-4 shrink-0 rounded-full border-2 ml-4 ${textScale > 100 ? 'border-blue-500 bg-blue-500' : 'border-gray-400'}`} />
+                </button>
+
+                <button
+                  onClick={handleToggleDyslexiaFont}
+                  aria-pressed={dyslexiaFont}
+                  className="w-full group relative p-4 rounded-xl flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-800/10 transition-all duration-300 border border-transparent dark:border-gray-700/10 backdrop-blur-sm"
+                >
+                  <div className={`absolute inset-0 rounded-xl transition-opacity duration-300 ${dyslexiaFont ? 'bg-blue-100 dark:bg-blue-500/20 opacity-100' : 'bg-gradient-to-r from-transparent via-gray-100 dark:via-gray-700/5 to-transparent opacity-0 group-hover:opacity-100'}`} />
+                  <div className="flex items-center relative z-10 flex-1 min-w-0">
+                    <IconGlasses className={`h-6 w-6 mr-4 transition-transform duration-300 group-hover:scale-110 shrink-0 ${dyslexiaFont ? 'text-blue-500' : 'text-gray-700 dark:text-gray-300'}`} />
+                    <div className="text-left flex-1 min-w-0">
+                      <h4 className="font-bold text-gray-900 dark:text-white truncate">Dyslexia Font</h4>
+                      <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5 truncate">Highly readable typography</p>
+                    </div>
+                  </div>
+                  <div className={`relative z-10 w-4 h-4 shrink-0 rounded-full border-2 ml-4 ${dyslexiaFont ? 'border-blue-500 bg-blue-500' : 'border-gray-400'}`} />
+                </button>
+
+                <button
+                  onClick={handleToggleReadingMask}
+                  aria-pressed={readingMask}
+                  className="w-full group relative p-4 rounded-xl flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-800/10 transition-all duration-300 border border-transparent dark:border-gray-700/10 backdrop-blur-sm"
+                >
+                  <div className={`absolute inset-0 rounded-xl transition-opacity duration-300 ${readingMask ? 'bg-blue-100 dark:bg-blue-500/20 opacity-100' : 'bg-gradient-to-r from-transparent via-gray-100 dark:via-gray-700/5 to-transparent opacity-0 group-hover:opacity-100'}`} />
+                  <div className="flex items-center relative z-10 flex-1 min-w-0">
+                    <IconRectangleTool className={`h-6 w-6 mr-4 transition-transform duration-300 group-hover:scale-110 shrink-0 ${readingMask ? 'text-blue-500' : 'text-gray-700 dark:text-gray-300'}`} />
+                    <div className="text-left flex-1 min-w-0">
+                      <h4 className="font-bold text-gray-900 dark:text-white truncate">Reading Mask</h4>
+                      <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5 truncate">Focus ruler for reading</p>
+                    </div>
+                  </div>
+                  <div className={`relative z-10 w-4 h-4 shrink-0 rounded-full border-2 ml-4 ${readingMask ? 'border-blue-500 bg-blue-500' : 'border-gray-400'}`} />
+                </button>
+
+                <button
+                  onClick={handleToggleHighlightLinks}
+                  aria-pressed={highlightLinks}
+                  className="w-full group relative p-4 rounded-xl flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-800/10 transition-all duration-300 border border-transparent dark:border-gray-700/10 backdrop-blur-sm"
+                >
+                  <div className={`absolute inset-0 rounded-xl transition-opacity duration-300 ${highlightLinks ? 'bg-blue-100 dark:bg-blue-500/20 opacity-100' : 'bg-gradient-to-r from-transparent via-gray-100 dark:via-gray-700/5 to-transparent opacity-0 group-hover:opacity-100'}`} />
+                  <div className="flex items-center relative z-10 flex-1 min-w-0">
+                    <IconLinkSquare className={`h-6 w-6 mr-4 transition-transform duration-300 group-hover:scale-110 shrink-0 ${highlightLinks ? 'text-blue-500' : 'text-gray-700 dark:text-gray-300'}`} />
+                    <div className="text-left flex-1 min-w-0">
+                      <h4 className="font-bold text-gray-900 dark:text-white truncate">Highlight Links</h4>
+                      <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5 truncate">Make interactive elements pop</p>
+                    </div>
+                  </div>
+                  <div className={`relative z-10 w-4 h-4 shrink-0 rounded-full border-2 ml-4 ${highlightLinks ? 'border-blue-500 bg-blue-500' : 'border-gray-400'}`} />
+                </button>
+
+                <button
+                  onClick={handleToggleHideImages}
+                  aria-pressed={hideImages}
+                  className="w-full group relative p-4 rounded-xl flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-800/10 transition-all duration-300 border border-transparent dark:border-gray-700/10 backdrop-blur-sm"
+                >
+                  <div className={`absolute inset-0 rounded-xl transition-opacity duration-300 ${hideImages ? 'bg-blue-100 dark:bg-blue-500/20 opacity-100' : 'bg-gradient-to-r from-transparent via-gray-100 dark:via-gray-700/5 to-transparent opacity-0 group-hover:opacity-100'}`} />
+                  <div className="flex items-center relative z-10 flex-1 min-w-0">
+                    <IconImageMissing className={`h-6 w-6 mr-4 transition-transform duration-300 group-hover:scale-110 shrink-0 ${hideImages ? 'text-blue-500' : 'text-gray-700 dark:text-gray-300'}`} />
+                    <div className="text-left flex-1 min-w-0">
+                      <h4 className="font-bold text-gray-900 dark:text-white truncate">Hide Images</h4>
+                      <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5 truncate">Text-only mode</p>
+                    </div>
+                  </div>
+                  <div className={`relative z-10 w-4 h-4 shrink-0 rounded-full border-2 ml-4 ${hideImages ? 'border-blue-500 bg-blue-500' : 'border-gray-400'}`} />
+                </button>
+
+                <button
+                  onClick={handleToggleReduceMotion}
+                  aria-pressed={reducedMotion}
+                  className="w-full group relative p-4 rounded-xl flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-800/10 transition-all duration-300 border border-transparent dark:border-gray-700/10 backdrop-blur-sm"
+                >
+                  <div className={`absolute inset-0 rounded-xl transition-opacity duration-300 ${reducedMotion ? 'bg-blue-100 dark:bg-blue-500/20 opacity-100' : 'bg-gradient-to-r from-transparent via-gray-100 dark:via-gray-700/5 to-transparent opacity-0 group-hover:opacity-100'}`} />
+                  <div className="flex items-center relative z-10 flex-1 min-w-0">
+                    <IconPauseCircle className={`h-6 w-6 mr-4 transition-transform duration-300 group-hover:scale-110 shrink-0 ${reducedMotion ? 'text-blue-500' : 'text-gray-700 dark:text-gray-300'}`} />
+                    <div className="text-left flex-1 min-w-0">
+                      <h4 className="font-bold text-gray-900 dark:text-white truncate">Reduce Motion</h4>
+                      <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5 truncate">Disable animations</p>
+                    </div>
+                  </div>
+                  <div className={`relative z-10 w-4 h-4 shrink-0 rounded-full border-2 ml-4 ${reducedMotion ? 'border-blue-500 bg-blue-500' : 'border-gray-400'}`} />
+                </button>
+              </div>
             </div>
           </div>
-          <div className="p-4">
-            <p className="text-sm text-gray-800 dark:text-gray-200 mb-4 leading-relaxed font-medium">
-              Adjust display settings to improve readability and visual comfort.
-            </p>
-            <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
-              <button
-                onClick={handleToggleHighContrast}
-                aria-pressed={highContrast}
-                className="w-full group relative p-4 rounded-xl flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-800/10 transition-all duration-300 border border-transparent dark:border-gray-700/10 backdrop-blur-sm"
-              >
-                <div className={`absolute inset-0 rounded-xl transition-opacity duration-300 ${highContrast ? 'bg-blue-100 dark:bg-blue-500/20 opacity-100' : 'bg-gradient-to-r from-transparent via-gray-100 dark:via-gray-700/5 to-transparent opacity-0 group-hover:opacity-100'}`} />
-                <div className="flex items-center relative z-10 flex-1 min-w-0">
-                  <IconEye className={`h-6 w-6 mr-4 transition-transform duration-300 group-hover:scale-110 shrink-0 ${highContrast ? 'text-blue-500' : 'text-gray-700 dark:text-gray-300'}`} />
-                  <div className="text-left flex-1 min-w-0">
-                    <h4 className="font-bold text-gray-900 dark:text-white truncate">High Contrast</h4>
-                    <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5 truncate">Increase color distinction - unstable & being fixed</p>
-                  </div>
-                </div>
-                <div className={`relative z-10 w-4 h-4 shrink-0 rounded-full border-2 ml-4 ${highContrast ? 'border-blue-500 bg-blue-500' : 'border-gray-400'}`} />
-              </button>
-
-              <button
-                onClick={handleToggleLargeText}
-                aria-pressed={textScale > 100}
-                className="w-full group relative p-4 rounded-xl flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-800/10 transition-all duration-300 border border-transparent dark:border-gray-700/10 backdrop-blur-sm"
-              >
-                <div className={`absolute inset-0 rounded-xl transition-opacity duration-300 ${textScale > 100 ? 'bg-blue-100 dark:bg-blue-500/20 opacity-100' : 'bg-gradient-to-r from-transparent via-gray-100 dark:via-gray-700/5 to-transparent opacity-0 group-hover:opacity-100'}`} />
-                <div className="flex items-center relative z-10 flex-1 min-w-0">
-                  <IconFontSize className={`h-6 w-6 mr-4 transition-transform duration-300 group-hover:scale-110 shrink-0 ${textScale > 100 ? 'text-blue-500' : 'text-gray-700 dark:text-gray-300'}`} />
-                  <div className="text-left flex-1 min-w-0">
-                    <h4 className="font-bold text-gray-900 dark:text-white truncate">Large Text</h4>
-                    <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5 truncate">Scale typography up</p>
-                  </div>
-                </div>
-                <div className={`relative z-10 w-4 h-4 shrink-0 rounded-full border-2 ml-4 ${textScale > 100 ? 'border-blue-500 bg-blue-500' : 'border-gray-400'}`} />
-              </button>
-
-              <button
-                onClick={handleToggleDyslexiaFont}
-                aria-pressed={dyslexiaFont}
-                className="w-full group relative p-4 rounded-xl flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-800/10 transition-all duration-300 border border-transparent dark:border-gray-700/10 backdrop-blur-sm"
-              >
-                <div className={`absolute inset-0 rounded-xl transition-opacity duration-300 ${dyslexiaFont ? 'bg-blue-100 dark:bg-blue-500/20 opacity-100' : 'bg-gradient-to-r from-transparent via-gray-100 dark:via-gray-700/5 to-transparent opacity-0 group-hover:opacity-100'}`} />
-                <div className="flex items-center relative z-10 flex-1 min-w-0">
-                  <IconGlasses className={`h-6 w-6 mr-4 transition-transform duration-300 group-hover:scale-110 shrink-0 ${dyslexiaFont ? 'text-blue-500' : 'text-gray-700 dark:text-gray-300'}`} />
-                  <div className="text-left flex-1 min-w-0">
-                    <h4 className="font-bold text-gray-900 dark:text-white truncate">Dyslexia Font</h4>
-                    <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5 truncate">Highly readable typography</p>
-                  </div>
-                </div>
-                <div className={`relative z-10 w-4 h-4 shrink-0 rounded-full border-2 ml-4 ${dyslexiaFont ? 'border-blue-500 bg-blue-500' : 'border-gray-400'}`} />
-              </button>
-
-              <button
-                onClick={handleToggleReadingMask}
-                aria-pressed={readingMask}
-                className="w-full group relative p-4 rounded-xl flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-800/10 transition-all duration-300 border border-transparent dark:border-gray-700/10 backdrop-blur-sm"
-              >
-                <div className={`absolute inset-0 rounded-xl transition-opacity duration-300 ${readingMask ? 'bg-blue-100 dark:bg-blue-500/20 opacity-100' : 'bg-gradient-to-r from-transparent via-gray-100 dark:via-gray-700/5 to-transparent opacity-0 group-hover:opacity-100'}`} />
-                <div className="flex items-center relative z-10 flex-1 min-w-0">
-                  <IconRectangleTool className={`h-6 w-6 mr-4 transition-transform duration-300 group-hover:scale-110 shrink-0 ${readingMask ? 'text-blue-500' : 'text-gray-700 dark:text-gray-300'}`} />
-                  <div className="text-left flex-1 min-w-0">
-                    <h4 className="font-bold text-gray-900 dark:text-white truncate">Reading Mask</h4>
-                    <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5 truncate">Focus ruler for reading</p>
-                  </div>
-                </div>
-                <div className={`relative z-10 w-4 h-4 shrink-0 rounded-full border-2 ml-4 ${readingMask ? 'border-blue-500 bg-blue-500' : 'border-gray-400'}`} />
-              </button>
-
-              <button
-                onClick={handleToggleHighlightLinks}
-                aria-pressed={highlightLinks}
-                className="w-full group relative p-4 rounded-xl flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-800/10 transition-all duration-300 border border-transparent dark:border-gray-700/10 backdrop-blur-sm"
-              >
-                <div className={`absolute inset-0 rounded-xl transition-opacity duration-300 ${highlightLinks ? 'bg-blue-100 dark:bg-blue-500/20 opacity-100' : 'bg-gradient-to-r from-transparent via-gray-100 dark:via-gray-700/5 to-transparent opacity-0 group-hover:opacity-100'}`} />
-                <div className="flex items-center relative z-10 flex-1 min-w-0">
-                  <IconLinkSquare className={`h-6 w-6 mr-4 transition-transform duration-300 group-hover:scale-110 shrink-0 ${highlightLinks ? 'text-blue-500' : 'text-gray-700 dark:text-gray-300'}`} />
-                  <div className="text-left flex-1 min-w-0">
-                    <h4 className="font-bold text-gray-900 dark:text-white truncate">Highlight Links</h4>
-                    <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5 truncate">Make interactive elements pop</p>
-                  </div>
-                </div>
-                <div className={`relative z-10 w-4 h-4 shrink-0 rounded-full border-2 ml-4 ${highlightLinks ? 'border-blue-500 bg-blue-500' : 'border-gray-400'}`} />
-              </button>
-
-              <button
-                onClick={handleToggleHideImages}
-                aria-pressed={hideImages}
-                className="w-full group relative p-4 rounded-xl flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-800/10 transition-all duration-300 border border-transparent dark:border-gray-700/10 backdrop-blur-sm"
-              >
-                <div className={`absolute inset-0 rounded-xl transition-opacity duration-300 ${hideImages ? 'bg-blue-100 dark:bg-blue-500/20 opacity-100' : 'bg-gradient-to-r from-transparent via-gray-100 dark:via-gray-700/5 to-transparent opacity-0 group-hover:opacity-100'}`} />
-                <div className="flex items-center relative z-10 flex-1 min-w-0">
-                  <IconImageMissing className={`h-6 w-6 mr-4 transition-transform duration-300 group-hover:scale-110 shrink-0 ${hideImages ? 'text-blue-500' : 'text-gray-700 dark:text-gray-300'}`} />
-                  <div className="text-left flex-1 min-w-0">
-                    <h4 className="font-bold text-gray-900 dark:text-white truncate">Hide Images</h4>
-                    <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5 truncate">Text-only mode</p>
-                  </div>
-                </div>
-                <div className={`relative z-10 w-4 h-4 shrink-0 rounded-full border-2 ml-4 ${hideImages ? 'border-blue-500 bg-blue-500' : 'border-gray-400'}`} />
-              </button>
-
-              <button
-                onClick={handleToggleReduceMotion}
-                aria-pressed={reducedMotion}
-                className="w-full group relative p-4 rounded-xl flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-800/10 transition-all duration-300 border border-transparent dark:border-gray-700/10 backdrop-blur-sm"
-              >
-                <div className={`absolute inset-0 rounded-xl transition-opacity duration-300 ${reducedMotion ? 'bg-blue-100 dark:bg-blue-500/20 opacity-100' : 'bg-gradient-to-r from-transparent via-gray-100 dark:via-gray-700/5 to-transparent opacity-0 group-hover:opacity-100'}`} />
-                <div className="flex items-center relative z-10 flex-1 min-w-0">
-                  <IconPauseCircle className={`h-6 w-6 mr-4 transition-transform duration-300 group-hover:scale-110 shrink-0 ${reducedMotion ? 'text-blue-500' : 'text-gray-700 dark:text-gray-300'}`} />
-                  <div className="text-left flex-1 min-w-0">
-                    <h4 className="font-bold text-gray-900 dark:text-white truncate">Reduce Motion</h4>
-                    <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5 truncate">Disable animations</p>
-                  </div>
-                </div>
-                <div className={`relative z-10 w-4 h-4 shrink-0 rounded-full border-2 ml-4 ${reducedMotion ? 'border-blue-500 bg-blue-500' : 'border-gray-400'}`} />
-              </button>
-            </div>
-          </div>
-        </div>
+        </>
       )}
     </motion.div>
   );
