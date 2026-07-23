@@ -2,6 +2,7 @@
 import { vaultService } from '@/services/vaultService';
 import { notificationService } from '@/services/notificationService'; // Added
 import { useAuth } from '@/providers/AuthProvider'; // Added
+import { useLanguage } from '@/contexts/LanguageContext';
 import React, { useEffect, useState, useMemo, useRef, useCallback } from 'react';
 import Layout from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
@@ -67,6 +68,7 @@ type SortOption = 'date-desc' | 'date-asc' | 'alpha-asc' | 'alpha-desc' | 'statu
 
 const LegislativeTracker = () => {
   const { user } = useAuth(); // Added for notification sync
+  const { language } = useLanguage();
   const [billsData, setBillsData] = useState<Bill[]>([]);
   const [trendingBills, setTrendingBills] = useState<Bill[]>([]);
   const [loading, setLoading] = useState(true);

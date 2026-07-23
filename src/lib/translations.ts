@@ -3,6 +3,16 @@ import { Language } from "@/contexts/LanguageContext";
 // Define translations for commonly used texts
 export const translations: Record<string, Record<Language, string>> = {
   // General & App Intro
+  "Pieces:": { en: "Pieces:", sw: "Vipande:", ksl: "Pieces:", br: "⠏⠊⠑⠉⠑⠎" },
+  "Breaking Down Topics": { en: "Breaking Down Topics", sw: "Kuchambua Mada", ksl: "Breaking Down Topics", br: "⠃⠗⠑⠁⠅⠊⠝⠛ ⠙⠕⠺⠝ ⠞⠕⠏⠊⠉⠎" },
+  "Simplifying complex civic, social and legal issues through visual education series. Swipe through to learn, download to share and act.": {
+    en: "Simplifying complex civic, social and legal issues through visual education series. Swipe through to learn, download to share and act.",
+    sw: "Kurahisisha masuala tata ya kiraia, kijamii na kisheria kupitia mfululizo wa elimu ya kuona. Telezesha kidole ili kujifunza, pakua ili kushiriki na kuchukua hatua.",
+    ksl: "Simplifying issues visual learn share act",
+    br: "⠎⠊⠍⠏⠇⠊⠋⠽⠊⠝⠛ ⠉⠕⠍⠏⠇⠑⠭ ⠊⠎⠎⠥⠑⠎"
+  },
+  "EXPLORE ALL PIECES": { en: "EXPLORE ALL PIECES", sw: "CHUNGUZA VIPANDE VYOTE", ksl: "EXPLORE ALL PIECES", br: "⠑⠭⠏⠇⠕⠗⠑ ⠁⠇⠇ ⠏⠊⠑⠉⠑⠎" },
+  "Education Series": { en: "Education Series", sw: "Mfululizo wa Elimu", ksl: "Education Series", br: "⠑⠙⠥⠉⠁⠞⠊⠕⠝ ⠎⠑⠗⠊⠑⠎" },
   "Empowering Citizens through": {
     en: "Empowering Citizens through",
     sw: "Kuwawezesha Wananchi kupitia",
@@ -116,6 +126,24 @@ export const translations: Record<string, Record<Language, string>> = {
   },
 
   // Legislative Intelligence (Sovereign Engine)
+  "Ask Sovereign Intelligence...": {
+    en: "Ask Sovereign Intelligence...",
+    sw: "Uliza Akili Huru...",
+    ksl: "Ask Intelligence",
+    br: "⠁⠎⠅ ⠎⠕⠧⠑⠗⠑⠊⠛⠝ ⠊⠝⠞⠑⠇⠇⠊⠛⠑⠝⠉⠑"
+  },
+  "I can analyze bills, summarize legislation, and answer questions about Kenyan civic rights based on verified public data.": {
+    en: "I can analyze bills, summarize legislation, and answer questions about Kenyan civic rights based on verified public data.",
+    sw: "Naweza kuchambua miswada, kufupisha sheria, na kujibu maswali kuhusu haki za kiraia za Kenya kulingana na data ya umma iliyothibitishwa.",
+    ksl: "Analyze bills answer questions",
+    br: "⠊ ⠉⠁⠝ ⠁⠝⠁⠇⠽⠵⠑ ⠃⠊⠇⠇⠎"
+  },
+  "Start typing to awaken the Sovereign Engine...": {
+    en: "Start typing to awaken the Sovereign Engine...",
+    sw: "Anza kuandika ili kuamsha Mtambo wa Kujitegemea...",
+    ksl: "Start typing awaken Engine",
+    br: "⠎⠞⠁⠗⠞ ⠞⠽⠏⠊⠝⠛"
+  },
   "Download Civic Intelligence Pack": {
     en: "Download Civic Intelligence Pack",
     sw: "Pakua Kifurushi cha Ujasusi wa Kiraia",

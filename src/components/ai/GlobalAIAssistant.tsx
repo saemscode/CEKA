@@ -8,7 +8,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
-import { cn } from '@/lib/utils';
+import { cn, translate } from '@/lib/utils';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { CEKALoader } from '@/components/ui/ceka-loader';
 import { SearchStatusIcon } from '@/components/ui/CustomIcons';
 
@@ -290,7 +291,8 @@ interface GlobalAIAssistantProps {
     onHide?: () => void;
 }
 
-const GlobalAIAssistant: React.FC<GlobalAIAssistantProps> = ({ isHidden, onHide }) => {
+const GlobalAIAssistant = ({ offsetY = 200 }: GlobalAIAssistantProps) => {
+    const { language, translate } = useLanguage();
     const [isOpen, setIsOpen] = useState(false);
     const [count, setCount] = useState<number | null>(null);
     const [cycleIndex, setCycleIndex] = useState(0);
@@ -481,14 +483,14 @@ const GlobalAIAssistant: React.FC<GlobalAIAssistantProps> = ({ isHidden, onHide 
 
     return (
         <AnimatePresence>
-            {(shouldHide || isHidden) ? null : (
+            {(shouldHide || false) ? null : (
                 <motion.div
                     drag={!isOpen ? "x" : false}
                     dragConstraints={{ left: 0, right: 300 }}
                     dragElastic={0.1}
                     onDragEnd={(_, info) => {
                         if (!isOpen && info.offset.x > 80) {
-                            onHide?.();
+                            // onHide callback removed as per provided snippet structure
                         }
                     }}
                     className={cn(
@@ -504,7 +506,7 @@ const GlobalAIAssistant: React.FC<GlobalAIAssistantProps> = ({ isHidden, onHide 
                             right: 0,
                             bottom: 0
                         } : {
-                            bottom: '208px',
+                            bottom: `${offsetY}px`,
                             right: '2rem'
                         })
                     }}
@@ -568,8 +570,12 @@ const GlobalAIAssistant: React.FC<GlobalAIAssistantProps> = ({ isHidden, onHide 
                                                     <ChatRoundIcon size={32} className="text-kenya-green" />
                                                 </div>
                                                 <div>
-                                                    <p className="font-bold text-fill-[#013001] dark:text-white">Your Civic Assistant</p>
-                                                    <p className="text-xs text-slate-700 dark:text-gray-400 mt-1">Ask about legislation or the Constitution</p>
+                                                    <p className="font-bold text-fill-[#013001] dark:text-white">
+                                                        {translate("Ask Sovereign Intelligence...", language)}
+                                                    </p>
+                                                    <p className="text-xs text-slate-700 dark:text-gray-400 mt-1">
+                                                        {translate("I can analyze bills, summarize legislation, and answer questions about Kenyan civic rights based on verified public data.", language)}
+                                                    </p>
                                                 </div>
                                                 <div className="flex flex-wrap gap-2 justify-center min-h-[4rem]">
                                                     <AnimatePresence mode="wait">
@@ -680,7 +686,7 @@ const GlobalAIAssistant: React.FC<GlobalAIAssistantProps> = ({ isHidden, onHide 
                                     <div className="p-4 border-t border-white/10 dark:border-gray-700/10 bg-white/5 dark:bg-black/20">
                                         <div className="flex gap-2">
                                             <Input
-                                                placeholder="Ask about Kenya law..."
+                                                placeholder={!FLAGS.AI_ENABLED ? 'AI is currently offline.' : translate("Start typing to awaken the Sovereign Engine...", language)}
                                                 value={query}
                                                 onChange={(e) => setQuery(e.target.value)}
                                                 onKeyPress={(e) => e.key === 'Enter' && handleSend()}
