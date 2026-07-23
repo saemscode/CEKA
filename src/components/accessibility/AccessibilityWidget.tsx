@@ -202,11 +202,18 @@ const AccessibilityWidget: React.FC<AccessibilityWidgetProps> = ({ onTimedOut, i
           if (onHide) onHide();
         }
       }}
-      className={`fixed z-30 transition-all duration-500 ease-out touch-none ${isExpanded ? "z-[9999]" : ""}`}
+      className="fixed z-30 transition-all duration-500 ease-out touch-none"
       style={{
         opacity,
         bottom: `${offsetY}px`,
-        right: '2rem'
+        ...(isExpanded ? {
+          top: '50%',
+          bottom: 'auto',
+          left: '50%',
+          transform: 'translate(-50%, -50%)'
+        } : {
+          right: '2rem',
+        })
       }}
     >
       {!isExpanded ? (
