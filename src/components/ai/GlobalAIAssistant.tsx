@@ -21,6 +21,7 @@ const ChatRoundIcon = ({ size = 24, className = '' }: { size?: number; className
 
 // ============================================================================
 // VERCEL FEATURE FLAGS
+
 // These are read from environment variables set in your Vercel project dashboard.
 // To override them: Vercel Dashboard → Project → Settings → Environment Variables
 // Redeploy after changing any flag for it to take effect.
@@ -206,12 +207,12 @@ async function initializeSitemapDictionary() {
         const res = await fetch('/sitemap.xml');
         if (!res.ok) return;
         const text = await res.text();
-        
+
         const locRegex = /<loc>(.*?)<\/loc>/g;
         const newDict: Record<string, string> = {
             'home': '/', 'about': '/about', 'tools': '/tools', 'community': '/community', 'calendar': '/calendar'
         };
-        
+
         let match;
         while ((match = locRegex.exec(text)) !== null) {
             try {
@@ -219,9 +220,9 @@ async function initializeSitemapDictionary() {
                 if (path === '/' || path.includes('/bill/')) continue; // Skip massive bill list
                 const key = path.split('/').pop()?.replace(/-/g, ' ').toLowerCase();
                 if (key && key.length > 2) newDict[key] = path;
-            } catch (e) {}
+            } catch (e) { }
         }
-        
+
         // Add manual aliases for critical pages
         Object.assign(newDict, {
             'bills': '/legislative-tracker', 'bills tracker': '/legislative-tracker',
@@ -356,7 +357,7 @@ const GlobalAIAssistant: React.FC<GlobalAIAssistantProps> = ({ isHidden, onHide 
 
     useEffect(() => {
         setUsage(getUsageToday());
-        
+
         initializeSitemapDictionary();
 
         const handleTrigger = (e: any) => {
@@ -552,7 +553,7 @@ const GlobalAIAssistant: React.FC<GlobalAIAssistantProps> = ({ isHidden, onHide 
                                                     initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
                                                     className="mt-2 flex items-center gap-2 text-[11px] text-kenya-green font-semibold"
                                                 >
-                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12H19M13 6L19 12L13 18"/></svg>
+                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12H19M13 6L19 12L13 18" /></svg>
                                                     {navLabel}
                                                 </motion.div>
                                             )}
