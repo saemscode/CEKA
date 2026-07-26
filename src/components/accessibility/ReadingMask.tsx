@@ -61,8 +61,8 @@ const ReadingMask: React.FC = () => {
 
   return (
     <div
-      className="fixed inset-0"
-      style={{ zIndex: 99998, transition: 'opacity 0.2s ease-in-out' }}
+      className="fixed inset-0 pointer-events-none"
+      style={{ zIndex: 99998, pointerEvents: 'none', transition: 'opacity 0.2s ease-in-out' }}
       aria-hidden="true"
     >
       {/* Top dark area */}
@@ -86,8 +86,7 @@ const ReadingMask: React.FC = () => {
           backgroundColor: 'transparent',
           borderTop: '2px solid rgba(255, 200, 0, 0.5)',
           borderBottom: '2px solid rgba(255, 200, 0, 0.5)',
-          // Allow touch interaction on the band so user can drag it
-          pointerEvents: touchMode ? 'auto' : 'none',
+          pointerEvents: 'none',
           cursor: touchMode ? 'grab' : 'none',
           touchAction: touchMode ? 'none' : 'auto',
         }}
