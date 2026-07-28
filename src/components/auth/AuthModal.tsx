@@ -59,10 +59,10 @@ const SignUpTabIcon = ({ size = 20, className }: { size?: number; className?: st
 
 // Clean, high-contrast iOS-style text input
 const IosInput = ({
-  label, id, type = 'text', value, onChange, placeholder, autoComplete,
+  label, id, type = 'text', value, onChange, placeholder, autoComplete, optional = false,
 }: {
   label: string; id: string; type?: string; value: string;
-  onChange: (v: string) => void; placeholder?: string; autoComplete?: string;
+  onChange: (v: string) => void; placeholder?: string; autoComplete?: string; optional?: boolean;
 }) => {
   const [show, setShow] = useState(false);
   const isPassword = type === 'password';
@@ -79,7 +79,7 @@ const IosInput = ({
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
           autoComplete={autoComplete}
-          required
+          required={!optional}
           className="w-full h-12 rounded-2xl bg-white/5 border border-white/15 px-4 pr-12 text-[13px] font-semibold text-white placeholder:text-white/40 focus:outline-none focus:border-kenya-green focus:bg-white/10 transition-all duration-200"
         />
         {isPassword && (
@@ -141,8 +141,10 @@ const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
   const { toast } = useToast();
   const { language } = useLanguage();
 
-  type Tab = 'signin' | 'signup' | 'partner';
+  type Tab = 'signin' | 'signup' | 'partner' | 'forgot';
   const [tab, setTab] = useState<Tab>('signin');
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotSent, setForgotSent] = useState(false);
 
   const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1024);
   useEffect(() => {
@@ -187,6 +189,8 @@ const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
   const handleTabChange = (newTab: Tab) => {
     setTab(newTab);
     setPartnerSubmitted(false);
+    setForgotSent(false);
+    setForgotEmail('');
   };
 
   const handleSignIn = async (e: React.FormEvent) => {
@@ -198,6 +202,21 @@ const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
       onOpenChange(false);
     } catch (error: any) {
       toast({ variant: 'destructive', title: 'Sign in failed', description: error.message });
+    } finally { setLoading(false); }
+  };
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!forgotEmail) return;
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(forgotEmail, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      if (error) throw error;
+      setForgotSent(true);
+    } catch (error: any) {
+      toast({ variant: 'destructive', title: 'Failed to send reset email', description: error.message });
     } finally { setLoading(false); }
   };
 
@@ -485,29 +504,21 @@ const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
               max-width: 320px;
             }
 
-            /* Viewport < 370px adjustments */
-            @media (max-width: 369px) {
-              .auth-hero-illustration-wrapper {
-                max-height: 50px !important;
-                min-height: unset !important;
-                margin-top: 12px !important;
-                margin-bottom: 30px !important;
-              }
-              .auth-hero-illustration {
-                max-height: 100px !important;
-              }
-              .auth-hero-tag-label {
+            /* Viewport < 368px: fully hide hero panel, show compact header only */
+            @media (max-width: 367px) {
+              .auth-hero-panel {
                 display: none !important;
               }
-              .auth-hero-subtitle {
-                white-space: nowrap !important;
-                overflow: hidden !important;
-                text-overflow: ellipsis !important;
+              .auth-modal-compact-header {
+                display: flex !important;
               }
             }
+            .auth-modal-compact-header {
+              display: none;
+            }
 
-            /* Viewport 370px–479px adjustments */
-            @media (min-width: 370px) and (max-width: 479px) {
+            /* Viewport 368px–479px adjustments */
+            @media (min-width: 368px) and (max-width: 479px) {
               .auth-hero-illustration-wrapper {
                 max-height: 130px !important;
                 min-height: unset !important;
@@ -630,6 +641,18 @@ const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
             {/* ── LEFT / FORM PANEL ── */}
             <div className="relative flex-1 bg-[#0a0a0a] p-8 md:p-12 flex flex-col overflow-hidden max-h-[90vh] md:max-h-none">
 
+              {/* Compact header for ultra-narrow screens (< 368px) — only rendered by CSS show/hide */}
+              <div className="auth-modal-compact-header items-center justify-between mb-5 pb-4 border-b border-white/10">
+                <img src="/logo-white.png" alt="CEKA" className="h-7 w-auto opacity-80" />
+                <button
+                  onClick={() => onOpenChange(false)}
+                  className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-white/20 transition-all"
+                  aria-label="Close"
+                >
+                  <CloseIcon size={12} />
+                </button>
+              </div>
+
               {/* Request 2: Exit Button (Still backdrop on hover, only X animates) */}
               <button
                 onClick={() => onOpenChange(false)}
@@ -720,6 +743,15 @@ const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
                         <form onSubmit={handleSignIn} className="space-y-4">
                           <IosInput label="Email" id="signin-email" type="email" value={email} onChange={setEmail} placeholder="e.g. contact@civiceducationkenya.com" autoComplete="username" />
                           <IosInput label="Password" id="signin-password" type="password" value={password} onChange={setPassword} placeholder="* * * * * * * * *" autoComplete="current-password" />
+                          <div className="flex justify-end -mt-1">
+                            <button
+                              type="button"
+                              onClick={() => handleTabChange('forgot')}
+                              className="text-[11px] font-semibold text-white/40 hover:text-kenya-green transition-colors"
+                            >
+                              Forgot password?
+                            </button>
+                          </div>
                           <button
                             type="submit"
                             disabled={loading}
@@ -828,8 +860,8 @@ const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
                         <form onSubmit={handlePartnerSubmit} className="space-y-4">
                           <IosInput label="Organisation Name" id="partner-org" value={orgName} onChange={setOrgName} placeholder="e.g. Civic Education Kenya (CEKA)" autoComplete="organization" />
                           <IosInput label="Organisation Email" id="partner-email" type="email" value={orgEmail} onChange={setOrgEmail} placeholder="e.g. contact@civiceducationkenya.com" autoComplete="username" />
-                          <IosInput label="Registration No. (optional)" id="partner-reg" value={orgRegNo} onChange={setOrgRegNo} placeholder="e.g. OP.218/051/5980/11528" />
-                          <IosInput label="Website (optional)" id="partner-web" value={orgWebsite} onChange={setOrgWebsite} placeholder="e.g. https://civiceducationkenya.com" autoComplete="url" />
+                          <IosInput label="Registration No. (optional)" id="partner-reg" value={orgRegNo} onChange={setOrgRegNo} placeholder="e.g. OP.218/051/5980/11528" optional />
+                          <IosInput label="Website (optional)" id="partner-web" value={orgWebsite} onChange={setOrgWebsite} placeholder="e.g. https://civiceducationkenya.com" autoComplete="url" optional />
                           <IosInput label="Password" id="partner-password" type="password" value={password} onChange={setPassword} placeholder="Min. 8 chars, 1 letter + 1 number" autoComplete="new-password" />
 
                           <button
@@ -873,6 +905,60 @@ const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
                           <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" /></svg>
                           <span>Follow up via WhatsApp</span>
                         </a>
+                      </div>
+                    )}
+                    {/* ── FORGOT PASSWORD ── */}
+                    {tab === 'forgot' && (
+                      <div className="flex flex-col gap-6">
+                        <div>
+                          <button
+                            type="button"
+                            onClick={() => handleTabChange('signin')}
+                            className="flex items-center gap-2 text-[11px] font-bold text-white/40 hover:text-white/70 transition-colors mb-4"
+                          >
+                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
+                            Back to Log In
+                          </button>
+                          <h2 className="text-2xl font-black text-white tracking-tighter mb-1">Reset password.</h2>
+                          <p className="text-[12px] text-white/40 font-medium">We'll send a secure reset link to your email.</p>
+                        </div>
+
+                        {forgotSent ? (
+                          <div className="flex flex-col items-center gap-4 py-6 text-center">
+                            <div className="w-14 h-14 rounded-full bg-kenya-green/10 border border-kenya-green/20 flex items-center justify-center">
+                              <svg className="w-7 h-7 text-kenya-green" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+                            </div>
+                            <p className="text-[13px] text-white/70 font-semibold max-w-[240px] leading-relaxed">
+                              Reset link sent to <span className="text-white font-black">{forgotEmail}</span>. Check your inbox.
+                            </p>
+                            <button
+                              type="button"
+                              onClick={() => handleTabChange('signin')}
+                              className="text-[11px] font-semibold text-kenya-green hover:underline mt-2"
+                            >
+                              Back to Log In
+                            </button>
+                          </div>
+                        ) : (
+                          <form onSubmit={handleForgotPassword} className="space-y-4">
+                            <IosInput
+                              label="Email Address"
+                              id="forgot-email"
+                              type="email"
+                              value={forgotEmail}
+                              onChange={setForgotEmail}
+                              placeholder="e.g. contact@civiceducationkenya.com"
+                              autoComplete="username"
+                            />
+                            <button
+                              type="submit"
+                              disabled={loading || !forgotEmail}
+                              className="w-full h-12 rounded-2xl bg-kenya-green hover:bg-kenya-green/90 text-white font-black text-[11px] uppercase tracking-widest transition-all active:scale-[0.98] shadow-lg shadow-kenya-green/20 flex items-center justify-center gap-2 disabled:opacity-40"
+                            >
+                              {loading ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <>Send Reset Link <ArrowRightIcon /></>}
+                            </button>
+                          </form>
+                        )}
                       </div>
                     )}
                   </motion.div>

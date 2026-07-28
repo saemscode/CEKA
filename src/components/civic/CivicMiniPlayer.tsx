@@ -162,7 +162,8 @@ const CivicFAB: React.FC<{
   temperature: 'cool' | 'warm' | 'hot';
   onTap: () => void;
   onHide: () => void;
-}> = ({ unreadCount, temperature, onTap, onHide }) => {
+  offsetY?: number;
+}> = ({ unreadCount, temperature, onTap, onHide, offsetY = 88 }) => {
   const [isHovering, setIsHovering] = useState(false);
 
   return (
@@ -179,7 +180,7 @@ const CivicFAB: React.FC<{
         "fixed pointer-events-auto z-40"
       )}
       style={{
-        bottom: 88,
+        bottom: offsetY,
         right: '2rem',
         touchAction: 'none'
       }}
@@ -964,9 +965,10 @@ const DetailCard: React.FC<{
 interface CivicMiniPlayerProps {
   isHidden?: boolean;
   onHide?: () => void;
+  offsetY?: number;
 }
 
-const CivicMiniPlayer: React.FC<CivicMiniPlayerProps> = ({ isHidden, onHide }) => {
+const CivicMiniPlayer: React.FC<CivicMiniPlayerProps> = ({ isHidden, onHide, offsetY = 88 }) => {
   const { user } = useAuth();
   const {
     activeTab, setActiveTab,
@@ -1092,6 +1094,7 @@ const CivicMiniPlayer: React.FC<CivicMiniPlayerProps> = ({ isHidden, onHide }) =
             temperature={temperature}
             onTap={() => setMode('mini')}
             onHide={() => onHide?.()}
+            offsetY={offsetY}
           />
         )}
       </AnimatePresence>

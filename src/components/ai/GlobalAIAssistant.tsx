@@ -299,13 +299,36 @@ const GlobalAIAssistant = ({ offsetY = 200 }: GlobalAIAssistantProps) => {
     const [cycleIndex, setCycleIndex] = useState(0);
 
     const QUESTIONS = [
-        'What is Article 43?', 'Explain Finance Bill', 'What can I do as a citizen?',
-        'What is Chapter Six?', 'Who is the Auditor General?', 'How laws are made?',
-        'Meaning of Devolution', 'IEBC current status', 'Rights of the accused',
-        'Supreme Court role', 'Article 2 of Constitution', 'How to join community?',
-        'Public Participation role', 'What is EACC?', 'How to recall an MP?',
-        'County vs National govt', 'Sovereignty of people', 'Bill of Rights summary',
-        'National Values (Art 10)', 'Taxpayer rights in Kenya', 'Ombudsman role'
+        'What are my rights?',
+        'How are laws made?',
+        'Explain a bill',
+        'Latest bills',
+        'What is the Constitution?',
+        'Article 43 rights',
+        'Bill of Rights',
+        'Chapter Six leaders',
+        'National values',
+        'What is devolution?',
+        'County vs national',
+        'Role of Parliament',
+        'Role of President',
+        'Role of Judiciary',
+        'Supreme Court role',
+        'Who is the Auditor General?',
+        'What does EACC do?',
+        'What does IEBC do?',
+        'IEBC offices',
+        'How to vote',
+        'How to recall an MP',
+        'Public participation',
+        'Join CEKA community',
+        'Citizen actions',
+        'Report corruption',
+        'Taxpayer rights',
+        'Ombudsman role',
+        'Finance Bill explained',
+        'Current political issues',
+        'Understand my MP'
     ];
 
     useEffect(() => {
@@ -572,10 +595,10 @@ const GlobalAIAssistant = ({ offsetY = 200 }: GlobalAIAssistantProps) => {
                                                 </div>
                                                 <div>
                                                     <p className="font-bold text-fill-[#013001] dark:text-white">
-                                                        {translate("Ask Sovereign Intelligence...", language)}
+                                                        {translate("Ask CEKA AI...", language)}
                                                     </p>
                                                     <p className="text-xs text-slate-700 dark:text-gray-400 mt-1">
-                                                        {translate("I can analyze bills, summarize legislation, and answer questions about Kenyan civic rights based on verified public data.", language)}
+                                                        {translate("I can analyze bills, summarize legislation, and answer questions about Kenyan civic rights...", language)}
                                                     </p>
                                                 </div>
                                                 <div className="flex flex-wrap gap-2 justify-center min-h-[4rem]">
@@ -687,7 +710,7 @@ const GlobalAIAssistant = ({ offsetY = 200 }: GlobalAIAssistantProps) => {
                                     <div className="p-4 border-t border-white/10 dark:border-gray-700/10 bg-white/5 dark:bg-black/20">
                                         <div className="flex gap-2">
                                             <Input
-                                                placeholder={!FLAGS.AI_ENABLED ? 'AI is currently offline.' : translate("Start typing to awaken the Sovereign Engine...", language)}
+                                                placeholder={!FLAGS.AI_ENABLED ? 'CEKA AI is offline.' : translate("What's on your mind...", language)}
                                                 value={query}
                                                 onChange={(e) => setQuery(e.target.value)}
                                                 onKeyPress={(e) => e.key === 'Enter' && handleSend()}

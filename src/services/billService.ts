@@ -76,31 +76,58 @@ class BillService {
 
   /**
    * Resolves a bill by its slug OR UUID.
-   * Uses the get_bill_by_slug_or_id RPC that checks slug first, falls back to id.
-   * This means old UUID-based URLs remain valid permanently.
+   * Strategy:
+   *  1. Try the Supabase RPC (fastest, handles both slug + uuid in one query)
+   *  2. On RPC failure (e.g. revoked from anon, not deployed): query by slug column directly
+   *  3. Last resort: query by id (UUID). This path only works when identifier IS a valid UUID.
+   * Old UUID-based links remain permanently valid because step 3 handles them.
    */
   async getBillBySlugOrId(identifier: string): Promise<Bill | null> {
+    // ── Attempt 1: RPC (slug-or-id in one round-trip) ────────────────────────
     try {
       const { data, error } = await (supabase as any)
         .rpc('get_bill_by_slug_or_id', { identifier })
         .single();
 
-      if (error || !data) {
-        // RPC not yet deployed — fall back to direct UUID lookup
-        const { data: fallback, error: fbErr } = await supabase
+      if (!error && data) return data as unknown as Bill;
+    } catch (_) {
+      // RPC unavailable or revoked — fall through to manual lookups
+    }
+
+    // ── Attempt 2: Direct slug column query ───────────────────────────────────
+    try {
+      const { data: bySlug } = await supabase
+        .from('bills')
+        .select('*')
+        .eq('slug', identifier)
+        .maybeSingle();
+
+      if (bySlug) return bySlug as unknown as Bill;
+    } catch (_) {
+      // slug column may not exist yet — continue
+    }
+
+    // ── Attempt 3: UUID lookup (only valid if identifier is a UUID) ───────────
+    // Guard: skip this if identifier is clearly not a UUID (contains no dashes or is too short)
+    const looksLikeUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(identifier);
+    if (looksLikeUuid) {
+      try {
+        const { data: byId } = await supabase
           .from('bills')
           .select('*')
           .eq('id', identifier)
-          .single();
-        if (fbErr) throw fbErr;
-        return fallback as unknown as Bill;
+          .maybeSingle();
+
+        if (byId) return byId as unknown as Bill;
+      } catch (_) {
+        // ID lookup also failed
       }
-      return data as unknown as Bill;
-    } catch (error) {
-      console.error('Error fetching bill by slug/id:', error);
-      return null;
     }
+
+    console.warn('[billService] getBillBySlugOrId: bill not found for identifier:', identifier);
+    return null;
   }
+
 
   async getAllBills(): Promise<Bill[]> {
     try {

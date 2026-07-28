@@ -65,6 +65,8 @@ const Tools = lazy(() => import('@/pages/Tools'));
 const About = lazy(() => import('@/pages/About'));
 const TemplateViewerPage = lazy(() => import('@/pages/TemplateViewerPage'));
 const NotFound = lazy(() => import('@/pages/NotFound'));
+const AuthCallback = lazy(() => import('@/pages/AuthCallback'));
+const ResetPassword = lazy(() => import('@/pages/ResetPassword'));
 const TransparencyManifesto = lazy(() => import('@/pages/TransparencyManifesto'));
 const InfrastructureDetails = lazy(() => import('@/pages/InfrastructureDetails'));
 const TranslatePage = lazy(() => import('@/pages/TranslatePage'));
@@ -140,6 +142,8 @@ const AppContent = () => {
         <Routes>
         <Route path="/" element={<Index />} />
         <Route path="/auth" element={<AuthPage />} />
+        <Route path="/auth/callback" element={<AuthCallback />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/blog" element={<Blog />} />
         <Route path="/blog/:slug" element={<BlogPost />} />
         <Route path="/calendar" element={<EventsCalendar />} />

@@ -1,5 +1,5 @@
 
-import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -37,23 +37,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [profile, setProfile] = useState<AuthProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+
+  // ── CRITICAL: Store toast in a ref so the subscription useEffect NEVER
+  //    re-runs due to a toast reference change.  The subscription must remain
+  //    alive for the full lifetime of the AuthProvider, otherwise SIGNED_IN
+  //    events fired right after signInWithPassword() are silently dropped.
+  const toastRef = useRef(toast);
+  useEffect(() => { toastRef.current = toast; }, [toast]);
+
   // StrictMode guard: prevents double-initialization on dev double-mount
   const initialized = useRef(false);
 
-  const loadProfile = async (userId: string) => {
+  const loadProfile = useCallback(async (userId: string) => {
     const { data } = await (supabase.from('profiles') as any)
       .select('id, county, civic_credits, verification_status')
       .eq('id', userId)
       .single();
     if (data) setProfile(data as AuthProfile);
-  };
+  }, []);
 
   useEffect(() => {
     // Prevent double-mount in React 18 StrictMode from firing two auth bootstrap calls
     if (initialized.current) return;
     initialized.current = true;
 
-    // Set up auth state listener
+    // Set up auth state listener — dependency array is EMPTY so this never re-runs
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event: string, session) => {
         setSession(session);
@@ -65,17 +73,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
            setLoading(false);
         }
 
-        // Show success toast for sign in
+        // Use toastRef to call toast without it being a dependency of this effect
         if (event === 'SIGNED_IN' && session?.user) {
-          toast({
+          toastRef.current({
             title: "Welcome back!",
             description: "You have successfully signed in to CEKA.",
           });
         }
 
-        // Show success toast for sign up
         if (event === 'SIGNED_UP' && session?.user) {
-          toast({
+          toastRef.current({
             title: "Account created!",
             description: "Welcome to CEKA! Your account has been created successfully.",
           });
@@ -95,7 +102,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
 
     return () => subscription.unsubscribe();
-  }, [toast]);
+  }, []); // ← Empty deps: subscription must never be re-created
 
   const signIn = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({

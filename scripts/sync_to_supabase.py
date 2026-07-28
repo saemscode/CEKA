@@ -29,6 +29,25 @@ def normalize_title(title: str) -> str:
     return " ".join(t.split()).strip()
 
 
+def generate_slug(title: str) -> str:
+    """
+    Generate a URL-safe slug from a bill title.
+    Example: "The Sacco Societies (Amendment) Bill 2025" -> "sacco-societies-amendment-bill-2025"
+    """
+    slug = title.lower()
+    # Remove parentheses but keep the words inside
+    slug = re.sub(r'[()]', '', slug)
+    # Replace non-alphanumeric characters (except spaces and hyphens) with space
+    slug = re.sub(r'[^\w\s-]', ' ', slug)
+    # Collapse whitespace and replace with hyphens
+    slug = re.sub(r'[\s_]+', '-', slug.strip())
+    # Remove leading/trailing hyphens
+    slug = slug.strip('-')
+    # Collapse consecutive hyphens
+    slug = re.sub(r'-{2,}', '-', slug)
+    return slug
+
+
 def find_existing_bill(supabase: Client, item: Dict, v2_supported: bool) -> Optional[Dict[str, Any]]:
     bill_no = item.get("bill_no")
     title = item.get("title", "")
@@ -154,6 +173,7 @@ def sync_data(input_file: Optional[str] = None, output_dir: str = "processed_dat
 
             new_data = {
                 "title": item.get("title"),
+                "slug": item.get("slug") or generate_slug(item.get("title", "")),
                 "sponsor": item.get("sponsor"),
                 "status": item.get("status"),
                 "category": item.get("category"),
@@ -165,6 +185,10 @@ def sync_data(input_file: Optional[str] = None, output_dir: str = "processed_dat
                 "summary": item.get("summary") or f"Legislative tracker: {item.get('title')}",
                 "updated_at": datetime.now().isoformat()
             }
+
+            # Backfill slug for existing records that don't have one yet
+            if existing and not existing.get("slug") and new_data.get("slug"):
+                logging.info(f"🔗 Backfilling slug for existing: {item['title']} → {new_data['slug']}")
 
             if v2_supported:
                 if item.get("bill_no"):
@@ -231,7 +255,7 @@ def sync_data(input_file: Optional[str] = None, output_dir: str = "processed_dat
             if existing:
                 logging.info(f"🔄 Refreshing: {item['title']}")
                 # ── Change detection: only UPDATE if something actually differs ──
-                TRACKED = ["status", "sponsor", "summary", "pdf_url", "url",
+                TRACKED = ["status", "sponsor", "summary", "pdf_url", "url", "slug",
                            "ai_concerns", "constitutional_section", "tabloid_summary",
                            "text_content", "description", "bill_no", "session_year"]
                 has_change = any(

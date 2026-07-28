@@ -3,7 +3,7 @@ import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { mediaService, type MediaContent } from '@/services/mediaService';
 import InstagramCarousel from '../carousel/InstagramCarousel';
 import { placeholderService } from '@/services/placeholderService';
-import { Grid2X2, List, AlertTriangle, RefreshCw } from 'lucide-react';
+import { Grid2X2, AlertTriangle, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { CEKALoader } from '@/components/ui/ceka-loader';
 import { useAuth } from '@/providers/AuthProvider';
@@ -11,6 +11,7 @@ import { roleService } from '@/services/roleService';
 import { supabase } from '@/integrations/supabase/client';
 import ProposeCollab from '@/components/campaigns/ProposeCollab';
 import piecesSocialService, { type InteractionState } from '@/services/piecesSocialService';
+import { CarouselSlideIcon } from '../ui/CustomIcons';
 
 const ITEMS_PER_PAGE = 6;
 
@@ -265,7 +266,7 @@ const MediaFeed: React.FC<MediaFeedProps> = ({ targetSlug }) => {
                         onClick={() => setViewMode('feed')}
                         className="gap-1.5 rounded-full font-bold"
                     >
-                        <List size={16} /> Feed
+                        <CarouselSlideIcon size={16} /> Feed
                     </Button>
                     <Button
                         variant={viewMode === 'grid' ? 'default' : 'outline'}
