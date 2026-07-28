@@ -161,6 +161,30 @@ jobs:
         env:
           PYTHONIOENCODING: utf-8
 
+      - name: Validate Scraper Output (Zero-Scrape Detection)
+        if: always()
+        run: |
+          OUTDIR="scripts/processed_data/legislative"
+          # Find the most recent legislation_sync_*.json file
+          LATEST=$(ls -t "$OUTDIR"/legislation_sync_*.json 2>/dev/null | head -1 || echo "")
+          if [ -z "$LATEST" ]; then
+            echo "::warning title=SCRAPER ALERT::No legislation_sync_*.json file found. Scraper may have failed entirely (Cloudflare block or import error)."
+            echo "### ⚠️ SCRAPER ALERT: No output file found" >> $GITHUB_STEP_SUMMARY
+            echo "The scraper produced no output file. This typically indicates a Cloudflare block on the GitHub runner IP, a Playwright crash, or a Python import error. Check the Run Legislative Scraper step logs." >> $GITHUB_STEP_SUMMARY
+          else
+            COUNT=$(python3 -c "import json,sys; data=json.load(open('$LATEST')); print(len(data))" 2>/dev/null || echo "0")
+            echo "SCRAPED_BILL_COUNT=$COUNT" >> $GITHUB_ENV
+            if [ "$COUNT" -eq 0 ]; then
+              echo "::warning title=ZERO SCRAPE DETECTED::$LATEST exists but contains 0 bills. Parliament site may be blocking the GitHub runner (Cloudflare challenge). Check proxy pool health."
+              echo "### ⚠️ ZERO SCRAPE: $LATEST contains 0 bills" >> $GITHUB_STEP_SUMMARY
+              echo "The scraper output file was produced but contained an empty array. This typically means Cloudflare challenged every page request and the proxy pool was exhausted or unavailable. Check BrightData / ScraperAPI quota and proxy_usage.json." >> $GITHUB_STEP_SUMMARY
+            else
+              echo "✅ Scraper produced $COUNT bill records in $LATEST"
+              echo "### ✅ Scraper Output: $COUNT bill records" >> $GITHUB_STEP_SUMMARY
+              echo "Output file: $LATEST" >> $GITHUB_STEP_SUMMARY
+            fi
+          fi
+
       - name: Supabase Sync Bridge
         run: python scripts/sync_to_supabase.py
         continue-on-error: true
@@ -260,6 +284,7 @@ jobs:
           echo "- **News Sync:** $RUN_NEWS" >> $GITHUB_STEP_SUMMARY
           echo "- **Deep Intelligence Relay:** ${{ github.event.inputs.run_deep_relay || 'scheduled' }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Triggered by:** ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Bills scraped this run:** ${SCRAPED_BILL_COUNT:-unknown (scraper step did not export count)}" >> $GITHUB_STEP_SUMMARY
 
       - name: Persist Proxy Usage and Scraped Data
         if: always()

@@ -936,16 +936,33 @@ class LegislativeScraper:
             )
             
             # Use Scrapling's adaptive parser to find the table rows
+            # Match any anchor whose href contains '.pdf' (with or without query params)
             rows = response.css('table tr', adaptive=True)
             
             extracted_rows = []
             for row in rows:
-                pdf_link = row.css('a[href$=".pdf"]')
+                # Use adaptive CSS to find any link in the row
+                all_links = row.css('td a')
+                if not all_links:
+                    all_links = row.css('a')
+                
+                pdf_link = None
+                for link in all_links:
+                    href = link.attrib.get('href', '')
+                    # Match URLs containing .pdf anywhere in the path (before any query params)
+                    if re.search(r'\.pdf(\?|#|$)', href, re.I):
+                        pdf_link = link
+                        break
+                    # Also match common Parliament download route patterns
+                    if re.search(r'/(download|files|uploads|system/files)/', href, re.I):
+                        pdf_link = link
+                        break
+
                 if not pdf_link:
                     continue
                     
                 extracted_rows.append({
-                    "pdfHref": pdf_link[0].attrib.get('href', ''),
+                    "pdfHref": pdf_link.attrib.get('href', ''),
                     "pdfText": pdf_link.css('::text').get(default='').strip(),
                     "detailHref": None,
                     "rowText": row.css('::text').get(default='').strip()[:300]
@@ -998,13 +1015,36 @@ class LegislativeScraper:
                     page.wait_for_timeout(2000)
 
                     rows = page.evaluate("""() => {
+                        const PDF_PATTERN = /\.pdf(\\?|#|$)/i;
+                        const DOWNLOAD_PATTERN = /\/(download|files|uploads|system\/files)\//i;
                         const allTables = document.querySelectorAll('table');
                         let allRows = [];
                         for (const table of allTables) {
-                            if (table.querySelectorAll('a[href$=".pdf"]').length === 0) continue;
+                            // Accept table if it has any link that looks like a bill document
+                            const tableLinks = table.querySelectorAll('td a');
+                            const hasBillLink = Array.from(tableLinks).some(a =>
+                                PDF_PATTERN.test(a.href) || DOWNLOAD_PATTERN.test(a.href)
+                            );
+                            if (!hasBillLink) continue;
                             const rows = table.querySelectorAll('tbody tr, tr');
                             for (const row of rows) {
-                                const pdfLink = row.querySelector('a[href$=".pdf"]');
+                                // Find PDF link: prefer strict .pdf match, fallback to download route
+                                const allCellLinks = row.querySelectorAll('td a');
+                                let pdfLink = null;
+                                for (const a of allCellLinks) {
+                                    if (PDF_PATTERN.test(a.href)) {
+                                        pdfLink = a;
+                                        break;
+                                    }
+                                }
+                                if (!pdfLink) {
+                                    for (const a of allCellLinks) {
+                                        if (DOWNLOAD_PATTERN.test(a.href)) {
+                                            pdfLink = a;
+                                            break;
+                                        }
+                                    }
+                                }
                                 if (!pdfLink) continue;
                                 allRows.push({
                                     pdfHref: pdfLink.href,

@@ -36,9 +36,31 @@ export interface Bill {
   session_year?: number | null;
 }
 
-/** Returns the canonical URL-safe identifier for sharing — slug if populated, UUID otherwise. */
-export function getBillIdentifier(bill: { id: string; slug?: string | null }): string {
+/** Returns the canonical URL-safe identifier for sharing — slug if populated, UUID otherwise. */export function getBillIdentifier(bill: { id: string; slug?: string | null }): string {
   return bill.slug || bill.id;
+}
+
+/** Safely normalizes JSON string fields (ai_concerns, stages) into native arrays. */
+export function normalizeBill(data: any): Bill | null {
+  if (!data) return null;
+  const copy = { ...data };
+  if (typeof copy.ai_concerns === 'string') {
+    try {
+      const parsed = JSON.parse(copy.ai_concerns);
+      copy.ai_concerns = Array.isArray(parsed) ? parsed : (copy.ai_concerns ? [copy.ai_concerns] : []);
+    } catch {
+      copy.ai_concerns = copy.ai_concerns ? [copy.ai_concerns] : [];
+    }
+  }
+  if (typeof copy.stages === 'string') {
+    try {
+      const parsed = JSON.parse(copy.stages);
+      copy.stages = Array.isArray(parsed) ? parsed : [];
+    } catch {
+      copy.stages = [];
+    }
+  }
+  return copy as Bill;
 }
 
 class BillService {
@@ -51,7 +73,7 @@ class BillService {
         .limit(limit);
 
       if (error) throw error;
-      return (data || []) as unknown as Bill[];
+      return (data || []).map(b => normalizeBill(b)!) as Bill[];
     } catch (error) {
       console.error('Error fetching featured bills:', error);
       return [];
@@ -67,7 +89,7 @@ class BillService {
         .single();
 
       if (error) throw error;
-      return data as unknown as Bill;
+      return normalizeBill(data);
     } catch (error) {
       console.error('Error fetching bill by id:', error);
       return null;
@@ -89,7 +111,7 @@ class BillService {
         .rpc('get_bill_by_slug_or_id', { identifier })
         .single();
 
-      if (!error && data) return data as unknown as Bill;
+      if (!error && data) return normalizeBill(data);
     } catch (_) {
       // RPC unavailable or revoked — fall through to manual lookups
     }
@@ -102,7 +124,7 @@ class BillService {
         .eq('slug', identifier)
         .maybeSingle();
 
-      if (bySlug) return bySlug as unknown as Bill;
+      if (bySlug) return normalizeBill(bySlug);
     } catch (_) {
       // slug column may not exist yet — continue
     }
@@ -118,7 +140,7 @@ class BillService {
           .eq('id', identifier)
           .maybeSingle();
 
-        if (byId) return byId as unknown as Bill;
+        if (byId) return normalizeBill(byId);
       } catch (_) {
         // ID lookup also failed
       }
@@ -128,7 +150,6 @@ class BillService {
     return null;
   }
 
-
   async getAllBills(): Promise<Bill[]> {
     try {
       const { data, error } = await supabase
@@ -137,7 +158,7 @@ class BillService {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      return (data || []) as unknown as Bill[];
+      return (data || []).map(b => normalizeBill(b)!) as Bill[];
     } catch (error) {
       console.error('Error fetching all bills:', error);
       return [];

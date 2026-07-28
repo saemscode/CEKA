@@ -23,8 +23,10 @@ def normalize_title(title: str) -> str:
     t = title.lower()
     # IMPORTANT: do NOT strip 'amendment' — it distinguishes e.g.
     # 'Finance Bill 2026' from 'Finance (Amendment) Bill 2026'
+    # IMPORTANT: do NOT strip years — 'Finance Bill 2024' and 'Finance Bill 2025'
+    # must normalize to DIFFERENT keys so they INSERT as separate rows, not overwrites.
+    # The year-aware guard in find_existing_bill() only works when the year is preserved here.
     t = re.sub(r'\b(the|bill|no|of|copy|senate|national|assembly|gazette)\b', '', t)
-    t = re.sub(r'\b20\d{2}\b', '', t)
     t = re.sub(r'[^\w\s]', '', t)
     return " ".join(t.split()).strip()
 
@@ -272,7 +274,9 @@ def sync_data(input_file: Optional[str] = None, output_dir: str = "processed_dat
                 logging.info(f"✨ New Bill: {item['title']}")
                 if not new_data.get("status"):
                     new_data["status"] = "Published" if item.get("category") != "Documentation" else "Ingested"
-                supabase.table("bills").upsert(new_data, on_conflict="title").execute()
+                # Use 'slug' as the upsert conflict key — slugs include year (e.g. finance-bill-2025)
+                # so new-year versions of recurring bills INSERT cleanly instead of overwriting.
+                supabase.table("bills").upsert(new_data, on_conflict="slug").execute()
                 stats["bills"] += 1
 
         except Exception as e:
