@@ -1,0 +1,56 @@
+name: Auto Semantic Versioning
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - 'src/version.json'
+      - 'package.json'
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  auto-version:
+    name: Calculate & Bump Version
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Run Auto SemVer
+        id: semver
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          python scripts/auto_semver.py
+
+      - name: Commit and Tag
+        if: steps.semver.outputs.bumped == 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git add package.json src/version.json src/pages/About.tsx
+          git commit -m "chore: auto-bump version to ${{ steps.semver.outputs.version }} [skip ci]"
+          git push origin main
+          git tag ${{ steps.semver.outputs.tag_name }}
+          git push origin ${{ steps.semver.outputs.tag_name }}
+
+      - name: Trigger Native Build Pipeline
+        if: steps.semver.outputs.bumped == 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Wait a few seconds for the tag to register in GitHub's systems
+          sleep 5
+          # Trigger the native build workflow manually on the new tag
+          gh workflow run "native-builds.yml" --ref ${{ steps.semver.outputs.tag_name }} -f build_type=release

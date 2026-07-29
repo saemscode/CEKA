@@ -1167,7 +1167,7 @@ const FooterSection = () => (
                 Open Source · MIT License · Built for Kenya 🇰🇪
             </p>
             <p className="text-xs text-muted-foreground/60">
-                © {new Date().getFullYear()} Civic Education Kenya (CEKA) · contact@civiceducationkenya.com
+                © {new Date().getFullYear()} Civic Education Kenya (CEKA) · CEKA V24.1.0 · contact@civiceducationkenya.com
             </p>
         </div>
     </section>
