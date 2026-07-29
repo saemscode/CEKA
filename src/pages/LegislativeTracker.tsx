@@ -454,7 +454,7 @@ const LegislativeTracker = () => {
                                 Latest this week
                               </Badge>
                             </div>
-                            <p className="font-extrabold text-lg md:text-xl leading-tight dark:text-gray-100 tracking-tight">
+                            <p className="font-bold text-lg md:text-xl leading-tight dark:text-gray-100 tracking-normal">
                               {activeSovereignItem.data.tabloid_summary}
                             </p>
                             <div className="flex items-center justify-between pt-2">
@@ -478,13 +478,13 @@ const LegislativeTracker = () => {
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-2">
                                 <span className="flex h-2 w-2 rounded-full bg-primary shadow-[0_0_8px_rgba(59,130,246,0.6)] shrink-0" />
-                                <h4 className="font-black text-[10px] uppercase tracking-[0.3em] text-primary">Intelligence Alert</h4>
+                                <h4 className="font-black text-[10px] uppercase tracking-[0.3em] text-primary">External News Headlines</h4>
                               </div>
                               <Badge className="bg-kenya-green/10 text-kenya-green border-none font-black text-[9px] px-2 py-0.5 rounded-full">
                                 {activeSovereignItem.data.source_name || 'News'}
                               </Badge>
                             </div>
-                            <p className="font-extrabold text-lg md:text-xl leading-tight dark:text-gray-100 tracking-tight">
+                            <p className="font-bold text-lg md:text-xl leading-tight dark:text-gray-100 tracking-normal">
                               {activeSovereignItem.data.headline}
                             </p>
                             {activeSovereignItem.data.bills?.title && (
