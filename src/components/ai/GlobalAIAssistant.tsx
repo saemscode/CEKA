@@ -598,7 +598,7 @@ const GlobalAIAssistant = ({ offsetY = 200 }: GlobalAIAssistantProps) => {
                                                         {translate("Ask CEKA AI...", language)}
                                                     </p>
                                                     <p className="text-xs text-slate-700 dark:text-gray-400 mt-1">
-                                                        {translate("I can analyze bills, summarize legislation, and answer questions about Kenyan civic rights...", language)}
+                                                        {translate("I can analyze bills, summarize legislation, and answer questions about topics like...", language)}
                                                     </p>
                                                 </div>
                                                 <div className="flex flex-wrap gap-2 justify-center min-h-[4rem]">

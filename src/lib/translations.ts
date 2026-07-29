@@ -132,9 +132,9 @@ export const translations: Record<string, Record<Language, string>> = {
     ksl: "Ask Intelligence",
     br: "⠁⠎⠅ ⠎⠕⠧⠑⠗⠑⠊⠛⠝ ⠊⠝⠞⠑⠇⠇⠊⠛⠑⠝⠉⠑"
   },
-  "I can analyze bills, summarize legislation, and answer questions about Kenyan civic rights based on verified public data.": {
-    en: "I can analyze bills, summarize legislation, and answer questions about Kenyan civic rights based on verified public data.",
-    sw: "Naweza kuchambua miswada, kufupisha sheria, na kujibu maswali kuhusu haki za kiraia za Kenya kulingana na data ya umma iliyothibitishwa.",
+  "I can analyze bills, summarize legislation, and answer questions about topics like...": {
+    en: "I can analyze bills, summarize legislation, and answer questions about topics like...",
+    sw: "Naweza kuchambua miswada, kufupisha sheria, na kujibu maswali kuhusu miswada kama...",
     ksl: "Analyze bills answer questions",
     br: "⠊ ⠉⠁⠝ ⠁⠝⠁⠇⠽⠵⠑ ⠃⠊⠇⠇⠎"
   },
