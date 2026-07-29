@@ -81,6 +81,8 @@ jobs:
       LLAMA_4_MAVERICK_NVIDIA_API_KEY: ${{ secrets.LLAMA_4_MAVERICK_NVIDIA_API_KEY }}
       SILICON_FLOW_API_KEY: ${{ secrets.SILICON_FLOW_API_KEY }}
       CEREBRAS_API_KEY_2: ${{ secrets.CEREBRAS_API_KEY_2 }}
+      MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
+      ANTHROPIC_API_KEY_2: ${{ secrets.ANTHROPIC_API_KEY_2 }}
 
       # ── Storage & Scraping ─────────────────────────────────────────────────
       B2_S3_ENDPOINT: ${{ secrets.B2_S3_ENDPOINT }}

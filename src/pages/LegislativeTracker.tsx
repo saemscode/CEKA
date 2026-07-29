@@ -302,9 +302,9 @@ const LegislativeTracker = () => {
     });
   }, [billsData, searchTerm, selectedCategory, activeTab, sortBy, deepSearch]);
 
+
   const [intelligenceAlerts, setIntelligenceAlerts] = useState<any[]>([]);
-  const [currentAlertIndex, setCurrentAlertIndex] = useState(0);
-  const [currentTabloidIndex, setCurrentTabloidIndex] = useState(0);
+
 
   useEffect(() => {
     const fetchIntelligence = async () => {
@@ -334,25 +334,31 @@ const LegislativeTracker = () => {
     fetchIntelligence();
   }, []);
 
-  useEffect(() => {
-    if (intelligenceAlerts.length <= 1) return;
-    const interval = setInterval(() => {
-      setCurrentAlertIndex(prev => (prev + 1) % intelligenceAlerts.length);
-    }, 8000); // 8 seconds for reading intelligence
-    return () => clearInterval(interval);
-  }, [intelligenceAlerts]);
+  // UNIFIED SOVEREIGN STREAM: Merges tabloidUpdates (bill summaries) and intelligenceAlerts (news mentions)
+  // into a single interleaved carousel array. Tabloids display for 10s, alerts for 8s.
+  const sovereignStream = useMemo(() => {
+    const stream: Array<{ type: 'tabloid'; data: Bill } | { type: 'alert'; data: any }> = [];
+    const maxLen = Math.max(tabloidUpdates.length, intelligenceAlerts.length);
+    for (let i = 0; i < maxLen; i++) {
+      if (i < tabloidUpdates.length) stream.push({ type: 'tabloid', data: tabloidUpdates[i] });
+      if (i < intelligenceAlerts.length) stream.push({ type: 'alert', data: intelligenceAlerts[i] });
+    }
+    return stream;
+  }, [tabloidUpdates, intelligenceAlerts]);
+
+  const [sovereignIndex, setSovereignIndex] = useState(0);
 
   useEffect(() => {
-    if (tabloidUpdates.length <= 1) return;
-    const interval = setInterval(() => {
-      setCurrentTabloidIndex(prev => (prev + 1) % tabloidUpdates.length);
-    }, 10000); // 10 seconds for tabloid reading
-    return () => clearInterval(interval);
-  }, [tabloidUpdates]);
+    if (sovereignStream.length <= 1) return;
+    const currentItem = sovereignStream[sovereignIndex];
+    const duration = currentItem?.type === 'alert' ? 8000 : 10000;
+    const timer = setTimeout(() => {
+      setSovereignIndex(prev => (prev + 1) % sovereignStream.length);
+    }, duration);
+    return () => clearTimeout(timer);
+  }, [sovereignIndex, sovereignStream]);
 
-  const activeAlert = intelligenceAlerts[currentAlertIndex];
-  const activeTabloid = tabloidUpdates[currentTabloidIndex];
-  const trendingBill = trendingBills[0] || billsData[0] || { id: "trending-placeholder", title: "Finance Bill", created_at: new Date().toISOString() };
+  const activeSovereignItem = sovereignStream[sovereignIndex];
 
   return (
     <Layout>
@@ -422,48 +428,83 @@ const LegislativeTracker = () => {
                 animate={{ opacity: 1, scale: 1 }}
                 className="relative z-20 rounded-[32px] bg-gradient-to-br from-kenya-green/40 via-primary/20 to-kenya-green/40 p-[1px] shadow-ios-high dark:shadow-ios-high-dark overflow-hidden ring-1 ring-white/20 dark:ring-white/10"
               >
-                {/* Upper Layer: The Tabloid Carousel (Full Context Preserved) */}
+                {/* Upper Layer: Unified Sovereign Stream — Tabloid Updates + Intelligence Alerts interleaved */}
                 <div className="bg-white/80 dark:bg-black/90 backdrop-blur-3xl p-8 min-h-[180px] flex flex-col justify-center border-b border-white/10 dark:border-white/5">
                   <AnimatePresence mode="wait">
-                    {tabloidUpdates.length > 0 && activeTabloid ? (
+                    {sovereignStream.length > 0 && activeSovereignItem ? (
                       <motion.div
-                        key={currentTabloidIndex}
+                        key={sovereignIndex}
                         initial={{ opacity: 0, x: 20, filter: 'blur(10px)' }}
                         animate={{ opacity: 1, x: 0, filter: 'blur(0px)' }}
                         exit={{ opacity: 0, x: -20, filter: 'blur(10px)' }}
                         transition={{ duration: 0.5, ease: "circOut" }}
                         className="space-y-4"
                       >
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <h4 className="font-black text-[10px] uppercase tracking-[0.3em] text-kenya-green">Get Daily News Updates</h4>
-                            {activeTabloid?.status === 'ASSENT' && (
-                              <span className="flex h-2 w-2 rounded-full bg-kenya-green shadow-[0_0_8px_rgba(0,255,0,0.5)]" />
+                        {activeSovereignItem.type === 'tabloid' ? (
+                          // ── TABLOID SLOT ──────────────────────────────────────────────
+                          <>
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <h4 className="font-black text-[10px] uppercase tracking-[0.3em] text-kenya-green">Get Daily News Updates</h4>
+                                {activeSovereignItem.data?.status === 'ASSENT' && (
+                                  <span className="flex h-2 w-2 rounded-full bg-kenya-green shadow-[0_0_8px_rgba(0,255,0,0.5)]" />
+                                )}
+                              </div>
+                              <Badge className="bg-primary/10 text-primary border-none font-black text-[9px] px-2 py-0.5 rounded-full">
+                                Latest this week
+                              </Badge>
+                            </div>
+                            <p className="font-extrabold text-lg md:text-xl leading-tight dark:text-gray-100 tracking-tight">
+                              {activeSovereignItem.data.tabloid_summary}
+                            </p>
+                            <div className="flex items-center justify-between pt-2">
+                              <div className="text-[10px] font-bold opacity-40 uppercase tracking-widest">
+                                Source: {activeSovereignItem.data.title}
+                              </div>
+                              <Button
+                                variant="link"
+                                asChild
+                                className="p-0 h-auto text-primary font-black text-xs uppercase tracking-widest gap-2"
+                              >
+                                <Link to={`/bill/${getBillIdentifier(activeSovereignItem.data)}#memoranda`}>
+                                  See Bill Here <ArrowRight className="h-3 w-3" />
+                                </Link>
+                              </Button>
+                            </div>
+                          </>
+                        ) : (
+                          // ── INTELLIGENCE ALERT SLOT ───────────────────────────────────
+                          <>
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <span className="flex h-2 w-2 rounded-full bg-primary shadow-[0_0_8px_rgba(59,130,246,0.6)] shrink-0" />
+                                <h4 className="font-black text-[10px] uppercase tracking-[0.3em] text-primary">Intelligence Alert</h4>
+                              </div>
+                              <Badge className="bg-kenya-green/10 text-kenya-green border-none font-black text-[9px] px-2 py-0.5 rounded-full">
+                                {activeSovereignItem.data.source_name || 'News'}
+                              </Badge>
+                            </div>
+                            <p className="font-extrabold text-lg md:text-xl leading-tight dark:text-gray-100 tracking-tight">
+                              {activeSovereignItem.data.headline}
+                            </p>
+                            {activeSovereignItem.data.bills?.title && (
+                              <div className="flex items-center justify-between pt-2">
+                                <div className="text-[10px] font-bold opacity-40 uppercase tracking-widest">
+                                  Re: {activeSovereignItem.data.bills.title}
+                                </div>
+                                <Button
+                                  variant="link"
+                                  asChild
+                                  className="p-0 h-auto text-kenya-green font-black text-xs uppercase tracking-widest gap-2"
+                                >
+                                  <Link to={`/bill/${activeSovereignItem.data.bill_id}`}>
+                                    See Bill Here <ArrowRight className="h-3 w-3" />
+                                  </Link>
+                                </Button>
+                              </div>
                             )}
-                          </div>
-                          <Badge className="bg-primary/10 text-primary border-none font-black text-[9px] px-2 py-0.5 rounded-full">
-                            Latest this week
-                          </Badge>
-                        </div>
-
-                        <p className="font-extrabold text-lg md:text-xl leading-tight dark:text-gray-100 tracking-tight">
-                          {activeTabloid.tabloid_summary}
-                        </p>
-
-                        <div className="flex items-center justify-between pt-2">
-                          <div className="text-[10px] font-bold opacity-40 uppercase tracking-widest">
-                            Source: {activeTabloid.title}
-                          </div>
-                          <Button
-                            variant="link"
-                            asChild
-                            className="p-0 h-auto text-primary font-black text-xs uppercase tracking-widest gap-2"
-                          >
-                            <Link to={`/bill/${getBillIdentifier(activeTabloid)}#memoranda`}>
-                              See Bill Here <ArrowRight className="h-3 w-3" />
-                            </Link>
-                          </Button>
-                        </div>
+                          </>
+                        )}
                       </motion.div>
                     ) : (
                       <div className="flex items-center gap-6 opacity-40">
@@ -815,180 +856,266 @@ const LegislativeTracker = () => {
                     </div>
                   ) : (
                     <>
-                      {filteredBills.slice(0, visibleCount).map((bill) => (
-                        <motion.div
-                          layout
-                          initial={{ opacity: 0, scale: 0.98 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          key={bill.id}
-                          className="w-full min-w-0"
-                        >
-                          <Card className="group relative overflow-hidden border-none bg-white dark:bg-[#111] shadow-ios-high dark:shadow-ios-high-dark rounded-[40px] w-full transition-all hover:bg-slate-50/50 dark:hover:bg-white/[0.02]">
-                            <div className="flex flex-col md:flex-row w-full min-w-0">
-                              {/* Visual Progress Pillar */}
-                              <div className="md:w-48 p-8 flex flex-col justify-between border-r border-border/50 bg-slate-50/30 dark:bg-white/[0.01]">
-                                <div className="space-y-4">
-                                  <div className="h-14 w-14 rounded-2xl bg-white dark:bg-white/5 shadow-sm flex items-center justify-center">
-                                    <Scale className="h-7 w-7 text-primary" />
-                                  </div>
-                                  <div className="space-y-1">
-                                    <div className="text-[10px] font-black uppercase tracking-widest opacity-40">Current Stage</div>
-                                    <div className={cn(
-                                      "text-sm font-black",
-                                      (bill.stage_index || 0) === -1 ? 'text-red-500' : 'text-kenya-green'
-                                    )}>{bill.status}</div>
-                                  </div>
-                                </div>
-
-                                {/* 8-rectangle stage journey mini-visualizer */}
-                                <div className="grid grid-cols-8 gap-1 h-1.5 mt-8">
-                                  {BILL_STAGES.map((_, idx) => {
-                                    const isDiscarded = (bill.stage_index || 0) === -1;
-                                    return (
-                                      <div
-                                        key={idx}
-                                        className={cn(
-                                          "rounded-full transition-all",
-                                          isDiscarded
-                                            ? "bg-red-400 dark:bg-red-600" // all red when discarded
-                                            : idx <= (bill.stage_index || 0)
-                                              ? "bg-kenya-green"
-                                              : "bg-slate-200 dark:bg-white/10"
-                                        )}
-                                      />
-                                    );
-                                  })}
-                                </div>
-                              </div>
-
-                              {/* Bill Intelligence */}
-                              <div className="flex-1 p-6 md:p-10 space-y-6 md:space-y-8 min-w-0">
-                                <div className="flex flex-wrap items-center justify-between gap-4">
-                                  <div className="flex gap-2">
-                                    <Badge className="bg-primary/10 text-primary border-none font-bold rounded-lg px-3">
-                                      {bill.category}
-                                    </Badge>
-                                    {bill.stage_index === 2 && (
-                                      <Badge className="bg-orange-500/10 text-orange-500 border-none font-bold rounded-lg px-3">
-                                        Public Feedback Needed
-                                      </Badge>
-                                    )}
-                                  </div>
-                                  <div className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40">
-                                    {new Date(bill.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
-                                  </div>
-                                </div>
-
-                                <div className="space-y-4 min-w-0">
-                                  <h3 className="text-3xl font-[1000] tracking-tight leading-none dark:text-white group-hover:text-primary transition-colors break-words">
-                                    <Link to={`/bill/${getBillIdentifier(bill)}#memoranda`}>{bill.title}</Link>
-                                  </h3>
-
-                                  {bill.neural_summary ? (
-                                    <div className="bg-kenya-green/[0.03] border border-kenya-green/10 rounded-3xl p-6 mb-4">
-                                      <div className="flex items-center gap-2 text-kenya-green mb-3">
-                                        <Globe className="h-4 w-4" />
-                                        <span className="text-[10px] font-black uppercase tracking-widest">Quick Summary</span>
+                      {filteredBills.slice(0, visibleCount).map((bill, billIndex) => (
+                        <React.Fragment key={bill.id}>
+                          {/* ── NASAKA IEBC MID-SCROLL INJECTION: appears after the 3rd bill (index 2) ── */}
+                          {billIndex === 3 && (
+                            <motion.div
+                              layout
+                              initial={{ opacity: 0, scale: 0.98 }}
+                              animate={{ opacity: 1, scale: 1 }}
+                              className="w-full min-w-0"
+                            >
+                              <Card className="group relative overflow-hidden border-none bg-white dark:bg-[#111] shadow-ios-high dark:shadow-ios-high-dark rounded-[40px] w-full">
+                                <div className="flex flex-col md:flex-row w-full min-w-0">
+                                  {/* Civic Duty Pillar */}
+                                  <div className="md:w-48 p-8 flex flex-col justify-between border-r border-border/50 bg-kenya-green/[0.03] dark:bg-kenya-green/[0.06]">
+                                    <div className="space-y-4">
+                                      <div className="h-14 w-14 rounded-2xl bg-kenya-green/10 dark:bg-kenya-green/20 shadow-sm flex items-center justify-center">
+                                        <Users className="h-7 w-7 text-kenya-green" />
                                       </div>
-                                      <p className="text-sm font-medium leading-relaxed opacity-80">
-                                        {expandedSummaries[bill.id] || bill.neural_summary.length <= NEURAL_SUMMARY_COLLAPSE
-                                          ? bill.neural_summary
-                                          : bill.neural_summary.slice(0, NEURAL_SUMMARY_COLLAPSE) + '…'}
-                                      </p>
-                                      {bill.neural_summary.length > NEURAL_SUMMARY_COLLAPSE && (
-                                        <motion.button
-                                          onClick={() => toggleSummaryExpanded(bill.id)}
-                                          whileTap={{ scale: 0.97 }}
-                                          className="mt-3 flex items-center gap-1 text-kenya-green font-black text-[10px] uppercase tracking-widest hover:opacity-80 transition-opacity"
-                                        >
-                                          {expandedSummaries[bill.id] ? 'Show Less' : 'Read More'}
-                                          <motion.span
-                                            animate={{ rotate: expandedSummaries[bill.id] ? 180 : 0 }}
-                                            transition={{ duration: 0.22 }}
-                                          >
-                                            <ChevronDown className="h-3 w-3" />
-                                          </motion.span>
-                                        </motion.button>
-                                      )}
+                                      <div className="space-y-1">
+                                        <div className="text-[10px] font-black uppercase tracking-widest opacity-40">Civic Duty</div>
+                                        <div className="text-sm font-black text-kenya-green">Voter Registration</div>
+                                      </div>
                                     </div>
-                                  ) : (
-                                    <p className="text-lg text-muted-foreground leading-relaxed max-w-3xl line-clamp-3">
-                                      {bill.summary}
-                                    </p>
-                                  )}
-                                </div>
-
-                                <div className="flex flex-col sm:flex-row flex-wrap items-start sm:items-center justify-between gap-6 pt-6 border-t border-border/50">
-                                  <div className="flex items-center gap-4 min-w-0 w-full sm:w-auto">
-                                    {bill.sponsor && (
-                                      <div className="flex items-center gap-3 min-w-0 flex-1">
-                                        <div className="h-8 w-8 rounded-full bg-slate-200 dark:bg-white/10 flex items-center justify-center font-bold text-xs shrink-0">
-                                          {bill.sponsor.charAt(0)}
-                                        </div>
-                                        <div className="text-xs font-bold leading-none min-w-0 flex-1">
-                                          <div className="opacity-40 uppercase tracking-widest text-[8px] mb-1">Mover / Sponsor</div>
-                                          <div
-                                            onClick={() => toggleSponsorExpanded(bill.id)}
-                                            className={cn(
-                                              "cursor-pointer transition-all hover:opacity-80 py-1 pr-6 -ml-1 pl-1",
-                                              expandedSponsors[bill.id] ? "break-words whitespace-normal leading-tight" : "truncate"
-                                            )}
-                                            title={bill.sponsor}
-                                          >
-                                            {bill.sponsor}
-                                          </div>
-                                        </div>
-                                      </div>
-                                    )}
+                                    {/* Decorative civic bar strip */}
+                                    <div className="grid grid-cols-8 gap-1 h-1.5 mt-8">
+                                      {Array.from({ length: 8 }).map((_, idx) => (
+                                        <div key={idx} className="rounded-full bg-kenya-green" />
+                                      ))}
+                                    </div>
                                   </div>
 
-                                  <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 w-full sm:w-auto">
-                                    {/* ✅ FIXED: Use b2_url (Backblaze) if available, else fallback to pdf_url */}
-                                    {(bill.b2_url || bill.pdf_url) && (
-                                      <Button
-                                        variant="outline"
-                                        onClick={() => vaultService.openDocument(bill.b2_url || bill.pdf_url!)}
-                                        className="h-12 px-6 rounded-2xl border-slate-200 dark:border-white/10 font-black text-xs uppercase tracking-widest"
-                                      >
-                                        Download PDF
-                                        <DownloadIcon className="h-6 w-6" />
-                                      </Button>
-                                    )}
+                                  {/* Civic Content */}
+                                  <div className="flex-1 p-6 md:p-10 space-y-6 md:space-y-8 min-w-0">
+                                    <div className="flex flex-wrap items-center justify-between gap-4">
+                                      <div className="flex gap-2">
+                                        <Badge className="bg-kenya-green/10 text-kenya-green border-none font-bold rounded-lg px-3">
+                                          Nasaka IEBC
+                                        </Badge>
+                                        <Badge className="bg-orange-500/10 text-orange-500 border-none font-bold rounded-lg px-3">
+                                          Action Required
+                                        </Badge>
+                                      </div>
+                                      <div className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40">Your Vote. Your Law.</div>
+                                    </div>
 
-                                    {/* Split Summary Pill — Non-deep left half / Deep Summary right half */}
-                                    <div className="flex items-stretch h-12 rounded-2xl overflow-hidden border border-slate-200 dark:border-white/10 shadow-ios-soft">
-                                      {/* Non-deep: quick AI context — existing AIContextButton behaviour */}
-                                      <AIContextButton
-                                        label="Summary"
-                                        context={bill.title + ": " + bill.summary}
-                                        className="h-full px-5 rounded-none border-none border-r border-slate-200 dark:border-white/10 text-xs font-black uppercase tracking-widest bg-white dark:bg-[#111] hover:bg-slate-50 dark:hover:bg-white/5 transition-colors"
-                                      />
-                                      {/* Deep Summary: links to bill detail description section */}
+                                    <div className="space-y-4 min-w-0">
+                                      <h3 className="text-3xl font-[1000] tracking-tight leading-none dark:text-white break-words">
+                                        Are you a registered voter?
+                                      </h3>
+                                      <div className="bg-kenya-green/[0.04] border border-kenya-green/10 rounded-3xl p-6 mb-4">
+                                        <p className="text-sm font-medium leading-relaxed opacity-80">
+                                          Expecting change from these Bills without being a registered voter is work done in vain! Are you a registered voter? What are you waiting for? Visit the nearest IEBC office near you with Nasaka IEBC. GO TODAY!
+                                        </p>
+                                      </div>
+                                    </div>
+
+                                    <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 w-full pt-6 border-t border-border/50 sm:w-auto">
+                                      {/* Go Register — replaces Deep */}
                                       <Button
                                         asChild
-                                        variant="ghost"
-                                        className="h-full px-5 rounded-none text-xs font-black uppercase tracking-widest text-kenya-green hover:bg-kenya-green/5 transition-colors"
+                                        variant="outline"
+                                        className="h-12 px-6 rounded-2xl border-kenya-green/30 text-kenya-green font-black text-xs uppercase tracking-widest hover:bg-kenya-green/5 transition-colors"
                                       >
-                                        <Link to={`/bill/${getBillIdentifier(bill)}`}>
-                                          <Deep2Icon size={16} />
-                                          Deep
+                                        <a href="https://nasakaiebc.civiceducationkenya.com/" target="_blank" rel="noopener noreferrer">
+                                          Go Register
+                                          <ArrowRight className="ml-2 h-4 w-4" />
+                                        </a>
+                                      </Button>
+
+                                      {/* Download App — replaces Follow Progress */}
+                                      <Button
+                                        asChild
+                                        className="h-12 px-10 rounded-2xl bg-kenya-green text-white font-black hover:bg-kenya-green/90 shadow-xl"
+                                      >
+                                        <a href="https://play.google.com/store/apps/details?id=com.nasaka.app&hl=en" target="_blank" rel="noopener noreferrer">
+                                          Download
+                                          <ArrowRight className="ml-2 h-4 w-4" />
+                                        </a>
+                                      </Button>
+                                    </div>
+                                  </div>
+                                </div>
+                              </Card>
+                            </motion.div>
+                          )}
+
+                          {/* ── STANDARD BILL CARD ── */}
+                          <motion.div
+                            layout
+                            initial={{ opacity: 0, scale: 0.98 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            className="w-full min-w-0"
+                          >
+                            <Card className="group relative overflow-hidden border-none bg-white dark:bg-[#111] shadow-ios-high dark:shadow-ios-high-dark rounded-[40px] w-full transition-all hover:bg-slate-50/50 dark:hover:bg-white/[0.02]">
+                              <div className="flex flex-col md:flex-row w-full min-w-0">
+                                {/* Visual Progress Pillar */}
+                                <div className="md:w-48 p-8 flex flex-col justify-between border-r border-border/50 bg-slate-50/30 dark:bg-white/[0.01]">
+                                  <div className="space-y-4">
+                                    <div className="h-14 w-14 rounded-2xl bg-white dark:bg-white/5 shadow-sm flex items-center justify-center">
+                                      <Scale className="h-7 w-7 text-primary" />
+                                    </div>
+                                    <div className="space-y-1">
+                                      <div className="text-[10px] font-black uppercase tracking-widest opacity-40">Current Stage</div>
+                                      <div className={cn(
+                                        "text-sm font-black",
+                                        (bill.stage_index || 0) === -1 ? 'text-red-500' : 'text-kenya-green'
+                                      )}>{bill.status}</div>
+                                    </div>
+                                  </div>
+
+                                  {/* 8-rectangle stage journey mini-visualizer */}
+                                  <div className="grid grid-cols-8 gap-1 h-1.5 mt-8">
+                                    {BILL_STAGES.map((_, idx) => {
+                                      const isDiscarded = (bill.stage_index || 0) === -1;
+                                      return (
+                                        <div
+                                          key={idx}
+                                          className={cn(
+                                            "rounded-full transition-all",
+                                            isDiscarded
+                                              ? "bg-red-400 dark:bg-red-600"
+                                              : idx <= (bill.stage_index || 0)
+                                                ? "bg-kenya-green"
+                                                : "bg-slate-200 dark:bg-white/10"
+                                          )}
+                                        />
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+
+                                {/* Bill Intelligence */}
+                                <div className="flex-1 p-6 md:p-10 space-y-6 md:space-y-8 min-w-0">
+                                  <div className="flex flex-wrap items-center justify-between gap-4">
+                                    <div className="flex gap-2">
+                                      <Badge className="bg-primary/10 text-primary border-none font-bold rounded-lg px-3">
+                                        {bill.category}
+                                      </Badge>
+                                      {bill.stage_index === 2 && (
+                                        <Badge className="bg-orange-500/10 text-orange-500 border-none font-bold rounded-lg px-3">
+                                          Public Feedback Needed
+                                        </Badge>
+                                      )}
+                                    </div>
+                                    <div className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40">
+                                      {new Date(bill.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                                    </div>
+                                  </div>
+
+                                  <div className="space-y-4 min-w-0">
+                                    <h3 className="text-3xl font-[1000] tracking-tight leading-none dark:text-white group-hover:text-primary transition-colors break-words">
+                                      <Link to={`/bill/${getBillIdentifier(bill)}#memoranda`}>{bill.title}</Link>
+                                    </h3>
+
+                                    {bill.neural_summary ? (
+                                      <div className="bg-kenya-green/[0.03] border border-kenya-green/10 rounded-3xl p-6 mb-4">
+                                        <div className="flex items-center gap-2 text-kenya-green mb-3">
+                                          <Globe className="h-4 w-4" />
+                                          <span className="text-[10px] font-black uppercase tracking-widest">Quick Summary</span>
+                                        </div>
+                                        <p className="text-sm font-medium leading-relaxed opacity-80">
+                                          {expandedSummaries[bill.id] || bill.neural_summary.length <= NEURAL_SUMMARY_COLLAPSE
+                                            ? bill.neural_summary
+                                            : bill.neural_summary.slice(0, NEURAL_SUMMARY_COLLAPSE) + '…'}
+                                        </p>
+                                        {bill.neural_summary.length > NEURAL_SUMMARY_COLLAPSE && (
+                                          <motion.button
+                                            onClick={() => toggleSummaryExpanded(bill.id)}
+                                            whileTap={{ scale: 0.97 }}
+                                            className="mt-3 flex items-center gap-1 text-kenya-green font-black text-[10px] uppercase tracking-widest hover:opacity-80 transition-opacity"
+                                          >
+                                            {expandedSummaries[bill.id] ? 'Show Less' : 'Read More'}
+                                            <motion.span
+                                              animate={{ rotate: expandedSummaries[bill.id] ? 180 : 0 }}
+                                              transition={{ duration: 0.22 }}
+                                            >
+                                              <ChevronDown className="h-3 w-3" />
+                                            </motion.span>
+                                          </motion.button>
+                                        )}
+                                      </div>
+                                    ) : (
+                                      <p className="text-lg text-muted-foreground leading-relaxed max-w-3xl line-clamp-3">
+                                        {bill.summary}
+                                      </p>
+                                    )}
+                                  </div>
+
+                                  <div className="flex flex-col sm:flex-row flex-wrap items-start sm:items-center justify-between gap-6 pt-6 border-t border-border/50">
+                                    <div className="flex items-center gap-4 min-w-0 w-full sm:w-auto">
+                                      {bill.sponsor && (
+                                        <div className="flex items-center gap-3 min-w-0 flex-1">
+                                          <div className="h-8 w-8 rounded-full bg-slate-200 dark:bg-white/10 flex items-center justify-center font-bold text-xs shrink-0">
+                                            {bill.sponsor.charAt(0)}
+                                          </div>
+                                          <div className="text-xs font-bold leading-none min-w-0 flex-1">
+                                            <div className="opacity-40 uppercase tracking-widest text-[8px] mb-1">Mover / Sponsor</div>
+                                            <div
+                                              onClick={() => toggleSponsorExpanded(bill.id)}
+                                              className={cn(
+                                                "cursor-pointer transition-all hover:opacity-80 py-1 pr-6 -ml-1 pl-1",
+                                                expandedSponsors[bill.id] ? "break-words whitespace-normal leading-tight" : "truncate"
+                                              )}
+                                              title={bill.sponsor}
+                                            >
+                                              {bill.sponsor}
+                                            </div>
+                                          </div>
+                                        </div>
+                                      )}
+                                    </div>
+
+                                    <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 w-full sm:w-auto">
+                                      {/* ✅ FIXED: Use b2_url (Backblaze) if available, else fallback to pdf_url */}
+                                      {(bill.b2_url || bill.pdf_url) && (
+                                        <Button
+                                          variant="outline"
+                                          onClick={() => vaultService.openDocument(bill.b2_url || bill.pdf_url!)}
+                                          className="h-12 px-6 rounded-2xl border-slate-200 dark:border-white/10 font-black text-xs uppercase tracking-widest"
+                                        >
+                                          Download PDF
+                                          <DownloadIcon className="h-6 w-6" />
+                                        </Button>
+                                      )}
+
+                                      {/* Split Summary Pill — Non-deep left half / Deep Summary right half */}
+                                      <div className="flex items-stretch h-12 rounded-2xl overflow-hidden border border-slate-200 dark:border-white/10 shadow-ios-soft">
+                                        {/* Non-deep: quick AI context — existing AIContextButton behaviour */}
+                                        <AIContextButton
+                                          label="Summary"
+                                          context={bill.title + ": " + bill.summary}
+                                          className="h-full px-5 rounded-none border-none border-r border-slate-200 dark:border-white/10 text-xs font-black uppercase tracking-widest bg-white dark:bg-[#111] hover:bg-slate-50 dark:hover:bg-white/5 transition-colors"
+                                        />
+                                        {/* Deep Summary: links to bill detail description section */}
+                                        <Button
+                                          asChild
+                                          variant="ghost"
+                                          className="h-full px-5 rounded-none text-xs font-black uppercase tracking-widest text-kenya-green hover:bg-kenya-green/5 transition-colors"
+                                        >
+                                          <Link to={`/bill/${getBillIdentifier(bill)}`}>
+                                            <Deep2Icon size={16} />
+                                            Deep
+                                          </Link>
+                                        </Button>
+                                      </div>
+
+                                      <BillFollowButton billId={bill.id} variant="ghost" className="h-12 px-6 rounded-2xl" />
+                                      <Button asChild className="h-12 px-10 rounded-2xl bg-kenya-green text-white font-black hover:bg-kenya-green/90 shadow-xl">
+                                        <Link to={`/bill/${getBillIdentifier(bill)}#memoranda`}>
+                                          Follow Progress
+                                          <ArrowRight className="ml-2 h-4 w-4" />
                                         </Link>
                                       </Button>
                                     </div>
-
-                                    <BillFollowButton billId={bill.id} variant="ghost" className="h-12 px-6 rounded-2xl" />
-                                    <Button asChild className="h-12 px-10 rounded-2xl bg-kenya-green text-white font-black hover:bg-kenya-green/90 shadow-xl">
-                                      <Link to={`/bill/${getBillIdentifier(bill)}#memoranda`}>
-                                        Follow Progress
-                                        <ArrowRight className="ml-2 h-4 w-4" />
-                                      </Link>
-                                    </Button>
                                   </div>
                                 </div>
                               </div>
-                            </div>
-                          </Card>
-                        </motion.div>
+                            </Card>
+                          </motion.div>
+                        </React.Fragment>
                       ))}
                       {filteredBills.length > visibleCount && (
                         <div ref={observerTarget} className="py-10 flex justify-center opacity-70">

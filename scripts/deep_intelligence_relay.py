@@ -330,6 +330,368 @@ def _call_groq_large(prompt: str) -> Optional[str]:
         return None
 
 
+def _call_gemini_secondary(prompt: str) -> Optional[str]:
+    """Gemini 2.0 Flash — secondary key (CEKA_GEMINI_API_KEY). Same 2M window."""
+    api_key = os.getenv("CEKA_GEMINI_API_KEY")
+    if not api_key:
+        return None
+    try:
+        import google.generativeai as genai
+        genai.configure(api_key=api_key)
+        model = genai.GenerativeModel(
+            "gemini-2.0-flash",
+            system_instruction=RELAY_SYSTEM_PROMPT,
+        )
+        resp = model.generate_content(prompt)
+        return resp.text if resp and resp.text else None
+    except Exception as e:
+        logger.warning(f"[Gemini-2] {e}")
+        return None
+
+
+def _call_claude_secondary(prompt: str) -> Optional[str]:
+    """Claude 3.5 Sonnet — secondary key (ANTHROPIC_API_KEY_2). Independent quota."""
+    api_key = os.getenv("ANTHROPIC_API_KEY_2")
+    if not api_key:
+        return None
+    try:
+        import anthropic
+        client = anthropic.Anthropic(api_key=api_key)
+        resp = client.messages.create(
+            model="claude-3-5-sonnet-20240620",
+            max_tokens=4096,
+            system=RELAY_SYSTEM_PROMPT,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        for block in (resp.content or []):
+            text = getattr(block, "text", None)
+            if text and isinstance(text, str) and text.strip():
+                return text
+        return None
+    except Exception as e:
+        logger.warning(f"[Claude-2] {e}")
+        return None
+
+
+def _call_mistral(prompt: str) -> Optional[str]:
+    """Mistral Large — 128k context, strong structured-output reasoning."""
+    api_key = os.getenv("MISTRAL_API_KEY")
+    if not api_key:
+        return None
+    try:
+        import requests as req
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+        }
+        payload = {
+            "model": "mistral-large-latest",
+            "messages": [
+                {"role": "system", "content": RELAY_SYSTEM_PROMPT},
+                {"role": "user", "content": prompt},
+            ],
+            "max_tokens": 4096,
+            "temperature": 0.1,
+        }
+        r = req.post(
+            "https://api.mistral.ai/v1/chat/completions",
+            headers=headers, json=payload, timeout=90,
+        )
+        if r.status_code == 200:
+            return r.json()["choices"][0]["message"]["content"]
+        logger.warning(f"[Mistral] HTTP {r.status_code}: {r.text[:200]}")
+        return None
+    except Exception as e:
+        logger.warning(f"[Mistral] {e}")
+        return None
+
+
+def _call_sambanova(prompt: str) -> Optional[str]:
+    """SambaNova Llama-3.1-405B — 128k context, high-capacity open-weight."""
+    api_key = os.getenv("SAMBANOVA_API_KEY")
+    if not api_key:
+        return None
+    try:
+        import requests as req
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+        }
+        payload = {
+            "model": "Meta-Llama-3.1-405B-Instruct",
+            "messages": [
+                {"role": "system", "content": RELAY_SYSTEM_PROMPT},
+                {"role": "user", "content": prompt},
+            ],
+            "max_tokens": 4096,
+            "temperature": 0.1,
+        }
+        r = req.post(
+            "https://api.sambanova.ai/v1/chat/completions",
+            headers=headers, json=payload, timeout=120,
+        )
+        if r.status_code == 200:
+            return r.json()["choices"][0]["message"]["content"]
+        logger.warning(f"[SambaNova] HTTP {r.status_code}: {r.text[:200]}")
+        return None
+    except Exception as e:
+        logger.warning(f"[SambaNova] {e}")
+        return None
+
+
+def _call_nvidia_llama(prompt: str) -> Optional[str]:
+    """NVIDIA Llama-3.3-70B — 128k context, enterprise inference endpoint."""
+    api_key = os.getenv("LLAMA_4_MAVERICK_NVIDIA_API_KEY")
+    if not api_key:
+        return None
+    try:
+        import requests as req
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+        }
+        payload = {
+            "model": "meta/llama-3.3-70b-instruct",
+            "messages": [
+                {"role": "system", "content": RELAY_SYSTEM_PROMPT},
+                {"role": "user", "content": prompt},
+            ],
+            "max_tokens": 4096,
+            "temperature": 0.1,
+        }
+        r = req.post(
+            "https://integrate.api.nvidia.com/v1/chat/completions",
+            headers=headers, json=payload, timeout=90,
+        )
+        if r.status_code == 200:
+            return r.json()["choices"][0]["message"]["content"]
+        logger.warning(f"[NVIDIA-Llama] HTTP {r.status_code}: {r.text[:200]}")
+        return None
+    except Exception as e:
+        logger.warning(f"[NVIDIA-Llama] {e}")
+        return None
+
+
+def _call_siliconflow(prompt: str) -> Optional[str]:
+    """SiliconFlow DeepSeek-V3 — independent DeepSeek route, 64k context."""
+    api_key = os.getenv("SILICON_FLOW_API_KEY")
+    if not api_key:
+        return None
+    try:
+        import requests as req
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+        }
+        # SiliconFlow DeepSeek context is 64k tokens; cap at 240k chars to be safe
+        safe_prompt = prompt[:240_000]
+        payload = {
+            "model": "deepseek-ai/DeepSeek-V3",
+            "messages": [
+                {"role": "system", "content": RELAY_SYSTEM_PROMPT},
+                {"role": "user", "content": safe_prompt},
+            ],
+            "max_tokens": 4096,
+            "temperature": 0.1,
+        }
+        r = req.post(
+            "https://api.siliconflow.cn/v1/chat/completions",
+            headers=headers, json=payload, timeout=90,
+        )
+        if r.status_code == 200:
+            return r.json()["choices"][0]["message"]["content"]
+        logger.warning(f"[SiliconFlow] HTTP {r.status_code}: {r.text[:200]}")
+        return None
+    except Exception as e:
+        logger.warning(f"[SiliconFlow] {e}")
+        return None
+
+
+def _call_deepseek_secondary(prompt: str) -> Optional[str]:
+    """DeepSeek-V3 — secondary key (DEEPSEEK_API_KEY_SECONDARY). Independent balance."""
+    api_key = os.getenv("DEEPSEEK_API_KEY_SECONDARY")
+    if not api_key:
+        return None
+    try:
+        import requests as req
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+        }
+        payload = {
+            "model": "deepseek-chat",
+            "messages": [
+                {"role": "system", "content": RELAY_SYSTEM_PROMPT},
+                {"role": "user", "content": prompt},
+            ],
+            "max_tokens": 4096,
+            "temperature": 0.1,
+        }
+        r = req.post(
+            "https://api.deepseek.com/v1/chat/completions",
+            headers=headers, json=payload, timeout=90,
+        )
+        if r.status_code == 200:
+            return r.json()["choices"][0]["message"]["content"]
+        logger.warning(f"[DeepSeek-2] HTTP {r.status_code}: {r.text[:200]}")
+        return None
+    except Exception as e:
+        logger.warning(f"[DeepSeek-2] {e}")
+        return None
+
+
+def _call_groq_secondary(prompt: str) -> Optional[str]:
+    """Groq Llama 3.3 70B — secondary key (CEKA_GROQ_API_KEY). Independent quota."""
+    api_key = os.getenv("CEKA_GROQ_API_KEY")
+    if not api_key:
+        return None
+    try:
+        from groq import Groq
+        client = Groq(api_key=api_key)
+        safe_prompt = prompt[:100_000]
+        resp = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[
+                {"role": "system", "content": RELAY_SYSTEM_PROMPT},
+                {"role": "user", "content": safe_prompt},
+            ],
+            max_tokens=4096,
+            response_format={"type": "json_object"},
+        )
+        return resp.choices[0].message.content
+    except Exception as e:
+        logger.warning(f"[Groq-2] {e}")
+        return None
+
+
+def _call_huggingface(prompt: str) -> Optional[str]:
+    """HuggingFace Inference API — Qwen2.5-72B, 128k context, free-tier last resort."""
+    api_key = os.getenv("HF_API_TOKEN") or os.getenv("HF_ACCESS_TOKEN")
+    if not api_key:
+        return None
+    try:
+        import requests as req
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+        }
+        # HF serverless practical limit is lower than advertised; cap at 80k chars
+        safe_prompt = prompt[:80_000]
+        messages = [
+            {"role": "system", "content": RELAY_SYSTEM_PROMPT},
+            {"role": "user", "content": safe_prompt},
+        ]
+        models_to_try = [
+            "Qwen/Qwen2.5-72B-Instruct",
+            "meta-llama/Meta-Llama-3.1-70B-Instruct",
+            "mistralai/Mistral-7B-Instruct-v0.3",
+        ]
+        for model in models_to_try:
+            payload = {"model": model, "messages": messages, "max_tokens": 4096, "stream": False}
+            r = req.post(
+                "https://api-inference.huggingface.co/v1/chat/completions",
+                headers=headers, json=payload, timeout=60,
+            )
+            if r.status_code == 200:
+                content = r.json().get("choices", [{}])[0].get("message", {}).get("content", "")
+                if content:
+                    logger.info(f"[HuggingFace] success via {model}")
+                    return content
+            elif r.status_code == 503:
+                logger.warning(f"[HuggingFace] {model} loading, skipping...")
+                continue
+            else:
+                logger.warning(f"[HuggingFace] HTTP {r.status_code} on {model}: {r.text[:150]}")
+        return None
+    except Exception as e:
+        logger.warning(f"[HuggingFace] {e}")
+        return None
+
+
+def _call_cerebras(prompt: str) -> Optional[str]:
+    """Cerebras primary key — ultra-fast inference."""
+    return _cerebras_request(prompt, os.getenv("CEREBRAS_API_KEY"))
+
+
+def _call_cerebras_secondary(prompt: str) -> Optional[str]:
+    """Cerebras secondary key (CEREBRAS_API_KEY_2 / CEREBRAS_API_KEY_SECONDARY)."""
+    return _cerebras_request(
+        prompt,
+        os.getenv("CEREBRAS_API_KEY_2") or os.getenv("CEREBRAS_API_KEY_SECONDARY"),
+    )
+
+
+def _cerebras_request(prompt: str, api_key: Optional[str]) -> Optional[str]:
+    """Shared Cerebras HTTP request. Tries best available models largest-first."""
+    if not api_key:
+        return None
+    try:
+        import requests as req
+        headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
+        # Cap at 60k chars — stays comfortably within Cerebras context budgets
+        safe_prompt = prompt[:60_000]
+        messages = [
+            {"role": "system", "content": RELAY_SYSTEM_PROMPT},
+            {"role": "user", "content": safe_prompt},
+        ]
+        for model in ["gpt-oss-120b", "zai-glm-4.7", "llama3.1-8b"]:
+            payload = {"model": model, "messages": messages, "max_tokens": 4096, "temperature": 0.1}
+            r = req.post(
+                "https://api.cerebras.ai/v1/chat/completions",
+                headers=headers, json=payload, timeout=30,
+            )
+            if r.status_code == 200:
+                logger.info(f"[Cerebras] success via {model}")
+                return r.json()["choices"][0]["message"]["content"]
+            elif r.status_code == 404:
+                continue  # model not available on this account, try next
+            elif r.status_code == 429:
+                logger.warning(f"[Cerebras] rate limit on {model}, stopping.")
+                break  # quota hit — no point burning more attempts
+            else:
+                logger.warning(f"[Cerebras] HTTP {r.status_code} on {model}: {r.text[:150]}")
+        return None
+    except Exception as e:
+        logger.warning(f"[Cerebras] {e}")
+        return None
+
+
+def _call_nvidia_nemotron(prompt: str) -> Optional[str]:
+    """NVIDIA Nemotron-4-340B — 4k token context, deep reasoning, last-resort fallback."""
+    api_key = os.getenv("NEMOTRON_3_NVIDIA_API_KEY") or os.getenv("NVIDIA_API_KEY")
+    if not api_key:
+        return None
+    try:
+        import requests as req
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+        }
+        # Nemotron context is ~4k tokens. Cap at 12k chars to leave room for
+        # system prompt + JSON output, processing whatever slice is possible.
+        safe_prompt = prompt[:12_000]
+        payload = {
+            "model": "nvidia/nemotron-4-340b-instruct",
+            "messages": [
+                {"role": "system", "content": RELAY_SYSTEM_PROMPT},
+                {"role": "user", "content": safe_prompt},
+            ],
+            "max_tokens": 2048,
+            "temperature": 0.1,
+        }
+        r = req.post(
+            "https://integrate.api.nvidia.com/v1/chat/completions",
+            headers=headers, json=payload, timeout=60,
+        )
+        if r.status_code == 200:
+            return r.json()["choices"][0]["message"]["content"]
+        logger.warning(f"[NVIDIA-Nemotron] HTTP {r.status_code}: {r.text[:200]}")
+        return None
+    except Exception as e:
+        logger.warning(f"[NVIDIA-Nemotron] {e}")
+        return None
+
+
 # ---------------------------------------------------------------------------
 # Provider registry — ordered by context window size (largest first).
 # Each tuple: (display_name, chunk_chars, call_function)
@@ -337,13 +699,29 @@ def _call_groq_large(prompt: str) -> Optional[str]:
 # picks up from the last committed cursor position automatically.
 # ---------------------------------------------------------------------------
 WIDE_CONTEXT_PROVIDERS: List[Tuple[str, int, Any]] = [
-    ("Gemini-2.0-Flash",       GEMINI_CHUNK_CHARS,  _call_gemini),
-    ("Claude-3.5-Sonnet",      120_000,             _call_claude),
-    ("GPT-4o",                 100_000,             _call_openai),
-    ("Cohere-Command-R-Plus",  100_000,             _call_cohere),
-    ("OpenRouter-Llama",        80_000,             _call_openrouter_llama),
-    ("DeepSeek-V3",             80_000,             _call_deepseek),
-    ("Groq-Llama-70B",          80_000,             _call_groq_large),
+    # ── Tier 1: Massive 2M-token context — process most bills in a single call ──
+    ("Gemini-2.0-Flash",         GEMINI_CHUNK_CHARS,  _call_gemini),
+    ("Gemini-2.0-Flash-2",       GEMINI_CHUNK_CHARS,  _call_gemini_secondary),
+    # ── Tier 2: 128k–200k token context — premium reasoning, high-quality output ──
+    ("Claude-3.5-Sonnet",        120_000,             _call_claude),
+    ("Claude-3.5-Sonnet-2",      120_000,             _call_claude_secondary),
+    ("Mistral-Large",            120_000,             _call_mistral),
+    ("SambaNova-Llama-405B",     100_000,             _call_sambanova),
+    ("GPT-4o",                   100_000,             _call_openai),
+    ("NVIDIA-Llama-3.3-70B",     100_000,             _call_nvidia_llama),
+    ("Cohere-Command-R-Plus",    100_000,             _call_cohere),
+    # ── Tier 3: 64k–128k context — robust open-source & cost-effective routes ──
+    ("OpenRouter-Llama",          80_000,             _call_openrouter_llama),
+    ("DeepSeek-V3",               80_000,             _call_deepseek),
+    ("DeepSeek-V3-2",             80_000,             _call_deepseek_secondary),
+    ("SiliconFlow-DeepSeek",      80_000,             _call_siliconflow),
+    ("Groq-Llama-70B",            80_000,             _call_groq_large),
+    ("Groq-Llama-70B-2",          80_000,             _call_groq_secondary),
+    ("HuggingFace-Qwen72B",       80_000,             _call_huggingface),
+    # ── Tier 4: Limited context — internal truncation applied, last-resort nets ──
+    ("Cerebras",                  60_000,             _call_cerebras),
+    ("Cerebras-2",                60_000,             _call_cerebras_secondary),
+    ("NVIDIA-Nemotron-340B",      12_000,             _call_nvidia_nemotron),
 ]
 
 
