@@ -391,7 +391,7 @@ class SovereignRefresh:
         }
 
     def _fetch_all_bills(self, limit: Optional[int] = None, target_id: Optional[str] = None) -> List[Dict[str, Any]]:
-        """Fetches bills from the database for Phase A sweep."""
+        """Fetches bills from the database for Phase A sweep using timestamp ordering."""
         # Columns pruned to match live schema (pruned: is_money_bill, concerns_counties, gazette_no, sponsor_title)
         columns = (
             "id,title,url,pdf_url,text_content,status,sponsor,"
@@ -401,11 +401,14 @@ class SovereignRefresh:
             "verified_sources,history"
         )
         
+        effective_limit = limit if limit is not None else 272
+
         if target_id:
             logger.info(f"🎯 Targeting specific bill ID: {target_id}")
             bills = self.db.select("bills", columns, eq="id", eq_val=target_id)
         else:
-            bills = self.db.select("bills", columns, limit=limit)
+            logger.info(f"📋 Queuing bills by oldest updated_at (batch limit: {effective_limit})...")
+            bills = self.db.select("bills", columns, limit=effective_limit, order="updated_at.asc.nullsfirst")
 
         if not bills:
             bills = []
@@ -479,7 +482,7 @@ class SovereignRefresh:
 
         # Stage detection from text (12+ dictionary)
         if text and (not bill.get("status") or self.force):
-            detected = detect_stage_from_text(text, bill.get("title", ""))
+            detected = detect_stage_from_text(text)
             if detected:
                 update_data["status"] = detected
                 if STAGES_OK:
@@ -503,7 +506,7 @@ class SovereignRefresh:
         ai_cat = update_data.get("category") or bill.get("category")
         if not ai_cat or ai_cat not in PORTFOLIO_KEYWORD_POOL:
             # Re-run keyword density check if AI fails or category is missing
-            logger.info(f"    [AI Checker] Validating portfolio classification for '{bill.get('title')[:30]}...'")
+            logger.info(f"    [AI Checker] Validating portfolio classification for '{(bill.get('title') or '')[:30]}...'")
             scores = {cat: 0 for cat in PORTFOLIO_KEYWORD_POOL.keys()}
             search_text = (text + " " + (bill.get("title") or "") + " " + (intel.get("summary") or "")).lower()
             
@@ -634,7 +637,7 @@ class SovereignRefresh:
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Phase A: Sovereign Refresh — Non-destructive bill intelligence upgrade.")
-    parser.add_argument("--limit", type=int, default=None, help="Process only N bills (for testing).")
+    parser.add_argument("--limit", type=int, default=272, help="Process N bills per run (default: 272 for half-and-half processing).")
     parser.add_argument("--force", action="store_true", help="Force re-process ALL bills, even those with complete data.")
     parser.add_argument("--target_id", type=str, default=None, help="Target a specific bill UUID for patching.")
     args = parser.parse_args()

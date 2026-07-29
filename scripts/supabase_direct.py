@@ -50,12 +50,15 @@ class SupabaseDirect:
         return p
 
     def select(self, table: str, columns: str = "*", limit: Optional[int] = None,
-               eq: Optional[str] = None, eq_val: Optional[str] = None) -> List[Dict]:
+               eq: Optional[str] = None, eq_val: Optional[str] = None,
+               order: Optional[str] = None) -> List[Dict]:
         params = self._params({"select": columns})
         if limit:
             params["limit"] = limit
         if eq and eq_val is not None:
             params[eq] = f"eq.{eq_val}"
+        if order:
+            params["order"] = order
         r = self.session.get(self._endpoint(table), params=params, timeout=30)
         r.raise_for_status()
         return r.json()

@@ -136,7 +136,7 @@ jobs:
             beautifulsoup4 pillow pdf2image pytesseract easyocr \
             google-genai google-search-results google-generativeai \
             groq openai anthropic cohere \
-            boto3 aiohttp lxml scrapling[fetchers]
+            boto3 aiohttp lxml scrapling[fetchers] playwright-stealth
           # Install cerebras SDK (may fail gracefully if not available)
           pip install cerebras-cloud-sdk || echo "⚠️ cerebras-cloud-sdk not available — skipping"
           playwright install chromium --with-deps
@@ -164,7 +164,7 @@ jobs:
       - name: Validate Scraper Output (Zero-Scrape Detection)
         if: always()
         run: |
-          OUTDIR="scripts/processed_data/legislative"
+          OUTDIR="processed_data/legislative"
           # Find the most recent legislation_sync_*.json file
           LATEST=$(ls -t "$OUTDIR"/legislation_sync_*.json 2>/dev/null | head -1 || echo "")
           if [ -z "$LATEST" ]; then
@@ -235,7 +235,7 @@ jobs:
           if [ "${{ inputs.phase_a_force }}" == "true" ] || [ "${{ github.event.inputs.phase_a_force }}" == "true" ]; then
             FORCE_FLAG="--force"
           fi
-          python scripts/sovereign_refresh.py $FORCE_FLAG
+          python scripts/sovereign_refresh.py $FORCE_FLAG --limit 272
         continue-on-error: true
         env:
           PYTHONIOENCODING: utf-8
