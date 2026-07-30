@@ -286,7 +286,7 @@ const Pieces = () => {
                                                         "border border-black/5 dark:border-white/10",
                                                         theme === 'light'
                                                             ? "bg-white/80 hover:bg-kenya-green hover:text-white text-kenya-black backdrop-blur-md"
-                                                            : "bg-white/5 hover:bg-kenya-green/20 hover:text-kenya-green text-white/90 backdrop-blur-xl"
+                                                            : "bg-white/5 hover:bg-kenya-green hover:text-white text-white/90 backdrop-blur-xl"
                                                     )}
                                                 >
                                                     <span className="relative z-10">{area}</span>

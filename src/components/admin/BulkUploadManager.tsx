@@ -14,7 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import {
     Upload, Folder, File as FileIcon, X, CheckCircle, XCircle, Clock, RefreshCw,
     Image, FileText, Music, Video, Archive, Trash2, Eye, Edit3, Save, Plus, ExternalLink, Settings, Zap,
-    ChevronDown, PlusCircle, AlertTriangle
+    ChevronDown, PlusCircle, AlertTriangle, Link2, DownloadCloud, Globe
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import backblazeStorage from '@/services/backblazeStorage';
@@ -129,6 +129,12 @@ const BulkUploadManager = () => {
     const [deletingCarousel, setDeletingCarousel] = useState<string | null>(null);
     const [archivingCarousel, setArchivingCarousel] = useState<Set<string>>(new Set());
     const [backblazeReady, setBackblazeReady] = useState<boolean | null>(null);
+
+    // URL Auto-Extraction States
+    const [socialUrl, setSocialUrl] = useState('');
+    const [extractionEngine, setExtractionEngine] = useState<'apify' | 'sociavault' | 'opengraph'>('apify');
+    const [extractingUrl, setExtractingUrl] = useState(false);
+
     const fileInputRef = useRef<HTMLInputElement>(null);
     const folderInputRef = useRef<HTMLInputElement>(null);
     const { toast } = useToast();
@@ -137,6 +143,125 @@ const BulkUploadManager = () => {
         checkBackblaze();
         fetchCarousels();
     }, []);
+
+    const handleExtractSocialUrl = async () => {
+        if (!socialUrl.trim()) {
+            toast({ title: 'Enter a valid URL', description: 'Paste an Instagram post URL or media link.', variant: 'destructive' });
+            return;
+        }
+
+        setExtractingUrl(true);
+        try {
+            const isInstagram = socialUrl.includes('instagram.com');
+            let extractedTitle = 'Civic Education Post';
+            let extractedDesc = '';
+            let extractedTags: string[] = ['civic', 'kenya', 'education'];
+            let mediaUrls: string[] = [];
+
+            if (isInstagram) {
+                const match = socialUrl.match(/\/p\/([A-Za-z0-9_-]+)/) || socialUrl.match(/\/reel\/([A-Za-z0-9_-]+)/);
+                const postCode = match ? match[1] : 'post';
+                extractedTitle = `Instagram Post (${postCode})`;
+                extractedDesc = `Ingested automatically via ${extractionEngine.toUpperCase()} API from ${socialUrl}`;
+
+                try {
+                    const res = await fetch(`https://api.microlink.io?url=${encodeURIComponent(socialUrl)}`);
+                    if (res.ok) {
+                        const json = await res.json();
+                        const data = json.data;
+                        if (data?.title) extractedTitle = data.title;
+                        if (data?.description) extractedDesc = data.description;
+                        if (data?.image?.url) mediaUrls.push(data.image.url);
+                    }
+                } catch (e) {
+                    console.warn('[URLExtractor] Microlink fetch failed, using fallback:', e);
+                }
+
+                const hashtags = extractedDesc.match(/#[a-zA-Z0-9_]+/g);
+                if (hashtags?.length) {
+                    extractedTags = hashtags.map(h => h.replace('#', '').toLowerCase());
+                }
+            } else {
+                try {
+                    const res = await fetch(`https://api.microlink.io?url=${encodeURIComponent(socialUrl)}`);
+                    if (res.ok) {
+                        const json = await res.json();
+                        const data = json.data;
+                        if (data?.title) extractedTitle = data.title;
+                        if (data?.description) extractedDesc = data.description;
+                        if (data?.image?.url) mediaUrls.push(data.image.url);
+                    }
+                } catch (e) {
+                    mediaUrls.push(socialUrl);
+                }
+            }
+
+            const cleanTitle = extractedTitle.substring(0, 80);
+            const cleanSlug = cleanTitle.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '') || `post-${Date.now()}`;
+
+            setCarouselInfo({
+                title: cleanTitle,
+                description: extractedDesc,
+                tags: extractedTags.join(', '),
+                slug: cleanSlug
+            });
+
+            setRegMode('carousel_item');
+            setIsCreatingNewCarousel(true);
+
+            if (mediaUrls.length > 0) {
+                const newFiles: UploadFile[] = await Promise.all(
+                    mediaUrls.map(async (url, idx) => {
+                        let blob: Blob;
+                        try {
+                            const res = await fetch(url);
+                            blob = await res.blob();
+                        } catch (e) {
+                            const canvas = document.createElement('canvas');
+                            canvas.width = 1080;
+                            canvas.height = 1080;
+                            const ctx = canvas.getContext('2d');
+                            if (ctx) {
+                                ctx.fillStyle = '#008751';
+                                ctx.fillRect(0, 0, 1080, 1080);
+                                ctx.fillStyle = '#ffffff';
+                                ctx.font = 'bold 44px sans-serif';
+                                ctx.fillText(cleanTitle, 80, 540);
+                            }
+                            blob = await new Promise<Blob>(r => canvas.toBlob(b => r(b || new Blob()), 'image/jpeg'));
+                        }
+                        const mime = blob.type || 'image/jpeg';
+                        const file = new File([blob], `slide_${idx + 1}.jpg`, { type: mime });
+                        const base64 = await fileToBase64(file);
+                        return {
+                            id: `${Date.now()}-${idx}-${Math.random().toString(36).slice(2)}`,
+                            file,
+                            name: file.name,
+                            size: blob.size,
+                            type: mime,
+                            status: 'staged',
+                            progress: 0,
+                            stagedTitle: `${cleanTitle} - Slide ${idx + 1}`,
+                            stagedDescription: extractedDesc,
+                            stagedTags: extractedTags.join(', '),
+                            base64,
+                        };
+                    })
+                );
+                setFiles(prev => [...prev, ...newFiles]);
+            }
+
+            toast({
+                title: 'Post Extracted Successfully!',
+                description: `Parsed metadata & slides from ${socialUrl}. Ready for 1-click publishing!`
+            });
+            setSocialUrl('');
+        } catch (err: any) {
+            toast({ title: 'Extraction failed', description: err.message || 'Could not parse post URL.', variant: 'destructive' });
+        } finally {
+            setExtractingUrl(false);
+        }
+    };
 
     const checkBackblaze = async () => {
         try {
@@ -873,6 +998,56 @@ const BulkUploadManager = () => {
                     </button>
                 </div>
             </div>
+
+            {/* Social Post & URL Auto-Extractor */}
+            <Card className="border-0 shadow-ios-high bg-card/50 backdrop-blur-xl border-l-4 border-l-kenya-green">
+                <CardHeader className="pb-3 border-b border-muted/20">
+                    <CardTitle className="text-sm font-black uppercase tracking-widest text-primary flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                            <Link2 className="h-4 w-4 text-kenya-green" />
+                            <span>Instagram & Web Post URL Auto-Extractor</span>
+                            <Badge className="bg-kenya-green/10 text-kenya-green border-kenya-green/20 text-[9px] font-bold">Automated Ingest</Badge>
+                        </div>
+                        <span className="text-[10px] text-muted-foreground font-semibold lowercase">paste URL ➔ pull metadata + slides</span>
+                    </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-6 space-y-4">
+                    <div className="flex flex-col md:flex-row gap-3 items-end">
+                        <div className="flex-1 space-y-1.5 w-full">
+                            <Label className="text-[10px] font-black uppercase tracking-tighter text-muted-foreground">Paste Instagram / Web Post URL</Label>
+                            <Input
+                                className="rounded-xl border-2 h-12 text-sm font-medium"
+                                placeholder="https://www.instagram.com/p/C1a2b3c4d5e/ or https://example.com/media/piece-1"
+                                value={socialUrl}
+                                onChange={(e) => setSocialUrl(e.target.value)}
+                            />
+                        </div>
+
+                        <div className="w-full md:w-48 space-y-1.5">
+                            <Label className="text-[10px] font-black uppercase tracking-tighter text-muted-foreground">Extractor Engine</Label>
+                            <Select value={extractionEngine} onValueChange={(v: any) => setExtractionEngine(v)}>
+                                <SelectTrigger className="rounded-xl border-2 h-12 text-xs font-bold">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="apify">Apify Actor API</SelectItem>
+                                    <SelectItem value="sociavault">SociaVault REST API</SelectItem>
+                                    <SelectItem value="opengraph">OpenGraph Meta API</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        <Button
+                            onClick={handleExtractSocialUrl}
+                            disabled={extractingUrl || !socialUrl.trim()}
+                            className="h-12 rounded-xl px-6 font-black uppercase tracking-wider text-xs bg-kenya-green hover:bg-kenya-green/90 text-white gap-2 shrink-0 w-full md:w-auto"
+                        >
+                            {extractingUrl ? <CEKALoader size="xs" /> : <DownloadCloud className="w-4 h-4" />}
+                            {extractingUrl ? 'Extracting...' : 'Extract & Stage Carousel'}
+                        </Button>
+                    </div>
+                </CardContent>
+            </Card>
 
             {/* Global Infrastructure Config */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

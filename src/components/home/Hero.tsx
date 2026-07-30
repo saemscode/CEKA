@@ -35,26 +35,26 @@ const Hero = () => {
   return (
     <section className="relative py-16 md:py-24 bg-gradient-to-b from-muted/50 to-background overflow-hidden">
       <div className="container relative z-10">
-        <div className="grid md:grid-cols-2 gap-12 items-center">
-          <div className="space-y-6 text-center md:text-left">
+        <div className="grid md:grid-cols-2 gap-6 lg:gap-12 items-center">
+          <div className="space-y-6 text-center md:text-left min-w-0">
             <div className="space-y-2">
-              <h1 className="text-4xl md:text-6xl lg:text-7xl font-extrabold tracking-tight leading-[0.9] text-kenya-black dark:text-white mb-6">
+              <h1 className="text-3xl sm:text-4xl md:text-4xl lg:text-6xl xl:text-7xl font-extrabold tracking-tight leading-[0.95] text-kenya-black dark:text-white mb-6 break-words">
                 {translate('Empowering Citizens through', language)}{' '}
                 <span className="text-kenya-green">{translate('Civic Education', language)}</span>
               </h1>
-              <p className="text-lg text-muted-foreground max-w-[600px] mx-auto md:mx-0">
+              <p className="text-base md:text-lg text-muted-foreground max-w-[600px] mx-auto md:mx-0">
                 {translate('Access civic knowledge, track legislation, and participate in building a better Kenya.', language)}
               </p>
             </div>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
-              <Button asChild size="lg" className="bg-kenya-green hover:bg-kenya-green/90">
+              <Button asChild size="lg" className="bg-kenya-green hover:bg-kenya-green/90 font-bold">
                 <Link to="/legislative-tracker">
                   {translate('Track Bills', language)}
                   <ChevronRight className="ml-2 h-4 w-4" />
                 </Link>
               </Button>
-              <Button asChild variant="outline" size="lg">
+              <Button asChild variant="outline" size="lg" className="font-bold">
                 <Link to="/campaign/june-25th">
                   {translate('June 25th: CEKA Statement', language)}
                 </Link>
@@ -62,7 +62,7 @@ const Hero = () => {
             </div>
           </div>
 
-          <div className="relative">
+          <div className="relative min-w-0">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-4">
                 <Link to="/resources" onClick={() => handleCardInteraction('resources')}>

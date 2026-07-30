@@ -3,7 +3,13 @@ import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { mediaService, type MediaContent } from '@/services/mediaService';
 import InstagramCarousel from '../carousel/InstagramCarousel';
 import { placeholderService } from '@/services/placeholderService';
-import { Grid2X2, AlertTriangle, RefreshCw } from 'lucide-react';
+import {
+  LayoutGridIcon as Grid2X2,
+  AlertTriangleIcon as AlertTriangle,
+  RefreshCwIcon as RefreshCw,
+  Maximize2Icon as Maximize2,
+  CarouselSlideIcon
+} from '../ui/CustomIcons';
 import { Button } from '@/components/ui/button';
 import { CEKALoader } from '@/components/ui/ceka-loader';
 import { useAuth } from '@/providers/AuthProvider';
@@ -11,7 +17,8 @@ import { roleService } from '@/services/roleService';
 import { supabase } from '@/integrations/supabase/client';
 import ProposeCollab from '@/components/campaigns/ProposeCollab';
 import piecesSocialService, { type InteractionState } from '@/services/piecesSocialService';
-import { CarouselSlideIcon } from '../ui/CustomIcons';
+import { useNavigate } from 'react-router-dom';
+import { PieceDetailModal } from './PieceDetailModal';
 
 const ITEMS_PER_PAGE = 6;
 
@@ -28,6 +35,7 @@ interface MediaFeedProps {
 }
 
 const MediaFeed: React.FC<MediaFeedProps> = ({ targetSlug }) => {
+    const navigate = useNavigate();
     const [content, setContent] = useState<MediaContent[]>([]);
     const [loading, setLoading] = useState(true);
     const [loadingMore, setLoadingMore] = useState(false);
@@ -47,6 +55,7 @@ const MediaFeed: React.FC<MediaFeedProps> = ({ targetSlug }) => {
     const observerRef = useRef<IntersectionObserver | null>(null);
     const loadMoreRef = useRef<HTMLDivElement>(null);
     const targetSlugRef = useRef<HTMLDivElement | null>(null);
+    const [selectedPiece, setSelectedPiece] = useState<MediaContent | null>(null);
     const { user } = useAuth();
 
     // Initial fetch
@@ -293,7 +302,13 @@ const MediaFeed: React.FC<MediaFeedProps> = ({ targetSlug }) => {
                                 className="animate-in fade-in slide-in-from-bottom-4 duration-500"
                             >
                                 <div className="mb-4 px-4 md:px-0">
-                                    <h3 className="text-xl font-black tracking-tight uppercase">{item.title}</h3>
+                                    <h3
+                                        onClick={() => navigate(`/pieces/${item.slug || item.id}`)}
+                                        className="text-xl font-black tracking-tight uppercase hover:text-kenya-green transition-colors cursor-pointer flex items-center justify-between group"
+                                    >
+                                        <span>{item.title}</span>
+                                        <Maximize2 className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                                    </h3>
                                     {item.description && (
                                         <p className="text-sm text-muted-foreground line-clamp-2 mt-1 font-medium">{item.description}</p>
                                     )}
@@ -366,7 +381,7 @@ const MediaFeed: React.FC<MediaFeedProps> = ({ targetSlug }) => {
                         <div
                             key={item.id}
                             className="aspect-[4/5] relative group cursor-pointer overflow-hidden bg-muted"
-                            onClick={() => setViewMode('feed')}
+                            onClick={() => navigate(`/pieces/${item.slug || item.id}`)}
                         >
                             <img
                                 src={item.cover_url || item.items?.[0]?.file_url || placeholderService.getPlaceholderByTags(item.tags || [])}
@@ -383,6 +398,9 @@ const MediaFeed: React.FC<MediaFeedProps> = ({ targetSlug }) => {
                     ))}
                 </div>
             )}
+
+            {/* Piece detail modal overlay when navigating to /pieces/:slug */}
+            <PieceDetailModal targetSlug={targetSlug} />
         </div>
     );
 };

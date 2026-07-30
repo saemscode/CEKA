@@ -4,7 +4,17 @@ import { type MediaContent } from '@/services/mediaService';
 import { useToast } from '@/hooks/use-toast';
 import { CEKALoader } from '@/components/ui/ceka-loader';
 import { Button } from '@/components/ui/button';
-import { Save, LayoutGrid, Info, Check, RefreshCw, Smartphone, Monitor } from 'lucide-react';
+import {
+  SaveIcon as Save,
+  LayoutGridIcon as LayoutGrid,
+  InfoIcon as Info,
+  CheckIcon as Check,
+  RefreshCwIcon as RefreshCw,
+  SmartphoneIcon as Smartphone,
+  MonitorIcon as Monitor,
+  HistoryIcon as History,
+  RotateCcwIcon as RotateCcw
+} from '@/components/ui/CustomIcons';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const GridItem = ({ item, index, layoutPrefix, draggedIdx, handleDragStart, handleDragEnter, handleDragOver, handleDragEnd }: any) => {
@@ -45,13 +55,34 @@ const GridItem = ({ item, index, layoutPrefix, draggedIdx, handleDragStart, hand
     );
 };
 
+interface LayoutSnapshot {
+    id: string;
+    timestamp: string;
+    itemOrder: string[];
+    itemCount: number;
+}
+
 export const AdminGridCurator = () => {
     const [items, setItems] = useState<MediaContent[]>([]);
     const [originalItems, setOriginalItems] = useState<MediaContent[]>([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [draggedIdx, setDraggedIdx] = useState<number | null>(null);
+    const [snapshots, setSnapshots] = useState<LayoutSnapshot[]>([]);
+    const [showHistory, setShowHistory] = useState(false);
     const { toast } = useToast();
+
+    // Load snapshots from local storage on mount
+    useEffect(() => {
+        try {
+            const saved = localStorage.getItem('ceka_grid_snapshots');
+            if (saved) {
+                setSnapshots(JSON.parse(saved));
+            }
+        } catch (e) {
+            console.warn('[AdminGridCurator] Failed to read snapshots:', e);
+        }
+    }, []);
 
     const fetchItems = async () => {
         setLoading(true);
@@ -109,24 +140,50 @@ export const AdminGridCurator = () => {
 
     const handleSave = async () => {
         setSaving(true);
-        // The first item should have the highest display_order
-        // We will assign display_order based on epoch time to ensure large gaps, 
-        // or simply a descending integer sequence starting from the current epoch.
         const baseOrder = Date.now();
         const updates = items.map((item, index) => ({
             id: item.id,
-            display_order: baseOrder - index // Highest index gets lowest score
+            display_order: baseOrder - index
         }));
 
         try {
             await mediaService.updateDisplayOrder(updates);
+
+            // Save layout snapshot for redundancy & revert capability
+            const newSnapshot: LayoutSnapshot = {
+                id: `snap_${Date.now()}`,
+                timestamp: new Date().toLocaleString(),
+                itemOrder: items.map(i => i.id),
+                itemCount: items.length
+            };
+            const updatedSnapshots = [newSnapshot, ...snapshots.slice(0, 9)]; // Keep last 10 snapshots
+            setSnapshots(updatedSnapshots);
+            localStorage.setItem('ceka_grid_snapshots', JSON.stringify(updatedSnapshots));
+
             setOriginalItems(JSON.parse(JSON.stringify(items)));
-            toast({ title: 'Grid Saved!', description: 'Public feed is now synced with your visual arrangement.' });
+            toast({ title: 'Grid Saved & Backed Up!', description: 'Public feed synced. Layout snapshot saved for easy revert.' });
         } catch (error) {
             toast({ title: 'Error', description: 'Failed to update grid layout.', variant: 'destructive' });
         } finally {
             setSaving(false);
         }
+    };
+
+    const handleRestoreSnapshot = (snap: LayoutSnapshot) => {
+        const itemMap = new Map(items.map(i => [i.id, i]));
+        const reordered: MediaContent[] = [];
+        snap.itemOrder.forEach(id => {
+            if (itemMap.has(id)) {
+                reordered.push(itemMap.get(id)!);
+                itemMap.delete(id);
+            }
+        });
+        // Append any items that weren't in the snapshot
+        itemMap.forEach(item => reordered.push(item));
+
+        setItems(reordered);
+        setShowHistory(false);
+        toast({ title: 'Arrangement Restored!', description: `Loaded arrangement from ${snap.timestamp}. Click "Publish Grid" to save live.` });
     };
 
     const handleReset = () => {
@@ -163,7 +220,49 @@ export const AdminGridCurator = () => {
                     </p>
                 </div>
                 
-                <div className="flex items-center gap-2 w-full md:w-auto">
+                <div className="flex items-center gap-2 w-full md:w-auto flex-wrap">
+                    {snapshots.length > 0 && (
+                        <div className="relative">
+                            <Button
+                                onClick={() => setShowHistory(!showHistory)}
+                                variant="outline"
+                                className="rounded-xl gap-2 font-black border-2 border-primary/20 text-primary hover:bg-primary/10"
+                            >
+                                <History size={16} /> Revert / History ({snapshots.length})
+                            </Button>
+
+                            {showHistory && (
+                                <div className="absolute right-0 top-12 z-50 w-80 p-4 rounded-2xl bg-card border border-border shadow-2xl space-y-3 animate-in fade-in zoom-in-95">
+                                    <div className="flex items-center justify-between border-b pb-2">
+                                        <p className="text-xs font-black uppercase tracking-wider text-foreground">Saved Layout Snapshots</p>
+                                        <Button variant="ghost" size="sm" onClick={() => setShowHistory(false)} className="h-6 w-6 p-0 rounded-full">✕</Button>
+                                    </div>
+                                    <div className="max-h-60 overflow-y-auto space-y-2 pr-1">
+                                        {snapshots.map((snap) => (
+                                            <div
+                                                key={snap.id}
+                                                className="p-2.5 rounded-xl border border-border/50 hover:border-kenya-green/40 hover:bg-muted/40 transition-colors flex items-center justify-between group"
+                                            >
+                                                <div>
+                                                    <p className="text-[11px] font-bold text-foreground">{snap.timestamp}</p>
+                                                    <p className="text-[9px] font-medium text-muted-foreground">{snap.itemCount} items arranged</p>
+                                                </div>
+                                                <Button
+                                                    size="sm"
+                                                    variant="secondary"
+                                                    onClick={() => handleRestoreSnapshot(snap)}
+                                                    className="h-7 text-[10px] font-bold rounded-lg gap-1 group-hover:bg-kenya-green group-hover:text-white"
+                                                >
+                                                    <RotateCcw size={12} /> Restore
+                                                </Button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
                     <AnimatePresence>
                         {hasChanges && (
                             <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }}>
