@@ -436,7 +436,7 @@ const CampaignDetail = () => {
   return (
     <Layout>
       {renderSEO()}
-      <div className="container py-6 md:py-10">
+      <div className="container py-6 md:py-10 overflow-x-hidden">
 
         {/* Top nav row */}
         <div className="flex items-center justify-between mb-8">
@@ -504,24 +504,24 @@ const CampaignDetail = () => {
         <div className="grid lg:grid-cols-3 gap-6">
 
           {/* ── Main content ── */}
-          <div className="lg:col-span-2">
-            <Tabs defaultValue="about">
-              <TabsList className="mb-6 bg-slate-100/80 dark:bg-white/5 p-1 rounded-xl w-full overflow-x-auto flex">
-                <TabsTrigger value="about" className="rounded-lg flex-1">About</TabsTrigger>
-                <TabsTrigger value="updates" className="rounded-lg flex-1">
+          <div className="lg:col-span-2 min-w-0">
+            <Tabs defaultValue="about" className="w-full min-w-0">
+              <TabsList className="mb-6 bg-slate-100/80 dark:bg-white/5 p-1 rounded-xl w-full overflow-x-auto flex flex-nowrap [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+                <TabsTrigger value="about" className="rounded-lg shrink-0">About</TabsTrigger>
+                <TabsTrigger value="updates" className="rounded-lg shrink-0">
                   Updates {updates.length > 0 && `(${updates.length})`}
                 </TabsTrigger>
                 {hasFinancialGoal && (
-                  <TabsTrigger value="supporters" className="rounded-lg flex-1">
+                  <TabsTrigger value="supporters" className="rounded-lg shrink-0">
                     Supporters {supporters.length > 0 && `(${supporters.length})`}
                   </TabsTrigger>
                 )}
-                <TabsTrigger value="comments" className="rounded-lg flex-1">Comments {comments.length > 0 && `(${comments.length})`}</TabsTrigger>
+                <TabsTrigger value="comments" className="rounded-lg shrink-0">Comments {comments.length > 0 && `(${comments.length})`}</TabsTrigger>
               </TabsList>
 
               {/* About */}
-              <TabsContent value="about" className="animate-in fade-in slide-in-from-bottom-4">
-                <div className="prose dark:prose-invert max-w-none text-slate-700 dark:text-slate-300 leading-relaxed">
+              <TabsContent value="about" className="relative text-wrap animate-in fade-in slide-in-from-bottom-4 w-full min-w-0">
+                <div className="prose dark:prose-invert max-w-none w-full min-w-0 text-slate-700 dark:text-slate-300 leading-relaxed break-words">
                   <div
                     dangerouslySetInnerHTML={{
                       __html: renderContent(

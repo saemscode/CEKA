@@ -17,7 +17,7 @@ import {
   SelectValue
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   FileText, Search, Filter, Calendar, ArrowRight, PlusCircle, ArrowUpDown,
   TrendingUp, RefreshCw, Layers, CheckCircle, Clock, Users, BookOpen, Globe, Shield, Scale, ChevronDown
@@ -27,8 +27,9 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { BillFollowButton } from '@/components/legislative/BillFollowButton';
 import { CEKALoader } from '@/components/ui/ceka-loader';
 import FeaturedLegislationCarousel from '@/components/legislative/FeaturedLegislationCarousel';
+import SearchSuggestion from '@/components/SearchSuggestion';
 import { Deep2Icon } from '@/components/ui/CustomIcons';
-import { DownloadIcon } from '@/components/ui/CustomIcons';
+import { NasakaSVGIcon, DownloadIcon, ScalesIcon, NavPiecesIcon, EmailIcon, SearchIcon, ChevronDownIcon, ChevronUpIcon } from '@/components/ui/CustomIcons';
 import AIContextButton from '@/components/ai/AIContextButton';
 import { motion, AnimatePresence } from 'framer-motion';
 import { billService, getBillIdentifier } from '@/services/billService';
@@ -67,6 +68,7 @@ interface Bill {
 type SortOption = 'date-desc' | 'date-asc' | 'alpha-asc' | 'alpha-desc' | 'status' | 'category';
 
 const LegislativeTracker = () => {
+  const navigate = useNavigate();
   const { user } = useAuth(); // Added for notification sync
   const { language } = useLanguage();
   const [billsData, setBillsData] = useState<Bill[]>([]);
@@ -872,11 +874,11 @@ const LegislativeTracker = () => {
                                   <div className="md:w-48 p-8 flex flex-col justify-between border-r border-border/50 bg-kenya-green/[0.03] dark:bg-kenya-green/[0.06]">
                                     <div className="space-y-4">
                                       <div className="h-14 w-14 rounded-2xl bg-kenya-green/10 dark:bg-kenya-green/20 shadow-sm flex items-center justify-center">
-                                        <Users className="h-7 w-7 text-kenya-green" />
+                                        <NasakaSVGIcon className="h-7 w-7 text-kenya-green" />
                                       </div>
                                       <div className="space-y-1">
-                                        <div className="text-[10px] font-black uppercase tracking-widest opacity-40">Civic Duty</div>
-                                        <div className="text-sm font-black text-kenya-green">Voter Registration</div>
+                                        <div className="text-[10px] font-black uppercase tracking-widest opacity-40">Ad</div>
+                                        <div className="text-sm font-black text-kenya-green">Nasaka IEBC</div>
                                       </div>
                                     </div>
                                     {/* Decorative civic bar strip */}
@@ -894,20 +896,20 @@ const LegislativeTracker = () => {
                                         <Badge className="bg-kenya-green/10 text-kenya-green border-none font-bold rounded-lg px-3">
                                           Nasaka IEBC
                                         </Badge>
-                                        <Badge className="bg-orange-500/10 text-orange-500 border-none font-bold rounded-lg px-3">
-                                          Action Required
+                                        <Badge className="bg-orange-500/10 text-amber-500 border-none font-bold rounded-lg px-3">
+                                          Act Now
                                         </Badge>
                                       </div>
-                                      <div className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40">Your Vote. Your Law.</div>
+                                      <div className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40">Tuesday, 10 August 2027</div>
                                     </div>
 
                                     <div className="space-y-4 min-w-0">
                                       <h3 className="text-3xl font-[1000] tracking-tight leading-none dark:text-white break-words">
-                                        Are you a registered voter?
+                                        Registered as a voter?
                                       </h3>
                                       <div className="bg-kenya-green/[0.04] border border-kenya-green/10 rounded-3xl p-6 mb-4">
                                         <p className="text-sm font-medium leading-relaxed opacity-80">
-                                          Expecting change from these Bills without being a registered voter is work done in vain! Are you a registered voter? What are you waiting for? Visit the nearest IEBC office near you with Nasaka IEBC. GO TODAY!
+                                          Expecting change from these Bills without being a registered voter is all in vain! Are you a registered voter? What are you waiting for? Visit the nearest IEBC office near you using <span className="font-black text-kenya-green"> <a href="https://nasakaiebc.civiceducationkenya.com/" target="_blank" rel="noopener noreferrer">Nasaka IEBC</a></span>. GO TODAY!
                                         </p>
                                       </div>
                                     </div>
@@ -955,7 +957,7 @@ const LegislativeTracker = () => {
                                 <div className="md:w-48 p-8 flex flex-col justify-between border-r border-border/50 bg-slate-50/30 dark:bg-white/[0.01]">
                                   <div className="space-y-4">
                                     <div className="h-14 w-14 rounded-2xl bg-white dark:bg-white/5 shadow-sm flex items-center justify-center">
-                                      <Scale className="h-7 w-7 text-primary" />
+                                      <ScalesIcon className="h-7 w-7 text-primary dark:text-slate-200 group-hover:text-slate-100 transition-colors" />
                                     </div>
                                     <div className="space-y-1">
                                       <div className="text-[10px] font-black uppercase tracking-widest opacity-40">Current Stage</div>
@@ -991,7 +993,7 @@ const LegislativeTracker = () => {
                                 <div className="flex-1 p-6 md:p-10 space-y-6 md:space-y-8 min-w-0">
                                   <div className="flex flex-wrap items-center justify-between gap-4">
                                     <div className="flex gap-2">
-                                      <Badge className="bg-primary/10 text-primary border-none font-bold rounded-lg px-3">
+                                      <Badge className="bg-primary/10 text-primary group-hover:text-slate-100 group-hover:bg-kenya-green border-none font-bold rounded-lg px-3 transition-colors">
                                         {bill.category}
                                       </Badge>
                                       {bill.stage_index === 2 && (
@@ -1006,7 +1008,7 @@ const LegislativeTracker = () => {
                                   </div>
 
                                   <div className="space-y-4 min-w-0">
-                                    <h3 className="text-3xl font-[1000] tracking-tight leading-none dark:text-white group-hover:text-primary transition-colors break-words">
+                                    <h3 className="text-3xl font-[1000] tracking-tight leading-none dark:text-white group-hover:text-slate-100 transition-colors break-words">
                                       <Link to={`/bill/${getBillIdentifier(bill)}#memoranda`}>{bill.title}</Link>
                                     </h3>
 
@@ -1128,6 +1130,42 @@ const LegislativeTracker = () => {
                   )}
                 </TabsContent>
               </Tabs>
+
+              {/* ── Minimalist iOS-inspired Bottom Action Bar ── */}
+              <div className="mt-20 mb-12 flex flex-col md:flex-row items-center justify-center gap-6 max-w-4xl mx-auto px-6">
+
+                {/* Global Search Mirror (Static) */}
+                <form 
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    const formData = new FormData(e.currentTarget);
+                    const q = formData.get('q');
+                    if (q) navigate(`/search?q=${encodeURIComponent(q.toString())}`);
+                  }}
+                  className="flex-1 w-full max-w-lg relative"
+                >
+                  <SearchIcon className="z-10 absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    name="q"
+                    type="text"
+                    placeholder="Find a missing bill..."
+                    className="w-full pl-9 pr-4 py-3 h-[46px] shadow-sm rounded-xl border border-border/40 bg-white dark:bg-[#111] focus-visible:ring-kenya-green/20 focus-visible:border-kenya-green/30"
+                  />
+                </form>
+
+                {/* Newsletter Block (Static) */}
+                <Button
+                  onClick={() => navigate('/join-community')}
+                  className="w-full md:w-auto h-[46px] px-6 bg-white dark:bg-[#111] hover:bg-slate-50 dark:hover:bg-white/5 border border-border/40 text-slate-800 dark:text-slate-200 shadow-sm rounded-xl group transition-all flex-shrink-0"
+                >
+                  <div className="flex items-center gap-3">
+                    <EmailIcon className="h-5 w-5 text-primary group-hover:scale-110 transition-transform" />
+                    <span className="font-bold text-sm tracking-wide">Sign up to Our Newsletter</span>
+                  </div>
+                </Button>
+
+              </div>
+
             </main>
           </div>
         </div>

@@ -54,6 +54,14 @@ class MultiLLMOrchestrator:
         }
 
     # -----------------------------------------------------------------------
+    #  Manus Fallback
+    # -----------------------------------------------------------------------
+    def call_manus_agent(self, goal: str) -> Optional[str]:
+        """Fallback agent stub for extremely corrupted PDFs."""
+        logger.warning(f"[MANUS] Agent called with goal: {goal}")
+        return None
+
+    # -----------------------------------------------------------------------
     #  JSON cleaning utilities
     # -----------------------------------------------------------------------
 

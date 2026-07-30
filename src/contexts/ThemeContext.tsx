@@ -102,8 +102,15 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     broadcastTheme(theme);
   }, [theme, broadcastTheme]);
 
+  const value = React.useMemo(() => ({
+    theme,
+    setTheme,
+    toggleTheme,
+    syncThemeToIframe
+  }), [theme, setTheme, toggleTheme, syncThemeToIframe]);
+
   return (
-    <ThemeContext.Provider value={{ theme, setTheme, toggleTheme, syncThemeToIframe }}>
+    <ThemeContext.Provider value={value}>
       {children}
     </ThemeContext.Provider>
   );
