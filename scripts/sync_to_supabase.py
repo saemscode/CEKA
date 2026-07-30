@@ -198,6 +198,8 @@ def sync_data(input_file: Optional[str] = None, output_dir: str = "processed_dat
                 if item.get("session_year"):
                     new_data["session_year"] = item.get("session_year")
 
+            if item.get("b2_url"):
+                new_data["b2_url"] = item.get("b2_url")
             if item.get("ai_concerns"):
                 new_data["ai_concerns"] = item.get("ai_concerns")
             if item.get("constitutional_section"):
@@ -259,7 +261,7 @@ def sync_data(input_file: Optional[str] = None, output_dir: str = "processed_dat
                 # ── Change detection: only UPDATE if something actually differs ──
                 TRACKED = ["status", "sponsor", "summary", "pdf_url", "url", "slug",
                            "ai_concerns", "constitutional_section", "tabloid_summary",
-                           "text_content", "description", "bill_no", "session_year"]
+                           "text_content", "description", "bill_no", "session_year", "b2_url"]
                 has_change = any(
                     str(new_data.get(f) or "").strip() != str(existing.get(f) or "").strip()
                     for f in TRACKED if new_data.get(f) is not None
@@ -434,16 +436,200 @@ def apply_tracker_enrichment(input_file: Optional[str] = None, output_dir: str =
         )
 
 
+def flush_staging_to_bills():
+    """
+    Copies all rows from `bills_staging` into the primary `bills` table
+    using the same upsert/update logic as sync_data(), then purges `bills_staging`.
+    Called with --flush-staging flag, typically on the half-day cadence job.
+    """
+    load_env()
+    supabase = get_supabase_client()
+    v2_supported = check_schema_support(supabase)
+
+    logging.info("[FlushStaging] ── Starting bills_staging → bills flush ──")
+
+    try:
+        result = supabase.table("bills_staging").select("*").execute()
+        items = result.data or []
+    except Exception as e:
+        logging.error(f"[FlushStaging] Failed to fetch bills_staging rows: {e}")
+        return
+
+    if not items:
+        logging.info("[FlushStaging] bills_staging is empty — nothing to flush.")
+        return
+
+    logging.info(f"[FlushStaging] {len(items)} staged bill(s) to flush into bills table.")
+
+    stats = {"bills": 0, "updates": 0, "order_papers": 0, "failed": 0}
+    flushed_ids = []
+
+    for item in items:
+        try:
+            staging_id = item.get("id")
+            category = item.get("category")
+
+            if category == "Order Paper":
+                if not v2_supported:
+                    continue
+                data = {
+                    "title": item.get("title"),
+                    "house": item.get("house"),
+                    "pdf_url": item.get("url"),
+                    "source": item.get("source"),
+                    "metadata": item.get("metadata", {}),
+                    "date": item.get("date")
+                }
+                supabase.table("order_papers").upsert(data, on_conflict="title").execute()
+                stats["order_papers"] += 1
+                if staging_id:
+                    flushed_ids.append(staging_id)
+                continue
+
+            existing = find_existing_bill(supabase, item, v2_supported)
+
+            new_data = {
+                "title": item.get("title"),
+                "slug": item.get("slug") or generate_slug(item.get("title", "")),
+                "sponsor": item.get("sponsor"),
+                "status": item.get("status"),
+                "category": item.get("category"),
+                "date": item.get("date"),
+                "url": item.get("url"),
+                "pdf_url": item.get("pdf_url"),
+                "text_content": item.get("text_content"),
+                "description": item.get("description"),
+                "summary": item.get("summary") or f"Legislative tracker: {item.get('title')}",
+                "updated_at": datetime.now().isoformat()
+            }
+
+            if v2_supported:
+                if item.get("bill_no"):
+                    new_data["bill_no"] = item.get("bill_no")
+                if item.get("session_year"):
+                    new_data["session_year"] = item.get("session_year")
+
+            if item.get("b2_url"):
+                new_data["b2_url"] = item.get("b2_url")
+            if item.get("ai_concerns"):
+                new_data["ai_concerns"] = item.get("ai_concerns")
+            if item.get("constitutional_section"):
+                new_data["constitutional_section"] = item.get("constitutional_section")
+            if item.get("tabloid_summary"):
+                new_data["tabloid_summary"] = item.get("tabloid_summary")
+            if item.get("neural_summary"):
+                new_data["neural_summary"] = item.get("neural_summary")
+            if item.get("corroboration_score"):
+                new_data["corroboration_score"] = item.get("corroboration_score")
+            if item.get("verified_sources"):
+                new_data["verified_sources"] = item.get("verified_sources")
+            if item.get("analysis_status"):
+                new_data["analysis_status"] = item.get("analysis_status")
+            if item.get("stages"):
+                new_data["stages"] = item.get("stages")
+            if item.get("house"):
+                new_data["house"] = item.get("house")
+            if item.get("sponsor_title"):
+                new_data["sponsor_title"] = item.get("sponsor_title")
+
+            if existing and v2_supported:
+                history = existing.get("history") or []
+                if not isinstance(history, list):
+                    history = []
+                item_status = item.get('status') or existing.get('status') or "Published"
+                if existing.get('status') != item_status or existing.get('pdf_url') != item.get('pdf_url'):
+                    history.append({
+                        "status": existing.get('status'),
+                        "pdf_url": existing.get('pdf_url'),
+                        "date": existing.get('updated_at') or existing.get('created_at'),
+                        "version_title": existing.get('title')
+                    })
+                new_data["history"] = history
+                if existing.get('status_lock'):
+                    logging.info(f"🔒 LOCKED: Preserving status for '{item['title']}'")
+                    new_data.pop("status", None)
+
+            # ── Serialize ai_concerns to JSON string if it's a list ──
+            if isinstance(new_data.get("ai_concerns"), list):
+                import json as _json
+                new_data["ai_concerns"] = _json.dumps(new_data["ai_concerns"])
+
+            # ── Serialize constitutional_section: flatten any nested array ──
+            cs = new_data.get("constitutional_section")
+            if isinstance(cs, list):
+                flat = []
+                for cs_item in cs:
+                    if isinstance(cs_item, list):
+                        flat.extend(cs_item)
+                    else:
+                        flat.append(str(cs_item))
+                new_data["constitutional_section"] = ", ".join(flat)
+
+            if existing:
+                logging.info(f"🔄 [FlushStaging] Refreshing: {item['title']}")
+                TRACKED = ["status", "sponsor", "summary", "pdf_url", "url", "slug",
+                           "ai_concerns", "constitutional_section", "tabloid_summary",
+                           "text_content", "description", "bill_no", "session_year", "b2_url"]
+                has_change = any(
+                    str(new_data.get(f) or "").strip() != str(existing.get(f) or "").strip()
+                    for f in TRACKED if new_data.get(f) is not None
+                )
+                if has_change:
+                    supabase.table("bills").update(new_data).eq("id", existing['id']).execute()
+                    stats["updates"] += 1
+                else:
+                    logging.debug(f"⏭️  No changes for: {item['title']} — skipped UPDATE")
+            else:
+                logging.info(f"✨ [FlushStaging] New Bill: {item['title']}")
+                if not new_data.get("status"):
+                    new_data["status"] = "Published" if item.get("category") != "Documentation" else "Ingested"
+                supabase.table("bills").upsert(new_data, on_conflict="slug").execute()
+                stats["bills"] += 1
+
+            if staging_id:
+                flushed_ids.append(staging_id)
+
+        except Exception as e:
+            logging.error(f"[FlushStaging] ❌ Flush failure on '{item.get('title')}': {e}")
+            stats["failed"] += 1
+
+    logging.info(
+        f"[FlushStaging] ── Flush complete: New={stats['bills']}, Updates={stats['updates']}, "
+        f"OrderPapers={stats['order_papers']}, Failed={stats['failed']} ──"
+    )
+
+    # Purge successfully flushed rows from bills_staging
+    if flushed_ids:
+        try:
+            logging.info(f"[FlushStaging] Purging {len(flushed_ids)} row(s) from bills_staging...")
+            # Supabase delete in batches of 100 to avoid request size limits
+            batch_size = 100
+            for i in range(0, len(flushed_ids), batch_size):
+                batch = flushed_ids[i:i + batch_size]
+                supabase.table("bills_staging").delete().in_("id", batch).execute()
+            logging.info(f"[FlushStaging] ✅ bills_staging purged — {len(flushed_ids)} row(s) removed.")
+        except Exception as e:
+            logging.error(f"[FlushStaging] Failed to purge bills_staging (manual cleanup may be needed): {e}")
+
+    source_name = items[0].get("source", "Staging Flush") if items else "Staging Flush"
+    record_scrape_run(supabase, stats, source_name)
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--file", help="Specific bills JSON file to upload (full path)", default=None)
     parser.add_argument("--tracker-file", help="Specific tracker enrichment JSON file (full path)", default=None)
     parser.add_argument("--skip-bills", action="store_true", help="Skip bills sync, run tracker enrichment only")
     parser.add_argument("--skip-tracker", action="store_true", help="Skip tracker enrichment, run bills sync only")
+    parser.add_argument("--flush-staging", action="store_true", help="Flush bills_staging table into live bills table and purge staging. Skips standard JSON sync.")
     args = parser.parse_args()
 
-    if not args.skip_bills:
-        sync_data(input_file=args.file)
+    if args.flush_staging:
+        flush_staging_to_bills()
+    else:
+        if not args.skip_bills:
+            sync_data(input_file=args.file)
 
-    if not args.skip_tracker:
-        apply_tracker_enrichment(input_file=args.tracker_file)
+        if not args.skip_tracker:
+            apply_tracker_enrichment(input_file=args.tracker_file)
+

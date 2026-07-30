@@ -785,6 +785,32 @@ class LegislativeScraper:
             if os.path.exists(tess_path):
                 pytesseract.pytesseract.tesseract_cmd = tess_path
 
+        # ── Supabase Staging Client (for incremental live-push and pre-flight skip) ──
+        self._supabase_staging = None
+        try:
+            from supabase import create_client as _sb_create
+            _sb_url = os.environ.get("SUPABASE_URL", "")
+            _sb_key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")
+            if _sb_url and _sb_key:
+                self._supabase_staging = _sb_create(_sb_url, _sb_key)
+                logger.info("[Staging] Supabase staging client initialized for incremental push.")
+            else:
+                logger.warning("[Staging] SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY missing — incremental staging disabled.")
+        except Exception as _e:
+            logger.warning(f"[Staging] Supabase client init failed (non-fatal): {_e}")
+
+        # ── Checkpoint file for incremental JSON saves ──
+        self._checkpoint_dir = "processed_data/legislative"
+        os.makedirs(self._checkpoint_dir, exist_ok=True)
+        self._checkpoint_file = os.path.join(
+            self._checkpoint_dir,
+            f"legislation_sync_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+        )
+        # Write an empty array so the file exists from run start
+        with open(self._checkpoint_file, 'w', encoding='utf-8') as _f:
+            json.dump([], _f)
+        logger.info(f"[Staging] Checkpoint file initialized: {self._checkpoint_file}")
+
     # -------------------------------------------------------------------
     #  Helpers for Cloudflare and content validation
     # -------------------------------------------------------------------
@@ -832,6 +858,70 @@ class LegislativeScraper:
         t = re.sub(r'[^a-z0-9\s]', ' ', t.lower())
         t = re.sub(r'\s+', ' ', t).strip()
         return t
+
+    # -------------------------------------------------------------------
+    #  Pre-flight duplicate check against live `bills` and `bills_staging`
+    # -------------------------------------------------------------------
+    def _is_bill_already_scraped(self, pdf_url: str, title: str) -> bool:
+        """
+        Returns True if the bill is already present in the live `bills` table
+        OR the `bills_staging` table, based on pdf_url OR exact title match.
+        Prevents re-downloading massive PDFs for bills already processed.
+        """
+        if not self._supabase_staging:
+            return False
+        try:
+            for table in ("bills", "bills_staging"):
+                # Check by pdf_url (most precise — unique per version)
+                if pdf_url:
+                    res = self._supabase_staging.table(table).select("id").eq("pdf_url", pdf_url).limit(1).execute()
+                    if res and res.data:
+                        logger.info(f"    [Skip] '{title}' already in {table} (pdf_url match). Skipping download.")
+                        return True
+                # Check by exact title
+                if title:
+                    res = self._supabase_staging.table(table).select("id").eq("title", title).limit(1).execute()
+                    if res and res.data:
+                        logger.info(f"    [Skip] '{title}' already in {table} (title match). Skipping download.")
+                        return True
+        except Exception as e:
+            logger.warning(f"    [Skip Check] Supabase pre-flight failed (non-fatal, will process): {e}")
+        return False
+
+    # -------------------------------------------------------------------
+    #  Incremental push: write one bill to bills_staging and checkpoint file
+    # -------------------------------------------------------------------
+    def _push_to_staging(self, record: dict) -> None:
+        """
+        Immediately pushes a single completed bill record to bills_staging
+        and appends it to the checkpoint JSON file on disk.
+        This ensures zero data loss even if the GitHub Actions job is killed.
+        """
+        # 1. Push to Supabase bills_staging
+        if self._supabase_staging:
+            try:
+                staging_record = {
+                    k: v for k, v in record.items()
+                    if k not in ("text_content", "metadata", "created_at")
+                }
+                staging_record["text_content"] = record.get("text_content")
+                staging_record["metadata"] = record.get("metadata")
+                staging_record["created_at"] = record.get("created_at") or datetime.now(timezone.utc).isoformat()
+                staging_record["updated_at"] = datetime.now(timezone.utc).isoformat()
+                # Use pdf_url as conflict key — each bill version has a unique PDF URL
+                self._supabase_staging.table("bills_staging").upsert(
+                    staging_record, on_conflict="pdf_url"
+                ).execute()
+                logger.info(f"    [Staging] ✅ Pushed to bills_staging: {record.get('title', '')}")
+            except Exception as e:
+                logger.warning(f"    [Staging] Push failed (non-fatal): {e}")
+
+        # 2. Rewrite checkpoint JSON file with full current self.data
+        try:
+            with open(self._checkpoint_file, 'w', encoding='utf-8') as f:
+                json.dump(self.data, f, indent=2, ensure_ascii=False)
+        except Exception as e:
+            logger.warning(f"    [Staging] Checkpoint file write failed (non-fatal): {e}")
 
     # -------------------------------------------------------------------
     #  Stealth browser builder (with optional proxy)
@@ -1094,13 +1184,19 @@ class LegislativeScraper:
                     logger.info(f"    [SKIP] Non-bill document hard-discarded (strict mode): {title}")
                     continue
 
+                # ── PRE-FLIGHT: Skip bills already in bills or bills_staging ──
+                if self._is_bill_already_scraped(pdf_href, title):
+                    continue
+
                 try:
                     record = self._deep_process_bill(page, title, pdf_href, detail_href, target)
                     self.data.append(record)
                     logger.info(f"    [BILL] {title}")
+                    # ── INCREMENTAL: push to staging immediately after each bill ──
+                    self._push_to_staging(record)
                 except Exception as e:
                     logger.error(f"    [BILL] Deep process failed for '{title}': {e}")
-                    self.data.append({
+                    fallback_record = {
                         "title": title,
                         "url": pdf_href,
                         "pdf_url": pdf_href,
@@ -1114,7 +1210,10 @@ class LegislativeScraper:
                             "error": str(e),
                         },
                         "created_at": datetime.now(timezone.utc).isoformat(),
-                    })
+                    }
+                    self.data.append(fallback_record)
+                    # ── INCREMENTAL: push even the fallback record to staging ──
+                    self._push_to_staging(fallback_record)
 
             # Pagination check: Use Scrapling if available, else Playwright
             if SCRAPLING_OK:
@@ -1821,17 +1920,20 @@ Return EXACTLY a JSON object with these keys:
             except Exception as e:
                 logger.warning(f"      [DL] Playwright download failed: {e}")
 
-        if not pdf_bytes and self.orchestrator:
+        if not pdf_bytes and self.orchestrator and hasattr(self.orchestrator, 'call_manus_agent'):
             logger.info(f"      [DL] TRIGERING MANUS AGENT FALLBACK for: {url}")
             goal = f"Download the primary legislative PDF for the Bill at this URL: {url}. Ensure it is a valid PDF binary."
-            manus_result = self.orchestrator.call_manus_agent(goal)
-            if manus_result and manus_result.startswith("http"):
-                try:
-                    r = requests.get(manus_result, timeout=30, verify=False)   # SSL fix
-                    if r.content[:5] == b"%PDF-":
-                        return r.content
-                except:
-                    pass
+            try:
+                manus_result = self.orchestrator.call_manus_agent(goal)
+                if manus_result and manus_result.startswith("http"):
+                    try:
+                        r = requests.get(manus_result, timeout=30, verify=False)   # SSL fix
+                        if r.content[:5] == b"%PDF-":
+                            return r.content
+                    except Exception as _dl_e:
+                        logger.warning(f"      [DL] Manus result download failed: {_dl_e}")
+            except Exception as _manus_e:
+                logger.warning(f"      [DL] Manus agent call failed (non-fatal): {_manus_e}")
 
         logger.warning(f"      [DL] All download methods failed for: {url}")
         return None

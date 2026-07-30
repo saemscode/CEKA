@@ -188,7 +188,24 @@ jobs:
           fi
 
       - name: Supabase Sync Bridge
+        if: always()
         run: python scripts/sync_to_supabase.py
+        continue-on-error: true
+        env:
+          PYTHONIOENCODING: utf-8
+
+      - name: Flush Staging to Bills (Half-Day Cadence)
+        # Runs at 06:00 UTC and 18:00 UTC (EAT 09:00 and 21:00) on scheduled runs
+        # to bulk-move staged bills into the live bills table and purge bills_staging.
+        if: >
+          always() && (
+            github.event_name == 'schedule' &&
+            (
+              contains(github.event.schedule, '0 6') ||
+              contains(github.event.schedule, '0 18')
+            )
+          )
+        run: python scripts/sync_to_supabase.py --flush-staging
         continue-on-error: true
         env:
           PYTHONIOENCODING: utf-8
@@ -293,11 +310,13 @@ jobs:
         run: |
           git config --global user.name "ceka-intelligence-bot"
           git config --global user.email "bot@ceka.online"
-          # Ensure the target directory exists (git add on a non‑existent directory fails)
+          # Ensure the target directories exist
+          mkdir -p processed_data/legislative
           mkdir -p scripts/processed_data/legislative
           # Add files – ignore errors if no files match the wildcard
           git add scripts/proxy_usage.json || true
           git add scripts/processed_data/legislative/*.json || true
+          git add processed_data/legislative/*.json || true
           # Commit only if there are changes; ignore empty commit error
           git commit -m "chore: update proxy usage & legislative data [skip ci]" || echo "No changes to commit"
           git push || echo "Push failed (maybe nothing to push or auth issue)"
