@@ -427,9 +427,66 @@ class SovereignCorroborator:
                 pass
             return False
 
+    def _reset_stale_failed_bills(self, stale_hours: int = 6) -> int:
+        """
+        Task 4: Un-stick permanently failed bills.
+        Resets bills with analysis_status='failed' that have not been updated
+        in more than `stale_hours` hours back to 'pending' so they re-enter
+        the corroboration queue on the next run.
+        Returns the number of bills reset.
+        """
+        if not self.db:
+            return 0
+        try:
+            from datetime import timedelta
+            cutoff = (datetime.now(timezone.utc) - timedelta(hours=stale_hours)).isoformat()
+            # Fetch failed bills — SupabaseDirect select supports one eq filter.
+            # We fetch by status=failed and filter by updated_at client-side.
+            failed_bills = self.db.select(
+                "bills",
+                "id,title,updated_at",
+                eq="analysis_status",
+                eq_val="failed",
+            ) or []
+
+            reset_count = 0
+            for bill in failed_bills:
+                updated_at = bill.get("updated_at") or ""
+                # Reset if updated_at is absent OR older than the cutoff
+                if not updated_at or updated_at < cutoff:
+                    try:
+                        self.db.update(
+                            "bills",
+                            {
+                                "analysis_status": "pending",
+                                "updated_at": datetime.now(timezone.utc).isoformat(),
+                            },
+                            eq="id",
+                            eq_val=bill["id"],
+                        )
+                        reset_count += 1
+                        logger.info(
+                            f"  [Reset] Bill '{bill.get('title', bill['id'][:8])}' "
+                            f"(failed >{stale_hours}h ago) -> pending"
+                        )
+                    except Exception as e:
+                        logger.warning(f"  [Reset] Could not reset bill {bill['id'][:8]}: {e}")
+
+            if reset_count:
+                logger.info(f"[Reset] {reset_count} stale-failed bill(s) reset to 'pending'.")
+            else:
+                logger.info("[Reset] No stale-failed bills found.")
+            return reset_count
+        except Exception as e:
+            logger.error(f"[Reset] _reset_stale_failed_bills failed: {e}")
+            return 0
+
     def run_all_pending(self, limit: int = 10):
         """Process bills that need analysis."""
         if not self.db: return
+
+        # Task 4: Un-stick any bills stuck in 'failed' for >6 hours before polling pending
+        self._reset_stale_failed_bills(stale_hours=6)
 
         try:
             pending = self.db.select("bills", "id", limit=limit, eq="analysis_status", eq_val="pending")
@@ -437,7 +494,7 @@ class SovereignCorroborator:
                 logger.info("No bills pending analysis.")
                 return
 
-            logger.info(f"🚀 Found {len(pending)} bills for corroboration.")
+            logger.info(f"[CORROBORATOR] Found {len(pending)} bills for corroboration.")
             for item in pending:
                 self.process_bill(item["id"])
                 time.sleep(2)

@@ -2,38 +2,12 @@ name: CEKA Sovereign Intelligence Sync
 
 on:
   schedule:
-    # Every 3 hours (East Africa Time: 3, 6, 9, 12, 15, 18, 21, 00)
-    # UTC: 00, 03, 06, 09, 12, 15, 18, 21
+    # Every 3 hours on weekdays (UTC)
     - cron: '0 0,3,6,9,12,15,18,21 * * 1-5'
   workflow_dispatch:
     inputs:
       force_news:
         description: 'Force news corroboration search'
-        type: boolean
-        required: false
-        default: false
-      run_phase_a:
-        description: 'Run Phase A: Sovereign Refresh (broad sweep, all bills)'
-        type: boolean
-        required: false
-        default: false
-      run_phase_b:
-        description: 'Run Phase B: Matrix Solvency (surgical NULL fill)'
-        type: boolean
-        required: false
-        default: false
-      phase_b_column:
-        description: 'Phase B Column Sweep target (e.g. constitutional_section). Leave blank for full matrix.'
-        type: string
-        required: false
-        default: ''
-      phase_b_bill_id:
-        description: 'Phase B Row Full-Ham target Bill UUID. Leave blank for all bills.'
-        type: string
-        required: false
-        default: ''
-      phase_a_force:
-        description: 'Phase A: Force re-process ALL bills even if data is complete'
         type: boolean
         required: false
         default: false
@@ -48,73 +22,78 @@ on:
         required: false
         default: ''
 
+# ── Workflow-level env — inherited by every job ─────────────────────────────
+env:
+  # ── Supabase ───────────────────────────────────────────────────────────
+  SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+  SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+  # ── LLM Providers (10-provider orchestrator chain) ─────────────────────
+  GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+  GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+  OPENAI_API_KEY_1: ${{ secrets.OPENAI_API_KEY_1 }}
+  ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+  OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+  DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+  DEEPSEEK_API_KEY_SECONDARY: ${{ secrets.DEEPSEEK_API_KEY_SECONDARY }}
+  CEREBRAS_API_KEY: ${{ secrets.CEREBRAS_API_KEY }}
+  CEREBRAS_API_KEY_SECONDARY: ${{ secrets.CEREBRAS_API_KEY_SECONDARY }}
+  COHERE_API_KEY: ${{ secrets.COHERE_API_KEY }}
+  NVIDIA_API_KEY: ${{ secrets.NVIDIA_API_KEY }}
+  HF_API_TOKEN: ${{ secrets.HF_API_TOKEN }}
+  MANUS_API_KEY: ${{ secrets.MANUS_API_KEY }}
+  SAMBANOVA_API_KEY: ${{ secrets.SAMBANOVA_API_KEY }}
+  CEKA_GEMINI_API_KEY: ${{ secrets.CEKA_GEMINI_API_KEY }}
+  CEKA_GROQ_API_KEY: ${{ secrets.CEKA_GROQ_API_KEY }}
+  NEMOTRON_3_NVIDIA_API_KEY: ${{ secrets.NEMOTRON_3_NVIDIA_API_KEY }}
+  LLAMA_4_MAVERICK_NVIDIA_API_KEY: ${{ secrets.LLAMA_4_MAVERICK_NVIDIA_API_KEY }}
+  SILICON_FLOW_API_KEY: ${{ secrets.SILICON_FLOW_API_KEY }}
+  CEREBRAS_API_KEY_2: ${{ secrets.CEREBRAS_API_KEY_2 }}
+  MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
+  ANTHROPIC_API_KEY_2: ${{ secrets.ANTHROPIC_API_KEY_2 }}
+
+  # ── Storage & Scraping ─────────────────────────────────────────────────
+  B2_S3_ENDPOINT: ${{ secrets.B2_S3_ENDPOINT }}
+  B2_KEY_ID: ${{ secrets.B2_KEY_ID }}
+  B2_APPLICATION_KEY: ${{ secrets.B2_APPLICATION_KEY }}
+  OCR_SPACE_API_KEY: ${{ secrets.OCR_SPACE_API_KEY }}
+  PADDLEOCR_TOKEN: ${{ secrets.PADDLEOCR_TOKEN }}
+  SURYA_API_KEY: ${{ secrets.SURYA_API_KEY }}
+  SCRAPINGROBOT_API_KEY: ${{ secrets.SCRAPINGROBOT_API_KEY }}
+  SCRAPINGDOG_API_KEY: ${{ secrets.SCRAPINGDOG_API_KEY }}
+  SERPAPI_API_KEY: ${{ secrets.SERPAPI_API_KEY }}
+
+  # Cloudflare R2
+  R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+  R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+  R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+
+  # ── Proxy Orchestration ──────────────────────────────────────────────
+  BRIGHTDATA_PROXY_URL: ${{ secrets.BRIGHTDATA_PROXY_URL }}
+  BRIGHTDATA_MONTHLY_LIMIT: ${{ secrets.BRIGHTDATA_MONTHLY_LIMIT }}
+  SCRAPERAPI_KEY: ${{ secrets.SCRAPERAPI_KEY }}
+  SCRAPERAPI_MONTHLY_LIMIT: ${{ secrets.SCRAPERAPI_MONTHLY_LIMIT }}
+  SCRAPERAPI_FIRST_MONTH_BONUS: ${{ secrets.SCRAPERAPI_FIRST_MONTH_BONUS }}
+  OXYLABS_PROXIES: ${{ secrets.OXYLABS_PROXIES }}
+  WEBSHARE_PROXIES: ${{ secrets.WEBSHARE_PROXIES }}
+
 jobs:
-  sync:
+  # ══════════════════════════════════════════════════════════════════════
+  #  JOB 1 — Scrape + Sync + Flush Staging (always runs unconditionally)
+  # ══════════════════════════════════════════════════════════════════════
+  scrape_and_sync:
     runs-on: ubuntu-latest
+    timeout-minutes: 90
     permissions:
       contents: write
       pull-requests: write
 
-    env:
-      # ── Supabase ───────────────────────────────────────────────────────────
-      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-
-      # ── LLM Providers (10-provider orchestrator chain) ─────────────────────
-      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-      GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
-      OPENAI_API_KEY_1: ${{ secrets.OPENAI_API_KEY_1 }}
-      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
-      DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
-      DEEPSEEK_API_KEY_SECONDARY: ${{ secrets.DEEPSEEK_API_KEY_SECONDARY }}
-      CEREBRAS_API_KEY: ${{ secrets.CEREBRAS_API_KEY }}
-      CEREBRAS_API_KEY_SECONDARY: ${{ secrets.CEREBRAS_API_KEY_SECONDARY }}
-      COHERE_API_KEY: ${{ secrets.COHERE_API_KEY }}
-      NVIDIA_API_KEY: ${{ secrets.NVIDIA_API_KEY }}
-      HF_API_TOKEN: ${{ secrets.HF_API_TOKEN }}
-      MANUS_API_KEY: ${{ secrets.MANUS_API_KEY }}
-      SAMBANOVA_API_KEY: ${{ secrets.SAMBANOVA_API_KEY }}
-      CEKA_GEMINI_API_KEY: ${{ secrets.CEKA_GEMINI_API_KEY }}
-      CEKA_GROQ_API_KEY: ${{ secrets.CEKA_GROQ_API_KEY }}
-      NEMOTRON_3_NVIDIA_API_KEY: ${{ secrets.NEMOTRON_3_NVIDIA_API_KEY }}
-      LLAMA_4_MAVERICK_NVIDIA_API_KEY: ${{ secrets.LLAMA_4_MAVERICK_NVIDIA_API_KEY }}
-      SILICON_FLOW_API_KEY: ${{ secrets.SILICON_FLOW_API_KEY }}
-      CEREBRAS_API_KEY_2: ${{ secrets.CEREBRAS_API_KEY_2 }}
-      MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
-      ANTHROPIC_API_KEY_2: ${{ secrets.ANTHROPIC_API_KEY_2 }}
-
-      # ── Storage & Scraping ─────────────────────────────────────────────────
-      B2_S3_ENDPOINT: ${{ secrets.B2_S3_ENDPOINT }}
-      B2_KEY_ID: ${{ secrets.B2_KEY_ID }}
-      B2_APPLICATION_KEY: ${{ secrets.B2_APPLICATION_KEY }}
-      OCR_SPACE_API_KEY: ${{ secrets.OCR_SPACE_API_KEY }}
-      PADDLEOCR_TOKEN: ${{ secrets.PADDLEOCR_TOKEN }}
-      SURYA_API_KEY: ${{ secrets.SURYA_API_KEY }}
-      SCRAPINGROBOT_API_KEY: ${{ secrets.SCRAPINGROBOT_API_KEY }}
-      SCRAPINGDOG_API_KEY: ${{ secrets.SCRAPINGDOG_API_KEY }}
-      SERPAPI_API_KEY: ${{ secrets.SERPAPI_API_KEY }}
-
-      # NEW: Cloudflare R2 vars
-      R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
-      R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-      R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
-
-      # ── New Proxy Orchestration ──────────────────────────────────────────
-      BRIGHTDATA_PROXY_URL: ${{ secrets.BRIGHTDATA_PROXY_URL }}
-      BRIGHTDATA_MONTHLY_LIMIT: ${{ secrets.BRIGHTDATA_MONTHLY_LIMIT }}
-      SCRAPERAPI_KEY: ${{ secrets.SCRAPERAPI_KEY }}
-      SCRAPERAPI_MONTHLY_LIMIT: ${{ secrets.SCRAPERAPI_MONTHLY_LIMIT }}
-      SCRAPERAPI_FIRST_MONTH_BONUS: ${{ secrets.SCRAPERAPI_FIRST_MONTH_BONUS }}
-      OXYLABS_PROXIES: ${{ secrets.OXYLABS_PROXIES }}
-      WEBSHARE_PROXIES: ${{ secrets.WEBSHARE_PROXIES }}
-
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: '3.11'
           cache: 'pip'
@@ -126,11 +105,13 @@ jobs:
           key: ${{ runner.os }}-playwright-${{ hashFiles('**/requirements.txt') }}
 
       - name: Install system dependencies (Poppler + Tesseract for OCR)
+        timeout-minutes: 10
         run: |
           sudo apt-get update -q
           sudo apt-get install -y poppler-utils tesseract-ocr tesseract-ocr-eng
 
       - name: Install Python dependencies
+        timeout-minutes: 20
         run: |
           python -m pip install --upgrade pip
           pip install \
@@ -143,21 +124,8 @@ jobs:
           pip install cerebras-cloud-sdk || echo "⚠️ cerebras-cloud-sdk not available — skipping"
           playwright install chromium --with-deps
 
-      - name: Determine News Sync
-        id: news_check
-        run: |
-          HOUR=$(date +%H)
-          if [[ "$HOUR" == "06" || "$HOUR" == "12" || "$HOUR" == "18" || "${{ inputs.force_news }}" == "true" || "${{ github.event.inputs.force_news }}" == "true" ]]; then
-            echo "RUN_NEWS=true" >> $GITHUB_ENV
-            echo "run_news=true" >> $GITHUB_OUTPUT
-            echo "✅ News Corroboration ENABLED."
-          else
-            echo "RUN_NEWS=false" >> $GITHUB_ENV
-            echo "run_news=false" >> $GITHUB_OUTPUT
-            echo "⏳ News Corroboration SKIPPED (Tiered)."
-          fi
-
       - name: Run Legislative Scraper
+        timeout-minutes: 60
         run: python scripts/legislative_scraper.py
         continue-on-error: true
         env:
@@ -165,6 +133,7 @@ jobs:
 
       - name: Validate Scraper Output (Zero-Scrape Detection)
         if: always()
+        timeout-minutes: 2
         run: |
           OUTDIR="processed_data/legislative"
           # Find the most recent legislation_sync_*.json file
@@ -187,126 +156,21 @@ jobs:
             fi
           fi
 
-      - name: Supabase Sync Bridge
+      - name: Supabase Sync + Flush Staging (unconditional)
+        # Syncs scraped data to Supabase AND flushes bills_staging → bills on every run.
+        # Previously gated on schedule hour substring — that check never worked.
         if: always()
-        run: python scripts/sync_to_supabase.py
-        continue-on-error: true
-        env:
-          PYTHONIOENCODING: utf-8
-
-      - name: Flush Staging to Bills (Half-Day Cadence)
-        # Runs at 06:00 UTC and 18:00 UTC (EAT 09:00 and 21:00) on scheduled runs
-        # to bulk-move staged bills into the live bills table and purge bills_staging.
-        if: >
-          always() && (
-            github.event_name == 'schedule' &&
-            (
-              contains(github.event.schedule, '0 6') ||
-              contains(github.event.schedule, '0 18')
-            )
-          )
-        run: python scripts/sync_to_supabase.py --flush-staging
-        continue-on-error: true
-        env:
-          PYTHONIOENCODING: utf-8
-
-      - name: Run Stage Detector
-        run: python scripts/stage_detector.py
-        continue-on-error: true
-        env:
-          PYTHONIOENCODING: utf-8
-
-      - name: Run News Intelligence
-        if: steps.news_check.outputs.run_news == 'true'
-        run: python scripts/news_intelligence.py
-        continue-on-error: true
-        env:
-          PYTHONIOENCODING: utf-8
-
-      - name: Run Sovereign Corroborator (AI Synthesis)
-        run: python scripts/sovereign_corroborator.py
-        continue-on-error: true
-        env:
-          PYTHONIOENCODING: utf-8
-
-      - name: "Phase 2: Deep Intelligence Relay (Wide-Context Multi-LLM)"
-        # Runs on every scheduled sync (polls Supabase for pending bills automatically)
-        # OR when manually triggered with run_deep_relay=true
-        # OR when a specific bill ID is provided via deep_relay_bill_id
-        if: ${{ inputs.run_deep_relay == true || github.event.inputs.run_deep_relay == 'true' || inputs.deep_relay_bill_id != '' || github.event.inputs.deep_relay_bill_id != '' || github.event_name == 'schedule' }}
+        timeout-minutes: 15
         run: |
-          BILL_FLAG=""
-          if [ -n "${{ inputs.deep_relay_bill_id }}" ]; then
-            BILL_FLAG="${{ inputs.deep_relay_bill_id }}"
-          elif [ -n "${{ github.event.inputs.deep_relay_bill_id }}" ]; then
-            BILL_FLAG="${{ github.event.inputs.deep_relay_bill_id }}"
-          fi
-          python scripts/deep_intelligence_relay.py $BILL_FLAG
+          python scripts/sync_to_supabase.py
+          python scripts/sync_to_supabase.py --flush-staging
         continue-on-error: true
         env:
           PYTHONIOENCODING: utf-8
-
-      - name: "Phase A: Sovereign Refresh (Weekly — All Bills Broad Sweep)"
-        # Runs every Monday at 06:00 EAT (03:00 UTC) OR when manually triggered with run_phase_a=true
-        if: ${{ inputs.run_phase_a == true || github.event.inputs.run_phase_a == 'true' || (github.event_name == 'schedule' && github.event.schedule != null && contains(github.event.schedule, '0 3')) }}
-        run: |
-          FORCE_FLAG=""
-          if [ "${{ inputs.phase_a_force }}" == "true" ] || [ "${{ github.event.inputs.phase_a_force }}" == "true" ]; then
-            FORCE_FLAG="--force"
-          fi
-          python scripts/sovereign_refresh.py $FORCE_FLAG --limit 272
-        continue-on-error: true
-        env:
-          PYTHONIOENCODING: utf-8
-
-      - name: "Phase B: Matrix Solvency (Weekly — Surgical NULL Fill)"
-        # Runs every Monday at 08:00 EAT (05:00 UTC) OR when manually triggered with run_phase_b=true
-        if: ${{ inputs.run_phase_b == true || github.event.inputs.run_phase_b == 'true' || (github.event_name == 'schedule' && github.event.schedule != null && contains(github.event.schedule, '0 5')) }}
-        run: |
-          COL_FLAG=""
-          BILL_FLAG=""
-          if [ -n "${{ inputs.phase_b_column }}" ]; then
-            COL_FLAG="--column ${{ inputs.phase_b_column }}"
-          elif [ -n "${{ github.event.inputs.phase_b_column }}" ]; then
-            COL_FLAG="--column ${{ github.event.inputs.phase_b_column }}"
-          fi
-          if [ -n "${{ inputs.phase_b_bill_id }}" ]; then
-            BILL_FLAG="--bill-id ${{ inputs.phase_b_bill_id }}"
-          elif [ -n "${{ github.event.inputs.phase_b_bill_id }}" ]; then
-            BILL_FLAG="--bill-id ${{ github.event.inputs.phase_b_bill_id }}"
-          fi
-          python scripts/matrix_solvency.py $COL_FLAG $BILL_FLAG
-        continue-on-error: true
-        env:
-          PYTHONIOENCODING: utf-8
-
-      - name: Run Vault Generator
-        run: python scripts/vault_generator.py
-        continue-on-error: true
-        env:
-          PYTHONIOENCODING: utf-8
-
-      - name: "OCR Worker (Background — Heavy Scanned PDF Backlog)"
-        # Drains the queue of scanned PDFs that were deferred by the corroborator.
-        # Runs on every scheduled sync so the backlog never grows unbounded.
-        run: python scripts/ocr_worker.py
-        continue-on-error: true
-        env:
-          PYTHONIOENCODING: utf-8
-
-      - name: Sync Summary
-        if: always()
-        run: |
-          echo "### 🏛️ CEKA Sovereign Sync Complete" >> $GITHUB_STEP_SUMMARY
-          echo "- **Run:** #${{ github.run_number }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Time (UTC):** $(date -u)" >> $GITHUB_STEP_SUMMARY
-          echo "- **News Sync:** $RUN_NEWS" >> $GITHUB_STEP_SUMMARY
-          echo "- **Deep Intelligence Relay:** ${{ github.event.inputs.run_deep_relay || 'scheduled' }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Triggered by:** ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Bills scraped this run:** ${SCRAPED_BILL_COUNT:-unknown (scraper step did not export count)}" >> $GITHUB_STEP_SUMMARY
 
       - name: Persist Proxy Usage and Scraped Data
         if: always()
+        timeout-minutes: 5
         run: |
           git config --global user.name "ceka-intelligence-bot"
           git config --global user.email "bot@ceka.online"
@@ -321,9 +185,239 @@ jobs:
           git commit -m "chore: update proxy usage & legislative data [skip ci]" || echo "No changes to commit"
           git push || echo "Push failed (maybe nothing to push or auth issue)"
 
+      - name: Sync Summary
+        if: always()
+        run: |
+          echo "### 🏛️ CEKA Scrape & Sync Complete" >> $GITHUB_STEP_SUMMARY
+          echo "- **Run:** #${{ github.run_number }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Time (UTC):** $(date -u)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Triggered by:** ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Bills scraped this run:** ${SCRAPED_BILL_COUNT:-unknown (scraper step did not export count)}" >> $GITHUB_STEP_SUMMARY
+
+  # ══════════════════════════════════════════════════════════════════════
+  #  JOB 2 — Stage Detection
+  # ══════════════════════════════════════════════════════════════════════
+  stage_detection:
+    runs-on: ubuntu-latest
+    needs: scrape_and_sync
+    timeout-minutes: 45
+    if: always()
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install Python dependencies
+        timeout-minutes: 15
+        run: |
+          python -m pip install --upgrade pip
+          pip install \
+            supabase requests python-dotenv google-genai google-generativeai \
+            groq openai anthropic cohere
+          pip install cerebras-cloud-sdk || echo "⚠️ cerebras-cloud-sdk not available — skipping"
+
+      - name: Run Stage Detector
+        timeout-minutes: 30
+        run: python scripts/stage_detector.py
+        continue-on-error: true
+        env:
+          PYTHONIOENCODING: utf-8
+
       - name: Upload Intelligence Logs
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
+        with:
+          name: stage-detection-logs-${{ github.run_number }}
+          path: |
+            scripts/*.log
+          retention-days: 14
+          if-no-files-found: ignore
+
+  # ══════════════════════════════════════════════════════════════════════
+  #  JOB 3 — Corroboration (needs stage_detection)
+  # ══════════════════════════════════════════════════════════════════════
+  corroboration:
+    runs-on: ubuntu-latest
+    needs: stage_detection
+    timeout-minutes: 60
+    if: always()
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install Python dependencies
+        timeout-minutes: 15
+        run: |
+          python -m pip install --upgrade pip
+          pip install \
+            supabase requests python-dotenv google-genai google-search-results \
+            google-generativeai groq openai anthropic cohere
+          pip install cerebras-cloud-sdk || echo "⚠️ cerebras-cloud-sdk not available — skipping"
+
+      - name: Run Sovereign Corroborator (AI Synthesis)
+        timeout-minutes: 45
+        run: python scripts/sovereign_corroborator.py
+        continue-on-error: true
+        env:
+          PYTHONIOENCODING: utf-8
+
+  # ══════════════════════════════════════════════════════════════════════
+  #  JOB 4 — Deep Intelligence Relay (needs corroboration)
+  # ══════════════════════════════════════════════════════════════════════
+  deep_relay:
+    runs-on: ubuntu-latest
+    needs: corroboration
+    timeout-minutes: 90
+    if: >
+      always() && (
+        github.event_name == 'schedule' ||
+        inputs.run_deep_relay == true ||
+        github.event.inputs.run_deep_relay == 'true' ||
+        inputs.deep_relay_bill_id != '' ||
+        github.event.inputs.deep_relay_bill_id != ''
+      )
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install Python dependencies
+        timeout-minutes: 15
+        run: |
+          python -m pip install --upgrade pip
+          pip install \
+            supabase requests python-dotenv google-generativeai \
+            groq openai anthropic cohere
+          pip install cerebras-cloud-sdk || echo "⚠️ cerebras-cloud-sdk not available — skipping"
+
+      - name: "Phase 2: Deep Intelligence Relay (Wide-Context Multi-LLM)"
+        # Polls Supabase for pending bills automatically, or targets a specific bill
+        timeout-minutes: 80
+        run: |
+          BILL_FLAG=""
+          if [ -n "${{ inputs.deep_relay_bill_id }}" ]; then
+            BILL_FLAG="${{ inputs.deep_relay_bill_id }}"
+          elif [ -n "${{ github.event.inputs.deep_relay_bill_id }}" ]; then
+            BILL_FLAG="${{ github.event.inputs.deep_relay_bill_id }}"
+          fi
+          python scripts/deep_intelligence_relay.py $BILL_FLAG
+        continue-on-error: true
+        env:
+          PYTHONIOENCODING: utf-8
+
+      - name: Upload Deep Relay Logs
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: deep-relay-logs-${{ github.run_number }}
+          path: |
+            scripts/deep_intelligence_relay.log
+          retention-days: 14
+          if-no-files-found: ignore
+
+  # ══════════════════════════════════════════════════════════════════════
+  #  JOB 5 — News + Vault + OCR (parallel to deep_relay, needs corroboration)
+  # ══════════════════════════════════════════════════════════════════════
+  news_and_vault:
+    runs-on: ubuntu-latest
+    needs: corroboration
+    timeout-minutes: 60
+    if: always()
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Cache Playwright Browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('**/requirements.txt') }}
+
+      - name: Install system dependencies
+        timeout-minutes: 10
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y poppler-utils tesseract-ocr tesseract-ocr-eng
+
+      - name: Install Python dependencies
+        timeout-minutes: 15
+        run: |
+          python -m pip install --upgrade pip
+          pip install \
+            playwright supabase requests python-dotenv beautifulsoup4 \
+            pillow pdf2image pytesseract easyocr \
+            google-genai google-search-results google-generativeai \
+            groq openai anthropic cohere boto3 aiohttp lxml
+          pip install cerebras-cloud-sdk || echo "⚠️ cerebras-cloud-sdk not available — skipping"
+          playwright install chromium --with-deps
+
+      - name: Determine News Sync
+        id: news_check
+        run: |
+          HOUR=$(date +%H)
+          if [[ "$HOUR" == "06" || "$HOUR" == "12" || "$HOUR" == "18" || "${{ inputs.force_news }}" == "true" || "${{ github.event.inputs.force_news }}" == "true" ]]; then
+            echo "RUN_NEWS=true" >> $GITHUB_ENV
+            echo "run_news=true" >> $GITHUB_OUTPUT
+            echo "✅ News Corroboration ENABLED."
+          else
+            echo "RUN_NEWS=false" >> $GITHUB_ENV
+            echo "run_news=false" >> $GITHUB_OUTPUT
+            echo "⏳ News Corroboration SKIPPED (Tiered)."
+          fi
+
+      - name: Run News Intelligence
+        if: steps.news_check.outputs.run_news == 'true'
+        timeout-minutes: 25
+        run: python scripts/news_intelligence.py
+        continue-on-error: true
+        env:
+          PYTHONIOENCODING: utf-8
+
+      - name: Run Vault Generator
+        timeout-minutes: 15
+        run: python scripts/vault_generator.py
+        continue-on-error: true
+        env:
+          PYTHONIOENCODING: utf-8
+
+      - name: "OCR Worker (Background — Heavy Scanned PDF Backlog)"
+        # Drains the queue of scanned PDFs that were deferred by the corroborator.
+        # Runs on every scheduled sync so the backlog never grows unbounded.
+        timeout-minutes: 30
+        run: python scripts/ocr_worker.py
+        continue-on-error: true
+        env:
+          PYTHONIOENCODING: utf-8
+
+      - name: Upload Intelligence Logs
+        if: always()
+        uses: actions/upload-artifact@v5
         with:
           name: intelligence-logs-${{ github.run_number }}
           path: |

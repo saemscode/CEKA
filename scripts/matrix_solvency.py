@@ -125,6 +125,14 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
+# Task 3: Env-configurable run-level budget controls
+# MATRIX_SOLVENCY_MAX_BILLS — max bills processed per invocation
+# MATRIX_SOLVENCY_BUDGET    — soft wall-clock budget in seconds
+# ---------------------------------------------------------------------------
+MATRIX_SOLVENCY_MAX_BILLS: int = int(os.getenv("MATRIX_SOLVENCY_MAX_BILLS", "100"))
+MATRIX_SOLVENCY_BUDGET:    int = int(os.getenv("MATRIX_SOLVENCY_BUDGET",    "9000"))
+
+# ---------------------------------------------------------------------------
 # The 30-Column Audit Matrix
 # Each entry: (column_name, null_check_type, responsible_organ)
 # null_check_type: "null" | "empty_str" | "default_val" | "empty_list"
@@ -586,7 +594,10 @@ class SovereignMatrixSolvency:
         if bill_id:
             res = self.db.select("bills", columns, eq="id", eq_val=bill_id)
         else:
-            res = self.db.select("bills", columns, limit=limit)
+            # Default to MATRIX_SOLVENCY_MAX_BILLS if no explicit limit;
+            # order newest-first so most recently scraped bills are patched first.
+            effective_limit = limit if limit is not None else MATRIX_SOLVENCY_MAX_BILLS
+            res = self.db.select("bills", columns, limit=effective_limit, order="created_at.desc")
         return res or []
 
     def _ensure_text(self, bill: Dict[str, Any]) -> str:
@@ -775,17 +786,18 @@ class SovereignMatrixSolvency:
         """
         mode_label = "FULL MATRIX"
         if bill_id and target_col:
-            mode_label = f"DEEP SURGICAL: bill={bill_id[:8]} × col={target_col}"
+            mode_label = f"DEEP SURGICAL: bill={bill_id[:8]} x col={target_col}"
         elif bill_id:
             mode_label = f"ROW FULL-HAM: bill={bill_id[:8]}"
         elif target_col:
             mode_label = f"COLUMN SWEEP: {target_col}"
 
         logger.info("=" * 70)
-        logger.info("🔬 MATRIX SOLVENCY — PHASE B INITIATED")
+        logger.info("[MATRIX-SOLVENCY] PHASE B INITIATED")
         logger.info(f"   Mode: {mode_label}")
         logger.info(f"   Dry Run: {self.dry_run}")
         logger.info(f"   Time (EAT): {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        logger.info(f"   Budget: {MATRIX_SOLVENCY_BUDGET}s | Cap: {MATRIX_SOLVENCY_MAX_BILLS} bills")
         logger.info("=" * 70)
 
         bills = self._fetch_bills(bill_id=bill_id, limit=limit)
@@ -795,18 +807,32 @@ class SovereignMatrixSolvency:
             logger.warning("No bills found for Phase B. Exiting.")
             return
 
+        _run_start = time.time()
+
         for i, bill in enumerate(bills):
+            # -- Task 3: Soft-deadline check -----------------------------------
+            _elapsed = time.time() - _run_start
+            if _elapsed >= MATRIX_SOLVENCY_BUDGET:
+                logger.info(
+                    f"[Budget] Soft deadline reached after {_elapsed:.0f}s "
+                    f"(limit: {MATRIX_SOLVENCY_BUDGET}s). "
+                    f"Processed {i}/{len(bills)} bills this invocation. "
+                    "Stopping cleanly."
+                )
+                break
+            # -- End soft-deadline check ----------------------------------------
+
             logger.info(f"\n[{i+1}/{len(bills)}] Bill: {bill.get('title','?')[:60]} (ID: {bill['id'][:8]}...)")
             try:
                 self.process_bill_matrix(bill, target_col=target_col)
                 time.sleep(1.0)  # Inter-bill rate limit
             except Exception as e:
-                logger.error(f"❌ Unhandled error on '{bill.get('title')}': {e}")
+                logger.error(f"[ERROR] Unhandled error on '{bill.get('title')}': {e}")
                 self.stats["cells_failed"] += 1
 
             if (i + 1) % 10 == 0 or (i + 1) == len(bills):
                 logger.info(
-                    f"\n📊 Progress [{i+1}/{len(bills)}] — "
+                    f"\n[Progress] [{i+1}/{len(bills)}] -- "
                     f"Cells Filled: {self.stats['cells_filled']} | "
                     f"Cells Failed: {self.stats['cells_failed']} | "
                     f"PDF Fetches: {self.stats['pdf_fetches']} | "
@@ -814,7 +840,7 @@ class SovereignMatrixSolvency:
                 )
 
         logger.info("\n" + "=" * 70)
-        logger.info("🏁 PHASE B — MATRIX SOLVENCY COMPLETE")
+        logger.info("[MATRIX-SOLVENCY] PHASE B COMPLETE")
         logger.info(f"   Total Bills:       {self.stats['total_bills']}")
         logger.info(f"   Cells Audited:     {self.stats['total_cells_audited']}")
         logger.info(f"   Cells Filled:      {self.stats['cells_filled']}")

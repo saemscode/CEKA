@@ -55,6 +55,14 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# ---------------------------------------------------------------------------
+# Task 3: Env-configurable run-level budget controls
+# NEWS_MAX_BILLS_PER_RUN — max bills per run (reduced from hardcoded 100 to 25)
+# NEWS_INTEL_BUDGET      — soft wall-clock budget in seconds
+# ---------------------------------------------------------------------------
+NEWS_MAX_BILLS_PER_RUN: int = int(os.getenv("NEWS_MAX_BILLS_PER_RUN", "25"))
+NEWS_INTEL_BUDGET:      int = int(os.getenv("NEWS_INTEL_BUDGET",      "5400"))
+
 # ===================================================================
 #  Intelligence Sources Tiering
 # ===================================================================
@@ -271,13 +279,12 @@ class NewsIntelligenceEngine:
 
     def get_active_bills(self) -> List[Dict[str, Any]]:
         """Fetch all bills that are currently being tracked."""
-        MAX_BILLS_PER_RUN = 100 # Improved Limit
         client = self.supabase
         if client is None: return []
         try:
             tbl = client.table("bills")
-            # Filter excluding Withdrawn alongside Assented (Improvement 8)
-            res = tbl.select("id, title, status, house, session_year").not_.in_("status", ["Assented", "Withdrawn"]).order("created_at", desc=True).limit(MAX_BILLS_PER_RUN).execute()
+            # Filter excluding Withdrawn alongside Assented, newest-first, capped at env constant
+            res = tbl.select("id, title, status, house, session_year").not_.in_("status", ["Assented", "Withdrawn"]).order("created_at", desc=True).limit(NEWS_MAX_BILLS_PER_RUN).execute()
             return res.data if res and res.data else []
         except Exception: return []
 
@@ -583,21 +590,37 @@ Return EXACTLY this JSON object. No markdown. No preamble. Raw JSON only:
         if not bills:
             logger.info("No active bills found. Nothing to scan.")
             return
-        
+
+        logger.info(
+            f"[NEWS-INTEL] Starting scan: {len(bills)} bill(s) "
+            f"(budget: {NEWS_INTEL_BUDGET}s, cap: {NEWS_MAX_BILLS_PER_RUN} bills)."
+        )
         total_mentions = 0
+        _run_start = time.time()
+
         with sync_playwright() as p:
             browser = p.chromium.launch(headless=True)
             ctx = browser.new_context()
             page = ctx.new_page()
-            for bill in bills:
+            for i, bill in enumerate(bills):
+                # -- Task 3: Soft-deadline check -----------------------------------
+                _elapsed = time.time() - _run_start
+                if _elapsed >= NEWS_INTEL_BUDGET:
+                    logger.info(
+                        f"[Budget] Soft deadline reached after {_elapsed:.0f}s "
+                        f"(limit: {NEWS_INTEL_BUDGET}s). "
+                        f"Processed {i}/{len(bills)} bills. Stopping cleanly."
+                    )
+                    break
+                # -- End soft-deadline check ----------------------------------------
                 try:
                     new_mentions = self.run_for_bill(page, bill)
                     total_mentions += new_mentions
                 except Exception as e:
                     logger.error(f"Error processing bill {bill.get('id')}: {e}")
             browser.close()
-        
-        logger.info(f"News intelligence scan complete. New mentions: {total_mentions}")
+
+        logger.info(f"[NEWS-INTEL] Scan complete. New mentions: {total_mentions}")
 
 CIVIC_KEYWORDS = [
     # Legislature & Law

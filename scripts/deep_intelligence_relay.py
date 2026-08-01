@@ -73,6 +73,15 @@ GEMINI_CHUNK_CHARS  = 500_000  # Gemini 2.0 Flash: 2M token window
 MIN_CHUNK_CHARS     = 8_000    # Minimum viable chunk for small fallbacks
 
 # ---------------------------------------------------------------------------
+# Task 3: Env-configurable run-level budget controls
+# DEEP_RELAY_MAX_BILLS — max bills processed per invocation (newest first)
+# DEEP_RELAY_BUDGET    — soft wall-clock budget in seconds; the loop breaks
+#                        cleanly before this is reached so no mid-request kill
+# ---------------------------------------------------------------------------
+DEEP_RELAY_MAX_BILLS: int = int(os.getenv("DEEP_RELAY_MAX_BILLS", "15"))
+DEEP_RELAY_BUDGET:    int = int(os.getenv("DEEP_RELAY_BUDGET",    "4800"))
+
+# ---------------------------------------------------------------------------
 # System prompt — governs every LLM in the relay identically
 # ---------------------------------------------------------------------------
 RELAY_SYSTEM_PROMPT = (
@@ -808,9 +817,9 @@ class DeepIntelligenceRelay:
                     results.extend(rows)
             return results
 
-        # Poll for bills where Phase 1 is done and deep analysis is pending
-        # SupabaseDirect.select supports a single eq filter. We retrieve all
-        # pending bills by filtering on deep_analysis_status.
+        # Poll for bills where Phase 1 is done and deep analysis is pending.
+        # Order newest-first and cap to DEEP_RELAY_MAX_BILLS so we always
+        # process the most recently scraped bills and never overrun the budget.
         try:
             rows = self.db.select(
                 "bills",
@@ -818,6 +827,8 @@ class DeepIntelligenceRelay:
                 "deep_analysis_cursor,deep_working_memory",
                 eq="deep_analysis_status",
                 eq_val="pending",
+                order="created_at.desc",
+                limit=DEEP_RELAY_MAX_BILLS,
             )
             # Only process bills that have real extracted text (Phase 1 must
             # have stored text_content before deep analysis makes sense)
@@ -996,10 +1007,26 @@ class DeepIntelligenceRelay:
             logger.info("No bills pending deep analysis.")
             return
 
-        logger.info(f"🚀 Starting deep analysis on {total} bill(s)...")
+        logger.info(
+            f"\U0001f680 Starting deep analysis on {total} bill(s) "
+            f"(budget: {DEEP_RELAY_BUDGET}s, cap: {DEEP_RELAY_MAX_BILLS} bills)..."
+        )
         ok, err = 0, 0
+        _run_start = time.time()
 
         for i, bill in enumerate(bills):
+            # ── Task 3: Soft-deadline check ────────────────────────────────
+            _elapsed = time.time() - _run_start
+            if _elapsed >= DEEP_RELAY_BUDGET:
+                logger.info(
+                    f"[Budget] Soft deadline reached after {_elapsed:.0f}s "
+                    f"(limit: {DEEP_RELAY_BUDGET}s). "
+                    f"Processed {i}/{total} bills this invocation. "
+                    "Stopping cleanly — remaining bills stay 'pending' for next run."
+                )
+                break
+            # ── End soft-deadline check ──────────────────────────────────
+
             try:
                 success = self.process_bill(bill)
                 if success:
@@ -1007,17 +1034,17 @@ class DeepIntelligenceRelay:
                 else:
                     err += 1
             except Exception as e:
-                logger.error(f"❌ Unhandled error on '{bill.get('title')}': {e}")
+                logger.error(f"\u274c Unhandled error on '{bill.get('title')}': {e}")
                 err += 1
 
             if (i + 1) % 5 == 0 or (i + 1) == total:
-                logger.info(f"📊 Progress: {i+1}/{total} | OK={ok} ERR={err}")
+                logger.info(f"\U0001f4ca Progress: {i+1}/{total} | OK={ok} ERR={err}")
 
             # Pause between bills to respect API rate limits across providers
             if i < total - 1:
                 time.sleep(3)
 
-        logger.info("🏁 DEEP ANALYSIS RUN COMPLETE.")
+        logger.info("\U0001f3c1 DEEP ANALYSIS RUN COMPLETE.")
         logger.info(f"    Total: {total} | Success: {ok} | Failed: {err}")
 
 

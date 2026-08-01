@@ -1152,11 +1152,24 @@ class LegislativeScraper:
 
             # --- SHARED PROCESSING PIPELINE ---
             if not rows or len(rows) == 0:
-                consecutive_empty += 1
-                logger.info(f"  [Cap] No bill rows on page {page_num + 1} (consecutive empty: {consecutive_empty}).")
-                if consecutive_empty >= 2:
-                    break
-                continue
+                # ── TASK 2: Retry once on a fresh proxy before counting empty ──
+                # Report the current proxy as failed, rotate, and retry the same URL.
+                current_proxy = self.proxy_pool.get_proxy()
+                if current_proxy:
+                    self.proxy_pool.report_failure(current_proxy)
+                    logger.info(
+                        f"  [Retry] Empty rows on page {page_num + 1} — "
+                        "reporting proxy failure and retrying with fresh proxy..."
+                    )
+                    rows = self._fetch_with_scrapling(page_url)
+                # Only increment consecutive_empty if retry also returned nothing
+                if not rows or len(rows) == 0:
+                    consecutive_empty += 1
+                    logger.info(f"  [Cap] No bill rows on page {page_num + 1} after retry (consecutive empty: {consecutive_empty}).")
+                    if consecutive_empty >= 2:
+                        break
+                    continue
+                # Retry succeeded — fall through to normal processing below
 
             consecutive_empty = 0
             logger.info(f"  Found {len(rows)} bill rows on page {page_num + 1}")
@@ -1241,6 +1254,29 @@ class LegislativeScraper:
         logger.info("=" * 60)
         logger.info("  Legislative Sync Engine  (Stealth + CF-hardened + ProxyPool)")
         logger.info("=" * 60)
+
+        # ── TASK 2: Pre-flight proxy pool guard ──────────────────────────
+        # Require at least one premium proxy before spending Playwright
+        # startup time, so a proxy-less run fails visibly in CI instead of
+        # completing with a silent empty scrape.
+        _PREMIUM_TYPES = {"brightdata", "oxylabs", "scraperapi", "webshare"}
+        _premium_proxies = [
+            p for p in self.proxy_pool.proxies
+            if p.get("type") in _PREMIUM_TYPES
+        ]
+        if not _premium_proxies:
+            logger.error(
+                "[FATAL] No premium proxies found in ProxyPool. "
+                "At least one of BRIGHTDATA_PROXY_URL, OXYLABS_PROXIES, "
+                "SCRAPERAPI_KEY, or WEBSHARE_PROXIES must be configured. "
+                "Aborting scrape to prevent a silent empty run."
+            )
+            sys.exit(1)
+        logger.info(
+            f"[Proxy] {len(_premium_proxies)} premium proxy/proxies loaded "
+            f"(types: {', '.join(p.get('type', '?') for p in _premium_proxies[:5])})."
+        )
+        # ── End pre-flight guard ─────────────────────────────────────────
 
         try:
             from playwright.sync_api import sync_playwright

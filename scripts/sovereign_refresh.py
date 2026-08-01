@@ -128,6 +128,14 @@ ALL_MONITORED_COLUMNS = AI_FILLABLE_COLUMNS + STRUCTURAL_COLUMNS + [
 ]
 
 # ---------------------------------------------------------------------------
+# Task 3: Env-configurable run-level budget controls
+# SOVEREIGN_REFRESH_MAX_BILLS — max bills per run (oldest-updated-at first)
+# SOVEREIGN_REFRESH_BUDGET    — soft wall-clock budget in seconds
+# ---------------------------------------------------------------------------
+SOVEREIGN_REFRESH_MAX_BILLS: int = int(os.getenv("SOVEREIGN_REFRESH_MAX_BILLS", "272"))
+SOVEREIGN_REFRESH_BUDGET:    int = int(os.getenv("SOVEREIGN_REFRESH_BUDGET",    "14400"))
+
+# ---------------------------------------------------------------------------
 # Portfolio Keyword Pools (No Mediocrity Classification)
 # ---------------------------------------------------------------------------
 PORTFOLIO_KEYWORD_POOL = {
@@ -401,7 +409,7 @@ class SovereignRefresh:
             "verified_sources,history"
         )
         
-        effective_limit = limit if limit is not None else 272
+        effective_limit = limit if limit is not None else SOVEREIGN_REFRESH_MAX_BILLS
 
         if target_id:
             logger.info(f"🎯 Targeting specific bill ID: {target_id}")
@@ -586,9 +594,10 @@ class SovereignRefresh:
     def run(self, limit: Optional[int] = None, target_id: Optional[str] = None):
         """Main Phase A sweep entry point."""
         logger.info("=" * 70)
-        logger.info("🚀 SOVEREIGN REFRESH — PHASE A INITIATED")
+        logger.info("[SOVEREIGN-REFRESH] PHASE A INITIATED")
         logger.info(f"   Time (EAT): {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
         logger.info(f"   Mode: {'FORCE (all bills)' if self.force else 'NULL-FILL ONLY'}")
+        logger.info(f"   Budget: {SOVEREIGN_REFRESH_BUDGET}s | Cap: {SOVEREIGN_REFRESH_MAX_BILLS} bills")
         if target_id:
             logger.info(f"   Target: {target_id}")
         logger.info("=" * 70)
@@ -600,29 +609,43 @@ class SovereignRefresh:
             logger.warning("No bills found. Run the legislative_scraper.py first.")
             return
 
+        _run_start = time.time()
+
         for i, bill in enumerate(bills):
+            # -- Task 3: Soft-deadline check -----------------------------------
+            _elapsed = time.time() - _run_start
+            if _elapsed >= SOVEREIGN_REFRESH_BUDGET:
+                logger.info(
+                    f"[Budget] Soft deadline reached after {_elapsed:.0f}s "
+                    f"(limit: {SOVEREIGN_REFRESH_BUDGET}s). "
+                    f"Processed {i}/{len(bills)} bills this invocation. "
+                    "Stopping cleanly."
+                )
+                break
+            # -- End soft-deadline check ----------------------------------------
+
             logger.info(f"\n[{i+1}/{len(bills)}] Processing bill ID: {bill['id'][:8]}...")
             if not self._needs_upgrade(bill):
-                logger.info("    → Full data density already reached. Skipping.")
+                logger.info("    -> Full data density already reached. Skipping.")
                 self.stats["skipped"] += 1
                 continue
             try:
                 self.process_bill(bill)
                 time.sleep(1.2)  # Rate limit: protect Parliament PDF servers + API providers
             except Exception as e:
-                logger.error(f"❌ Unhandled error on '{bill.get('title')}': {e}")
+                logger.error(f"[ERROR] Unhandled error on '{bill.get('title')}': {e}")
                 self.stats["failed"] += 1
 
             if (i + 1) % 10 == 0:
                 logger.info(
-                    f"\n📊 Progress [{i+1}/{len(bills)}] — "
+                    f"\n[Progress] [{i+1}/{len(bills)}] -- "
                     f"Upgraded: {self.stats['upgraded']} | "
                     f"Skipped: {self.stats['skipped']} | "
                     f"Failed: {self.stats['failed']}"
                 )
 
         logger.info("\n" + "=" * 70)
-        logger.info("🏁 PHASE A — SOVEREIGN REFRESH COMPLETE")
+        logger.info("[SOVEREIGN-REFRESH] PHASE A COMPLETE")
         logger.info(f"   Total Bills: {self.stats['total']}")
         logger.info(f"   Upgraded:    {self.stats['upgraded']}")
         logger.info(f"   PDF Fetched: {self.stats['pdf_extracted']}")

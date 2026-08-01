@@ -1,0 +1,288 @@
+
+Claude finished the response
+
+Diagnosed pipeline bottlenecks, mapped architectural restructuring, prioritized fixes
+Diagnosed pipeline bottlenecks, mapped architectural restructuring, prioritized fixes
+Diagnosed pipeline bottlenecks, mapped architectural restructuring, prioritized fixes.
+
+Done
+Why your pipeline is bleeding Bills, and how to stop it
+I read through all nine scripts, the workflow YAML, and both run logs. Here's the honest picture: you don't have one bug, you have an architectural mismatch between "one job, one 6-hour clock, ten sequential heavy stages" and what each of those stages actually needs to do. Let me walk through where bills actually get lost, then give you the fix.
+
+Part 1: Where Bills are actually getting lost
+Junction 1 — The scraper never gets past Cloudflare (Run #62's actual cause). Your ProxyPool has a priority ladder: BrightData → Oxylabs → ScraperAPI → Webshare → free proxies scraped from a public GitHub list (TheSpeedX/SOCKS-List). That bottom tier is worthless against Cloudflare — those IPs are burned the moment they're published, because every bot on earth scrapes that same list. If your paid tiers are unconfigured, rate-limited, or over their monthly cap this cycle, get_proxy() silently falls through to garbage proxies (or None), Scrapling's solve_cloudflare=True fails, Playwright's legacy fallback also fails _wait_for_real_content, and _scrape_bills breaks after only 2 consecutive empty pages. That threshold is far too aggressive for a Cloudflare-protected site — a single bad proxy roll shouldn't kill the whole target. The result is exactly what you saw: legislation_sync_20260731_220622.json exists, but it's []. Nothing downstream has anything to ingest, because there was nothing scraped.
+
+This is also silent-failing in a dangerous way: your script logs a warning, not a hard failure, so the job "succeeds" and moves on to burn 6 hours on corroboration/deep-relay/news stages that have nothing new to work with, while real bills that dropped that week sit unscraped until the next run tries its luck again.
+
+Junction 2 — Staging and the JSON-file sync are two parallel, desynced paths into bills. During scraping, every bill gets pushed immediately to bills_staging via _push_to_staging() — that part is genuinely well-designed and already incremental. But your workflow's sync_to_supabase.py step (no flags) reads the JSON checkpoint file, not bills_staging, and upserts from that into bills directly. Then, only at 06:00 and 18:00 UTC, a separate --flush-staging step moves bills_staging into bills and purges it. So you have bills entering the live table two different ways on two different schedules. If the JSON-based sync step gets cancelled mid-loop (which it will, on a day the job runs long), and it isn't one of the two flush-staging windows, those bills sit in bills_staging — safe, not lost, but invisible to every downstream stage (corroborator, stage detector, deep relay all query the bills table, not bills_staging) until the next flush window rolls around. That can mean a 12+ hour lag between "successfully scraped" and "actually usable by the rest of the pipeline," and if a run before the next flush window also zero-scrapes, you won't notice the backlog growing.
+
+Junction 3 — Deep Intelligence Relay runs on every scheduled trigger, with no bill cap and a provider chain full of dead endpoints. Your workflow condition is github.event_name == 'schedule' with no additional gate, meaning every 3-hour run tries to process all deep_analysis_status = pending bills. Looking at your actual log: Gemini-2.0-Flash and Gemini-2.0-Flash-2 both hit free-tier quota (0 requests/day remaining), Claude-3.5-Sonnet and Claude-3.5-Sonnet-2 both fail with "credit balance too low", Mistral-Large fails with 401 Unauthorized (bad/expired key), SambaNova-Llama-405B fails with 410 Gone (the model was deprecated at the provider level), GPT-4o exhausts its OpenAI SDK auto-retries on 429 quota errors. That's six guaranteed failures, in sequence, before every single successful chunk, for every chunk, for every pending bill. Each of those failures still costs real wall-clock time (HTTP round-trip + OpenAI SDK's internal exponential backoff on 429s adds ~1.4s by itself). Multiply that across hundreds of pending bills times multiple 80k-char chunks each, and you have a stage that can single-handedly consume your entire 6-hour budget while only three of your ~19 configured providers are actually alive (NVIDIA, Groq, DeepSeek by the look of it).
+
+The good news: this stage's cursor/working-memory commit pattern means it doesn't lose data when killed — the next run resumes from the exact character offset. The bad news: it can starve every stage that runs after it in the job, every single time.
+
+Junction 4 — News Intelligence's loop math is combinatorially explosive. For every bill (up to 100 per run), it iterates up to 12 search terms × 13 tiered sources, each involving a SerpAPI/ScrapingDog call plus, per matching link, an HTML fetch plus an LLM summarization call plus a hardcoded time.sleep(1.0). The max_scrapes_per_bill = 30 cap helps, but 100 bills × 30 scrapes × (network latency + LLM call + 1s sleep) is easily multiple hours by itself, and this only runs at 06/12/18 UTC — but on those runs, it's competing with the scraper, sync, stage detector, corroborator, and deep relay for the same 6-hour window.
+
+Junction 5 — Corroborator is capped to 10 bills per run with no override in the workflow. run_all_pending(limit=10) is the hardcoded default and the workflow calls it bare. Even on a day when scraping and staging both work perfectly, only 10 bills per 3-hour cycle get the full corroboration treatment. At 8 runs/day that's 80/day best case, but only if corroborator gets to run at all before the job gets killed by an earlier stage.
+
+Junction 6 — On Mondays, everything stacks. Phase A (Sovereign Refresh, up to 272 bills) and Phase B (Matrix Solvency, full 30-column audit across all bills) both run on Monday inside the same job as the entire regular pipeline. These are, by design, the two heaviest stages in the whole codebase. Monday is mathematically your worst day for hitting the 6-hour wall, and it's also the day you're guaranteed to hit it, because nothing bounds how long Phase A or Phase B are allowed to run before yielding to the rest of the pipeline.
+
+Part 2: The single highest-leverage fix — stop sharing one job
+GitHub Actions' 6-hour execution ceiling is per job, not per workflow. Right now you have one job (sync:) with roughly a dozen sequential steps. The fix that solves most of this at once, with minimal script changes, is splitting that one job into multiple jobs: blocks (or multiple workflow files) connected with needs:. Each job gets its own fresh 6-hour clock, and jobs that don't depend on each other can even run in parallel.
+
+Concretely:
+
+yaml
+jobs:
+  scrape_and_sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - # checkout, scraper, sync_to_supabase, flush-staging, git push
+
+  stage_detection:
+    needs: scrape_and_sync
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - # checkout, stage_detector.py
+
+  corroboration:
+    needs: stage_detection
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - # checkout, sovereign_corroborator.py
+
+  deep_relay:
+    needs: corroboration
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - # checkout, deep_intelligence_relay.py
+Because all your scripts talk to Supabase directly (not to each other's local memory), splitting into jobs is safe — each job's checkout pulls the latest committed state from git, and Supabase itself holds the durable state between jobs. You don't need upload-artifact/download-artifact unless you want to pass the raw scraped JSON without relying on the git-commit-and-push step completing first (which is itself a minor risk point — if that push step fails, the next job's checkout won't see the new file; consider having sync_to_supabase.py read bills_staging directly instead of the local JSON file, which removes this git-round-trip dependency entirely).
+
+This one change means a zero-scrape run costs you 5-10 minutes, not 6 hours, and a Monday Phase A/B run no longer prevents your regular 3-hourly stages from executing.
+
+Part 3: The immediate stopgap you can ship today
+Even before restructuring into jobs, add timeout-minutes: to every step in your current single job. This is a one-line-per-step change and it's the fastest way to stop one runaway stage from starving everything after it:
+
+yaml
+- name: Run News Intelligence
+  if: steps.news_check.outputs.run_news == 'true'
+  run: python scripts/news_intelligence.py
+  continue-on-error: true
+  timeout-minutes: 60
+  env:
+    PYTHONIOENCODING: utf-8
+
+- name: "Phase 2: Deep Intelligence Relay"
+  run: python scripts/deep_intelligence_relay.py $BILL_FLAG
+  continue-on-error: true
+  timeout-minutes: 90
+Because most of your scripts already checkpoint at the row/chunk level in Supabase, a SIGTERM from a step timeout is safe — you lose at most the in-flight unit of work, not everything already committed. This buys you the guarantee that git push, the vault generator, and the OCR worker actually get to run every single time, instead of only on days nothing upstream misbehaves.
+
+Part 4: Fix the zero-scrape root cause specifically
+Two changes here matter most. First, raise consecutive_empty tolerance and add a proxy health pre-flight that fails loud instead of silently falling through to garbage proxies:
+
+python
+if not any(p.get("type") in ("brightdata", "oxylabs", "scraperapi", "webshare")
+           for p in self.proxy_pool.proxies):
+    logger.error("[FATAL] No paid proxy tier configured/healthy — "
+                 "refusing to scrape via free-proxy or direct connection.")
+    return []  # or raise, so the run is visibly marked failed, not silently empty
+Second, don't kill a whole target after 2 empty pages when the cause might just be a single bad proxy roll — retry the same page once with a freshly-rotated proxy before counting it as empty. Right now a single unlucky proxy pick can zero out an entire target for the whole run.
+
+Part 5: Prune the dead providers in deep_relay's chain
+You're paying the full timeout/retry cost of six broken providers on every chunk. Fix the actual breakages (Anthropic account is out of credit, Mistral key is invalid/expired, SambaNova's model was deprecated — swap to their current model name) or, at minimum, drop them from WIDE_CONTEXT_PROVIDERS until fixed. That alone removes several seconds of guaranteed dead time per chunk, multiplied by every chunk of every pending bill, every 3 hours.
+
+Part 6: Collapse the staging/flush duplication
+Pick one path into bills. The cleanest option: keep _push_to_staging() as-is during scraping (it's your best-designed checkpoint), but make sync_to_supabase.py's normal run always flush staging (drop the twice-daily gate), so newly scraped bills never wait up to 12 hours to become visible to stage detection, corroboration, and deep relay. If you still want the JSON-file path as a backup/audit trail, keep writing it, just don't treat it as the primary ingestion route anymore.
+
+Priority order if you can only do a few things this week
+Add timeout-minutes to every step (5 minutes of work, stops the bleeding immediately)
+Fix the proxy pre-flight check so zero-scrape runs fail loudly instead of quietly burning 6 hours downstream on nothing
+Prune/fix the dead LLM providers in deep_relay (Anthropic credits, Mistral key, SambaNova model name)
+Split into separate jobs: with needs: chains (bigger lift, but this is the real structural fix)
+Collapse staging/flush into one always-on path so scraped bills don't sit invisible for hours
+GIVE ME THE FULL FIX ! NOW! NO HICCUPS! - TEXT ONLY! CODE SNIPPETS. TEXT - 80%, CODE SNIPPETS - 10%, OTHER EXPLANATION METHODS - 10%. PROCEED!
+
+
+Diagnosed workflow scheduling bugs and architected comprehensive timeout fixes
+Diagnosed workflow scheduling bugs and architected comprehensive timeout fixes
+Diagnosed workflow scheduling bugs and architected comprehensive timeout fixes.
+
+Done
+The full fix
+Before anything else: I found the actual reason bills disappear between "scraped" and "usable" and it isn't proxies. It's a dead conditional in your YAML. Walk through this with me because it changes the priority order of everything else.
+
+The proof: two of your schedule gates never fire, ever
+Your cron is a single line: '0 0,3,6,9,12,15,18,21 * * 1-5'. When GitHub Actions fires a scheduled run, github.event.schedule is set to that entire cron string, not the hour that actually triggered it. Your Flush Staging step checks contains(github.event.schedule, '0 6') and contains(github.event.schedule, '0 18'). Your Phase A/B steps check contains(github.event.schedule, '0 3') and '0 5'.
+
+Count the actual space characters in '0 0,3,6,9,12,15,18,21 * * 1-5'. There are exactly four: after the minute field, after the hour-list, between the two asterisks, and before 1-5. Every hour past the first one is joined by a comma, not a space, because it's a comma-separated list inside one field. So "0 3", "0 5", "0 6", "0 18" cannot appear anywhere in that string, at any hour, on any day, ever. These four contains() checks are dead code. They evaluate false unconditionally.
+
+Consequence: Flush Staging to Bills has never run automatically. Every bill your scraper successfully pushes to bills_staging sits there permanently unless someone manually runs sync_to_supabase.py --flush-staging by hand. Stage detection, corroboration, and deep relay all query the live bills table, so anything trapped in staging is functionally invisible to your entire downstream pipeline. This alone accounts for a huge share of "bills not being ingested after hours of running." They were ingested. Into a table nothing else reads from.
+
+Same bug kills Phase A (Sovereign Refresh) and Phase B (Matrix Solvency) on the schedule trigger. They only ever ran when someone manually dispatched them with the checkbox ticked. Your 30-column NULL backlog has been growing untouched every week that nobody manually clicked "Run workflow."
+
+Compare this to your news_check step, which computes the hour with date +%H in bash — that one works correctly, which is exactly why news sync fires on schedule and the other two don't. That's your template for the fix.
+
+Fix 1: stop gating on github.event.schedule, always flush
+Delete the flush-staging conditional entirely. Staging should drain continuously, not batch twice a day on a gate that never opened. Make it unconditional, every run, right after the primary sync:
+
+yaml
+- name: Sync + Flush Staging (always)
+  run: python scripts/sync_to_supabase.py --flush-staging
+  timeout-minutes: 15
+  continue-on-error: true
+This replaces both your separate "Supabase Sync Bridge" and "Flush Staging" steps with one call. If you want to keep them distinct, run flush right after sync unconditionally, no if: at all.
+
+For Phase A/B, don't try to fix the string match. Move them into their own workflow file with a real, working cron of their own:
+
+yaml
+# .github/workflows/ceka-weekly-deep.yml
+on:
+  schedule:
+    - cron: '0 3 * * 1'   # Phase A, Monday 03:00 UTC
+    - cron: '0 5 * * 1'   # Phase B, Monday 05:00 UTC
+  workflow_dispatch: {}
+
+jobs:
+  phase_a:
+    if: github.event.schedule == '0 3 * * 1' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    steps:
+      - run: python scripts/sovereign_refresh.py --limit 272
+
+  phase_b:
+    needs: phase_a
+    if: always() && (github.event.schedule == '0 5 * * 1' || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    steps:
+      - run: python scripts/matrix_solvency.py
+When you define multiple separate schedule entries, github.event.schedule equals the exact cron string that fired, so == comparison against a single-hour cron works correctly. This is the only reliable way to do time-gating in Actions without shelling out to date.
+
+Fix 2: split the main pipeline into real jobs
+Each jobs: block gets its own fresh 6-hour ceiling, and independent jobs run in parallel. Move your giant env: block to the workflow's top level so every job inherits it without repetition:
+
+yaml
+env:
+  SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+  # ...all your other secrets stay exactly as they are, just moved up one level
+
+jobs:
+  scrape_and_sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - run: python scripts/legislative_scraper.py
+        timeout-minutes: 60
+        continue-on-error: true
+      - run: python scripts/sync_to_supabase.py --flush-staging
+        timeout-minutes: 15
+      - run: git add -A && git commit -m "chore: sync [skip ci]" || true && git push || true
+
+  stage_detection:
+    needs: scrape_and_sync
+    timeout-minutes: 45
+    steps: [ ... stage_detector.py, timeout-minutes: 40 ]
+
+  corroboration:
+    needs: stage_detection
+    timeout-minutes: 60
+    steps: [ ... sovereign_corroborator.py, timeout-minutes: 55 ]
+
+  deep_relay:
+    needs: corroboration
+    timeout-minutes: 90
+    steps: [ ... deep_intelligence_relay.py, timeout-minutes: 85 ]
+
+  news_and_vault:
+    needs: corroboration          # runs parallel to deep_relay, not blocked by it
+    timeout-minutes: 60
+    steps:
+      - run: python scripts/news_intelligence.py
+        timeout-minutes: 40
+      - run: python scripts/vault_generator.py
+        timeout-minutes: 10
+      - run: python scripts/ocr_worker.py
+        timeout-minutes: 10
+deep_relay and news_and_vault both depend only on corroboration, not on each other, so Actions runs them concurrently. This alone probably saves you 60-90 minutes a run.
+
+Every job also carries its own timeout-minutes: and every step inside it carries a tighter one. Two layers of ceiling means a single runaway step can't consume its neighbors' time, and a single runaway job can't consume the whole workflow's time. On a zero-scrape day, scrape_and_sync fails fast, git pushes whatever the empty/logged state is, and the pipeline moves on in minutes instead of silently eating six hours downstream on nothing.
+
+Fix 3: make the scraper fail loud instead of quietly empty
+Right now a dead proxy tier falls through to your public free-proxy list, which is useless against Cloudflare, and the whole target gets abandoned after two empty pages. Add a pre-flight that refuses to proceed on a proxy-less run, and give a bad single proxy roll one retry before writing off a page:
+
+python
+paid_tiers = [p for p in self.proxy_pool.proxies if p.get("type") in
+              ("brightdata", "oxylabs", "scraperapi", "webshare")]
+if not paid_tiers:
+    logger.error("[FATAL] No healthy paid proxy tier — aborting scrape, not silently emptying output.")
+    sys.exit(1)
+And in _scrape_bills, before counting a page as empty, force one fresh-proxy retry:
+
+python
+if not rows:
+    self.proxy_pool.report_failure(self.proxy_pool.get_proxy())  # burn the bad one
+    rows = self._fetch_with_scrapling(page_url)  # one retry on a rotated proxy
+sys.exit(1) on the pre-flight is deliberate. You want this step to show red in the Actions UI, not a quiet green "success" with an empty JSON array three stages later. Cronological silence is what let this run undetected.
+
+Fix 4: prune the dead providers, cap the workload, add a soft deadline
+Your own log shows six straight failures before every successful chunk: Gemini free-tier quota at zero, both Claude keys out of credit, Mistral 401 (bad key), SambaNova 410 (model deprecated server-side), GPT-4o quota exhausted. Every one of those costs real wall-clock time before the chain reaches a provider that actually works. Pull the broken ones out of WIDE_CONTEXT_PROVIDERS until you've refilled Anthropic credit, rotated the Mistral key, and picked a live model from SambaNova's own deprecation notice (the URL is right there in your error log).
+
+More important: deep relay currently has no per-run cap. It tries to drain every pending bill in one execution. Add a bill limit and a soft deadline so it commits and exits cleanly well before the job's hard timeout kills it mid-request:
+
+python
+RUN_BUDGET_SECONDS = int(os.getenv("DEEP_RELAY_BUDGET", "4800"))  # 80 min
+_start = time.time()
+
+def _fetch_pending_bills(self, bill_ids=None):
+    ...
+    rows = self.db.select(..., order="created_at.desc")  # newest bills first
+    return rows[:int(os.getenv("DEEP_RELAY_MAX_BILLS", "15"))]
+python
+for i, bill in enumerate(bills):
+    if time.time() - _start > RUN_BUDGET_SECONDS:
+        logger.info("Soft deadline reached, exiting cleanly for next run to resume.")
+        break
+    self.process_bill(bill)
+Ordering newest-first matters for your stated goal: capturing bills as they drop. Right now pending bills are pulled with no order, so freshly scraped bills queue behind whatever backlog already existed.
+
+Fix 5: same soft-deadline pattern in news_intelligence and sovereign_refresh
+News intelligence's math (100 bills × up to 30 scrapes × network+LLM+1s sleep) can run for hours by itself. Cap MAX_BILLS_PER_RUN down to something that fits inside its job's timeout comfortably (25-30, not 100), and drop the same budget check into run_full_scan's bill loop. Same for sovereign_refresh.run() and matrix_solvency.run() — they already commit per-bill/per-cell as they go, which is good, but they have no awareness of the clock, so add the identical if time.time() - start > budget: break at the top of their per-bill loops. Nothing here changes what gets written; it changes when the script chooses to stop asking for more.
+
+Fix 6: un-stick permanently failed bills
+process_bill in the corroborator sets analysis_status = "failed" on exception and nothing ever revisits it. A transient API hiccup permanently benches that bill. Add a periodic retry sweep instead of a dead end:
+
+python
+stale_failed = self.db.select("bills", "id", eq="analysis_status", eq_val="failed")
+retry_after = datetime.now(timezone.utc).timestamp() - 6*3600  # 6h cooldown
+# re-queue anything whose updated_at is older than retry_after back to "pending"
+Fix 7: the Node 20 warning
+Trivial, one line, do it while you're in the file:
+
+yaml
+- uses: actions/checkout@v5
+- uses: actions/setup-python@v6
+- uses: actions/cache@v4      # already current
+- uses: actions/upload-artifact@v5
+What actually changes, in order of impact
+Fix	What it stops
+Kill the contains(schedule,...) gates	Bills stuck in bills_staging forever, invisible to everything downstream
+Split into jobs with needs:	One runaway stage starving every stage after it in the same 6h clock
+Proxy pre-flight + retry	Silent zero-scrape runs that burn 6h on nothing
+Prune dead LLM providers + cap + soft deadline	Deep relay eating the whole run on six guaranteed failures per chunk
+Order pending queries newest-first	New bills queuing behind old backlog instead of "capturing bills as they drop"
+Un-stick failed bills	Bills permanently benched by one transient API error
+Do the schedule-gate fix first. Everything else you asked about, "why aren't bills showing up after hours of running," traces back to that one dead conditional more than to Cloudflare or credits.
+
+
+
+
+
+
+
+Claude is AI and can make mistakes. Please double-check responses.

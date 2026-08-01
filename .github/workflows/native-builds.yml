@@ -33,7 +33,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -48,7 +48,7 @@ jobs:
         run: npm run build
 
       - name: Upload dist artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: web-dist
           path: dist/
@@ -60,7 +60,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Download web dist
         uses: actions/download-artifact@v4
@@ -136,14 +136,14 @@ jobs:
 
       - name: Upload Debug APK
         if: ${{ !startsWith(github.ref, 'refs/tags/v') && github.event.inputs.build_type != 'release' }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: ceka-debug-apk
           path: android/app/build/outputs/apk/debug/*.apk
 
       - name: Upload Release APK
         if: ${{ startsWith(github.ref, 'refs/tags/v') || github.event.inputs.build_type == 'release' }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: ceka-release-apk
           path: android/app/build/outputs/apk/release/*.apk
