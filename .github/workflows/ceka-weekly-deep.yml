@@ -96,6 +96,7 @@ jobs:
     #  a) The schedule '0 3 * * 1' triggered this run (exact equality), OR
     #  b) Manually dispatched with run_phase_a=true
     if: >
+      github.event_name == 'workflow_dispatch' ||
       github.event.schedule == '0 3 * * 1' ||
       inputs.run_phase_a == true ||
       github.event.inputs.run_phase_a == 'true'
@@ -159,6 +160,7 @@ jobs:
     #  a) The schedule '0 5 * * 1' triggered this run (exact equality), OR
     #  b) Manually dispatched with run_phase_b=true
     if: >
+      github.event_name == 'workflow_dispatch' ||
       github.event.schedule == '0 5 * * 1' ||
       inputs.run_phase_b == true ||
       github.event.inputs.run_phase_b == 'true'
