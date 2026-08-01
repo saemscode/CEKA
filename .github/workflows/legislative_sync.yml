@@ -2,8 +2,8 @@ name: CEKA Sovereign Intelligence Sync
 
 on:
   schedule:
-    # Every 3 hours on weekdays (UTC)
-    - cron: '0 0,3,6,9,12,15,18,21 * * 1-5'
+    # Every 4 hours on weekdays (UTC)
+    - cron: '0 0,4,8,12,16,20 * * 1-5'
   workflow_dispatch:
     inputs:
       force_news:
