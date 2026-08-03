@@ -1,0 +1,50 @@
+/* ============================================================
+   FILE: src/pages/Notifications.css (optional add-on)
+   ============================================================ */
+.notifications-sidebar .line-sidebar__item {
+    padding: 2px 0;
+}
+
+.notifications-sidebar .line-sidebar__label {
+    font-weight: 500;
+    font-size: 0.95rem;
+}
+
+.notifications-sidebar .line-sidebar__item[aria-current="true"] .line-sidebar__label {
+    font-weight: 700;
+}
+
+/* Responsive sidebar adjustments */
+@media (max-width: 768px) {
+    .notifications-sidebar .line-sidebar {
+        padding-left: 0;
+    }
+
+    .notifications-sidebar .line-sidebar--markers {
+        padding-left: 0;
+    }
+
+    .notifications-sidebar .line-sidebar__marker {
+        display: none;
+    }
+
+    .notifications-sidebar .line-sidebar--markers .line-sidebar__item:not(:last-child)::after {
+        display: none;
+    }
+
+    .notifications-sidebar .line-sidebar__list {
+        flex-direction: row;
+        flex-wrap: wrap;
+        gap: 8px 16px;
+        padding: 8px 0;
+    }
+
+    .notifications-sidebar .line-sidebar__item::before {
+        inset: -4px -12px;
+    }
+
+    .notifications-sidebar .line-sidebar__label {
+        transform: none !important;
+        font-size: 0.85rem;
+    }
+}
