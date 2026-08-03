@@ -121,6 +121,60 @@ def check_schema_support(supabase: Client):
         return False
 
 
+_BILLS_COLUMNS_CACHE: set = set()
+
+def get_bills_columns(supabase: Client) -> set:
+    """Probe the live schema and return the set of column names that actually exist
+    in the `bills` table. Results are cached for the lifetime of this process so
+    only one round-trip is made per invocation.
+
+    This is the fix for PGRST204 'column not found in schema cache' — the scripts
+    reference columns that were added to the codebase but not yet migrated to the
+    live DB (sponsor_title, assent_date, first_reading_date, etc.). By probing
+    once at startup and filtering every payload through this allowlist we:
+      - Never send a column that doesn't exist → no more 400 errors
+      - Automatically start sending new columns the moment the migration is applied
+      - Require no code changes when the DB schema evolves
+    """
+    global _BILLS_COLUMNS_CACHE
+    if _BILLS_COLUMNS_CACHE:
+        return _BILLS_COLUMNS_CACHE
+    try:
+        # Fetch a single row with all columns — the column names returned by
+        # PostgREST tell us exactly what the schema cache knows about.
+        res = supabase.table("bills").select("*").limit(1).execute()
+        if res.data:
+            _BILLS_COLUMNS_CACHE = set(res.data[0].keys())
+        else:
+            # No rows yet — do a HEAD-style probe by inserting nothing and
+            # reading the error. Fallback: use a known-safe minimal set.
+            _BILLS_COLUMNS_CACHE = {
+                "id", "title", "slug", "sponsor", "status", "category",
+                "date", "url", "pdf_url", "text_content", "description",
+                "summary", "updated_at", "created_at", "bill_no",
+                "session_year", "b2_url", "ai_concerns",
+                "constitutional_section", "tabloid_summary", "neural_summary",
+                "corroboration_score", "verified_sources", "analysis_status",
+                "stages", "house", "history", "status_lock",
+            }
+        logging.info(f"[Schema] bills columns detected: {sorted(_BILLS_COLUMNS_CACHE)}")
+    except Exception as e:
+        logging.warning(f"[Schema] Could not probe bills columns: {e}. Will attempt writes anyway.")
+        _BILLS_COLUMNS_CACHE = set()  # Empty = no filtering (old behaviour)
+    return _BILLS_COLUMNS_CACHE
+
+
+def _filter_payload(payload: dict, allowed_cols: set) -> dict:
+    """Remove any keys from payload that are not in allowed_cols.
+    If allowed_cols is empty (probe failed) the payload is returned unchanged."""
+    if not allowed_cols:
+        return payload
+    filtered = {k: v for k, v in payload.items() if k in allowed_cols}
+    dropped = set(payload.keys()) - set(filtered.keys())
+    if dropped:
+        logging.debug(f"[Schema] Dropped unknown columns from payload: {sorted(dropped)}")
+    return filtered
+
 def sync_data(input_file: Optional[str] = None, output_dir: str = "processed_data/legislative"):
     load_env()
     supabase = get_supabase_client()
@@ -163,6 +217,7 @@ def sync_data(input_file: Optional[str] = None, output_dir: str = "processed_dat
 
     stats = {"bills": 0, "updates": 0, "order_papers": 0, "failed": 0}
     v2_supported = check_schema_support(supabase)
+    bills_cols   = get_bills_columns(supabase)
     synced_now = []
 
     for latest_file in files_to_sync:
@@ -296,7 +351,8 @@ def sync_data(input_file: Optional[str] = None, output_dir: str = "processed_dat
                         for f in TRACKED if new_data.get(f) is not None
                     )
                     if has_change:
-                        supabase.table("bills").update(new_data).eq("id", existing['id']).execute()
+                        safe_data = _filter_payload(new_data, bills_cols)
+                        supabase.table("bills").update(safe_data).eq("id", existing['id']).execute()
                         file_stats["updates"] += 1
                         stats["updates"] += 1
                     else:
@@ -306,7 +362,8 @@ def sync_data(input_file: Optional[str] = None, output_dir: str = "processed_dat
                     logging.info(f"✨ New Bill: {item['title']}")
                     if not new_data.get("status"):
                         new_data["status"] = "Published" if item.get("category") != "Documentation" else "Ingested"
-                    supabase.table("bills").upsert(new_data, on_conflict="slug").execute()
+                    safe_data = _filter_payload(new_data, bills_cols)
+                    supabase.table("bills").upsert(safe_data, on_conflict="slug").execute()
                     file_stats["bills"] += 1
                     stats["bills"] += 1
 
@@ -381,6 +438,7 @@ def apply_tracker_enrichment(input_file: Optional[str] = None, output_dir: str =
     ]
 
     stats = {"enriched": 0, "skipped_locked": 0, "not_found": 0, "failed": 0}
+    bills_cols = get_bills_columns(supabase)
 
     for enrichment in matched_rows:
         try:
@@ -457,9 +515,13 @@ def apply_tracker_enrichment(input_file: Optional[str] = None, output_dir: str =
             update["updated_at"] = datetime.now().isoformat()
 
             if len(update) > 2:  # More than just timestamps
-                supabase.table("bills").update(update).eq("id", existing["id"]).execute()
-                logging.info(f"[Tracker Enrichment] ✅ Enriched: '{bill_title}' — fields: {list(update.keys())}")
-                stats["enriched"] += 1
+                safe_update = _filter_payload(update, bills_cols)
+                if len(safe_update) > 2:
+                    supabase.table("bills").update(safe_update).eq("id", existing["id"]).execute()
+                    logging.info(f"[Tracker Enrichment] ✅ Enriched: '{bill_title}' — fields: {list(safe_update.keys())}")
+                    stats["enriched"] += 1
+                else:
+                    logging.debug(f"[Tracker Enrichment] All enrichment fields missing from schema for: '{bill_title}' — skipping")
             else:
                 logging.debug(f"[Tracker Enrichment] No new fields for: '{bill_title}' — skipping UPDATE")
 
@@ -512,6 +574,7 @@ def flush_staging_to_bills():
 
     stats = {"bills": 0, "updates": 0, "order_papers": 0, "failed": 0}
     flushed_ids = []
+    bills_cols  = get_bills_columns(supabase)
 
     for item in items:
         try:
@@ -624,7 +687,8 @@ def flush_staging_to_bills():
                     for f in TRACKED if new_data.get(f) is not None
                 )
                 if has_change:
-                    supabase.table("bills").update(new_data).eq("id", existing['id']).execute()
+                    safe_data = _filter_payload(new_data, bills_cols)
+                    supabase.table("bills").update(safe_data).eq("id", existing['id']).execute()
                     stats["updates"] += 1
                 else:
                     logging.debug(f"⏭️  No changes for: {item['title']} — skipped UPDATE")
@@ -632,7 +696,8 @@ def flush_staging_to_bills():
                 logging.info(f"✨ [FlushStaging] New Bill: {item['title']}")
                 if not new_data.get("status"):
                     new_data["status"] = "Published" if item.get("category") != "Documentation" else "Ingested"
-                supabase.table("bills").upsert(new_data, on_conflict="slug").execute()
+                safe_data = _filter_payload(new_data, bills_cols)
+                supabase.table("bills").upsert(safe_data, on_conflict="slug").execute()
                 stats["bills"] += 1
 
             if staging_id:
