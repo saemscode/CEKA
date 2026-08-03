@@ -16,7 +16,7 @@ import CampaignSpotlight from '@/components/campaign/CampaignSpotlight';
 import InstagramCarousel from '@/components/carousel/InstagramCarousel';
 import { mediaService, type MediaContent } from '@/services/mediaService';
 import { Button } from '@/components/ui/button';
-import { NasakaFeedBanner } from '@/components/promo/NasakaAd';
+import { SmartAdFeedBanner } from '@/components/promo/NasakaAd';
 import storageService from '@/services/storageService';
 import { CEKAFullLoader } from '@/components/ui/ceka-loader';
 
@@ -184,7 +184,7 @@ const Index = () => {
         <FeaturedLegislation />
 
         <section className="container mx-auto py-8" aria-label="Featured partner tools">
-          <NasakaFeedBanner />
+          <SmartAdFeedBanner />
         </section>
 
         {/* Featured Instagram-style Carousel Section */}

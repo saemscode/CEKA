@@ -54,6 +54,7 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ clas
     const [unreadCount, setUnreadCount] = useState(0);
     const [isLoading, setIsLoading] = useState(true);
     const [isOpen, setIsOpen] = useState(false);
+    const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
     // Fetch notifications
     const fetchNotifications = useCallback(async () => {
@@ -125,12 +126,18 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ clas
     };
 
     // Navigate to notification link
-    const handleNotificationClick = (notification: Notification) => {
+    const handleNotificationClick = (notification: Notification, e?: React.MouseEvent) => {
+        e?.stopPropagation();
         handleMarkAsRead(notification);
         if (notification.link) {
             navigate(notification.link);
             setIsOpen(false);
         }
+    };
+
+    const toggleExpand = (id: string, e: React.MouseEvent) => {
+        e.stopPropagation();
+        setExpanded(prev => ({ ...prev, [id]: !prev[id] }));
     };
 
     // Get icon component for notification type
@@ -265,9 +272,8 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ clas
                                                     animate={{ opacity: 1, y: 0 }}
                                                     exit={{ opacity: 0, x: -100 }}
                                                     transition={{ delay: index * 0.02 }}
-                                                    onClick={() => handleNotificationClick(notification)}
                                                     className={cn(
-                                                        "relative flex gap-3 px-4 py-3 cursor-pointer transition-colors group",
+                                                        "relative flex gap-3 px-4 py-3 transition-colors group",
                                                         "hover:bg-muted/50",
                                                         !notification.is_read && "bg-primary/5"
                                                     )}
@@ -294,15 +300,22 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ clas
                                                         </div>
                                                     )}
 
-                                                    {/* Content */}
-                                                    <div className="flex-1 min-w-0">
+                                                    {/* Content - Clickable for expansion */}
+                                                    <div 
+                                                        className="flex-1 min-w-0 cursor-pointer" 
+                                                        onClick={(e) => toggleExpand(notification.id, e)}
+                                                    >
                                                         <p className={cn(
-                                                            "text-sm line-clamp-1",
-                                                            !notification.is_read && "font-semibold"
+                                                            "text-sm",
+                                                            !notification.is_read && "font-semibold",
+                                                            !expanded[notification.id] && "line-clamp-1"
                                                         )}>
                                                             {notification.title}
                                                         </p>
-                                                        <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">
+                                                        <p className={cn(
+                                                            "text-xs text-muted-foreground mt-0.5",
+                                                            !expanded[notification.id] && "line-clamp-2"
+                                                        )}>
                                                             {notification.message}
                                                         </p>
                                                         <div className="flex items-center gap-2 mt-1">
@@ -313,30 +326,35 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ clas
                                                     </div>
 
                                                     {/* Actions */}
-                                                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <div className="flex items-center gap-1">
                                                         {!notification.is_read && (
                                                             <Button
                                                                 variant="ghost"
                                                                 size="icon"
-                                                                className="h-7 w-7 rounded-full"
+                                                                className="h-7 w-7 rounded-full text-green-600 hover:text-green-700 hover:bg-green-100"
                                                                 onClick={(e) => handleMarkAsRead(notification, e)}
                                                             >
-                                                                <Check className="h-3.5 w-3.5" />
+                                                                <Check className="h-4 w-4" />
                                                             </Button>
                                                         )}
                                                         <Button
                                                             variant="ghost"
                                                             size="icon"
-                                                            className="h-7 w-7 rounded-full hover:bg-red-100 hover:text-red-500"
+                                                            className="h-7 w-7 rounded-full text-red-500 hover:bg-red-100"
                                                             onClick={(e) => handleArchive(notification, e)}
                                                         >
-                                                            <Archive className="h-3.5 w-3.5" />
+                                                            <Archive className="h-4 w-4" />
                                                         </Button>
                                                     </div>
 
                                                     {/* Link indicator */}
                                                     {notification.link && (
-                                                        <ChevronRight className="h-4 w-4 text-muted-foreground/50 self-center shrink-0" />
+                                                        <button 
+                                                            className="ml-1 flex items-center justify-center rounded-full p-1 hover:bg-primary/10 transition-colors cursor-pointer"
+                                                            onClick={(e) => handleNotificationClick(notification, e)}
+                                                        >
+                                                            <ChevronRight className="h-5 w-5 text-primary" />
+                                                        </button>
                                                     )}
                                                 </motion.div>
                                             );
@@ -356,7 +374,7 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ clas
                                 variant="ghost"
                                 className="w-full rounded-2xl text-sm text-muted-foreground hover:text-foreground"
                                 onClick={() => {
-                                    navigate('/settings?tab=notifications');
+                                    navigate('/notifications');
                                     setIsOpen(false);
                                 }}
                             >

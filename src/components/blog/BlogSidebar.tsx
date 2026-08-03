@@ -25,6 +25,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { translate } from '@/lib/utils';
 import { cn } from '@/lib/utils';
+import { mediaService } from '@/services/mediaService';
 
 interface CarouselItem {
   title: string;
@@ -193,33 +194,48 @@ export function BlogSidebar() {
   ];
 
   // Featured Civic Work (Ad Space)
-  const featuredItems: CarouselItem[] = [
+  const [featuredItems, setFeaturedItems] = useState<CarouselItem[]>([
     {
-      title: translate("Follow us on Instagram", language),
-      description: translate("Engage with us on our civic engagement platform", language),
-      icon: <Heart className="h-4 w-4" />,
-      action: translate("Visit Now", language),
-      link: "https://www.instagram.com/civiceducationke/",
-      color: "bg-gradient-to-r from-pink-500 to-purple-500",
-      isExternal: true
-    },
-    {
-      title: translate("Youth Civic Summit 2025", language),
-      description: translate("Register for Kenya's largest youth civic gathering", language),
-      icon: <Megaphone className="h-4 w-4" />,
-      action: translate("Register", language),
-      link: "/calendar",
-      color: "bg-cyan-500"
-    },
-    {
-      title: translate("Constitutional Rights Guide", language),
-      description: translate("Know your rights as a Kenyan citizen", language),
-      icon: <BookOpen className="h-4 w-4" />,
-      action: translate("Read Guide", language),
-      link: "/resources",
+      title: translate("Loading Featured...", language),
+      description: translate("Please wait...", language),
+      icon: <Sparkles className="h-4 w-4" />,
       color: "bg-amber-500"
     }
-  ];
+  ]);
+
+  useEffect(() => {
+    const fetchFeatured = async () => {
+      try {
+        const data = await mediaService.listMediaContent('carousel', 1, 3);
+        if (data && data.length > 0) {
+          const formatted = data.map(item => ({
+            title: item.title,
+            description: item.description || '',
+            icon: <Sparkles className="h-4 w-4" />,
+            action: translate("View Details", language),
+            link: `/media/${item.slug}`,
+            color: "bg-gradient-to-r from-pink-500 to-purple-500",
+            isExternal: false
+          }));
+          setFeaturedItems(formatted);
+        } else {
+          setFeaturedItems([
+            {
+              title: translate("Youth Civic Summit 2025", language),
+              description: translate("Register for Kenya's largest youth civic gathering", language),
+              icon: <Megaphone className="h-4 w-4" />,
+              action: translate("Register", language),
+              link: "/calendar",
+              color: "bg-cyan-500"
+            }
+          ]);
+        }
+      } catch (e) {
+        console.error("Error fetching featured", e);
+      }
+    };
+    fetchFeatured();
+  }, [language]);
 
   // Quick Actions Carousel
   const quickActionItems: CarouselItem[] = [

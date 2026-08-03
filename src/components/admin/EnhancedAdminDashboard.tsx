@@ -28,6 +28,7 @@ import BentoAnalyticsDashboard from './BentoAnalyticsDashboard';
 import PollManager from './PollManager';
 import PartnerManager from './PartnerManager';
 import { AdminGridCurator } from './AdminGridCurator';
+import BlogPostManager from './BlogPostManager';
 import { BroadcastCenter } from './broadcast/BroadcastCenter';
 import SmartAdManager from './SmartAdManager';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
@@ -329,6 +330,12 @@ const EnhancedAdminDashboard = () => {
                                 Events
                             </TabsTrigger>
                         )}
+                        {permissions[PERMISSION_KEYS.CONTENT_MANAGEMENT] !== false && (
+                            <TabsTrigger value="blog" className="rounded-xl px-4 py-3 font-medium data-[state=active]:shadow-lg">
+                                <FileText className="h-4 w-4 mr-2" />
+                                Blogs
+                            </TabsTrigger>
+                        )}
                         {permissions[PERMISSION_KEYS.CAMPAIGN_MANAGEMENT] && (
                             <TabsTrigger value="campaigns" className="rounded-xl px-4 py-3 font-medium data-[state=active]:shadow-lg">
                                 <Radio className="h-4 w-4 mr-2" />
@@ -575,6 +582,10 @@ const EnhancedAdminDashboard = () => {
 
                 <TabsContent value="events">
                     <EventManager />
+                </TabsContent>
+
+                <TabsContent value="blog">
+                    <BlogPostManager />
                 </TabsContent>
 
                 <TabsContent value="campaigns">

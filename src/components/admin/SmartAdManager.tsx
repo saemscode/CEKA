@@ -4,6 +4,10 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Play, Pause, ExternalLink, Calendar, Target, Activity, Settings2 } from 'lucide-react';
 import { CEKALoader } from '@/components/ui/ceka-loader';
@@ -24,6 +28,10 @@ interface AdminAd {
 export default function SmartAdManager() {
   const [ads, setAds] = useState<AdminAd[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isCreating, setIsCreating] = useState(false);
+  const [newAd, setNewAd] = useState<Partial<AdminAd>>({
+    title: '', subtitle: '', cta_url: '', ad_category: 'partner', priority_weight: 1, is_active: true
+  });
   const { toast } = useToast();
 
   const fetchAds = async () => {
@@ -61,6 +69,23 @@ export default function SmartAdManager() {
     toast({ title: 'Success', description: 'Ad status updated.' });
   };
 
+  const handleCreateAd = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const { data, error } = await (supabase as any)
+      .from('promo_ads')
+      .insert([newAd])
+      .select();
+
+    if (error) {
+      toast({ title: 'Error', description: 'Failed to create ad.', variant: 'destructive' });
+      return;
+    }
+
+    setAds([data[0], ...ads]);
+    setIsCreating(false);
+    toast({ title: 'Success', description: 'New ad created and live.' });
+  };
+
   if (loading) return <div className="p-8 flex justify-center"><CEKALoader /></div>;
 
   return (
@@ -70,9 +95,44 @@ export default function SmartAdManager() {
           <h2 className="text-2xl font-black tracking-tighter">Smart Ad Engine</h2>
           <p className="text-sm text-muted-foreground">Manage dynamic rotation, schedules, and weights.</p>
         </div>
-        <Button variant="outline" onClick={() => fetchAds()}>
-          Refresh Data
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => fetchAds()}>
+            Refresh Data
+          </Button>
+          <Dialog open={isCreating} onOpenChange={setIsCreating}>
+            <DialogTrigger asChild>
+              <Button>New Campaign</Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Create New Ad Campaign</DialogTitle>
+              </DialogHeader>
+              <form onSubmit={handleCreateAd} className="space-y-4">
+                <div>
+                  <Label>Title</Label>
+                  <Input required value={newAd.title} onChange={e => setNewAd({ ...newAd, title: e.target.value })} />
+                </div>
+                <div>
+                  <Label>Subtitle / Brand</Label>
+                  <Input value={newAd.subtitle} onChange={e => setNewAd({ ...newAd, subtitle: e.target.value })} />
+                </div>
+                <div>
+                  <Label>CTA URL</Label>
+                  <Input required type="url" value={newAd.cta_url} onChange={e => setNewAd({ ...newAd, cta_url: e.target.value })} />
+                </div>
+                <div>
+                  <Label>Category</Label>
+                  <Input value={newAd.ad_category} onChange={e => setNewAd({ ...newAd, ad_category: e.target.value })} />
+                </div>
+                <div>
+                  <Label>Weight (Priority)</Label>
+                  <Input type="number" min="1" value={newAd.priority_weight} onChange={e => setNewAd({ ...newAd, priority_weight: parseInt(e.target.value) || 1 })} />
+                </div>
+                <Button type="submit" className="w-full">Create Ad</Button>
+              </form>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">

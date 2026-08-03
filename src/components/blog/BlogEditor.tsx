@@ -1,3 +1,4 @@
+// src/components/blog/BlogEditor.tsx
 
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
@@ -124,7 +125,7 @@ export function BlogEditor({ post, onSave, onCancel }: BlogEditorProps) {
         seo_keywords: seoKeywords.length > 0 ? seoKeywords : undefined,
         tags,
         status,
-        category_id: categoryId || undefined,
+        category_id: categoryId === 'none' ? undefined : categoryId, // Fix: treat "none" as no category
         published_at: status === 'published' ? new Date().toISOString() : (post?.published_at || undefined)
       };
 
@@ -222,12 +223,12 @@ export function BlogEditor({ post, onSave, onCancel }: BlogEditorProps) {
 
               <div>
                 <Label htmlFor="category">Category</Label>
-                <Select name="category" value={categoryId} onValueChange={setCategoryId}>
+                <Select name="category" value={categoryId || 'none'} onValueChange={(value) => setCategoryId(value === 'none' ? '' : value)}>
                   <SelectTrigger id="category">
                     <SelectValue placeholder="Select category" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">No Category</SelectItem>
+                    <SelectItem value="none">No Category</SelectItem> {/* Fixed: non-empty value */}
                     {categories.map((category) => (
                       <SelectItem key={category.id} value={category.id}>
                         {category.name}

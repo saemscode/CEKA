@@ -425,20 +425,52 @@ class AdminService {
 
   async checkAdminWithSessionManagement(userId?: string | null, userEmail?: string | null): Promise<boolean> {
     let email = userEmail;
-    if (!email || !userId) {
+    let uid = userId;
+    if (!email || !uid) {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return false;
       email = user.email;
+      uid = user.id;
     }
 
     if (email === ROOT_ADMIN_EMAIL) return true;
+
+    // Check if user already has an active session
+    const { data: existingSession } = await supabase
+      .from('admin_sessions')
+      .select('id')
+      .eq('user_id', uid)
+      .eq('is_active', true)
+      .maybeSingle();
+
+    if (existingSession) {
+      await supabase
+        .from('admin_sessions')
+        .update({ last_active: new Date().toISOString() })
+        .eq('id', existingSession.id);
+      return true;
+    }
 
     const { count } = await supabase
       .from('admin_sessions')
       .select('*', { count: 'exact', head: true })
       .eq('is_active', true);
 
-    return (count || 0) < 3;
+    if ((count || 0) < 3) {
+      await supabase
+        .from('admin_sessions')
+        .insert({
+          user_id: uid,
+          email: email,
+          session_token: Math.random().toString(36).substring(7),
+          last_active: new Date().toISOString(),
+          expires_at: new Date(Date.now() + 1000 * 60 * 60 * 12).toISOString(),
+          is_active: true
+        });
+      return true;
+    }
+
+    return false;
   }
 
   async cleanupAdminSession(userId?: string | null): Promise<void> {

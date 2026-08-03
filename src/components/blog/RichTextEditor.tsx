@@ -35,31 +35,34 @@ interface RichTextEditorProps {
 export function RichTextEditor({ content, onChange, postId, placeholder = "Start writing..." }: RichTextEditorProps) {
   const [isPreviewMode, setIsPreviewMode] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const editorRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
-  const insertText = useCallback((before: string, after: string = '') => {
-    const textarea = textareaRef.current;
-    if (!textarea) return;
+  // Keep track of initial content to avoid cursor jumping
+  const initialContent = useRef(content || '');
 
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    const selectedText = content.substring(start, end);
-    const newText = content.substring(0, start) + before + selectedText + after + content.substring(end);
+  useEffect(() => {
+    // If the content is updated externally (e.g. loading a post), update the editor
+    if (editorRef.current && content !== editorRef.current.innerHTML && content !== initialContent.current) {
+        editorRef.current.innerHTML = content;
+        initialContent.current = content;
+    }
+  }, [content]);
 
-    onChange(newText);
+  const handleInput = useCallback(() => {
+    if (editorRef.current) {
+        onChange(editorRef.current.innerHTML);
+    }
+  }, [onChange]);
 
-    // Restore cursor position
-    setTimeout(() => {
-      textarea.focus();
-      textarea.setSelectionRange(start + before.length, end + before.length);
-    }, 0);
-  }, [content, onChange]);
-
-  const formatText = useCallback((tag: string) => {
-    insertText(`<${tag}>`, `</${tag}>`);
-  }, [insertText]);
+  const exec = useCallback((command: string, value?: string) => {
+    document.execCommand(command, false, value);
+    if (editorRef.current) {
+        editorRef.current.focus();
+        onChange(editorRef.current.innerHTML);
+    }
+  }, [onChange]);
 
   const handleImageUpload = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -87,8 +90,8 @@ export function RichTextEditor({ content, onChange, postId, placeholder = "Start
     try {
       const media = await blogService.uploadMedia(file, postId);
       if (media) {
-        const imageHtml = `<img src="${media.file_url}" alt="${media.alt_text || 'Uploaded image'}" style="max-width: 100%; height: auto;" />`;
-        insertText(imageHtml);
+        const imageHtml = `<img src="${media.file_url}" alt="${media.alt_text || 'Uploaded image'}" style="max-width: 100%; height: auto; border-radius: 12px; margin: 10px 0;" />`;
+        exec('insertHTML', imageHtml);
         toast({
           title: "Success",
           description: "Image uploaded successfully"
@@ -108,34 +111,34 @@ export function RichTextEditor({ content, onChange, postId, placeholder = "Start
         fileInputRef.current.value = '';
       }
     }
-  }, [insertText, postId, toast]);
+  }, [exec, postId, toast]);
 
   const handleAddLink = useCallback(() => {
     const url = prompt('Enter URL:');
     if (url) {
-      const text = prompt('Enter link text:') || url;
-      insertText(`<a href="${url}" target="_blank" rel="noopener noreferrer">${text}</a>`);
+      exec('createLink', url);
     }
-  }, [insertText]);
+  }, [exec]);
 
   const addHeader = (level: number) => {
-    insertText(`<h${level}>`, `</h${level}>`);
+    exec('formatBlock', `<H${level}>`);
   };
 
   const toolbarButtons = [
-    { icon: Bold, action: () => formatText('strong'), title: 'Bold' },
-    { icon: Italic, action: () => formatText('em'), title: 'Italic' },
-    { icon: Underline, action: () => formatText('u'), title: 'Underline' },
+    { icon: Bold, action: () => exec('bold'), title: 'Bold' },
+    { icon: Italic, action: () => exec('italic'), title: 'Italic' },
+    { icon: Underline, action: () => exec('underline'), title: 'Underline' },
+    { icon: Strikethrough, action: () => exec('strikeThrough'), title: 'Strikethrough' },
     { separator: true },
-    { icon: AlignLeft, action: () => insertText('<div style="text-align: left;">', '</div>'), title: 'Align Left' },
-    { icon: AlignCenter, action: () => insertText('<div style="text-align: center;">', '</div>'), title: 'Align Center' },
+    { icon: AlignLeft, action: () => exec('justifyLeft'), title: 'Align Left' },
+    { icon: AlignCenter, action: () => exec('justifyCenter'), title: 'Align Center' },
+    { icon: AlignRight, action: () => exec('justifyRight'), title: 'Align Right' },
     { separator: true },
-    { icon: List, action: () => insertText('<ul><li>', '</li></ul>'), title: 'Bullet List' },
-    { icon: ListOrdered, action: () => insertText('<ol><li>', '</li></ol>'), title: 'Numbered List' },
+    { icon: List, action: () => exec('insertUnorderedList'), title: 'Bullet List' },
+    { icon: ListOrdered, action: () => exec('insertOrderedList'), title: 'Numbered List' },
     { separator: true },
     { icon: Link, action: handleAddLink, title: 'Insert Link' },
     { icon: Image, action: () => fileInputRef.current?.click(), title: 'Insert Image', disabled: isUploading },
-    { icon: Code, action: () => formatText('code'), title: 'Inline Code' },
   ];
 
   return (
@@ -144,8 +147,8 @@ export function RichTextEditor({ content, onChange, postId, placeholder = "Start
         {/* Premium Military-Grade Toolbar */}
         <div className="flex flex-wrap items-center gap-1.5 p-3 rounded-2xl bg-slate-900 text-white border border-slate-800 sticky top-0 z-10 shadow-xl">
           <div className="flex items-center gap-1 mr-2 px-3 py-1 bg-slate-800 rounded-xl">
-            <Button variant="ghost" size="sm" onClick={() => addHeader(1)} className="h-7 w-7 p-0 hover:bg-slate-700 font-black">H1</Button>
-            <Button variant="ghost" size="sm" onClick={() => addHeader(2)} className="h-7 w-7 p-0 hover:bg-slate-700 font-black">H2</Button>
+            <Button variant="ghost" size="sm" onMouseDown={(e) => e.preventDefault()} onClick={() => addHeader(1)} className="h-7 w-7 p-0 hover:bg-slate-700 font-black">H1</Button>
+            <Button variant="ghost" size="sm" onMouseDown={(e) => e.preventDefault()} onClick={() => addHeader(2)} className="h-7 w-7 p-0 hover:bg-slate-700 font-black">H2</Button>
           </div>
 
           <Separator orientation="vertical" className="h-6 bg-slate-700 mx-1" />
@@ -158,6 +161,7 @@ export function RichTextEditor({ content, onChange, postId, placeholder = "Start
                 key={index}
                 variant="ghost"
                 size="sm"
+                onMouseDown={(e) => e.preventDefault()}
                 onClick={button.action}
                 disabled={button.disabled}
                 title={button.title}
@@ -200,12 +204,20 @@ export function RichTextEditor({ content, onChange, postId, placeholder = "Start
               />
             </div>
           ) : (
-            <Textarea
-              ref={textareaRef}
-              value={content}
-              onChange={(e) => onChange(e.target.value)}
-              placeholder={placeholder}
-              className="absolute inset-0 w-full h-full p-12 font-mono text-base leading-relaxed border-none focus-visible:ring-0 resize-none bg-slate-50/10 placeholder:text-slate-300"
+            <div
+              ref={editorRef}
+              contentEditable
+              onInput={handleInput}
+              dangerouslySetInnerHTML={{ __html: initialContent.current }}
+              className="absolute inset-0 w-full h-full p-12 overflow-y-auto focus-visible:outline-none focus:ring-0
+                prose prose-slate prose-lg max-w-none 
+                prose-headings:font-black prose-headings:tracking-tighter
+                prose-h1:text-5xl prose-h2:text-4xl
+                prose-p:leading-relaxed prose-p:text-slate-600
+                prose-strong:text-slate-900 prose-strong:font-black
+                prose-a:text-kenya-green prose-a:font-bold prose-a:no-underline hover:prose-a:underline
+                prose-img:rounded-3xl prose-img:shadow-2xl"
+              style={{ minHeight: '500px' }}
             />
           )}
         </div>

@@ -174,7 +174,33 @@ const BulkUploadManager = () => {
                         if (data?.image?.url) mediaUrls.push(data.image.url);
                     }
                 } catch (e) {
-                    console.warn('[URLExtractor] Microlink fetch failed, using fallback:', e);
+                    console.warn('[URLExtractor] Microlink fetch failed, falling back to raw HTML parsing:', e);
+                }
+
+                // Fallback: If Microlink failed to get the image (very common for IG)
+                if (mediaUrls.length === 0) {
+                    try {
+                        const fallbackRes = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(socialUrl)}`);
+                        if (fallbackRes.ok) {
+                            const json = await fallbackRes.json();
+                            const html = json.contents;
+                            if (html) {
+                                const ogImageMatch = html.match(/<meta\s+property="og:image"\s+content="([^"]+)"/i);
+                                if (ogImageMatch && ogImageMatch[1]) {
+                                    // Make sure it's a valid URL, decode HTML entities
+                                    const imgUrl = ogImageMatch[1].replace(/&amp;/g, '&');
+                                    mediaUrls.push(imgUrl);
+                                }
+                                const ogTitleMatch = html.match(/<meta\s+property="og:title"\s+content="([^"]+)"/i);
+                                if (ogTitleMatch && ogTitleMatch[1]) extractedTitle = ogTitleMatch[1].replace(/&amp;/g, '&');
+                                
+                                const ogDescMatch = html.match(/<meta\s+property="og:description"\s+content="([^"]+)"/i);
+                                if (ogDescMatch && ogDescMatch[1]) extractedDesc = ogDescMatch[1].replace(/&amp;/g, '&');
+                            }
+                        }
+                    } catch (fallbackErr) {
+                        console.warn('[URLExtractor] Fallback extraction failed:', fallbackErr);
+                    }
                 }
 
                 const hashtags = extractedDesc.match(/#[a-zA-Z0-9_]+/g);
@@ -192,7 +218,7 @@ const BulkUploadManager = () => {
                         if (data?.image?.url) mediaUrls.push(data.image.url);
                     }
                 } catch (e) {
-                    mediaUrls.push(socialUrl);
+                    console.warn('[URLExtractor] Microlink fetch failed for non-IG:', e);
                 }
             }
 
@@ -214,21 +240,13 @@ const BulkUploadManager = () => {
                     mediaUrls.map(async (url, idx) => {
                         let blob: Blob;
                         try {
-                            const res = await fetch(url);
+                            // Use a CORS proxy to bypass Instagram CDN blocking
+                            const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+                            const res = await fetch(proxyUrl);
+                            if (!res.ok) throw new Error("CORS Proxy failed");
                             blob = await res.blob();
                         } catch (e) {
-                            const canvas = document.createElement('canvas');
-                            canvas.width = 1080;
-                            canvas.height = 1080;
-                            const ctx = canvas.getContext('2d');
-                            if (ctx) {
-                                ctx.fillStyle = '#008751';
-                                ctx.fillRect(0, 0, 1080, 1080);
-                                ctx.fillStyle = '#ffffff';
-                                ctx.font = 'bold 44px sans-serif';
-                                ctx.fillText(cleanTitle, 80, 540);
-                            }
-                            blob = await new Promise<Blob>(r => canvas.toBlob(b => r(b || new Blob()), 'image/jpeg'));
+                            throw new Error(`Failed to download image from ${url}`);
                         }
                         const mime = blob.type || 'image/jpeg';
                         const file = new File([blob], `slide_${idx + 1}.jpg`, { type: mime });
@@ -249,6 +267,8 @@ const BulkUploadManager = () => {
                     })
                 );
                 setFiles(prev => [...prev, ...newFiles]);
+            } else {
+                throw new Error("No images could be extracted from this URL.");
             }
 
             toast({

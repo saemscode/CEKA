@@ -122,7 +122,7 @@ export const mediaService = {
 
         let query = (supabase as any)
             .from('media_content')
-            .select('*', { count: 'exact' })
+            .select('*, items:media_items(*)', { count: 'exact' })
             .eq('status', 'published')
             .order('display_order', { ascending: false, nullsFirst: false })
             .order('created_at', { ascending: false })
@@ -211,7 +211,7 @@ export const mediaService = {
 
         let query = (supabase as any)
             .from('media_content')
-            .select('*', { count: 'exact' })
+            .select('*, items:media_items(*)', { count: 'exact' })
             .eq('status', 'published')
             .order('created_at', { ascending: false })
             .range(from, to);

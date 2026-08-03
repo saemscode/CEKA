@@ -958,6 +958,16 @@ export const DbAdSidebarWidget: React.FC<{ category?: string; dwellDelayMs?: num
 };
 
 /**
+ * DbAdToolsCard — renders the rotated DB ad as a tools card.
+ */
+export const DbAdToolsCard: React.FC<{ category?: string }> = ({ category }) => {
+  const { ads, loading } = useDbAds(category);
+  if (loading) return null;
+  if (!ads.length) return <NasakaToolsCard />;
+  return <AdToolsCard ad={dbAdToContent(ads[0])} />;
+};
+
+/**
  * CampaignCollabBanner — specifically renders collab campaign ads (is_collab=true).
  */
 export const CampaignCollabBanner: React.FC = () => {
@@ -981,3 +991,4 @@ export const CampaignCollabBanner: React.FC = () => {
 
 export const SmartAdFeedBanner = DbAdFeedBanner;
 export const SmartAdSidebarWidget = DbAdSidebarWidget;
+export const SmartAdToolsCard = DbAdToolsCard;

@@ -1,3 +1,4 @@
+// src/services/blogService.ts
 
 import { supabase } from '@/integrations/supabase/client';
 
@@ -57,6 +58,37 @@ export interface BlogTag {
   slug: string;
   description?: string;
   created_at: string;
+}
+
+// Columns that exist in the blog_posts table
+const ALLOWED_COLUMNS: (keyof BlogPost)[] = [
+  'title',
+  'slug',
+  'content',
+  'excerpt',
+  'author',
+  'tags',
+  'status',
+  'user_id',
+  'category_id',
+  'published_at',
+  'scheduled_at',
+  'admin_notes',
+  'rejection_reason',
+  'created_at',
+  'updated_at',
+  // 'views' may exist; if needed, add it
+];
+
+// Filter function to strip unknown fields
+function sanitizePostData(data: Partial<BlogPost>): Partial<BlogPost> {
+  const sanitized: Record<string, any> = {};
+  for (const key of ALLOWED_COLUMNS) {
+    if (key in data) {
+      sanitized[key] = data[key];
+    }
+  }
+  return sanitized as Partial<BlogPost>;
 }
 
 class BlogService {
@@ -146,29 +178,37 @@ class BlogService {
 
   async createPost(post: Partial<BlogPost>): Promise<BlogPost | null> {
     try {
-      const postData = {
+      // Build a complete object with required fields
+      const now = new Date().toISOString();
+      const baseData = {
         title: post.title || '',
         slug: post.slug || '',
         content: post.content || '',
-        content_type: post.content_type || 'html',
+        status: post.status || 'draft',
+        created_at: now,
+        updated_at: now
+      };
+
+      // Merge with optional fields and sanitize
+      const fullData = {
+        ...baseData,
         excerpt: post.excerpt,
         author: post.author,
         tags: post.tags,
-        status: post.status || 'draft',
         user_id: post.user_id,
         category_id: post.category_id,
         published_at: post.published_at,
         scheduled_at: post.scheduled_at,
-        meta_description: post.meta_description,
-        featured_image_url: post.featured_image_url,
-        seo_keywords: post.seo_keywords,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        admin_notes: post.admin_notes,
+        rejection_reason: post.rejection_reason
       };
 
+      const cleanData = sanitizePostData(fullData);
+
+      // Cast to any because TypeScript cannot guarantee required fields, but we have them
       const { data, error } = await supabase
         .from('blog_posts')
-        .insert([postData])
+        .insert([cleanData as any])
         .select()
         .single();
 
@@ -185,12 +225,14 @@ class BlogService {
 
   async updatePost(id: string, updates: Partial<BlogPost>): Promise<BlogPost | null> {
     try {
+      const cleanUpdates = sanitizePostData({
+        ...updates,
+        updated_at: new Date().toISOString()
+      });
+
       const { data, error } = await supabase
         .from('blog_posts')
-        .update({
-          ...updates,
-          updated_at: new Date().toISOString()
-        })
+        .update(cleanUpdates)
         .eq('id', id)
         .select()
         .single();
@@ -265,8 +307,6 @@ class BlogService {
         .from('blog-media')
         .getPublicUrl(filePath);
 
-      // Since blog_media table doesn't exist in types yet, we'll create a mock response
-      // This should be updated once the database types are regenerated
       const mediaData: BlogMedia = {
         id: crypto.randomUUID(),
         user_id: 'current-user-id', // This should be replaced with actual user ID
@@ -295,7 +335,6 @@ class BlogService {
 
       if (error) throw error;
 
-      // Map the data to include slug since it's missing from the database
       return (data || []).map(category => ({
         id: category.id,
         name: category.name,
@@ -340,7 +379,6 @@ class BlogService {
   async getTags(): Promise<BlogTag[]> {
     try {
       // Since blog_tags table doesn't exist in types yet, return empty array
-      // This should be updated once the database types are regenerated
       console.log('getTags: blog_tags table not available in current schema');
       return [];
     } catch (error) {

@@ -8,7 +8,7 @@ import AccessibilityWidget from '@/components/accessibility/AccessibilityWidget'
 import InAppBrowserBanner from '@/components/ui/InAppBrowserBanner';
 import MaintenanceBanner from '@/components/MaintenanceBanner';
 import CivicMiniPlayer from '@/components/civic/CivicMiniPlayer';
-import { NasakaSidebarWidget } from '@/components/promo/NasakaAd';
+import { SmartAdSidebarWidget } from '@/components/promo/NasakaAd';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useMaintenanceScroll } from '@/hooks/useMaintenanceScroll';
 
@@ -119,7 +119,7 @@ const Layout = ({ children, hideBottomNav, hideBackButton }: LayoutProps) => {
         offsetY={FAB_BASE + FAB_STEP * 3}
       />
 
-      <NasakaSidebarWidget dwellDelayMs={30000} />
+      <SmartAdSidebarWidget dwellDelayMs={30000} />
     </div>
   );
 };

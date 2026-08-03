@@ -24,7 +24,7 @@ import { Badge } from '@/components/ui/badge';
 import Navbar from '@/components/layout/Navbar';
 import BottomNavbar from '@/components/layout/BottomNavbar';
 import { CEKALoader } from '@/components/ui/ceka-loader';
-import { NasakaToolsCard } from '@/components/promo/NasakaAd';
+import { SmartAdToolsCard } from '@/components/promo/NasakaAd';
 import { cn } from '@/lib/utils';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -720,7 +720,7 @@ const Tools = () => {
                       <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
                       <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">App Spotlight</span>
                    </div>
-                   <NasakaToolsCard />
+                   <SmartAdToolsCard />
                 </section>
 
                 {/* Tool Sections */}

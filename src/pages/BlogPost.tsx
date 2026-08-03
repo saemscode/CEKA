@@ -230,7 +230,7 @@ const BlogPostPage = () => {
           <div className="absolute inset-0 bg-white/40 dark:bg-slate-900/20 backdrop-blur-3xl -z-10" />
           <div className="absolute top-0 left-0 w-full h-[600px] bg-gradient-to-b from-kenya-red/5 to-transparent -z-10" />
 
-          <div className="container relative px-4 text-center max-w-5xl">
+          <div className="w-full max-w-4xl mx-auto px-4 text-center">
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -280,13 +280,13 @@ const BlogPostPage = () => {
           </div>
         </section>
 
-        <div className="container relative px-4 pb-24 max-w-7xl">
-          <div className="grid lg:grid-cols-12 gap-12">
+        <div className="w-full max-w-[1536px] mx-auto px-4 md:px-8 lg:px-12 pb-24 overflow-x-hidden">
+          <div className="grid lg:grid-cols-12 gap-8 lg:gap-12">
 
             {/* ARTICLE CONTENT */}
-            <article className="lg:col-span-8 bg-white dark:bg-slate-900/40 rounded-[48px] p-8 md:p-16 shadow-ios-soft dark:shadow-none border border-black/5 dark:border-white/10">
+            <article className="lg:col-span-8 bg-white dark:bg-slate-900/40 rounded-[48px] p-6 md:p-10 lg:p-16 shadow-ios-soft dark:shadow-none border border-black/5 dark:border-white/10 min-w-0">
               {post.excerpt && (
-                <p className="text-2xl md:text-3xl font-medium text-slate-900 dark:text-white mb-12 leading-relaxed tracking-tight italic border-l-4 border-kenya-red pl-8">
+                <p className="text-xl md:text-3xl font-medium text-slate-900 dark:text-white mb-8 md:mb-12 leading-relaxed tracking-tight italic border-l-4 border-kenya-red pl-6 md:pl-8">
                   {post.excerpt}
                 </p>
               )}
