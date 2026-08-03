@@ -579,13 +579,15 @@ Return EXACTLY this JSON object. No markdown. No preamble. Raw JSON only:
         return int(new_mentions_count)
 
     # ================================================================
-    #  NEW: Added missing run_full_scan method
+    #  run_full_scan — HTTP-only, no Playwright required
     # ================================================================
     def run_full_scan(self):
-        """Main entry point: fetch all active bills, scrape news, and discover new topics."""
-        if not PLAYWRIGHT_OK:
-            logger.error("Playwright not installed — cannot run news intelligence.")
-            return
+        """Main entry point: fetch all active bills, scrape news, and discover new topics.
+        
+        Note: The SovereignScraper uses HTTP APIs (ScrapingRobot, ScrapingDog, SerpAPI)
+        so Playwright is NOT required here. The page argument passed to run_for_bill()
+        is kept as None for API compatibility but is not used by the HTTP scraper.
+        """
         bills = self.get_active_bills()
         if not bills:
             logger.info("No active bills found. Nothing to scan.")
@@ -598,29 +600,75 @@ Return EXACTLY this JSON object. No markdown. No preamble. Raw JSON only:
         total_mentions = 0
         _run_start = time.time()
 
-        with sync_playwright() as p:
-            browser = p.chromium.launch(headless=True)
-            ctx = browser.new_context()
-            page = ctx.new_page()
-            for i, bill in enumerate(bills):
-                # -- Task 3: Soft-deadline check -----------------------------------
-                _elapsed = time.time() - _run_start
-                if _elapsed >= NEWS_INTEL_BUDGET:
-                    logger.info(
-                        f"[Budget] Soft deadline reached after {_elapsed:.0f}s "
-                        f"(limit: {NEWS_INTEL_BUDGET}s). "
-                        f"Processed {i}/{len(bills)} bills. Stopping cleanly."
-                    )
-                    break
-                # -- End soft-deadline check ----------------------------------------
-                try:
-                    new_mentions = self.run_for_bill(page, bill)
-                    total_mentions += new_mentions
-                except Exception as e:
-                    logger.error(f"Error processing bill {bill.get('id')}: {e}")
-            browser.close()
+        for i, bill in enumerate(bills):
+            # -- Soft-deadline check -----------------------------------
+            _elapsed = time.time() - _run_start
+            if _elapsed >= NEWS_INTEL_BUDGET:
+                logger.info(
+                    f"[Budget] Soft deadline reached after {_elapsed:.0f}s "
+                    f"(limit: {NEWS_INTEL_BUDGET}s). "
+                    f"Processed {i}/{len(bills)} bills. Stopping cleanly."
+                )
+                break
+            # -- End soft-deadline check ----------------------------------------
+            try:
+                # page=None because SovereignScraper is HTTP-only
+                new_mentions = self.run_for_bill(None, bill)
+                total_mentions += new_mentions
+            except Exception as e:
+                logger.error(f"Error processing bill {bill.get('id')}: {e}")
 
         logger.info(f"[NEWS-INTEL] Scan complete. New mentions: {total_mentions}")
+
+        # ── Bridge to News Corroboration Engine ─────────────────────────────────
+        # After the legacy bill-level scan, invoke the new pipeline stages
+        # (collection → enrichment → fusion → headlines → feed synthesis) if
+        # they are importable. This is done here so a single GHA job that calls
+        # news_intelligence.py also drives the corroboration engine without
+        # needing a separate scheduler entry until the new workflow is deployed.
+        try:
+            import sys, os as _os
+            _ctx_path = _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..", "context", "News by CEKA")
+            if _ctx_path not in sys.path:
+                sys.path.insert(0, _os.path.abspath(_ctx_path))
+            # Stage 1 — Collect fresh RSS / direct-HTML signals
+            try:
+                import news_collector as _nc
+                logger.info("[BRIDGE] Corroboration Stage 1: Collection")
+                _nc.NewsCollector().run()
+            except Exception as _e:
+                logger.warning(f"[BRIDGE] Collection stage skipped: {_e}")
+            # Stage 2 — Enrich signals with story DNA + embeddings
+            try:
+                import news_enrichment as _ne
+                logger.info("[BRIDGE] Corroboration Stage 2: Enrichment")
+                _ne.run()
+            except Exception as _e:
+                logger.warning(f"[BRIDGE] Enrichment stage skipped: {_e}")
+            # Stage 3-5 — Fusion + corroboration + state machine
+            try:
+                import news_fusion_relay as _nf
+                logger.info("[BRIDGE] Corroboration Stage 3-5: Fusion")
+                _nf.FusionRelay().run()
+            except Exception as _e:
+                logger.warning(f"[BRIDGE] Fusion stage skipped: {_e}")
+            # Stage 6 — Headline generation for verified NIOs
+            try:
+                import news_headline_engine as _nh
+                logger.info("[BRIDGE] Corroboration Stage 6: Headlines")
+                _nh.run()
+            except Exception as _e:
+                logger.warning(f"[BRIDGE] Headline stage skipped: {_e}")
+            # Stage 7 — Feed synthesis snapshot
+            try:
+                import news_feed_synthesis as _nfs
+                logger.info("[BRIDGE] Corroboration Stage 7: Feed Synthesis")
+                _nfs.run()
+            except Exception as _e:
+                logger.warning(f"[BRIDGE] Feed synthesis stage skipped: {_e}")
+            logger.info("[BRIDGE] Corroboration engine stages complete.")
+        except Exception as _bridge_err:
+            logger.warning(f"[BRIDGE] Corroboration engine bridge failed (non-fatal): {_bridge_err}")
 
 CIVIC_KEYWORDS = [
     # Legislature & Law
@@ -810,41 +858,22 @@ class TrendingTopicDiscovery:
         except Exception as e:
             logger.error(f"Error during Topic Discovery: {e}")
 
-    def run_full_scan(self):
-        """Main entry point: fetch all active bills, scrape news, and discover new topics."""
-        if not PLAYWRIGHT_OK: return
-        bills = self.engine.get_active_bills()
-        
-        # 1. Legislative Scan (Legacy Logic)
-        total: int = 0
-        with sync_playwright() as p:
-            browser = p.chromium.launch(headless=True)
-            ctx = browser.new_context()
-            page = ctx.new_page()
-            for bill in bills:
-                try:
-                    res_count: int = int(self.engine.run_for_bill(page, bill))
-                    total = int(total + res_count)
-                except Exception: pass
-            
-            # 2. Autonomous Topic Discovery (New Layer)
-            discovery = TrendingTopicDiscovery(self)
-            discovery.discover_and_queue()
-            
-            browser.close()
+    def run_discovery(self, engine: "NewsIntelligenceEngine") -> None:
+        """Run autonomous trending topic discovery using the provided engine.
 
-        # Improvement 9: Release Lock
-        if self.engine.supabase:
-            self.engine.supabase.table("pipeline_locks").delete().eq("lock_type", "news_intelligence").execute()
-            
-        logger.info(f"Complete. New mentions: {total}")
+        Previously this method was named run_full_scan() and erroneously held a
+        reference to `self.engine` that pointed at a TrendingTopicDiscovery
+        instance instead of a NewsIntelligenceEngine.  The engine is now passed
+        in explicitly so the call-site in NewsIntelligenceEngine.run_full_scan()
+        remains the single orchestration point.
+        """
+        self.discover_and_queue()
 
 if __name__ == "__main__":
     engine = NewsIntelligenceEngine()
-    
-    # Improvement 9: Global Run Lock
+
+    # Global Run Lock — prevent concurrent runs
     if engine.supabase:
-        # Check for existing lock < 2 hours old
         two_hours_ago = (datetime.now(timezone.utc).timestamp() - 7200)
         lock = engine.supabase.table("pipeline_locks").select("*").eq("lock_type", "news_intelligence").execute()
         if lock.data:
@@ -852,11 +881,25 @@ if __name__ == "__main__":
             if lock_time > two_hours_ago:
                 logger.warning("Pipeline is already locked by another process. Exiting.")
                 exit(0)
-        
-        # Acquire Lock
+
+        # Acquire lock
         engine.supabase.table("pipeline_locks").upsert({
             "lock_type": "news_intelligence",
             "created_at": datetime.now(timezone.utc).isoformat()
         }).execute()
 
-    engine.run_full_scan()
+    try:
+        # 1. Bill-level news scan + corroboration engine bridge
+        engine.run_full_scan()
+
+        # 2. Autonomous topic discovery (runs using the now-repaired engine ref)
+        discovery = TrendingTopicDiscovery(engine)
+        discovery.run_discovery(engine)
+    finally:
+        # Release lock regardless of outcome
+        if engine.supabase:
+            try:
+                engine.supabase.table("pipeline_locks").delete().eq("lock_type", "news_intelligence").execute()
+                logger.info("[LOCK] Pipeline lock released.")
+            except Exception as _le:
+                logger.warning(f"[LOCK] Could not release lock: {_le}")

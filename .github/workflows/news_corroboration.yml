@@ -1,0 +1,211 @@
+name: CEKA News Corroboration Engine
+
+# ────────────────────────────────────────────────────────────────────────────
+# Runs the full 7-stage News Intelligence pipeline:
+#
+#   Stage 1  Collection    — RSS + direct-HTML signals → `signals` table
+#   Stage 2  Enrichment    — Story DNA + entities + embeddings via MultiLLM
+#   Stage 3-5 Fusion       — Dedup, corroboration, NIO state machine
+#   Stage 6  Headlines     — Canonical headlines + summaries for verified NIOs
+#   Stage 7  Feed Synthesis — Ranked feed_snapshot for the frontend
+#
+# Runs independently of legislative_sync.yml to avoid competing for the same
+# GHA runner and so it can have its own tiered cron schedule.
+#
+# news_intelligence.py (in legislative_sync.yml's news_and_vault job) also
+# calls these stages as a bridge when it runs — so there is no gap in
+# coverage even before this workflow is deployed.
+# ────────────────────────────────────────────────────────────────────────────
+on:
+  schedule:
+    # Every 15 minutes during Kenyan business hours (06:00-22:00 EAT = 03:00-19:00 UTC)
+    - cron: '*/15 3-19 * * *'
+  workflow_dispatch:
+    inputs:
+      stage:
+        description: 'Run a specific stage only (leave blank for full pipeline)'
+        type: choice
+        required: false
+        default: 'all'
+        options:
+          - all
+          - collect
+          - enrich
+          - fuse
+          - headlines
+          - feed
+
+# ── Workflow-level env inherited by every job ────────────────────────────────
+env:
+  # Supabase
+  SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+  SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+  SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+
+  # LLM Providers (multi_llm_orchestrator.py chain)
+  GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+  CEKA_GEMINI_API_KEY: ${{ secrets.CEKA_GEMINI_API_KEY }}
+  GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+  CEKA_GROQ_API_KEY: ${{ secrets.CEKA_GROQ_API_KEY }}
+  OPENAI_API_KEY_1: ${{ secrets.OPENAI_API_KEY_1 }}
+  ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+  ANTHROPIC_API_KEY_2: ${{ secrets.ANTHROPIC_API_KEY_2 }}
+  OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+  DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+  DEEPSEEK_API_KEY_SECONDARY: ${{ secrets.DEEPSEEK_API_KEY_SECONDARY }}
+  CEREBRAS_API_KEY: ${{ secrets.CEREBRAS_API_KEY }}
+  CEREBRAS_API_KEY_2: ${{ secrets.CEREBRAS_API_KEY_2 }}
+  CEREBRAS_API_KEY_SECONDARY: ${{ secrets.CEREBRAS_API_KEY_SECONDARY }}
+  COHERE_API_KEY: ${{ secrets.COHERE_API_KEY }}
+  NVIDIA_API_KEY: ${{ secrets.NVIDIA_API_KEY }}
+  NEMOTRON_3_NVIDIA_API_KEY: ${{ secrets.NEMOTRON_3_NVIDIA_API_KEY }}
+  LLAMA_4_MAVERICK_NVIDIA_API_KEY: ${{ secrets.LLAMA_4_MAVERICK_NVIDIA_API_KEY }}
+  HF_API_TOKEN: ${{ secrets.HF_API_TOKEN }}
+  SAMBANOVA_API_KEY: ${{ secrets.SAMBANOVA_API_KEY }}
+  SILICON_FLOW_API_KEY: ${{ secrets.SILICON_FLOW_API_KEY }}
+  MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
+  MANUS_API_KEY: ${{ secrets.MANUS_API_KEY }}
+
+  # Scraping / search (SovereignScraper fallback chain)
+  SERPAPI_API_KEY: ${{ secrets.SERPAPI_API_KEY }}
+  SCRAPINGROBOT_API_KEY: ${{ secrets.SCRAPINGROBOT_API_KEY }}
+  SCRAPINGDOG_API_KEY: ${{ secrets.SCRAPINGDOG_API_KEY }}
+
+  # News pipeline budget controls (tune without code changes)
+  ENRICHMENT_MAX_SIGNALS_PER_RUN: '100'
+  ENRICHMENT_BUDGET_SECONDS: '600'
+  FUSION_MAX_SIGNALS_PER_RUN: '150'
+  FUSION_BUDGET_SECONDS: '600'
+  HEADLINE_MAX_NIOS_PER_RUN: '60'
+  FEED_SIZE: '8'
+  FEED_MAX_PER_TOPIC: '2'
+  FEED_REFRESH_MINUTES: '15'
+  FEED_API_CORS_ORIGINS: 'https://civiceducationkenya.com'
+
+  # Optional: point to your existing ProxyPool implementation
+  PROXY_POOL_MODULE: ''
+
+jobs:
+  # ════════════════════════════════════════════════════════════════════════════
+  #  News Corroboration Pipeline — single job, sequential stages
+  # ════════════════════════════════════════════════════════════════════════════
+  news_corroboration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    # Always runs on schedule; on workflow_dispatch the stage selector is respected
+    # but we don't gate here — the Python script itself handles stage routing.
+
+    defaults:
+      run:
+        # All `run:` steps execute from the engine's directory so sibling
+        # imports (news_collector, news_enrichment, etc.) work without
+        # extra sys.path manipulation inside each script.
+        working-directory: context/News by CEKA
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install Python dependencies
+        timeout-minutes: 10
+        working-directory: .
+        run: |
+          python -m pip install --upgrade pip
+          pip install \
+            supabase>=2.7.0 \
+            python-dotenv>=1.0.0 \
+            requests>=2.31.0 \
+            feedparser>=6.0.11 \
+            "trafilatura>=1.9.0" \
+            "beautifulsoup4>=4.12.3" \
+            "numpy>=1.26.0" \
+            "google-genai>=0.3.0" \
+            "google-generativeai>=0.7.0" \
+            "sentence-transformers>=3.0.0" \
+            groq openai anthropic cohere
+          # MultiLLM extended providers
+          pip install cerebras-cloud-sdk || echo "⚠️ cerebras-cloud-sdk unavailable — skipping"
+          # Copy multi_llm_orchestrator.py from scripts/ so it is importable
+          # from the engine working directory (context/News by CEKA).
+          cp ../../scripts/multi_llm_orchestrator.py .
+
+      - name: "Stage 1 — Seed news_sources (idempotent)"
+        # Only runs when sources table may be empty (e.g. first deploy).
+        # Safe to re-run: upserts on domain conflict.
+        if: ${{ inputs.stage == 'all' || inputs.stage == 'collect' || github.event_name == 'schedule' }}
+        timeout-minutes: 2
+        run: |
+          python news_sources.py
+        continue-on-error: true
+        env:
+          PYTHONIOENCODING: utf-8
+
+      - name: "Stage 1 — Collect news signals"
+        if: ${{ inputs.stage == 'all' || inputs.stage == 'collect' || github.event_name == 'schedule' }}
+        timeout-minutes: 8
+        run: |
+          python news_collector.py
+        continue-on-error: true
+        env:
+          PYTHONIOENCODING: utf-8
+
+      - name: "Stage 2 — Enrich signals (story DNA + embeddings)"
+        if: ${{ inputs.stage == 'all' || inputs.stage == 'enrich' || github.event_name == 'schedule' }}
+        timeout-minutes: 8
+        run: |
+          python news_enrichment.py
+        continue-on-error: true
+        env:
+          PYTHONIOENCODING: utf-8
+
+      - name: "Stage 3-5 — Fusion + corroboration + NIO state machine"
+        if: ${{ inputs.stage == 'all' || inputs.stage == 'fuse' || github.event_name == 'schedule' }}
+        timeout-minutes: 8
+        run: |
+          python news_fusion_relay.py
+        continue-on-error: true
+        env:
+          PYTHONIOENCODING: utf-8
+
+      - name: "Stage 6 — Headline + summary generation"
+        if: ${{ inputs.stage == 'all' || inputs.stage == 'headlines' || github.event_name == 'schedule' }}
+        timeout-minutes: 5
+        run: |
+          python news_headline_engine.py
+        continue-on-error: true
+        env:
+          PYTHONIOENCODING: utf-8
+
+      - name: "Stage 7 — Feed synthesis snapshot"
+        if: ${{ inputs.stage == 'all' || inputs.stage == 'feed' || github.event_name == 'schedule' }}
+        timeout-minutes: 2
+        run: |
+          python news_feed_synthesis.py
+        continue-on-error: true
+        env:
+          PYTHONIOENCODING: utf-8
+
+      - name: Upload pipeline logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: news-corroboration-logs-${{ github.run_number }}
+          path: |
+            context/News by CEKA/*.log
+          retention-days: 7
+          if-no-files-found: ignore
+
+      - name: Pipeline summary
+        if: always()
+        run: |
+          echo "### 📰 CEKA News Corroboration Engine" >> $GITHUB_STEP_SUMMARY
+          echo "- **Run:** #${{ github.run_number }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Time (UTC):** $(date -u)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Triggered by:** ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Stage selector:** ${{ inputs.stage || 'all (scheduled)' }}" >> $GITHUB_STEP_SUMMARY

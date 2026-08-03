@@ -1,7 +1,25 @@
+# ─── Existing CEKA Pipeline Dependencies ────────────────────────────────────
 pytrends==4.9.2
 pandas==2.1.4
-beautifulsoup4==4.12.2
+beautifulsoup4==4.12.3
 tenacity==8.2.3
 pytest==7.4.3
-scrapling[fetchers]==0.2.6  
-playwright-stealth==1.0.6 
+scrapling[fetchers]==0.2.6
+browserforge==0.3.3
+playwright-stealth==1.0.6
+
+# ─── News Corroboration Engine (context/News by CEKA) ───────────────────────
+# These are additive — the corroboration engine is a new module; none of the
+# packages below conflict with the existing stack.
+supabase>=2.7.0
+python-dotenv>=1.0.0
+requests>=2.31.0
+feedparser>=6.0.11
+trafilatura>=1.9.0
+numpy>=1.26.0
+# Embeddings — gemini-embedding-001 (primary) + sentence-transformers (fallback)
+google-genai>=0.3.0
+sentence-transformers>=3.0.0
+# Corroboration API server (optional — only needed if running news_feed_api.py)
+fastapi>=0.111.0
+uvicorn>=0.30.0
