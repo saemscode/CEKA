@@ -31,11 +31,22 @@ const GridItem = ({ item, index, layoutPrefix, draggedIdx, handleDragStart, hand
             className={`aspect-[4/5] relative group cursor-grab active:cursor-grabbing overflow-hidden bg-muted/20 border border-white/5 shadow-lg will-change-transform ${draggedIdx === index ? 'opacity-0 scale-95' : 'hover:scale-[1.02] hover:shadow-2xl hover:z-10 transition-transform duration-200'} ${layoutPrefix === 'desktop' ? 'rounded-xl' : ''}`}
         >
             <img
-                src={item.cover_url || item.items?.[0]?.file_url}
+                src={item.cover_url || item.items?.[0]?.file_url || ''}
                 alt={item.title}
                 className="w-full h-full object-cover pointer-events-none"
                 draggable={false}
+                onError={(e) => {
+                    const t = e.currentTarget;
+                    if (!t.dataset.errored) {
+                        t.dataset.errored = '1';
+                        t.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(item.title?.slice(0, 2) || 'CE')}&background=1a1a2e&color=4ade80&size=200&bold=true&format=svg`;
+                    }
+                }}
             />
+            {/* Type badge so admin can distinguish carousels vs videos vs docs */}
+            <div className="absolute top-1 right-1 px-1 py-0.5 rounded-sm bg-black/70 border border-white/10 text-[6px] font-black uppercase tracking-wider text-white/70 pointer-events-none">
+                {item.type}
+            </div>
             
             <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col items-center justify-center p-2 pointer-events-none backdrop-blur-[2px]">
                 <LayoutGrid className="text-white/80 mb-2" size={layoutPrefix === 'desktop' ? 24 : 16} />
@@ -87,8 +98,9 @@ export const AdminGridCurator = () => {
     const fetchItems = async () => {
         setLoading(true);
         try {
-            // Fetch the top 50 posts to curate
-            const data = await mediaService.listMediaContent('carousel', 1, 50);
+            // Fetch ALL types so admin sees every curated post, not just carousels.
+            // listMediaContent with no type arg returns all published media.
+            const data = await mediaService.listMediaContent(undefined, 1, 100);
             setItems(data);
             setOriginalItems(JSON.parse(JSON.stringify(data))); // Deep copy for change detection
         } catch (error) {

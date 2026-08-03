@@ -130,163 +130,212 @@ def sync_data(input_file: Optional[str] = None, output_dir: str = "processed_dat
         if not os.path.exists(input_file):
             logging.error(f"❌ Specified file not found: {input_file}")
             return
-        latest_file = input_file
+        files_to_sync = [input_file]
     else:
         if not os.path.exists(output_dir):
             logging.error(f"❌ Hub directory missing: {output_dir}")
             return
-        files = [f for f in os.listdir(output_dir) if f.startswith('legislation_sync_') and f.endswith('.json')]
-        if not files:
+        all_files = sorted([
+            os.path.join(output_dir, f)
+            for f in os.listdir(output_dir)
+            if f.startswith('legislation_sync_') and f.endswith('.json')
+        ])
+        if not all_files:
             logging.warning("⚠️ No fresh neural data hub files found.")
             return
-        files.sort()
-        latest_file = os.path.join(output_dir, files[-1])
 
-    logging.info(f"🚀 Ingesting Brain Dump: {latest_file}")
+        # Track already-synced files using a sentinel tracker
+        synced_tracker_path = os.path.join(output_dir, ".synced_files.json")
+        already_synced = set()
+        try:
+            if os.path.exists(synced_tracker_path):
+                with open(synced_tracker_path, 'r') as tf:
+                    already_synced = set(json.load(tf))
+        except Exception:
+            pass
 
-    with open(latest_file, 'r', encoding='utf-8') as f:
-        items = json.load(f)
+        # Process all files not yet synced (up to 5 at a time to avoid timeouts)
+        files_to_sync = [f for f in all_files if f not in already_synced][-5:]
+        if not files_to_sync:
+            logging.info("✅ All legislation_sync_*.json files already synced — nothing new to process.")
+            return
+        logging.info(f"📂 Found {len(files_to_sync)} unsynced file(s) to process (of {len(all_files)} total).")
 
     stats = {"bills": 0, "updates": 0, "order_papers": 0, "failed": 0}
-    source_name = items[0].get("source", "Parliamentary Portal") if items else "Parliamentary Portal"
-
     v2_supported = check_schema_support(supabase)
+    synced_now = []
 
-    for item in items:
+    for latest_file in files_to_sync:
+        logging.info(f"🚀 Ingesting: {latest_file}")
         try:
-            category = item.get("category")
-
-            if category == "Order Paper":
-                if not v2_supported:
-                    continue
-                data = {
-                    "title": item.get("title"),
-                    "house": item.get("house"),
-                    "pdf_url": item.get("url"),
-                    "source": item.get("source"),
-                    "metadata": item.get("metadata", {}),
-                    "date": item.get("date")
-                }
-                supabase.table("order_papers").upsert(data, on_conflict="title").execute()
-                stats["order_papers"] += 1
-                continue
-
-            existing = find_existing_bill(supabase, item, v2_supported)
-
-            new_data = {
-                "title": item.get("title"),
-                "slug": item.get("slug") or generate_slug(item.get("title", "")),
-                "sponsor": item.get("sponsor"),
-                "status": item.get("status"),
-                "category": item.get("category"),
-                "date": item.get("date"),
-                "url": item.get("url"),
-                "pdf_url": item.get("pdf_url"),
-                "text_content": item.get("text_content"),
-                "description": item.get("description"),
-                "summary": item.get("summary") or f"Legislative tracker: {item.get('title')}",
-                "updated_at": datetime.now().isoformat()
-            }
-
-            # Backfill slug for existing records that don't have one yet
-            if existing and not existing.get("slug") and new_data.get("slug"):
-                logging.info(f"🔗 Backfilling slug for existing: {item['title']} → {new_data['slug']}")
-
-            if v2_supported:
-                if item.get("bill_no"):
-                    new_data["bill_no"] = item.get("bill_no")
-                if item.get("session_year"):
-                    new_data["session_year"] = item.get("session_year")
-
-            if item.get("b2_url"):
-                new_data["b2_url"] = item.get("b2_url")
-            if item.get("ai_concerns"):
-                new_data["ai_concerns"] = item.get("ai_concerns")
-            if item.get("constitutional_section"):
-                new_data["constitutional_section"] = item.get("constitutional_section")
-            if item.get("tabloid_summary"):
-                new_data["tabloid_summary"] = item.get("tabloid_summary")
-            if item.get("neural_summary"):
-                new_data["neural_summary"] = item.get("neural_summary")
-            if item.get("corroboration_score"):
-                new_data["corroboration_score"] = item.get("corroboration_score")
-            if item.get("verified_sources"):
-                new_data["verified_sources"] = item.get("verified_sources")
-            if item.get("analysis_status"):
-                new_data["analysis_status"] = item.get("analysis_status")
-            if item.get("stages"):
-                new_data["stages"] = item.get("stages")
-            if item.get("house"):
-                new_data["house"] = item.get("house")
-            if item.get("sponsor_title"):
-                new_data["sponsor_title"] = item.get("sponsor_title")
-
-            if existing and v2_supported:
-                history = existing.get("history") or []
-                if not isinstance(history, list):
-                    history = []
-                item_status = item.get('status') or existing.get('status') or "Published"
-                if existing.get('status') != item_status or existing.get('pdf_url') != item.get('pdf_url'):
-                    history.append({
-                        "status": existing.get('status'),
-                        "pdf_url": existing.get('pdf_url'),
-                        "date": existing.get('updated_at') or existing.get('created_at'),
-                        "version_title": existing.get('title')
-                    })
-                new_data["history"] = history
-
-                if existing.get('status_lock'):
-                    logging.info(f"🔒 LOCKED: Preserving status for '{item['title']}'")
-                    new_data.pop("status", None)
-
-            # ── Serialize ai_concerns to JSON string if it's a list ──
-            if isinstance(new_data.get("ai_concerns"), list):
-                import json as _json
-                new_data["ai_concerns"] = _json.dumps(new_data["ai_concerns"])
-
-            # ── Serialize constitutional_section: flatten any nested array ──
-            cs = new_data.get("constitutional_section")
-            if isinstance(cs, list):
-                # Unwrap nested arrays like [["Article 201", "Article 206"]] → "Article 201, Article 206"
-                flat = []
-                for item in cs:
-                    if isinstance(item, list):
-                        flat.extend(item)
-                    else:
-                        flat.append(str(item))
-                new_data["constitutional_section"] = ", ".join(flat)
-
-            if existing:
-                logging.info(f"🔄 Refreshing: {item['title']}")
-                # ── Change detection: only UPDATE if something actually differs ──
-                TRACKED = ["status", "sponsor", "summary", "pdf_url", "url", "slug",
-                           "ai_concerns", "constitutional_section", "tabloid_summary",
-                           "text_content", "description", "bill_no", "session_year", "b2_url"]
-                has_change = any(
-                    str(new_data.get(f) or "").strip() != str(existing.get(f) or "").strip()
-                    for f in TRACKED if new_data.get(f) is not None
-                )
-                if has_change:
-                    supabase.table("bills").update(new_data).eq("id", existing['id']).execute()
-                    stats["updates"] += 1
-                else:
-                    logging.debug(f"⏭️  No changes for: {item['title']} — skipped UPDATE")
-
-            else:
-                logging.info(f"✨ New Bill: {item['title']}")
-                if not new_data.get("status"):
-                    new_data["status"] = "Published" if item.get("category") != "Documentation" else "Ingested"
-                # Use 'slug' as the upsert conflict key — slugs include year (e.g. finance-bill-2025)
-                # so new-year versions of recurring bills INSERT cleanly instead of overwriting.
-                supabase.table("bills").upsert(new_data, on_conflict="slug").execute()
-                stats["bills"] += 1
-
+            with open(latest_file, 'r', encoding='utf-8') as f:
+                items = json.load(f)
         except Exception as e:
-            logging.error(f"❌ Sync failure on '{item.get('title')}': {e}")
-            stats["failed"] += 1
+            logging.error(f"❌ Failed to read {latest_file}: {e}")
+            continue
 
-    logging.info(f"🏁 Complete: New={stats['bills']}, Updates={stats['updates']}, OrderPapers={stats['order_papers']}, Failed={stats['failed']}")
-    record_scrape_run(supabase, stats, source_name)
+        if not items:
+            logging.warning(f"⚠️ Empty file: {latest_file}")
+            synced_now.append(latest_file)
+            continue
+
+        source_name = items[0].get("source", "Parliamentary Portal")
+        file_stats = {"bills": 0, "updates": 0, "order_papers": 0, "failed": 0}
+
+        for item in items:
+            try:
+                category = item.get("category")
+
+                if category == "Order Paper":
+                    if not v2_supported:
+                        continue
+                    data = {
+                        "title": item.get("title"),
+                        "house": item.get("house"),
+                        "pdf_url": item.get("url"),
+                        "source": item.get("source"),
+                        "metadata": item.get("metadata", {}),
+                        "date": item.get("date")
+                    }
+                    supabase.table("order_papers").upsert(data, on_conflict="title").execute()
+                    file_stats["order_papers"] += 1
+                    stats["order_papers"] += 1
+                    continue
+
+                existing = find_existing_bill(supabase, item, v2_supported)
+
+                new_data = {
+                    "title": item.get("title"),
+                    "slug": item.get("slug") or generate_slug(item.get("title", "")),
+                    "sponsor": item.get("sponsor"),
+                    "status": item.get("status"),
+                    "category": item.get("category"),
+                    "date": item.get("date"),
+                    "url": item.get("url"),
+                    "pdf_url": item.get("pdf_url"),
+                    "text_content": item.get("text_content"),
+                    "description": item.get("description"),
+                    "summary": item.get("summary") or f"Legislative tracker: {item.get('title')}",
+                    "updated_at": datetime.now().isoformat()
+                }
+
+                # Backfill slug for existing records that don't have one yet
+                if existing and not existing.get("slug") and new_data.get("slug"):
+                    logging.info(f"🔗 Backfilling slug for existing: {item['title']} → {new_data['slug']}")
+
+                if v2_supported:
+                    if item.get("bill_no"):
+                        new_data["bill_no"] = item.get("bill_no")
+                    if item.get("session_year"):
+                        new_data["session_year"] = item.get("session_year")
+
+                if item.get("b2_url"):
+                    new_data["b2_url"] = item.get("b2_url")
+                if item.get("ai_concerns"):
+                    new_data["ai_concerns"] = item.get("ai_concerns")
+                if item.get("constitutional_section"):
+                    new_data["constitutional_section"] = item.get("constitutional_section")
+                if item.get("tabloid_summary"):
+                    new_data["tabloid_summary"] = item.get("tabloid_summary")
+                if item.get("neural_summary"):
+                    new_data["neural_summary"] = item.get("neural_summary")
+                if item.get("corroboration_score"):
+                    new_data["corroboration_score"] = item.get("corroboration_score")
+                if item.get("verified_sources"):
+                    new_data["verified_sources"] = item.get("verified_sources")
+                if item.get("analysis_status"):
+                    new_data["analysis_status"] = item.get("analysis_status")
+                if item.get("stages"):
+                    new_data["stages"] = item.get("stages")
+                if item.get("house"):
+                    new_data["house"] = item.get("house")
+                if item.get("sponsor_title"):
+                    new_data["sponsor_title"] = item.get("sponsor_title")
+
+                if existing and v2_supported:
+                    history = existing.get("history") or []
+                    if not isinstance(history, list):
+                        history = []
+                    item_status = item.get('status') or existing.get('status') or "Published"
+                    if existing.get('status') != item_status or existing.get('pdf_url') != item.get('pdf_url'):
+                        history.append({
+                            "status": existing.get('status'),
+                            "pdf_url": existing.get('pdf_url'),
+                            "date": existing.get('updated_at') or existing.get('created_at'),
+                            "version_title": existing.get('title')
+                        })
+                    new_data["history"] = history
+
+                    if existing.get('status_lock'):
+                        logging.info(f"🔒 LOCKED: Preserving status for '{item['title']}'")
+                        new_data.pop("status", None)
+
+                # ── Serialize ai_concerns to JSON string if it's a list ──
+                if isinstance(new_data.get("ai_concerns"), list):
+                    import json as _json
+                    new_data["ai_concerns"] = _json.dumps(new_data["ai_concerns"])
+
+                # ── Serialize constitutional_section: flatten any nested array ──
+                cs = new_data.get("constitutional_section")
+                if isinstance(cs, list):
+                    flat = []
+                    for _cs_item in cs:
+                        if isinstance(_cs_item, list):
+                            flat.extend(_cs_item)
+                        else:
+                            flat.append(str(_cs_item))
+                    new_data["constitutional_section"] = ", ".join(flat)
+
+                if existing:
+                    logging.info(f"🔄 Refreshing: {item['title']}")
+                    TRACKED = ["status", "sponsor", "summary", "pdf_url", "url", "slug",
+                               "ai_concerns", "constitutional_section", "tabloid_summary",
+                               "text_content", "description", "bill_no", "session_year", "b2_url"]
+                    has_change = any(
+                        str(new_data.get(f) or "").strip() != str(existing.get(f) or "").strip()
+                        for f in TRACKED if new_data.get(f) is not None
+                    )
+                    if has_change:
+                        supabase.table("bills").update(new_data).eq("id", existing['id']).execute()
+                        file_stats["updates"] += 1
+                        stats["updates"] += 1
+                    else:
+                        logging.debug(f"⏭️  No changes for: {item['title']} — skipped UPDATE")
+
+                else:
+                    logging.info(f"✨ New Bill: {item['title']}")
+                    if not new_data.get("status"):
+                        new_data["status"] = "Published" if item.get("category") != "Documentation" else "Ingested"
+                    supabase.table("bills").upsert(new_data, on_conflict="slug").execute()
+                    file_stats["bills"] += 1
+                    stats["bills"] += 1
+
+            except Exception as e:
+                logging.error(f"❌ Sync failure on '{item.get('title')}': {e}")
+                file_stats["failed"] += 1
+                stats["failed"] += 1
+
+        logging.info(
+            f"  [{os.path.basename(latest_file)}] New={file_stats['bills']}, "
+            f"Updates={file_stats['updates']}, OrderPapers={file_stats['order_papers']}, "
+            f"Failed={file_stats['failed']}"
+        )
+        record_scrape_run(supabase, file_stats, source_name)
+        synced_now.append(latest_file)
+
+    # ── Save synced tracker so we don't re-process these files ──
+    if not input_file:
+        try:
+            all_synced = list(already_synced | set(synced_now))
+            with open(synced_tracker_path, 'w') as tf:
+                json.dump(all_synced, tf, indent=2)
+        except Exception as te:
+            logging.warning(f"⚠️ Could not save synced tracker: {te}")
+
+    logging.info(
+        f"🏁 Overall: New={stats['bills']}, Updates={stats['updates']}, "
+        f"OrderPapers={stats['order_papers']}, Failed={stats['failed']}"
+    )
 
 
 def apply_tracker_enrichment(input_file: Optional[str] = None, output_dir: str = "processed_data/legislative"):

@@ -119,7 +119,7 @@ jobs:
             beautifulsoup4 pillow pdf2image pytesseract easyocr \
             google-genai google-search-results google-generativeai \
             groq openai anthropic cohere \
-            boto3 aiohttp lxml scrapling[fetchers] playwright-stealth
+            boto3 aiohttp lxml scrapling[fetchers]==0.2.6 browserforge==0.3.3 playwright-stealth
           # Install cerebras SDK (may fail gracefully if not available)
           pip install cerebras-cloud-sdk || echo "⚠️ cerebras-cloud-sdk not available — skipping"
           playwright install chromium --with-deps
@@ -127,6 +127,18 @@ jobs:
       - name: Run Legislative Scraper
         timeout-minutes: 60
         run: python scripts/legislative_scraper.py
+        continue-on-error: true
+        env:
+          PYTHONIOENCODING: utf-8
+
+      - name: Direct Bill Seeder (Cloudflare-safe fallback)
+        # Runs AFTER the main scraper. If Playwright scraper produced zero bills
+        # (Cloudflare block or proxy failure), this seeds bills via plain HTTP.
+        # Always succeeds — adds its own legislation_sync_*.json to output dir.
+        if: always()
+        timeout-minutes: 15
+        run: |
+          python scripts/direct_bill_seeder.py --limit 300
         continue-on-error: true
         env:
           PYTHONIOENCODING: utf-8

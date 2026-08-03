@@ -40,10 +40,9 @@ const Blog = () => {
     return matchesSearch && matchesStatus;
   });
 
-  // Separate posts by status - fix the filtering logic
+  // Separate posts by status - we only show published posts in the public blog
   const publishedPosts = filteredPosts.filter(post => post.status === 'published');
-  const draftPosts = filteredPosts.filter(post => post.status === 'draft');
-  const allPosts = [...publishedPosts, ...draftPosts];
+  const allPosts = publishedPosts; // Drafts are now only handled in Admin Dashboard
 
   const handleCreateNew = () => {
     if (!user) {
@@ -119,16 +118,18 @@ const Blog = () => {
   return (
     <Layout>
       <Helmet>
-        <title>Blog | Civic Insights & Governance Updates | CEKA</title>
+        <title>Blog | Civic Insights &amp; Governance Updates | CEKA</title>
         <meta name="description" content="Read the latest civic education insights, governance updates, and democratic participation guides from Civic Education Kenya. Written by citizens, for citizens." />
         <link rel="canonical" href="https://www.civiceducationkenya.com/blog" />
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://www.civiceducationkenya.com/blog" />
-        <meta property="og:title" content="Blog | Civic Insights & Governance Updates | CEKA" />
+        <meta property="og:title" content="Blog | Civic Insights &amp; Governance Updates | CEKA" />
         <meta property="og:description" content="Read the latest civic education insights, governance updates, and democratic participation guides from Civic Education Kenya." />
       </Helmet>
-      <div className="container py-8">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4 overflow-hidden">
+
+      <div className="container mx-auto px-4 py-8 max-w-7xl">
+        {/* Header Row */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
           <div className="max-w-full">
             <h1 className="text-2xl md:text-4xl font-bold mb-2 break-words">CEKA Blog</h1>
             <p className="text-sm md:text-base text-muted-foreground break-words">
@@ -153,16 +154,16 @@ const Blog = () => {
           </div>
         </div>
 
+        {/* Two-column layout: Main + Sidebar */}
         <div className="grid lg:grid-cols-4 gap-8">
-          {/* Main Content */}
-          <div className="lg:col-span-3">
+          {/* ── Main Content Column ── */}
+          <div className="lg:col-span-3 min-w-0 overflow-hidden">
             <Tabs defaultValue="all" className="space-y-6">
+              {/* Search + filter bar */}
               <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
                 <div className="overflow-x-auto w-full pb-2 no-scrollbar">
-                  <TabsList className="min-w-max md:min-w-0 md:w-full flex justify-start md:justify-center">
-                    <TabsTrigger value="all">All ({allPosts.length})</TabsTrigger>
-                    <TabsTrigger value="published">Published ({publishedPosts.length})</TabsTrigger>
-                    <TabsTrigger value="drafts">Drafts ({draftPosts.length})</TabsTrigger>
+                  <TabsList className="min-w-max md:min-w-0 flex">
+                    <TabsTrigger value="all">All ({publishedPosts.length})</TabsTrigger>
                   </TabsList>
                 </div>
 
@@ -187,67 +188,32 @@ const Blog = () => {
                       <SelectContent>
                         <SelectItem value="all">All</SelectItem>
                         <SelectItem value="published">Published</SelectItem>
-                        <SelectItem value="draft">Draft</SelectItem>
                       </SelectContent>
                     </Select>
                   )}
                 </div>
               </div>
 
-              <TabsContent value="all">
-                <div className="space-y-6">
-                  {draftPosts.length > 0 && (
-                    <div className="space-y-4">
-                      <h2 className="text-lg font-semibold text-amber-600 border-b border-amber-200 pb-2">
-                        Coming Soon - Awaiting Approval ({draftPosts.length})
-                      </h2>
-                      <BlogList posts={draftPosts} />
-                    </div>
-                  )}
-
-                  {publishedPosts.length > 0 && (
-                    <div className="space-y-4">
-                      <h2 className="text-lg font-semibold border-b pb-2">
-                        Published Posts ({publishedPosts.length})
-                      </h2>
-                      <BlogList posts={publishedPosts} />
-                    </div>
-                  )}
-
-                  {allPosts.length === 0 && (
-                    <div className="text-center py-12">
-                      <h3 className="text-lg font-medium mb-2">No posts found</h3>
-                      <p className="text-muted-foreground">Check back later for new content or create the first post!</p>
-                    </div>
-                  )}
-                </div>
-              </TabsContent>
-
-              <TabsContent value="published">
+              {/* Tab Content */}
+              <TabsContent value="all" className="space-y-4">
                 {publishedPosts.length > 0 ? (
-                  <BlogList posts={publishedPosts} />
-                ) : (
-                  <div className="text-center py-12">
-                    <h3 className="text-lg font-medium mb-2">No published posts</h3>
-                    <p className="text-muted-foreground">Published posts will appear here once approved by the admin.</p>
+                  <div className="space-y-4">
+                    <h2 className="text-lg font-semibold border-b pb-2">
+                      Published Posts ({publishedPosts.length})
+                    </h2>
+                    <BlogList posts={publishedPosts} />
                   </div>
-                )}
-              </TabsContent>
-
-              <TabsContent value="drafts">
-                {draftPosts.length > 0 ? (
-                  <BlogList posts={draftPosts} />
                 ) : (
                   <div className="text-center py-12">
-                    <h3 className="text-lg font-medium mb-2">No draft posts</h3>
-                    <p className="text-muted-foreground">Draft posts awaiting approval will appear here.</p>
+                    <h3 className="text-lg font-medium mb-2">No posts found</h3>
+                    <p className="text-muted-foreground">Check back later for new content or create the first post!</p>
                   </div>
                 )}
               </TabsContent>
             </Tabs>
           </div>
 
-          {/* Sidebar */}
+          {/* ── Sidebar Column (truly outside main content) ── */}
           <div className="lg:col-span-1 w-full overflow-hidden">
             <BlogSidebar />
           </div>

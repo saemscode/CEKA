@@ -123,10 +123,20 @@ jobs:
           python -m pip install --upgrade pip
           pip install \
             supabase requests pymupdf pdfplumber python-dotenv \
-            pillow pdf2image pytesseract \
+            beautifulsoup4 pillow pdf2image pytesseract \
             google-genai google-generativeai groq openai anthropic cohere \
             boto3 aiohttp lxml
           pip install cerebras-cloud-sdk || echo "⚠️ cerebras-cloud-sdk not available — skipping"
+
+      - name: "Pre-seed Bills (Direct Seeder fallback)"
+        # Ensures Supabase always has fresh bills before Phase A refresh.
+        # This step is safe to run even if bills already exist (it only upserts).
+        timeout-minutes: 12
+        run: |
+          python scripts/direct_bill_seeder.py --limit 300 --sync
+        continue-on-error: true
+        env:
+          PYTHONIOENCODING: utf-8
 
       - name: "Phase A: Sovereign Refresh (Weekly — All Bills Broad Sweep)"
         timeout-minutes: 280
@@ -147,6 +157,7 @@ jobs:
           name: phase-a-logs-${{ github.run_number }}
           path: |
             scripts/sovereign_refresh.log
+            direct_bill_seeder.log
           retention-days: 14
           if-no-files-found: ignore
 

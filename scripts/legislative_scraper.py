@@ -1255,23 +1255,40 @@ class LegislativeScraper:
         logger.info("  Legislative Sync Engine  (Stealth + CF-hardened + ProxyPool)")
         logger.info("=" * 60)
 
-        # ── TASK 2: Pre-flight proxy pool guard ──────────────────────────
-        # Require at least one premium proxy before spending Playwright
-        # startup time, so a proxy-less run fails visibly in CI instead of
-        # completing with a silent empty scrape.
+        # ── Pre-flight proxy pool guard ────────────────────────────────────
+        # Check for premium proxies before spending Playwright startup time.
+        # If none are found, fall back to direct_bill_seeder.py (no-proxy mode)
+        # instead of hard-exiting so the workflow still produces bill output.
         _PREMIUM_TYPES = {"brightdata", "oxylabs", "scraperapi", "webshare"}
         _premium_proxies = [
             p for p in self.proxy_pool.proxies
             if p.get("type") in _PREMIUM_TYPES
         ]
         if not _premium_proxies:
-            logger.error(
-                "[FATAL] No premium proxies found in ProxyPool. "
-                "At least one of BRIGHTDATA_PROXY_URL, OXYLABS_PROXIES, "
-                "SCRAPERAPI_KEY, or WEBSHARE_PROXIES must be configured. "
-                "Aborting scrape to prevent a silent empty run."
+            logger.warning(
+                "[PROXY-GATE] No premium proxies configured. "
+                "Falling back to direct_bill_seeder.py (requests-only, no Playwright). "
+                "Bills will still be seeded without proxy scraping."
             )
-            sys.exit(1)
+            try:
+                import importlib.util
+                _seeder_path = os.path.join(os.path.dirname(__file__), "direct_bill_seeder.py")
+                if os.path.exists(_seeder_path):
+                    spec = importlib.util.spec_from_file_location("direct_bill_seeder", _seeder_path)
+                    mod = importlib.util.module_from_spec(spec)
+                    spec.loader.exec_module(mod)
+                    seeder = mod.DirectBillSeeder(limit=300, enrich_pdfs=False)
+                    seeder.run()
+                    fpath = seeder.save()
+                    if fpath:
+                        logger.info(f"[PROXY-GATE] Fallback seeder wrote: {fpath}. Exiting after seed.")
+                    else:
+                        logger.warning("[PROXY-GATE] Fallback seeder produced no bills.")
+                else:
+                    logger.error("[PROXY-GATE] direct_bill_seeder.py not found — no fallback available.")
+            except Exception as _fb_err:
+                logger.error(f"[PROXY-GATE] Fallback seeder failed: {_fb_err}")
+            return self.data  # Return empty/partial data — workflow continues
         logger.info(
             f"[Proxy] {len(_premium_proxies)} premium proxy/proxies loaded "
             f"(types: {', '.join(p.get('type', '?') for p in _premium_proxies[:5])})."
