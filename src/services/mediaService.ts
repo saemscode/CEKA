@@ -145,17 +145,28 @@ export const mediaService = {
     },
 
     /**
-     * Bulk update display_order for curated grid
+     * Bulk update display_order for curated grid.
+     *
+     * NOTE: Must NOT use .upsert() here — Postgres treats upsert as INSERT
+     * when the on_conflict row is absent, which trips the NOT NULL constraint
+     * on `type` and every other required column. We only need to patch one
+     * field on rows that already exist, so individual UPDATE calls are correct.
      */
     async updateDisplayOrder(updates: { id: string, display_order: number }[]): Promise<boolean> {
         try {
-            const { error } = await (supabase as any)
-                .from('media_content')
-                .upsert(updates, { onConflict: 'id' });
-                
-            if (error) {
-                console.error('[MediaService] Bulk update error:', error);
-                throw error;
+            // Run updates in parallel — each touches only display_order on an existing row
+            const results = await Promise.all(
+                updates.map(({ id, display_order }) =>
+                    (supabase as any)
+                        .from('media_content')
+                        .update({ display_order })
+                        .eq('id', id)
+                )
+            );
+            const failed = results.filter((r: any) => r.error);
+            if (failed.length > 0) {
+                console.error('[MediaService] Bulk update error:', failed[0].error);
+                throw failed[0].error;
             }
             return true;
         } catch (error) {

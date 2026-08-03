@@ -854,7 +854,7 @@ function useDbAds(categoryFilter?: string): { ads: DbAd[]; loading: boolean } {
 
     let q = (supabase as any)
       .from('promo_ads')
-      .select('*, campaign:campaigns(title, slug)')
+      .select('*')
       .eq('is_active', true);
 
     q.then(({ data, error }: { data: DbAd[] | null; error: any }) => {
@@ -976,7 +976,7 @@ export const CampaignCollabBanner: React.FC = () => {
   React.useEffect(() => {
     (supabase as any)
       .from('promo_ads')
-      .select('*, campaign:campaigns(title, slug)')
+      .select('*')
       .eq('is_active', true)
       .eq('is_collab', true)
       .order('created_at', { ascending: false })
