@@ -334,7 +334,6 @@ class RemoteOCREngine:
             images = convert_from_bytes(pdf_bytes, dpi=200, fmt="jpeg")
             pages = []
             
-            # Use gemini-2.0-flash
             model = genai.GenerativeModel('gemini-2.0-flash')
             
             contents: List[Any] = ["Extract all text from these document pages exactly as written. Preserve all tables, headers, and structure in markdown format. Output ONLY the extracted text, no conversational filler."]
@@ -449,7 +448,6 @@ class ProxyPool:
         self._load_proxies()
         
     def _load_proxies(self):
-        # Bright Data
         bright_url = os.getenv("BRIGHTDATA_PROXY_URL")
         if bright_url:
             self.proxies.append({
@@ -459,7 +457,6 @@ class ProxyPool:
                 "limit": int(os.getenv("BRIGHTDATA_MONTHLY_LIMIT", 5000))
             })
             
-        # Oxylabs
         oxylabs_list = os.getenv("OXYLABS_PROXIES", "")
         for item in oxylabs_list.split(","):
             item = item.strip()
@@ -475,7 +472,6 @@ class ProxyPool:
                         "limit": None
                     })
         
-        # ScraperAPI
         scraper_key = os.getenv("SCRAPERAPI_KEY")
         if scraper_key:
             bonus = int(os.getenv("SCRAPERAPI_FIRST_MONTH_BONUS", 5000))
@@ -487,7 +483,6 @@ class ProxyPool:
                 "limit": limit
             })
         
-        # Webshare static list
         webshare_list = os.getenv("WEBSHARE_PROXIES", "")
         for item in webshare_list.split(","):
             if ":" in item:
@@ -508,12 +503,10 @@ class ProxyPool:
         
     def _fetch_free_proxies(self):
         now = time.time()
-        # Cooldown: 20 minutes (1200 seconds)
         if now - self.last_free_proxy_refresh < 1200:
             return
             
         try:
-            # Fetch dynamic free proxies (fallback tier)
             url = os.getenv("FREE_PROXY_LIST_URL", "https://raw.githubusercontent.com/TheSpeedX/SOCKS-List/master/http.txt")
             r = requests.get(url, timeout=10)
             if r.status_code == 200:
@@ -568,7 +561,7 @@ class ProxyPool:
         now = time.time()
         if refresh_url and (now - self.last_webshare_refresh > interval_hours * 3600):
             try:
-                r = requests.get(refresh_url, timeout=30, verify=False)   # SSL fix
+                r = requests.get(refresh_url, timeout=30, verify=False)
                 if r.status_code == 200:
                     new_list = r.text.strip().split("\n")
                     new_proxies = []
@@ -693,7 +686,7 @@ class BillStructuralExtractor:
 
         try:
             doc = fitz.open(stream=pdf_bytes, filetype="pdf")
-            toc = doc.get_toc()  # type: ignore
+            toc = doc.get_toc()
             memo_page = -1
             if toc:
                 result["has_toc"] = True
@@ -785,7 +778,6 @@ class LegislativeScraper:
             if os.path.exists(tess_path):
                 pytesseract.pytesseract.tesseract_cmd = tess_path
 
-        # ── Supabase Staging Client (for incremental live-push and pre-flight skip) ──
         self._supabase_staging = None
         try:
             from supabase import create_client as _sb_create
@@ -799,14 +791,12 @@ class LegislativeScraper:
         except Exception as _e:
             logger.warning(f"[Staging] Supabase client init failed (non-fatal): {_e}")
 
-        # ── Checkpoint file for incremental JSON saves ──
         self._checkpoint_dir = "processed_data/legislative"
         os.makedirs(self._checkpoint_dir, exist_ok=True)
         self._checkpoint_file = os.path.join(
             self._checkpoint_dir,
             f"legislation_sync_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
         )
-        # Write an empty array so the file exists from run start
         with open(self._checkpoint_file, 'w', encoding='utf-8') as _f:
             json.dump([], _f)
         logger.info(f"[Staging] Checkpoint file initialized: {self._checkpoint_file}")
@@ -828,7 +818,6 @@ class LegislativeScraper:
         return any(sig.lower() in lower for sig in cf_signatures)
 
     def _wait_for_real_content(self, page, timeout_ms: int = 15000) -> bool:
-        """Wait until real content (a table with rows) appears, not a Cloudflare challenge."""
         deadline = time.time() + timeout_ms / 1000
         while time.time() < deadline:
             html = page.content()
@@ -836,7 +825,6 @@ class LegislativeScraper:
                 logger.warning("  [CF] Challenge page detected. Waiting 3s for JS resolution...")
                 time.sleep(3)
                 continue
-            # Look for a table that has at least one row or any PDF links
             has_content = page.evaluate("""() => {
                 const table = document.querySelector('table');
                 if (table && table.querySelectorAll('tr').length > 1) return true;
@@ -845,7 +833,6 @@ class LegislativeScraper:
             if has_content:
                 return True
             time.sleep(1)
-        # If no CF detected but still no content, assume real (empty) page
         html = page.content()
         if not self._is_cloudflare_challenge(html):
             return True
@@ -863,22 +850,15 @@ class LegislativeScraper:
     #  Pre-flight duplicate check against live `bills` and `bills_staging`
     # -------------------------------------------------------------------
     def _is_bill_already_scraped(self, pdf_url: str, title: str) -> bool:
-        """
-        Returns True if the bill is already present in the live `bills` table
-        OR the `bills_staging` table, based on pdf_url OR exact title match.
-        Prevents re-downloading massive PDFs for bills already processed.
-        """
         if not self._supabase_staging:
             return False
         try:
             for table in ("bills", "bills_staging"):
-                # Check by pdf_url (most precise — unique per version)
                 if pdf_url:
                     res = self._supabase_staging.table(table).select("id").eq("pdf_url", pdf_url).limit(1).execute()
                     if res and res.data:
                         logger.info(f"    [Skip] '{title}' already in {table} (pdf_url match). Skipping download.")
                         return True
-                # Check by exact title
                 if title:
                     res = self._supabase_staging.table(table).select("id").eq("title", title).limit(1).execute()
                     if res and res.data:
@@ -892,12 +872,6 @@ class LegislativeScraper:
     #  Incremental push: write one bill to bills_staging and checkpoint file
     # -------------------------------------------------------------------
     def _push_to_staging(self, record: dict) -> None:
-        """
-        Immediately pushes a single completed bill record to bills_staging
-        and appends it to the checkpoint JSON file on disk.
-        This ensures zero data loss even if the GitHub Actions job is killed.
-        """
-        # 1. Push to Supabase bills_staging
         if self._supabase_staging:
             try:
                 staging_record = {
@@ -908,7 +882,6 @@ class LegislativeScraper:
                 staging_record["metadata"] = record.get("metadata")
                 staging_record["created_at"] = record.get("created_at") or datetime.now(timezone.utc).isoformat()
                 staging_record["updated_at"] = datetime.now(timezone.utc).isoformat()
-                # Use pdf_url as conflict key — each bill version has a unique PDF URL
                 self._supabase_staging.table("bills_staging").upsert(
                     staging_record, on_conflict="pdf_url"
                 ).execute()
@@ -916,7 +889,6 @@ class LegislativeScraper:
             except Exception as e:
                 logger.warning(f"    [Staging] Push failed (non-fatal): {e}")
 
-        # 2. Rewrite checkpoint JSON file with full current self.data
         try:
             with open(self._checkpoint_file, 'w', encoding='utf-8') as f:
                 json.dump(self.data, f, indent=2, ensure_ascii=False)
@@ -936,10 +908,9 @@ class LegislativeScraper:
                 "--disable-web-security",
                 "--disable-features=IsolateOrigins,site-per-process",
                 "--lang=en-US,en",
-                "--ignore-certificate-errors",   # SSL fix
+                "--ignore-certificate-errors",
             ]
         }
-        # Get proxy from pool if available
         proxy_info = self.proxy_pool.get_proxy()
         proxy_config = None
         if proxy_info and "url" in proxy_info:
@@ -981,7 +952,7 @@ class LegislativeScraper:
             },
             "java_script_enabled": True,
             "bypass_csp": True,
-            "ignore_https_errors": True,   # SSL fix
+            "ignore_https_errors": True,
         }
         
         if proxy_config:
@@ -989,7 +960,6 @@ class LegislativeScraper:
             
         context = browser.new_context(**ctx_args)
 
-        # Stealth init script (even if playwright-stealth not installed)
         context.add_init_script("""
             Object.defineProperty(navigator, 'webdriver', {get: () => undefined});
             Object.defineProperty(navigator, 'plugins', {get: () => [1,2,3,4,5]});
@@ -1003,11 +973,9 @@ class LegislativeScraper:
     #  NEW: Scrapling Native Fetcher (Priority 1)
     # -------------------------------------------------------------------
     def _fetch_with_scrapling(self, url: str) -> Optional[Any]:
-        """Uses Scrapling's DynamicFetcher with native proxy orchestration."""
         if not SCRAPLING_OK:
             return None
 
-        # Format proxy for Scrapling
         proxy_info = self.proxy_pool.get_proxy()
         scrapling_proxy = None
         if proxy_info and "url" in proxy_info:
@@ -1016,7 +984,6 @@ class LegislativeScraper:
         logger.info(f"  [Scrapling] Attempting extraction with Scrapling (Proxy: {proxy_info.get('type') if proxy_info else 'Direct'})")
         
         try:
-            # DynamicFetcher handles Cloudflare Turnstile natively and allows adaptive CSS
             response = DynamicFetcher.fetch(
                 url, 
                 headless=self.headless, 
@@ -1025,13 +992,10 @@ class LegislativeScraper:
                 solve_cloudflare=True
             )
             
-            # Use Scrapling's adaptive parser to find the table rows
-            # Match any anchor whose href contains '.pdf' (with or without query params)
             rows = response.css('table tr', adaptive=True)
             
             extracted_rows = []
             for row in rows:
-                # Use adaptive CSS to find any link in the row
                 all_links = row.css('td a')
                 if not all_links:
                     all_links = row.css('a')
@@ -1039,11 +1003,9 @@ class LegislativeScraper:
                 pdf_link = None
                 for link in all_links:
                     href = link.attrib.get('href', '')
-                    # Match URLs containing .pdf anywhere in the path (before any query params)
                     if re.search(r'\.pdf(\?|#|$)', href, re.I):
                         pdf_link = link
                         break
-                    # Also match common Parliament download route patterns
                     if re.search(r'/(download|files|uploads|system/files)/', href, re.I):
                         pdf_link = link
                         break
@@ -1081,20 +1043,16 @@ class LegislativeScraper:
         consecutive_empty = 0
 
         for page_num in range(max_pages):
-            # Always include empty title= to satisfy Drupal Views
             page_url = f"{base_url}?title=&page={page_num}"
             logger.info(f"  Page {page_num + 1}: {page_url}")
 
-            # 1. PRIORITY 1: Scrapling Engine
             rows = self._fetch_with_scrapling(page_url)
 
-            # 2. PRIORITY 2: Legacy Playwright Fallback
             if not rows:
                 logger.info("  [Playwright] Engaging legacy Playwright fallback...")
                 try:
                     page.goto(page_url, wait_until="domcontentloaded", timeout=60000)
 
-                    # Cloudflare guard
                     if not self._wait_for_real_content(page, timeout_ms=20000):
                         logger.error(f"  [CF] Cloudflare block on page {page_num + 1}. Skipping.")
                         consecutive_empty += 1
@@ -1110,7 +1068,6 @@ class LegislativeScraper:
                         const allTables = document.querySelectorAll('table');
                         let allRows = [];
                         for (const table of allTables) {
-                            // Accept table if it has any link that looks like a bill document
                             const tableLinks = table.querySelectorAll('td a');
                             const hasBillLink = Array.from(tableLinks).some(a =>
                                 PDF_PATTERN.test(a.href) || DOWNLOAD_PATTERN.test(a.href)
@@ -1118,7 +1075,6 @@ class LegislativeScraper:
                             if (!hasBillLink) continue;
                             const rows = table.querySelectorAll('tbody tr, tr');
                             for (const row of rows) {
-                                // Find PDF link: prefer strict .pdf match, fallback to download route
                                 const allCellLinks = row.querySelectorAll('td a');
                                 let pdfLink = null;
                                 for (const a of allCellLinks) {
@@ -1150,10 +1106,7 @@ class LegislativeScraper:
                     logger.error(f"  [Playwright] Fallback failed: {e}")
                     rows = None
 
-            # --- SHARED PROCESSING PIPELINE ---
             if not rows or len(rows) == 0:
-                # ── TASK 2: Retry once on a fresh proxy before counting empty ──
-                # Report the current proxy as failed, rotate, and retry the same URL.
                 current_proxy = self.proxy_pool.get_proxy()
                 if current_proxy:
                     self.proxy_pool.report_failure(current_proxy)
@@ -1162,14 +1115,12 @@ class LegislativeScraper:
                         "reporting proxy failure and retrying with fresh proxy..."
                     )
                     rows = self._fetch_with_scrapling(page_url)
-                # Only increment consecutive_empty if retry also returned nothing
                 if not rows or len(rows) == 0:
                     consecutive_empty += 1
                     logger.info(f"  [Cap] No bill rows on page {page_num + 1} after retry (consecutive empty: {consecutive_empty}).")
                     if consecutive_empty >= 2:
                         break
                     continue
-                # Retry succeeded — fall through to normal processing below
 
             consecutive_empty = 0
             logger.info(f"  Found {len(rows)} bill rows on page {page_num + 1}")
@@ -1197,7 +1148,6 @@ class LegislativeScraper:
                     logger.info(f"    [SKIP] Non-bill document hard-discarded (strict mode): {title}")
                     continue
 
-                # ── PRE-FLIGHT: Skip bills already in bills or bills_staging ──
                 if self._is_bill_already_scraped(pdf_href, title):
                     continue
 
@@ -1205,7 +1155,6 @@ class LegislativeScraper:
                     record = self._deep_process_bill(page, title, pdf_href, detail_href, target)
                     self.data.append(record)
                     logger.info(f"    [BILL] {title}")
-                    # ── INCREMENTAL: push to staging immediately after each bill ──
                     self._push_to_staging(record)
                 except Exception as e:
                     logger.error(f"    [BILL] Deep process failed for '{title}': {e}")
@@ -1225,12 +1174,10 @@ class LegislativeScraper:
                         "created_at": datetime.now(timezone.utc).isoformat(),
                     }
                     self.data.append(fallback_record)
-                    # ── INCREMENTAL: push even the fallback record to staging ──
                     self._push_to_staging(fallback_record)
 
-            # Pagination check: Use Scrapling if available, else Playwright
             if SCRAPLING_OK:
-                has_next = True # Let the next loop handle empty rows logic
+                has_next = True
             else:
                 has_next = page.evaluate("""() => {
                     const next = document.querySelector('li.pager-next a, a[rel="next"], .pager__item--next a, li.next a');
@@ -1242,10 +1189,6 @@ class LegislativeScraper:
 
             time.sleep(0.5 + (page_num % 3) * 0.3)
 
-        # Catch for any outer loop errors
-        # Note: Exception block removed from outer scope since it handles gracefully.
-
-
     # -------------------------------------------------------------------
     #  scrape_all – uses stealth browser and proxy pool
     # -------------------------------------------------------------------
@@ -1255,10 +1198,6 @@ class LegislativeScraper:
         logger.info("  Legislative Sync Engine  (Stealth + CF-hardened + ProxyPool)")
         logger.info("=" * 60)
 
-        # ── Pre-flight proxy pool guard ────────────────────────────────────
-        # Check for premium proxies before spending Playwright startup time.
-        # If none are found, fall back to direct_bill_seeder.py (no-proxy mode)
-        # instead of hard-exiting so the workflow still produces bill output.
         _PREMIUM_TYPES = {"brightdata", "oxylabs", "scraperapi", "webshare"}
         _premium_proxies = [
             p for p in self.proxy_pool.proxies
@@ -1275,26 +1214,27 @@ class LegislativeScraper:
                 _seeder_path = os.path.join(os.path.dirname(__file__), "direct_bill_seeder.py")
                 if os.path.exists(_seeder_path):
                     spec = importlib.util.spec_from_file_location("direct_bill_seeder", _seeder_path)
-                    mod = importlib.util.module_from_spec(spec)
-                    spec.loader.exec_module(mod)
-                    seeder = mod.DirectBillSeeder(limit=300, enrich_pdfs=False)
-                    seeder.run()
-                    fpath = seeder.save()
-                    if fpath:
-                        logger.info(f"[PROXY-GATE] Fallback seeder wrote: {fpath}. Exiting after seed.")
+                    if spec is not None:
+                        mod = importlib.util.module_from_spec(spec)
+                        spec.loader.exec_module(mod)
+                        seeder = mod.DirectBillSeeder(limit=300, enrich_pdfs=False)
+                        seeder.run()
+                        fpath = seeder.save()
+                        if fpath:
+                            logger.info(f"[PROXY-GATE] Fallback seeder wrote: {fpath}. Exiting after seed.")
+                        else:
+                            logger.warning("[PROXY-GATE] Fallback seeder produced no bills.")
                     else:
-                        logger.warning("[PROXY-GATE] Fallback seeder produced no bills.")
+                        logger.error("[PROXY-GATE] spec is None — fallback seeder could not be loaded.")
                 else:
                     logger.error("[PROXY-GATE] direct_bill_seeder.py not found — no fallback available.")
             except Exception as _fb_err:
                 logger.error(f"[PROXY-GATE] Fallback seeder failed: {_fb_err}")
-            return self.data  # Return empty/partial data — workflow continues
+            return self.data
         logger.info(
             f"[Proxy] {len(_premium_proxies)} premium proxy/proxies loaded "
             f"(types: {', '.join(p.get('type', '?') for p in _premium_proxies[:5])})."
         )
-        # ── End pre-flight guard ─────────────────────────────────────────
-
         try:
             from playwright.sync_api import sync_playwright
         except ImportError:
@@ -1305,7 +1245,6 @@ class LegislativeScraper:
             browser, ctx = self._build_stealth_browser(p)
             page = ctx.new_page()
 
-            # Apply playwright-stealth if available
             if STEALTH_OK:
                 try:
                     stealth_sync(page)
@@ -1323,7 +1262,6 @@ class LegislativeScraper:
                 except Exception as e:
                     logger.error(f"  Target failed: {e}")
 
-            # --- Phase 2: Tracker Enrichment (runs after bills, same browser session) ---
             logger.info("\n" + "=" * 60)
             logger.info("  Bill Tracker Enrichment Phase")
             logger.info("=" * 60)
@@ -1331,10 +1269,8 @@ class LegislativeScraper:
 
             browser.close()
 
-        # Save proxy usage stats
         self.proxy_pool.save_usage_counts()
 
-        # Log OCR metrics
         metrics = self.ocr_engine.get_metrics()
         logger.info("\n--- OCR Metrics ---")
         logger.info(f"  OCR.space requests: {metrics['ocr_requests_total']} (failed: {metrics['ocr_requests_failed']}, quota exhausted: {metrics['ocr_requests_quota_exhausted']})")
@@ -1362,13 +1298,11 @@ class LegislativeScraper:
             return []
 
     def _deep_process_bill(self, page, title, pdf_url, detail_url, target) -> dict:
-        """Cascading extraction: PDF Text -> Remote OCR -> Screenshot OCR -> HTML Metadata Fallback."""
         text = ""
         method = None
         is_scanned = False
         ocr_metadata = {}
         
-        # 1. Primary: PDF Text Extraction (local cascade)
         pdf_bytes = self._download_pdf(pdf_url, page)
         if pdf_bytes:
             text, method = self._extract_text_cascade(pdf_bytes)
@@ -1377,7 +1311,6 @@ class LegislativeScraper:
         else:
             is_scanned = True
         
-        # 2. Secondary: Remote OCR Fallback on real PDF bytes
         if is_scanned and pdf_bytes:
             logger.info(f"      [OCR] Scanned PDF detected for: {title}")
             ocr_result = self.ocr_engine.ocr_fallback(pdf_bytes, pdf_url=pdf_url, title=title)
@@ -1396,7 +1329,6 @@ class LegislativeScraper:
             else:
                 logger.warning(f"      [OCR] PDF-based OCR failed for: {title}")
 
-        # 3. Screenshot-based OCR
         if is_scanned and (pdf_url or detail_url):
             target_url = detail_url or pdf_url
             logger.info(f"      [OCR] Attempting screenshot-based OCR on: {target_url}")
@@ -1410,12 +1342,10 @@ class LegislativeScraper:
             else:
                 logger.warning(f"      [OCR] Screenshot OCR also failed for: {title}")
 
-        # 4. HTML metadata fallback
         html_metadata = {}
         if is_scanned and detail_url:
             html_metadata = self._scrape_bill_detail_page(page, detail_url)
         
-        # 5. Local Tesseract last resort
         if is_scanned and not text.strip() and pdf_bytes and TESSERACT_OK:
             try:
                 doc = fitz.open(stream=pdf_bytes, filetype="pdf")
@@ -1432,7 +1362,6 @@ class LegislativeScraper:
             except Exception as e:
                 logger.warning(f"      [OCR] Local Tesseract failed: {e}")
 
-        # 6. Multi-LLM distillation
         intel = {}
         if text.strip() and self.orchestrator:
             logger.info(f"      [INTEL] Running Multi-LLM Distillation for: {title}")
@@ -1440,7 +1369,6 @@ class LegislativeScraper:
             if intel:
                 logger.info(f"      [INTEL] Distillation SUCCESS for: {title}")
 
-        # 7. Structural extraction
         structural_data = {}
         if pdf_bytes:
             logger.info(f"      [Structural] Running breadcrumb analysis for: {title}")
@@ -1506,11 +1434,6 @@ class LegislativeScraper:
         if not real_date:
             real_date = datetime.now().strftime("%Y-%m-%d")
 
-        # -----------------------------------------------------------------
-        # FINAL DICTIONARY - REMOVED is_money_bill AND concerns_counties
-        # because they are missing in the Supabase schema.
-        # You can add them back after altering the table.
-        # -----------------------------------------------------------------
         return {
             "title": title,
             "bill_no": self._extract_bill_no(text or title),
@@ -1531,8 +1454,6 @@ class LegislativeScraper:
             "ai_concerns": ai_concerns,
             "tabloid_summary": tabloid_summary,
             "constitutional_section": constitutional_section,
-            # "is_money_bill": structural_data.get("is_money_bill"),      # commented out – add column first
-            # "concerns_counties": structural_data.get("concerns_counties"), # commented out – add column first
             "metadata": {
                 "scraped_at": datetime.now(timezone.utc).isoformat(),
                 "extraction_method": extraction_method,
@@ -1607,7 +1528,7 @@ Return EXACTLY a JSON object with these keys:
                             "OCREngine": "1",
                         },
                         timeout=120,
-                        verify=False   # SSL fix
+                        verify=False
                     )
                     self.ocr_engine._increment_daily_counter()
                     self.ocr_engine.metrics["ocr_requests_total"] += 1
@@ -1785,8 +1706,6 @@ Return EXACTLY a JSON object with these keys:
         return result
 
     def _scrape_standard_docs(self, page, target):
-        # TOMBSTONED (strict mode) — non-bill targets are blocked in scrape_all().
-        # This method must never be reached. If it is, fail loudly.
         raise RuntimeError(
             f"[STRICT MODE] _scrape_standard_docs called for '{target.get('name')}' "
             f"(type='{target.get('type')}'). Only type='bills' targets are permitted. "
@@ -1794,7 +1713,6 @@ Return EXACTLY a JSON object with these keys:
         )
 
     def _build_non_bill_record(self, title, url, target):
-        # TOMBSTONED (strict mode) — non-bill records must never enter self.data.
         raise RuntimeError(
             f"[STRICT MODE] _build_non_bill_record called for '{title}'. "
             "All non-bill documents must be hard-discarded via 'continue' in _scrape_bills()."
@@ -1933,7 +1851,7 @@ Return EXACTLY a JSON object with these keys:
             api_key = proxy.get("api_key")
             payload = {"api_key": api_key, "url": url, "retry_404": "true"}
             try:
-                r = requests.get("https://api.scraperapi.com/", params=payload, timeout=90, verify=False)   # SSL fix
+                r = requests.get("https://api.scraperapi.com/", params=payload, timeout=90, verify=False)
                 if r.status_code == 200 and r.content[:5] == b"%PDF-":
                     logger.info(f"      [DL] PDF downloaded via ScraperAPI: {len(r.content)} bytes")
                     return r.content
@@ -1980,7 +1898,7 @@ Return EXACTLY a JSON object with these keys:
                 manus_result = self.orchestrator.call_manus_agent(goal)
                 if manus_result and manus_result.startswith("http"):
                     try:
-                        r = requests.get(manus_result, timeout=30, verify=False)   # SSL fix
+                        r = requests.get(manus_result, timeout=30, verify=False)
                         if r.content[:5] == b"%PDF-":
                             return r.content
                     except Exception as _dl_e:
@@ -1992,15 +1910,10 @@ Return EXACTLY a JSON object with these keys:
         return None
 
     # ===================================================================
-    #  BILL TRACKER ENRICHMENT ENGINE
-    #  Runs after the primary bills pipeline. Reads tracker matrix PDFs,
-    #  extracts tabular data, joins each row to an existing bill record,
-    #  and writes a tracker_enrichment_*.json sidecar for sync_to_supabase.
-    #  NEVER inserts new bill records. UPDATE-only on matched bills.
+    #  BILL TRACKER ENRICHMENT ENGINE (FIXED)
     # ===================================================================
 
     def _fetch_tracker_pdfs(self, page, target: dict) -> List[str]:
-        """Scrape the Bill Tracker page and return all PDF URLs found."""
         pdf_urls = []
         try:
             page.goto(target["url"], wait_until="domcontentloaded", timeout=60000)
@@ -2020,89 +1933,184 @@ Return EXACTLY a JSON object with these keys:
 
     def _extract_tracker_table(self, pdf_bytes: bytes) -> List[Dict[str, Any]]:
         """
-        Extract tabular rows from a Bill Tracker matrix PDF.
-        Uses pdfplumber for cell-aware table extraction.
-        Returns a list of dicts with keys: bill_no, title, sponsor,
-        first_reading, committee_date, second_reading, third_reading,
-        assent_date, current_status.
+        Multi-engine extraction for tracker matrix PDFs.
+        Tries Camelot (lattice), then pdfplumber, then raw text regex.
         """
         rows = []
-        if not PDFPLUMBER_OK:
-            logger.warning("  [Tracker] pdfplumber not installed — table extraction unavailable.")
-            return rows
+        # 1) Try Camelot
         try:
-            import pdfplumber
-            with pdfplumber.open(io.BytesIO(pdf_bytes)) as pdf:
-                for page_num, pg in enumerate(pdf.pages):
-                    tables = pg.extract_tables()
-                    for table in tables:
-                        if not table or len(table) < 2:
-                            continue
-                        # Detect header row
-                        header_raw = [(c or "").strip().lower() for c in table[0]]
-                        # Map column names flexibly
-                        col = {}
-                        for i, h in enumerate(header_raw):
-                            if any(k in h for k in ["bill no", "bill_no", "no."]):
-                                col["bill_no"] = i
-                            elif any(k in h for k in ["title", "name", "short title"]):
-                                col["title"] = i
-                            elif any(k in h for k in ["sponsor", "mover", "proposer"]):
-                                col["sponsor"] = i
-                            elif any(k in h for k in ["1st", "first read"]):
-                                col["first_reading"] = i
-                            elif any(k in h for k in ["committee", "referral"]):
-                                col["committee_date"] = i
-                            elif any(k in h for k in ["2nd", "second read"]):
-                                col["second_reading"] = i
-                            elif any(k in h for k in ["3rd", "third read"]):
-                                col["third_reading"] = i
-                            elif any(k in h for k in ["assent", "signed", "enacted"]):
-                                col["assent_date"] = i
-                            elif any(k in h for k in ["status", "stage", "current"]):
-                                col["current_status"] = i
-
-                        if not col:
-                            logger.debug(f"  [Tracker] Page {page_num+1}: no recognisable columns")
-                            continue
-
-                        for data_row in table[1:]:
-                            if not data_row or all(c is None or (c or "").strip() == "" for c in data_row):
-                                continue
-                            safe = lambda i: str(data_row[i] or "").strip() if i < len(data_row) else ""
-                            row = {
-                                "bill_no":        safe(col.get("bill_no", -1)),
-                                "title":          safe(col.get("title", -1)),
-                                "sponsor":        safe(col.get("sponsor", -1)),
-                                "first_reading":  safe(col.get("first_reading", -1)),
-                                "committee_date": safe(col.get("committee_date", -1)),
-                                "second_reading": safe(col.get("second_reading", -1)),
-                                "third_reading":  safe(col.get("third_reading", -1)),
-                                "assent_date":    safe(col.get("assent_date", -1)),
-                                "current_status": safe(col.get("current_status", -1)),
-                            }
-                            # Only keep rows that have at least a title or bill_no
-                            if row["bill_no"] or row["title"]:
-                                rows.append(row)
+            import camelot
+            # Use lattice flavor for structured tables
+            tables = camelot.read_pdf(io.BytesIO(pdf_bytes), pages='all', flavor='lattice')
+            for table in tables:
+                df = table.df
+                if df.empty:
+                    continue
+                header = [str(c).strip().lower() for c in df.iloc[0].values]
+                # Map columns
+                col_map = {}
+                for i, h in enumerate(header):
+                    if any(k in h for k in ["bill no", "bill_no", "no."]):
+                        col_map["bill_no"] = i
+                    elif any(k in h for k in ["title", "name", "short title"]):
+                        col_map["title"] = i
+                    elif any(k in h for k in ["sponsor", "mover"]):
+                        col_map["sponsor"] = i
+                    elif any(k in h for k in ["1st", "first read"]):
+                        col_map["first_reading"] = i
+                    elif any(k in h for k in ["committee", "referral"]):
+                        col_map["committee_date"] = i
+                    elif any(k in h for k in ["2nd", "second read"]):
+                        col_map["second_reading"] = i
+                    elif any(k in h for k in ["3rd", "third read"]):
+                        col_map["third_reading"] = i
+                    elif any(k in h for k in ["assent", "signed"]):
+                        col_map["assent_date"] = i
+                    elif any(k in h for k in ["status", "stage", "current"]):
+                        col_map["current_status"] = i
+                if not col_map:
+                    continue
+                for idx, row in df.iterrows():
+                    if idx == 0:
+                        continue
+                    if row.isnull().all():
+                        continue
+                    def safe_cell(i):
+                        return str(row.iloc[i]).strip() if i < len(row) else ""
+                    rows.append({
+                        "bill_no": safe_cell(col_map.get("bill_no", -1)),
+                        "title": safe_cell(col_map.get("title", -1)),
+                        "sponsor": safe_cell(col_map.get("sponsor", -1)),
+                        "first_reading": safe_cell(col_map.get("first_reading", -1)),
+                        "committee_date": safe_cell(col_map.get("committee_date", -1)),
+                        "second_reading": safe_cell(col_map.get("second_reading", -1)),
+                        "third_reading": safe_cell(col_map.get("third_reading", -1)),
+                        "assent_date": safe_cell(col_map.get("assent_date", -1)),
+                        "current_status": safe_cell(col_map.get("current_status", -1)),
+                    })
+            if rows:
+                logger.info(f"  [Tracker] Camelot extracted {len(rows)} row(s)")
+                return rows
         except Exception as e:
-            logger.error(f"  [Tracker] Table extraction failed: {e}")
-        logger.info(f"  [Tracker] Extracted {len(rows)} row(s) from tracker matrix")
+            logger.debug(f"  [Tracker] Camelot failed: {e}")
+
+        # 2) Fallback: pdfplumber
+        if PDFPLUMBER_OK:
+            try:
+                with pdfplumber.open(io.BytesIO(pdf_bytes)) as pdf:
+                    for pg in pdf.pages:
+                        tables = pg.extract_tables()
+                        for table in tables:
+                            if not table or len(table) < 2:
+                                continue
+                            header = [(c or "").strip().lower() for c in table[0]]
+                            col = {}
+                            for i, h in enumerate(header):
+                                if any(k in h for k in ["bill no", "bill_no", "no."]):
+                                    col["bill_no"] = i
+                                elif any(k in h for k in ["title", "name", "short title"]):
+                                    col["title"] = i
+                                elif any(k in h for k in ["sponsor", "mover"]):
+                                    col["sponsor"] = i
+                                elif any(k in h for k in ["1st", "first read"]):
+                                    col["first_reading"] = i
+                                elif any(k in h for k in ["committee", "referral"]):
+                                    col["committee_date"] = i
+                                elif any(k in h for k in ["2nd", "second read"]):
+                                    col["second_reading"] = i
+                                elif any(k in h for k in ["3rd", "third read"]):
+                                    col["third_reading"] = i
+                                elif any(k in h for k in ["assent", "signed"]):
+                                    col["assent_date"] = i
+                                elif any(k in h for k in ["status", "stage", "current"]):
+                                    col["current_status"] = i
+                            if not col:
+                                continue
+                            for data_row in table[1:]:
+                                if not data_row or all(c is None or (c or "").strip() == "" for c in data_row):
+                                    continue
+                                def safe(i):
+                                    return str(data_row[i] or "").strip() if i < len(data_row) else ""
+                                rows.append({
+                                    "bill_no": safe(col.get("bill_no", -1)),
+                                    "title": safe(col.get("title", -1)),
+                                    "sponsor": safe(col.get("sponsor", -1)),
+                                    "first_reading": safe(col.get("first_reading", -1)),
+                                    "committee_date": safe(col.get("committee_date", -1)),
+                                    "second_reading": safe(col.get("second_reading", -1)),
+                                    "third_reading": safe(col.get("third_reading", -1)),
+                                    "assent_date": safe(col.get("assent_date", -1)),
+                                    "current_status": safe(col.get("current_status", -1)),
+                                })
+                if rows:
+                    logger.info(f"  [Tracker] pdfplumber extracted {len(rows)} row(s)")
+                    return rows
+            except Exception as e:
+                logger.debug(f"  [Tracker] pdfplumber failed: {e}")
+
+        # 3) Last resort: regex on raw text
+        try:
+            doc = fitz.open(stream=pdf_bytes, filetype="pdf")
+            full_text = ""
+            for page in doc:
+                full_text += page.get_text()
+            doc.close()
+            # Find lines that start with a number (bill no) and capture following columns
+            # This is naive but can work if the PDF is well-formatted.
+            lines = full_text.split('\n')
+            for line in lines:
+                line = line.strip()
+                if not line:
+                    continue
+                # Heuristic: line starts with a number and contains a date-like pattern
+                if re.match(r'^\d+\s+', line):
+                    # Split by 2+ spaces or tabs to get fields
+                    parts = re.split(r'\s{2,}|\t', line)
+                    if len(parts) >= 3:
+                        row = {
+                            "bill_no": parts[0].strip(),
+                            "title": parts[1].strip() if len(parts)>1 else "",
+                            "sponsor": parts[2].strip() if len(parts)>2 else "",
+                            "first_reading": "",
+                            "committee_date": "",
+                            "second_reading": "",
+                            "third_reading": "",
+                            "assent_date": "",
+                            "current_status": "",
+                        }
+                        # Try to find dates in remaining parts
+                        date_pattern = re.compile(r'\d{1,2}/\d{1,2}/\d{4}')
+                        date_parts = []
+                        for p in parts[3:]:
+                            if date_pattern.search(p):
+                                date_parts.append(p)
+                        if len(date_parts) >= 1:
+                            row["first_reading"] = date_parts[0]
+                        if len(date_parts) >= 2:
+                            row["committee_date"] = date_parts[1]
+                        if len(date_parts) >= 3:
+                            row["second_reading"] = date_parts[2]
+                        if len(date_parts) >= 4:
+                            row["third_reading"] = date_parts[3]
+                        if len(date_parts) >= 5:
+                            row["assent_date"] = date_parts[4]
+                        if len(date_parts) >= 6:
+                            row["current_status"] = date_parts[5]
+                        rows.append(row)
+            if rows:
+                logger.info(f"  [Tracker] Regex fallback extracted {len(rows)} row(s)")
+        except Exception as e:
+            logger.debug(f"  [Tracker] Regex fallback failed: {e}")
+
+        logger.info(f"  [Tracker] Total extracted rows: {len(rows)}")
         return rows
 
     def _join_tracker_row_to_bill(self, tracker_row: Dict, bills_snapshot: List[Dict]) -> Optional[Dict]:
-        """
-        Three-key cascade join from a tracker row to a bill in bills_snapshot.
-        Key 1: exact bill_no match.
-        Key 2: fuzzy title match (>= 0.85 similarity).
-        Key 3: LLM disambiguation (0.60–0.84 similarity).
-        Returns the matched bill dict, or None if unmatched.
-        """
         import difflib
 
         t_bill_no = re.sub(r'[^0-9]', '', tracker_row.get("bill_no", ""))
         t_title = (tracker_row.get("title") or "").strip().lower()
 
-        # --- Key 1: bill_no exact match ---
         if t_bill_no:
             for bill in bills_snapshot:
                 b_no = re.sub(r'[^0-9]', '', bill.get("bill_no", ""))
@@ -2110,7 +2118,6 @@ Return EXACTLY a JSON object with these keys:
                     logger.debug(f"  [Tracker Join] bill_no match: {t_bill_no} -> '{bill['title']}'")
                     return bill
 
-        # --- Key 2: fuzzy title ---
         if not t_title:
             return None
 
@@ -2127,7 +2134,6 @@ Return EXACTLY a JSON object with these keys:
             logger.debug(f"  [Tracker Join] fuzzy match ({best_ratio:.2f}): '{tracker_row['title']}' -> '{best_bill['title']}'")
             return best_bill
 
-        # --- Key 3: LLM disambiguation ---
         if 0.60 <= best_ratio < 0.85 and best_bill and self.orchestrator:
             prompt = (
                 f"Tracker title: \"{tracker_row['title']}\"\n"
@@ -2152,21 +2158,42 @@ Return EXACTLY a JSON object with these keys:
         """
         Main tracker enrichment orchestrator. Called from scrape_all() after
         the bills pipeline completes.
-
-        Returns a dict:
-          matched:   list of {bill_id, bill_title, enrichment_fields} ready for UPDATE
-          unmatched: list of raw tracker rows that had no bill match
+        Uses the live Supabase bills table as the join pool (full history).
+        Returns a dict: matched and unmatched rows.
         """
         result = {"matched": [], "unmatched": [], "pdf_count": 0, "row_count": 0}
 
-        # Find tracker targets
         tracker_targets = [t for t in self.targets if t.get("type") == "bill_tracker_matrix"]
         if not tracker_targets:
             logger.info("  [Tracker] No bill_tracker_matrix targets configured. Skipping.")
             return result
 
-        # Use self.data as the bills join pool (already scraped this run)
-        bills_snapshot = [b for b in self.data if b.get("title")]
+        # --- NEW: Build bills_snapshot from Supabase live tables ---
+        bills_snapshot = []
+        if self._supabase_staging:
+            try:
+                # Query both bills and bills_staging, merge by id
+                res_bills = self._supabase_staging.table("bills").select("id,title,bill_no,status,status_lock,sponsor").execute()
+                res_staging = self._supabase_staging.table("bills_staging").select("id,title,bill_no,status,status_lock,sponsor").execute()
+                bills_data = res_bills.data or []
+                staging_data = res_staging.data or []
+                # Combine, using bills as primary, staging as fallback for new items not yet in bills
+                seen_ids = set()
+                for b in bills_data:
+                    if b["id"] not in seen_ids:
+                        bills_snapshot.append(b)
+                        seen_ids.add(b["id"])
+                for s in staging_data:
+                    if s["id"] not in seen_ids:
+                        bills_snapshot.append(s)
+                        seen_ids.add(s["id"])
+                logger.info(f"  [Tracker] Joined {len(bills_snapshot)} bills from Supabase (bills + bills_staging)")
+            except Exception as e:
+                logger.warning(f"  [Tracker] Failed to fetch from Supabase, falling back to self.data: {e}")
+                bills_snapshot = [b for b in self.data if b.get("title")]
+        else:
+            bills_snapshot = [b for b in self.data if b.get("title")]
+        # -----------------------------------------------------------------
 
         for target in tracker_targets:
             logger.info(f"\n>>> Tracker Enrichment: {target['name']}")
@@ -2186,8 +2213,6 @@ Return EXACTLY a JSON object with these keys:
                     matched_bill = self._join_tracker_row_to_bill(row, bills_snapshot)
 
                     if matched_bill:
-                        # Build enrichment payload — only tracker-owned fields
-                        # Status advancement logic: only move FORWARD, never backward
                         STATUS_ORDER = [
                             "PUBLISHED", "1ST READING", "COMMITTEE", "2ND READING",
                             "REPORT STAGE", "COMMITTEE STAGE", "3RD READING",
@@ -2198,7 +2223,6 @@ Return EXACTLY a JSON object with these keys:
                         if STAGE_DETECTOR_OK and tracker_status:
                             tracker_status = normalize_stage_label(tracker_status).upper()
 
-                        # Only update status if tracker stage is further along
                         new_status = current_status
                         try:
                             curr_idx = STATUS_ORDER.index(current_status)
@@ -2206,7 +2230,7 @@ Return EXACTLY a JSON object with these keys:
                             if track_idx > curr_idx:
                                 new_status = STATUS_ORDER[track_idx]
                         except ValueError:
-                            pass  # Unknown stage — preserve existing
+                            pass
 
                         enrichment = {
                             "bill_title":          matched_bill["title"],
@@ -2244,7 +2268,6 @@ Return EXACTLY a JSON object with these keys:
         return fpath
 
     def save_tracker_enrichment(self, enrichment_result: Dict[str, Any]) -> Optional[str]:
-        """Save the tracker enrichment sidecar JSON for sync_to_supabase to consume."""
         if not enrichment_result.get("matched") and not enrichment_result.get("unmatched"):
             logger.info("  [Tracker] No enrichment data to save.")
             return None
