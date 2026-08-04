@@ -366,7 +366,7 @@ const BlogPostPage = () => {
                               </AvatarFallback>
                             </Avatar>
                             <div>
-                              <p className="text-xs font-black uppercase tracking-widest text-slate-400">Contributing as</p>
+                              <p className="text-xs font-black uppercase tracking-widest text-slate-400">Commenting as</p>
                               <p className="text-sm font-bold">{session?.user?.email || 'Anonymous Guest'}</p>
                             </div>
                           </div>
@@ -379,7 +379,7 @@ const BlogPostPage = () => {
                           />
 
                           <div className="flex justify-between items-center">
-                            <p className="text-xs text-slate-400">Submission will be indexed in Bunge Square.</p>
+                            <p className="text-xs text-slate-400">You can follow your comment submission on CEKA Forums like Bunge Square.</p>
                             <div className="flex gap-3">
                               <Button variant="ghost" onClick={() => setShowReplyForm(false)} className="rounded-xl font-bold">Cancel</Button>
                               <Button
@@ -387,7 +387,7 @@ const BlogPostPage = () => {
                                 disabled={!session || !replyText.trim() || sending}
                                 className="rounded-xl bg-kenya-green text-white font-bold h-11 px-6 shadow-lg shadow-kenya-green/20"
                               >
-                                {sending ? 'Syncing...' : 'Sync Discourse'}
+                                {sending ? 'Sending...' : 'Submit Comment'}
                                 <Send className="h-4 w-4 ml-2" />
                               </Button>
                             </div>

@@ -37,7 +37,7 @@ export function ReadOtherPosts({ currentPostId, limit = 3 }: ReadOtherPostsProps
   if (loading) {
     return (
       <div className="space-y-4">
-        <h3 className="text-xl font-semibold">Read Other Posts</h3>
+        <h3 className="text-xl font-semibold">Related Posts You May Like</h3>
         <div className="grid gap-4">
           {Array.from({ length: limit }).map((_, i) => (
             <Card key={i} className="animate-pulse">

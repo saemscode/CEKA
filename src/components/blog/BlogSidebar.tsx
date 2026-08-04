@@ -21,6 +21,7 @@ import {
   TrendingUp,
   Zap
 } from 'lucide-react';
+import { DownloadIcon, LibraryIcon, CampaignIcon, UserIcon, NasakaSVGIcon, NavFilesIcon, NavCommentIcon, CivicGlossaryIcon, SettingsIcon, CalendarIcon, NavSearchIcon, CarouselSlideIcon, FilterIcon, } from '../ui/CustomIcons';
 import { useToast } from '@/components/ui/use-toast';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { translate } from '@/lib/utils';
@@ -170,7 +171,7 @@ export function BlogSidebar() {
     {
       title: translate("Nasaka IEBC", language),
       description: translate("Find IEBC Offices near you", language),
-      icon: <MapPin className="h-4 w-4" />,
+      icon: <NasakaSVGIcon className="h-4 w-4" />,
       action: translate("Learn More", language),
       link: "/nasaka-iebc",
       color: "bg-blue-500"
@@ -178,7 +179,7 @@ export function BlogSidebar() {
     {
       title: translate("Legislative Tracker", language),
       description: translate("Monitor bills and laws affecting Kenya", language),
-      icon: <Scale className="h-4 w-4" />,
+      icon: <NavFilesIcon className="h-4 w-4" />,
       action: translate("Track Bills", language),
       link: "/legislative-tracker",
       color: "bg-purple-500"
@@ -186,7 +187,7 @@ export function BlogSidebar() {
     {
       title: translate("Community Chat", language),
       description: translate("Join real-time discussions with fellow citizens", language),
-      icon: <MessageSquare className="h-4 w-4" />,
+      icon: <NavCommentIcon className="h-4 w-4" />,
       action: translate("Join Now", language),
       link: "/community",
       color: "bg-orange-500"
@@ -198,7 +199,7 @@ export function BlogSidebar() {
     {
       title: translate("Loading Featured...", language),
       description: translate("Please wait...", language),
-      icon: <Sparkles className="h-4 w-4" />,
+      icon: <CivicGlossaryIcon className="h-4 w-4" />,
       color: "bg-amber-500"
     }
   ]);
@@ -211,7 +212,7 @@ export function BlogSidebar() {
           const formatted = data.map(item => ({
             title: item.title,
             description: item.description || '',
-            icon: <Sparkles className="h-4 w-4" />,
+            icon: <CivicGlossaryIcon className="h-4 w-4" />,
             action: translate("View Details", language),
             link: `/media/${item.slug}`,
             color: "bg-gradient-to-r from-pink-500 to-purple-500",
@@ -223,7 +224,7 @@ export function BlogSidebar() {
             {
               title: translate("Youth Civic Summit 2025", language),
               description: translate("Register for Kenya's largest youth civic gathering", language),
-              icon: <Megaphone className="h-4 w-4" />,
+              icon: <CampaignIcon className="h-4 w-4" />,
               action: translate("Register", language),
               link: "/calendar",
               color: "bg-cyan-500"
@@ -242,7 +243,7 @@ export function BlogSidebar() {
     {
       title: translate("Join Community", language),
       description: translate("Connect with fellow civic educators", language),
-      icon: <Users className="h-4 w-4" />,
+      icon: <UserIcon className="h-4 w-4" />,
       action: translate("Join", language),
       link: "/join-community?tab=join-community",
       color: "bg-primary"
@@ -250,7 +251,7 @@ export function BlogSidebar() {
     {
       title: translate("Resource Library", language),
       description: translate("Access educational materials", language),
-      icon: <BookOpen className="h-4 w-4" />,
+      icon: <LibraryIcon className="h-4 w-4" />,
       action: translate("Browse", language),
       link: "/resources",
       color: "bg-emerald-500"
@@ -258,7 +259,7 @@ export function BlogSidebar() {
     {
       title: translate("Advocacy Toolkit", language),
       description: translate("Tools for civic engagement", language),
-      icon: <Zap className="h-4 w-4" />,
+      icon: <SettingsIcon className="h-4 w-4" />,
       action: translate("Get Tools", language),
       link: "/advocacy-toolkit",
       color: "bg-indigo-500"
@@ -266,7 +267,7 @@ export function BlogSidebar() {
     {
       title: translate("Events Calendar", language),
       description: translate("Find civic events near you", language),
-      icon: <TrendingUp className="h-4 w-4" />,
+      icon: <CalendarIcon className="h-4 w-4" />,
       action: translate("View Events", language),
       link: "/calendar",
       color: "bg-rose-500"
@@ -304,7 +305,7 @@ export function BlogSidebar() {
       {/* Feature Highlights Carousel */}
       <CarouselSection
         title={translate("Explore CEKA", language)}
-        titleIcon={<Star className="h-4 w-4 text-primary" />}
+        titleIcon={<NavSearchIcon className="h-4 w-4 text-primary" />}
         items={featureItems}
         autoPlayInterval={6000}
       />
@@ -312,7 +313,7 @@ export function BlogSidebar() {
       {/* Featured Civic Work (Ad Space) */}
       <CarouselSection
         title={translate("Featured", language)}
-        titleIcon={<Sparkles className="h-4 w-4 text-amber-500" />}
+        titleIcon={<CarouselSlideIcon className="h-4 w-4 text-amber-500" />}
         items={featuredItems}
         autoPlayInterval={8000}
       />
@@ -320,7 +321,7 @@ export function BlogSidebar() {
       {/* Quick Actions Carousel */}
       <CarouselSection
         title={translate("Quick Actions", language)}
-        titleIcon={<Zap className="h-4 w-4 text-primary" />}
+        titleIcon={<FilterIcon className="h-4 w-4 text-primary" />}
         items={quickActionItems}
         autoPlayInterval={5000}
       />
@@ -329,7 +330,7 @@ export function BlogSidebar() {
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center gap-2 text-sm">
-            <BookOpen className="h-4 w-4 text-primary" />
+            <LibraryIcon className="h-4 w-4 text-primary" />
             {translate("Popular Topics", language)}
           </CardTitle>
         </CardHeader>
@@ -352,7 +353,7 @@ export function BlogSidebar() {
       <Card className="border-primary/20">
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center gap-2 text-sm">
-            <Heart className="h-4 w-4 text-primary" />
+            <UserIcon className="h-4 w-4 text-primary" />
             {translate("Join Our Community", language)}
           </CardTitle>
         </CardHeader>
@@ -383,7 +384,7 @@ export function BlogSidebar() {
       <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
         <CardContent className="pt-6">
           <div className="text-center space-y-3">
-            <Download className="h-8 w-8 text-primary mx-auto" />
+            <DownloadIcon className="h-8 w-8 text-primary mx-auto" />
             <h4 className="font-semibold text-sm">{translate("Take CEKA Everywhere", language)}</h4>
             <p className="text-xs text-muted-foreground">
               {translate("Download our mobile app for offline access to civic education resources.", language)}
