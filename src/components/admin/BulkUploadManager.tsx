@@ -502,12 +502,45 @@ const BulkUploadManager = () => {
         setFiles(prev => [...prev, ...newFiles]);
     }, [files.length, regMode, toast]);
 
+    const processEntry = async (entry: any): Promise<File[]> => {
+        if (entry.isFile) {
+            return new Promise((resolve) => {
+                entry.file((file: File) => resolve([file]));
+            });
+        } else if (entry.isDirectory) {
+            const dirReader = entry.createReader();
+            const entries = await new Promise<any[]>((resolve) => {
+                dirReader.readEntries((results: any) => resolve(results));
+            });
+            const files = await Promise.all(entries.map(processEntry));
+            return files.flat();
+        }
+        return [];
+    };
+
     const handleDrop = useCallback(async (e: React.DragEvent) => {
         e.preventDefault();
         const dt = e.dataTransfer;
-        const droppedFiles = Array.from(dt.files);
-        const zips = droppedFiles.filter(isZip);
-        const others = droppedFiles.filter(f => !isZip(f));
+        
+        let allFiles: File[] = [];
+        
+        if (dt.items && dt.items.length > 0) {
+            const promises = Array.from(dt.items).map(item => {
+                if (item.webkitGetAsEntry) {
+                    const entry = item.webkitGetAsEntry();
+                    if (entry) return processEntry(entry);
+                }
+                return item.getAsFile() ? [item.getAsFile() as File] : [];
+            });
+            const results = await Promise.all(promises);
+            allFiles = results.flat().filter(Boolean);
+        } else {
+            allFiles = Array.from(dt.files);
+        }
+
+        const zips = allFiles.filter(isZip);
+        // Exclude system files and unsupported formats from auto-staging
+        const others = allFiles.filter(f => !isZip(f) && f.name !== '.DS_Store' && f.name.indexOf('._') !== 0);
 
         for (const zip of zips) await ingestZip(zip);
         if (others.length > 0) handleFilesSelected(others as unknown as FileList);
@@ -1259,10 +1292,14 @@ const BulkUploadManager = () => {
                     <div className="h-16 w-16 rounded-3xl bg-primary/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                         <Upload className="h-8 w-8 text-primary" />
                     </div>
-                    <h3 className="font-black text-lg">Add Images or ZIP</h3>
-                    <p className="text-xs text-muted-foreground mb-4">Click, drop images, or drop a .zip archive</p>
-                    <input ref={fileInputRef} type="file" multiple accept="image/*,.zip" className="hidden" onChange={onFileInputChange} />
-                    <Button variant="outline" className="rounded-xl h-10 px-6 font-bold border-2">Select Files</Button>
+                    <h3 className="font-black text-lg">Add Files, Folders, or ZIPs</h3>
+                    <p className="text-xs text-muted-foreground mb-4">Click, drop images, folders, or drop a .zip archive</p>
+                    <input ref={fileInputRef} type="file" multiple accept="image/*,.zip,.rar" className="hidden" onChange={onFileInputChange} />
+                    <input ref={folderInputRef} type="file" multiple {...{ webkitdirectory: "", directory: "" } as any} className="hidden" onChange={onFileInputChange} />
+                    <div className="flex gap-2">
+                        <Button variant="outline" className="rounded-xl h-10 px-6 font-bold border-2" onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}>Select Files</Button>
+                        <Button variant="outline" className="rounded-xl h-10 px-6 font-bold border-2" onClick={(e) => { e.stopPropagation(); folderInputRef.current?.click(); }}><Folder className="h-4 w-4 mr-2"/>Upload Folder</Button>
+                    </div>
                 </Card>
             </div>
 

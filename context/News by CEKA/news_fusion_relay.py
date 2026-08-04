@@ -117,26 +117,26 @@ class SupabaseStore:
     # ---- signals ------------------------------------------------------
     def fetch_pending_signals(self, limit: int) -> List[Dict[str, Any]]:
         res = (
-            self.client.table("signals")
-            .select("id, source_id, url, title, clean_content, embedding, story_dna, entities, claims, published_at, captured_at")
+            self.client.table("bill_news_mentions")
+            .select("id, source_id, bill_id, article_url, headline, clean_content, embedding, story_dna, entities, claims, article_date, scraped_at")
             .eq("enrichment_status", "enriched")
             .eq("fusion_status", "pending")
-            .order("captured_at", desc=True)
+            .order("scraped_at", desc=True)
             .limit(limit)
             .execute()
         )
         return res.data or []
 
     def mark_signal_fused(self, signal_id: str, nio_id: str) -> None:
-        self.client.table("signals").update(
+        self.client.table("bill_news_mentions").update(
             {"fusion_status": "fused", "matched_nio_id": nio_id}
         ).eq("id", signal_id).execute()
 
     def mark_signal_failed(self, signal_id: str) -> None:
-        self.client.table("signals").update({"fusion_status": "failed"}).eq("id", signal_id).execute()
+        self.client.table("bill_news_mentions").update({"fusion_status": "failed"}).eq("id", signal_id).execute()
 
     def get_source(self, source_id: str) -> Optional[Dict[str, Any]]:
-        res = self.client.table("news_sources").select("*").eq("id", source_id).limit(1).execute()
+        res = self.client.table("scraper_sources").select("*").eq("id", source_id).limit(1).execute()
         return res.data[0] if res.data else None
 
     # ---- nios -----------------------------------------------------
@@ -283,22 +283,26 @@ class FusionRelay:
         self.orchestrator = MultiLLMOrchestrator()
 
     def _build_evidence_entry(self, signal: Dict[str, Any], source: Dict[str, Any]) -> Dict[str, Any]:
+        # These are internal keys for the evidence entry stored inside
+        # nios.evidence (jsonb) - not column names, so they stay
+        # "url" / "title" / "captured_at" regardless of what
+        # bill_news_mentions calls the equivalent columns.
         return {
             "signal_id": signal["id"],
             "source_id": source["id"],
             "source_name": source.get("name"),
             "source_domain": source.get("domain"),
             "source_tier": source.get("tier"),
-            "credibility_weight": float(source.get("credibility_weight", 0.5)),
-            "url": signal.get("url"),
-            "title": signal.get("title"),
-            "captured_at": signal.get("captured_at"),
+            "credibility_weight": float(source.get("credibility_weight") or 0.5),
+            "url": signal.get("article_url"),
+            "title": signal.get("headline"),
+            "captured_at": signal.get("scraped_at"),
         }
 
     def _build_timeline_entry(self, signal: Dict[str, Any]) -> Dict[str, Any]:
         return {
-            "time": signal.get("published_at") or signal.get("captured_at"),
-            "event": signal.get("title"),
+            "time": signal.get("article_date") or signal.get("scraped_at"),
+            "event": signal.get("headline"),
             "source_signal_id": signal["id"],
         }
 
@@ -340,7 +344,7 @@ class FusionRelay:
             elif new_embedding:
                 merged_embedding = new_embedding
 
-            self.store.update_nio(matched_nio_id, {
+            nio_update: Dict[str, Any] = {
                 "evidence": evidence,
                 "timeline": timeline,
                 "confidence": confidence,
@@ -348,8 +352,15 @@ class FusionRelay:
                 "importance": importance,
                 "state": new_state,
                 "embedding": merged_embedding,
-                "last_signal_at": signal.get("captured_at"),
-            })
+                "last_signal_at": signal.get("scraped_at"),
+            }
+            # Carry a bill_id forward onto the NIO once, if this signal
+            # came from your existing bill-tied scraper and the NIO
+            # doesn't already point at a bill.
+            if signal.get("bill_id") and not nio.get("related_bill_id"):
+                nio_update["related_bill_id"] = signal["bill_id"]
+
+            self.store.update_nio(matched_nio_id, nio_update)
             logger.info(f"    Merged into NIO {matched_nio_id}: state={new_state} confidence={confidence}")
             return matched_nio_id
 
@@ -364,7 +375,7 @@ class FusionRelay:
         importance = _compute_importance(evidence, 1, has_tier1, citizen_impact)
 
         new_nio = {
-            "canonical_headline": signal.get("title"),
+            "canonical_headline": signal.get("headline"),
             "state": "detected",
             "confidence": confidence,
             "importance": importance,
@@ -376,7 +387,7 @@ class FusionRelay:
             "evidence": evidence,
             "topics": (signal.get("story_dna") or {}).get("topics", []) or [],
             "embedding": signal.get("embedding"),
-            "last_signal_at": signal.get("captured_at"),
+            "last_signal_at": signal.get("scraped_at"),
         }
         nio_id = self.store.insert_nio(new_nio)
         logger.info(f"    Created new NIO {nio_id} from signal {signal['id']}")

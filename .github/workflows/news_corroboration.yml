@@ -118,22 +118,23 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install \
-            supabase>=2.7.0 \
-            python-dotenv>=1.0.0 \
-            requests>=2.31.0 \
-            feedparser>=6.0.11 \
+            "supabase>=2.7.0" \
+            "python-dotenv>=1.0.0" \
+            "requests>=2.31.0" \
+            "feedparser>=6.0.11" \
             "trafilatura>=1.9.0" \
             "beautifulsoup4>=4.12.3" \
             "numpy>=1.26.0" \
             "google-genai>=0.3.0" \
             "google-generativeai>=0.7.0" \
-            "sentence-transformers>=3.0.0" \
             groq openai anthropic cohere
+          # sentence-transformers is large; install separately so a timeout doesn't kill everything
+          pip install "sentence-transformers>=3.0.0" || echo "⚠️ sentence-transformers unavailable — embedding fallback active"
           # MultiLLM extended providers
           pip install cerebras-cloud-sdk || echo "⚠️ cerebras-cloud-sdk unavailable — skipping"
-          # Copy multi_llm_orchestrator.py from scripts/ so it is importable
-          # from the engine working directory (context/News by CEKA).
-          cp ../../scripts/multi_llm_orchestrator.py .
+          # Copy multi_llm_orchestrator.py from scripts/ using absolute workspace path
+          cp "${GITHUB_WORKSPACE}/scripts/multi_llm_orchestrator.py" "${GITHUB_WORKSPACE}/context/News by CEKA/"
+
 
       - name: "Stage 1 — Seed news_sources (idempotent)"
         # Only runs when sources table may be empty (e.g. first deploy).

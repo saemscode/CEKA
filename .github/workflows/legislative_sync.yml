@@ -114,15 +114,28 @@ jobs:
         timeout-minutes: 20
         run: |
           python -m pip install --upgrade pip
+
+          # Core scraping + DB packages
           pip install \
             playwright supabase requests pymupdf pdfplumber python-dotenv \
-            beautifulsoup4 pillow pdf2image pytesseract easyocr \
+            beautifulsoup4 pillow pdf2image pytesseract \
             google-genai google-search-results google-generativeai \
             groq openai anthropic cohere \
-            boto3 aiohttp lxml scrapling[fetchers]==0.2.6 browserforge==0.3.3 playwright-stealth
-          # Install cerebras SDK (may fail gracefully if not available)
+            boto3 aiohttp lxml
+
+          # Optional: easyocr (heavy, may fail on some runners)
+          pip install easyocr || echo "⚠️ easyocr not available — skipping"
+
+          # Optional: scrapling (stealth scraping — graceful degrade if version conflict)
+          pip install "scrapling[fetchers]>=0.2.6" browserforge playwright-stealth || \
+            pip install scrapling browserforge playwright-stealth || \
+            echo "⚠️ scrapling not available — falling back to plain Playwright"
+
+          # Optional: cerebras SDK
           pip install cerebras-cloud-sdk || echo "⚠️ cerebras-cloud-sdk not available — skipping"
+
           playwright install chromium --with-deps
+        continue-on-error: false
 
       - name: Run Legislative Scraper
         timeout-minutes: 60

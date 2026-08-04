@@ -63,11 +63,34 @@ const MediaAppraisal = () => {
 
     return (
         <div className="space-y-6">
-            <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-bold">Media Appraisal Hub</h2>
-                <Badge variant="outline" className="px-3 py-1">
-                    {queue.length} items pending
-                </Badge>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                    <h2 className="text-2xl font-bold">Media Appraisal Hub</h2>
+                    <Badge variant="outline" className="px-3 py-1">
+                        {queue.length} items pending
+                    </Badge>
+                </div>
+                {queue.length > 0 && (
+                    <Button 
+                        size="sm" 
+                        className="bg-kenya-green hover:bg-kenya-green/90 font-black shadow-md shadow-kenya-green/20"
+                        onClick={async () => {
+                            try {
+                                setLoading(true);
+                                await Promise.all(queue.map(item => adminService.updateMediaStatus(item.id, item.type, 'approved')));
+                                setQueue([]);
+                                toast({ title: "Bulk Approval Complete", description: `Successfully approved ${queue.length} items.` });
+                            } catch (e) {
+                                toast({ title: "Bulk Approval Failed", description: "Some items failed to approve.", variant: "destructive" });
+                                loadQueue();
+                            } finally {
+                                setLoading(false);
+                            }
+                        }}
+                    >
+                        <Check className="h-4 w-4 mr-2" /> Bulk Approve All
+                    </Button>
+                )}
             </div>
 
             {queue.length === 0 ? (

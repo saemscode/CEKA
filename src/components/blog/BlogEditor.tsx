@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Label } from '@/components/ui/label';
-import { X, Upload } from 'lucide-react';
+import { X, Upload, Send, FileEdit, Globe, Eye } from 'lucide-react';
 import { BlogPost, blogService, BlogCategory } from '@/services/blogService';
 import { RichTextEditor } from './RichTextEditor';
 import { useToast } from '@/hooks/use-toast';
@@ -102,7 +102,7 @@ export function BlogEditor({ post, onSave, onCancel }: BlogEditorProps) {
     }
   };
 
-  const handleSave = async () => {
+  const handleSave = async (overrideStatus?: 'draft' | 'published') => {
     if (!title.trim() || !content.trim()) {
       toast({
         title: "Missing Required Fields",
@@ -112,6 +112,7 @@ export function BlogEditor({ post, onSave, onCancel }: BlogEditorProps) {
       return;
     }
 
+    const finalStatus = overrideStatus ?? status;
     setSaving(true);
     try {
       const postData: Partial<BlogPost> = {
@@ -124,9 +125,9 @@ export function BlogEditor({ post, onSave, onCancel }: BlogEditorProps) {
         featured_image_url: featuredImageUrl.trim() || undefined,
         seo_keywords: seoKeywords.length > 0 ? seoKeywords : undefined,
         tags,
-        status,
-        category_id: categoryId === 'none' ? undefined : categoryId, // Fix: treat "none" as no category
-        published_at: status === 'published' ? new Date().toISOString() : (post?.published_at || undefined)
+        status: finalStatus,
+        category_id: categoryId === 'none' ? undefined : categoryId,
+        published_at: finalStatus === 'published' ? new Date().toISOString() : (post?.published_at || undefined)
       };
 
       let savedPost: BlogPost | null;
@@ -137,6 +138,10 @@ export function BlogEditor({ post, onSave, onCancel }: BlogEditorProps) {
       }
 
       if (savedPost) {
+        if (overrideStatus === 'published') {
+          setStatus('published');
+          toast({ title: '🚀 Published!', description: `"${title.trim()}" is now live.` });
+        }
         onSave(savedPost);
       } else {
         throw new Error('Failed to save post');
@@ -155,8 +160,44 @@ export function BlogEditor({ post, onSave, onCancel }: BlogEditorProps) {
 
   return (
     <Card className="w-full max-w-6xl mx-auto">
-      <CardHeader>
-        <CardTitle>{post ? 'Edit Post' : 'Create New Post'}</CardTitle>
+      <CardHeader className="flex flex-row items-center justify-between gap-4 flex-wrap">
+        <div className="flex items-center gap-3">
+          <CardTitle>{post ? 'Edit Post' : 'Create New Post'}</CardTitle>
+          <Badge
+            variant={status === 'published' ? 'default' : 'secondary'}
+            className={`text-[10px] uppercase font-black tracking-widest px-3 py-1 cursor-pointer ${
+              status === 'published'
+                ? 'bg-green-500/15 text-green-700 dark:text-green-400 border border-green-500/30'
+                : 'bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30'
+            }`}
+            onClick={() => setStatus(s => s === 'published' ? 'draft' : 'published')}
+          >
+            {status === 'published' ? <><Globe className="inline h-3 w-3 mr-1" />Live</> : <><Eye className="inline h-3 w-3 mr-1" />Draft</>}
+          </Badge>
+        </div>
+        {/* Quick-publish from any tab */}
+        <div className="flex items-center gap-2">
+          <Button
+            id="btn-save-draft"
+            size="sm"
+            variant="outline"
+            onClick={() => handleSave('draft')}
+            disabled={saving || !title.trim() || !content.trim()}
+            className="rounded-xl font-bold border-2 h-9 px-4"
+          >
+            <FileEdit className="h-3.5 w-3.5 mr-2" />
+            Save Draft
+          </Button>
+          <Button
+            id="btn-publish-now"
+            size="sm"
+            onClick={() => handleSave('published')}
+            disabled={saving || !title.trim() || !content.trim()}
+            className="rounded-xl font-black h-9 px-5 bg-green-600 hover:bg-green-700 text-white shadow-md shadow-green-500/25"
+          >
+            {saving ? 'Saving...' : <><Send className="h-3.5 w-3.5 mr-2" />Publish Now</>}
+          </Button>
+        </div>
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="content" className="space-y-6">
@@ -371,11 +412,29 @@ export function BlogEditor({ post, onSave, onCancel }: BlogEditorProps) {
           </TabsContent>
         </Tabs>
 
-        <div className="flex gap-2 pt-6 border-t mt-6">
-          <Button onClick={handleSave} disabled={saving || !title.trim() || !content.trim()}>
-            {saving ? 'Saving...' : 'Save Post'}
+        <div className="flex flex-wrap gap-2 pt-6 border-t mt-6">
+          <Button
+            id="btn-save-post-footer"
+            onClick={() => handleSave()}
+            disabled={saving || !title.trim() || !content.trim()}
+            variant="outline"
+            className="rounded-xl font-bold"
+          >
+            <FileEdit className="h-4 w-4 mr-2" />
+            {saving ? 'Saving...' : status === 'published' ? 'Update Post' : 'Save as Draft'}
           </Button>
-          <Button onClick={onCancel} variant="outline">
+          {status !== 'published' && (
+            <Button
+              id="btn-publish-footer"
+              onClick={() => handleSave('published')}
+              disabled={saving || !title.trim() || !content.trim()}
+              className="rounded-xl font-black bg-green-600 hover:bg-green-700 text-white"
+            >
+              <Send className="h-4 w-4 mr-2" />
+              {saving ? 'Publishing...' : 'Publish Now'}
+            </Button>
+          )}
+          <Button onClick={onCancel} variant="ghost" className="rounded-xl">
             Cancel
           </Button>
         </div>

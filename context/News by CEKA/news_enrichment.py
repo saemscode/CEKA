@@ -1,7 +1,8 @@
 """
 news_enrichment.py - CEKA News Intelligence Engine: Stage 2 Enrichment
 ==========================================================================
-Reads signals where enrichment_status = 'pending', extracts structured
+Reads rows in `bill_news_mentions` where enrichment_status = 'pending',
+extracts structured
 Story DNA / entities / claims via your existing MultiLLMOrchestrator
 (imported directly - same provider cascade, same cost profile you
 already run for bill analysis), generates a 768-dim embedding via
@@ -82,10 +83,10 @@ class SupabaseStore:
 
     def fetch_pending(self, limit: int) -> List[Dict[str, Any]]:
         res = (
-            self.client.table("signals")
-            .select("id, title, clean_content, url")
+            self.client.table("bill_news_mentions")
+            .select("id, headline, clean_content, article_url")
             .eq("enrichment_status", "pending")
-            .order("captured_at", desc=True)
+            .order("scraped_at", desc=True)
             .limit(limit)
             .execute()
         )
@@ -93,7 +94,7 @@ class SupabaseStore:
 
     def update_signal(self, signal_id: str, payload: Dict[str, Any]) -> None:
         try:
-            self.client.table("signals").update(payload).eq("id", signal_id).execute()
+            self.client.table("bill_news_mentions").update(payload).eq("id", signal_id).execute()
         except Exception as e:
             logger.error(f"Update failed for signal {signal_id}: {e}")
 
@@ -103,7 +104,7 @@ def _extract_json_safe(orchestrator: MultiLLMOrchestrator, raw_prompt: str) -> D
 
 
 def enrich_signal(orchestrator: MultiLLMOrchestrator, embedder: EmbeddingEngine, signal: Dict[str, Any]) -> Dict[str, Any]:
-    title = signal.get("title") or ""
+    title = signal.get("headline") or ""
     body = signal.get("clean_content") or ""
 
     prompt = f"Headline: {title}\n\nArticle text:\n{body[:8000]}\n\nReturn ONLY the JSON object."
@@ -116,7 +117,7 @@ def enrich_signal(orchestrator: MultiLLMOrchestrator, embedder: EmbeddingEngine,
     embedding = embedder.embed(embed_text, task_type="RETRIEVAL_DOCUMENT")
 
     # topics and citizen_impact_score are top-level keys in the LLM's
-    # response but the `signals` table has no dedicated columns for
+    # response but bill_news_mentions has no dedicated columns for
     # them - nest both into story_dna so news_fusion_relay.py's single
     # `signal["story_dna"]` read picks them up without a schema change.
     story_dna = dict(parsed.get("story_dna") or {})
@@ -157,10 +158,10 @@ def run() -> None:
             store.update_signal(signal["id"], update)
             if update.get("enrichment_status") == "enriched":
                 ok += 1
-                logger.info(f"  [OK] {signal.get('title', '')[:70]}")
+                logger.info(f"  [OK] {signal.get('headline', '')[:70]}")
             else:
                 failed += 1
-                logger.warning(f"  [FAIL] {signal.get('title', '')[:70]}")
+                logger.warning(f"  [FAIL] {signal.get('headline', '')[:70]}")
         except Exception as e:
             logger.error(f"Enrichment error on signal {signal.get('id')}: {e}")
             store.update_signal(signal["id"], {"enrichment_status": "failed"})

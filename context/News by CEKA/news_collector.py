@@ -1,10 +1,16 @@
 """
 news_collector.py - CEKA News Intelligence Engine: Stage 1 Collection
 ========================================================================
-Writes normalized rows into `signals`. Nothing in this file calls an
-LLM - enrichment is a separate stage (news_enrichment.py) so collection
-can run on a tight, cheap, frequent cron independent of LLM cost/rate
-limits.
+Writes normalized rows into `bill_news_mentions` (extended, in
+migration_v2_real_schema.sql, to hold general civic signals alongside
+the bill-specific mentions your existing scraper already writes there -
+bill_id is left null for signals that are not about one specific bill).
+Source metadata comes from `scraper_sources`, also extended with
+tier/source_type/credibility_weight in the same migration.
+
+Nothing in this file calls an LLM - enrichment is a separate stage
+(news_enrichment.py) so collection can run on a tight, cheap, frequent
+cron independent of LLM cost/rate limits.
 
 Design note on proxies: your existing LegislativeScraper's ProxyPool
 exists specifically because parliament.go.ke's PDF portal sits behind
@@ -113,31 +119,40 @@ class SupabaseSink:
         if not url or not key:
             raise RuntimeError("SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY not set. real data unavailable.")
         self.client = create_client(url, key)
-        self._source_cache: Dict[str, str] = {}
+        self._source_cache: Dict[str, Dict[str, Any]] = {}
 
-    def get_source_id(self, domain: str) -> Optional[str]:
+    def get_source(self, domain: str) -> Optional[Dict[str, Any]]:
+        """Returns {id, name, domain} from scraper_sources - source_name and
+        source_domain are NOT NULL on bill_news_mentions, so callers need the
+        full row, not just the id."""
         if domain in self._source_cache:
             return self._source_cache[domain]
         try:
-            res = self.client.table("news_sources").select("id").eq("domain", domain).limit(1).execute()
+            res = (
+                self.client.table("scraper_sources")
+                .select("id, name, domain")
+                .eq("domain", domain)
+                .limit(1)
+                .execute()
+            )
             if res.data:
-                sid = res.data[0]["id"]
-                self._source_cache[domain] = sid
-                return sid
+                row = res.data[0]
+                self._source_cache[domain] = row
+                return row
         except Exception as e:
             logger.error(f"Source lookup failed for {domain}: {e}")
         return None
 
     def insert_signal(self, signal: Dict[str, Any]) -> bool:
         try:
-            self.client.table("signals").insert(signal).execute()
+            self.client.table("bill_news_mentions").insert(signal).execute()
             return True
         except Exception as e:
             msg = str(e)
             if "duplicate key" in msg.lower() or "23505" in msg:
-                logger.debug(f"Duplicate signal skipped: {signal.get('url')}")
+                logger.debug(f"Duplicate signal skipped: {signal.get('article_url')}")
                 return False
-            logger.error(f"Insert failed for {signal.get('url')}: {e}")
+            logger.error(f"Insert failed for {signal.get('article_url')}: {e}")
             return False
 
 
@@ -154,14 +169,14 @@ class NewsCollector:
     # -------------------------------------------------------------
     def collect_rss(self) -> None:
         for domain, feeds in RSS_FEEDS.items():
-            source_id = self.sink.get_source_id(domain)
-            if not source_id:
-                logger.warning(f"No news_sources row for {domain}. Run news_sources.py first. Skipping.")
+            source = self.sink.get_source(domain)
+            if not source:
+                logger.warning(f"No scraper_sources row for {domain}. Run news_sources.py first. Skipping.")
                 continue
             for feed_url in feeds:
-                self._collect_one_feed(domain, source_id, feed_url)
+                self._collect_one_feed(domain, source, feed_url)
 
-    def _collect_one_feed(self, domain: str, source_id: str, feed_url: str) -> None:
+    def _collect_one_feed(self, domain: str, source: Dict[str, Any], feed_url: str) -> None:
         try:
             parsed = feedparser.parse(feed_url)
         except Exception as e:
@@ -193,13 +208,15 @@ class NewsCollector:
                 continue
 
             signal = {
-                "source_id": source_id,
-                "url": url,
-                "title": title.strip(),
-                "raw_content": entry.get("summary", ""),
+                "source_id": source["id"],
+                "source_name": source["name"],
+                "source_domain": source["domain"],
+                "article_url": url,
+                "headline": title.strip()[:500],
+                "snippet": re.sub("<[^<]+?>", "", entry.get("summary", ""))[:2000],
                 "clean_content": clean_content[:20000],
-                "published_at": published_at,
-                "captured_at": datetime.now(timezone.utc).isoformat(),
+                "article_date": published_at,
+                "scraped_at": datetime.now(timezone.utc).isoformat(),
                 "content_hash": _content_hash(url),
                 "enrichment_status": "pending",
                 "fusion_status": "pending",
@@ -215,14 +232,14 @@ class NewsCollector:
     # -------------------------------------------------------------
     def collect_direct_html(self) -> None:
         for domain, paths in DIRECT_HTML_PATHS.items():
-            source_id = self.sink.get_source_id(domain)
-            if not source_id:
-                logger.warning(f"No news_sources row for {domain}. Run news_sources.py first. Skipping.")
+            source = self.sink.get_source(domain)
+            if not source:
+                logger.warning(f"No scraper_sources row for {domain}. Run news_sources.py first. Skipping.")
                 continue
             for path in paths:
-                self._collect_one_html_page(domain, source_id, f"https://{domain}{path}")
+                self._collect_one_html_page(domain, source, f"https://{domain}{path}")
 
-    def _collect_one_html_page(self, domain: str, source_id: str, page_url: str) -> None:
+    def _collect_one_html_page(self, domain: str, source: Dict[str, Any], page_url: str) -> None:
         try:
             resp = self.session.get(page_url, timeout=30)
             if resp.status_code != 200:
@@ -251,13 +268,15 @@ class NewsCollector:
 
             title_guess = link.rstrip("/").split("/")[-1].replace("-", " ").title()
             signal = {
-                "source_id": source_id,
-                "url": link,
-                "title": title_guess[:500],
-                "raw_content": None,
+                "source_id": source["id"],
+                "source_name": source["name"],
+                "source_domain": source["domain"],
+                "article_url": link,
+                "headline": title_guess[:500],
+                "snippet": None,
                 "clean_content": clean_content[:20000],
-                "published_at": None,
-                "captured_at": datetime.now(timezone.utc).isoformat(),
+                "article_date": None,
+                "scraped_at": datetime.now(timezone.utc).isoformat(),
                 "content_hash": _content_hash(link),
                 "enrichment_status": "pending",
                 "fusion_status": "pending",

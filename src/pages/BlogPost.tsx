@@ -280,7 +280,7 @@ const BlogPostPage = () => {
           </div>
         </section>
 
-        <div className="w-full max-w-[1536px] mx-auto px-4 md:px-8 lg:px-12 pb-24 overflow-x-hidden">
+        <div className="w-full px-4 md:px-6 pb-24 overflow-x-hidden">
           <div className="grid lg:grid-cols-12 gap-8 lg:gap-12">
 
             {/* ARTICLE CONTENT */}

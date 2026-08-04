@@ -7,13 +7,6 @@ resilient - one stage failing logs and continues rather than aborting
 the run, matching the pattern in your existing legislative pipeline
 scripts.
 
-Pipeline stages:
-  1. Collection     — RSS + direct-HTML signals → `signals` table
-  2. Enrichment     — Story DNA + entities + embeddings via MultiLLM
-  3. Fusion         — Event deduplication, corroboration, state machine
-  4. Headline Gen   — Canonical headlines + summaries for verified NIOs
-  5. Feed Synthesis — Ranked `feed_snapshot` written for the frontend
-
 Suggested cadence (adjust via your cron schedule, not inside this
 file): collection every 5-10 minutes, enrichment + fusion every
 10-15 minutes, headline generation every 15-20 minutes, feed
@@ -26,14 +19,7 @@ Run:
 """
 
 import logging
-import os
-import sys
 import traceback
-
-# Ensure this directory is on the path so sibling modules resolve
-_HERE = os.path.dirname(os.path.abspath(__file__))
-if _HERE not in sys.path:
-    sys.path.insert(0, _HERE)
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - [PIPELINE] - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
@@ -60,11 +46,11 @@ def main() -> None:
     import news_feed_synthesis
 
     results = {
-        "collection":     _run_stage("Collection",          lambda: news_collector.NewsCollector().run()),
-        "enrichment":     _run_stage("Enrichment",          news_enrichment.run),
-        "fusion":         _run_stage("Fusion",              lambda: news_fusion_relay.FusionRelay().run()),
-        "headlines":      _run_stage("Headline Generation", news_headline_engine.run),
-        "feed_synthesis": _run_stage("Feed Synthesis",      news_feed_synthesis.run),
+        "collection": _run_stage("Collection", lambda: news_collector.NewsCollector().run()),
+        "enrichment": _run_stage("Enrichment", news_enrichment.run),
+        "fusion": _run_stage("Fusion", lambda: news_fusion_relay.FusionRelay().run()),
+        "headlines": _run_stage("Headline Generation", news_headline_engine.run),
+        "feed_synthesis": _run_stage("Feed Synthesis", news_feed_synthesis.run),
     }
 
     logger.info("=" * 70)

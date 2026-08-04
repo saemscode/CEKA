@@ -15,6 +15,10 @@ news_fusion_relay.py. These are starting values - recalibrate per
 source once you have retraction/accuracy history (see
 Source Intelligence in the architecture doc), but ship with these.
 
+Upserts into `scraper_sources` (your existing table, extended with
+tier/source_type/credibility_weight/domain by migration_v2_real_schema.sql) -
+not a new standalone table.
+
 Run this file directly to upsert the registry into Supabase:
     python news_sources.py
 """
@@ -110,8 +114,10 @@ def upsert_to_supabase() -> None:
 
     client = create_client(url, key)
     for source in ALL_SOURCES:
+        row = dict(source)
+        row["url"] = f"https://{source['domain']}"  # scraper_sources.url is NOT NULL
         try:
-            client.table("news_sources").upsert(source, on_conflict="domain").execute()
+            client.table("scraper_sources").upsert(row, on_conflict="domain").execute()
             logger.info(f"Upserted: {source['name']} ({source['domain']})")
         except Exception as e:
             logger.error(f"Failed to upsert {source['name']}: {e}")

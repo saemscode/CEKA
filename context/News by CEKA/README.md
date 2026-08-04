@@ -1,52 +1,58 @@
 # CEKA News Intelligence Engine
 
-Additive module. Nothing here renames, drops, or modifies any existing
-CEKA table, script, or component. `multi_llm_orchestrator.py` is
-imported directly, not duplicated - drop your existing copy of that
-file into this same directory (or put this directory on `PYTHONPATH`
-alongside it).
+Run `migration_v2_real_schema.sql`. Ignore `schema_news_intelligence.sql`
+(kept only so the earlier turn isn't silently erased - it's marked
+superseded at the top and creates nothing you should actually run).
+
+## Why v2 looks different from the first draft
+
+The first draft was written without seeing your actual database. Once
+`backup.sql` was available, three of the four "new" tables I'd
+designed turned out to already exist under different names:
+
+| First draft (wrong) | Real table (what's actually used now) |
+|---|---|
+| `news_sources` | `scraper_sources`, extended with `tier`, `source_type`, `credibility_weight`, `domain` |
+| `signals` | `bill_news_mentions`, extended with `source_id`, `clean_content`, `embedding`, `story_dna`, `entities`, `claims`, `matched_nio_id`, `enrichment_status`, `fusion_status`; `bill_id` relaxed to nullable |
+| `feed_snapshot` | `trending_cache`, given the public-read RLS policy it was missing (RLS was enabled with zero policies - unreadable by anon/authenticated until this migration) |
+| `pipeline_locks` | already existed, unchanged, just reused |
+
+Only `nios` and `nio_relations` are genuinely new tables - nothing in
+your schema modeled a cross-source, cross-bill event before this.
+
+Existing rows in `bill_news_mentions` (all bill-tied, from your
+current legislative scraper) are backfilled to `fusion_status='fused'`
+in the migration, so the frontend's `fusion_status = 'fused'` filter
+doesn't hide news that's already live on the site.
 
 ## What I could not verify against your live repo
 
-I do not have shell/file access to your actual CEKA codebase in this
-conversation - only the four files you pasted in
-(`deep_intelligence_relay.py`, the wayback crawler,
-the enhanced legislative scraper, `multi_llm_orchestrator.py`).
-Two integration points follow from that limitation and need your
-confirmation before this runs unattended:
+I still don't have shell access to your actual frontend/backend repo -
+only what you've pasted into this conversation (`backup.sql`, four
+Python pipeline files, and three React components). Two integration
+points depend on files I don't have:
 
-1. **`ProxyPool`**: your legislative scraper's `ProxyPool` class exists
-   because `parliament.go.ke`'s bill PDF portal sits behind Cloudflare.
-   `news_collector.py` does not duplicate that class - I don't know
-   its current file path in your repo, and guessing would risk a
-   second, drifting copy of the same logic. Instead, set
-   `PROXY_POOL_MODULE=<your_scraper_filename_without_.py>` as an env
-   var and the collector will import and use your real `ProxyPool` if
-   that module exposes one. Without it, collection runs direct
-   (no proxy) - fine for RSS and for the official `.go.ke` sources
-   listed below, since none of them showed Cloudflare behavior in
-   testing. If one turns out to need it, that's the signal to wire
-   the env var in.
+1. **`ProxyPool`**: your legislative scraper's Cloudflare-bypass class.
+   `news_collector.py` imports it via `PROXY_POOL_MODULE` env var if
+   you set one; otherwise it runs direct. None of the RSS feeds or
+   `.go.ke` official pages in `news_sources.py` showed Cloudflare
+   behavior in testing, so this is opt-in, not required.
+2. **`useCivicPlayerData` / `useCivicPlayerStore`**: `CivicMiniPlayer.tsx`
+   imports these but their source wasn't provided, so I've specified
+   (not guessed at) what they need to change - see
+   `FRONTEND_INTEGRATION.md`.
 
-2. **`SupabaseDirect`**: `deep_intelligence_relay.py` imports a
-   `supabase_direct.SupabaseDirect` wrapper whose method signatures I
-   don't have. Every file here uses the standard `supabase-py`
-   `create_client` instead, which I know precisely. If you'd rather
-   standardize on your `SupabaseDirect` wrapper, the `SupabaseStore` /
-   `SupabaseSink` classes in each file are the only places that would
-   need to change - the rest of each pipeline is independent of which
-   client wrapper does the I/O.
+## Embedding model and dimension
 
-## Embedding model - one correction against the original brief
-
-`text-embedding-004` and `models/embedding-001` are deprecated. This
-module uses `gemini-embedding-001` (via the `google-genai` package,
-separate from your existing `google-generativeai` import - both
-coexist fine) with `output_dimensionality=768` and manual L2
-normalization, which Google's current docs require for any dimension
-other than the native 3072. Local fallback is
-`sentence-transformers/all-mpnet-base-v2`, also native 768-dim, no API
-key required.
+`gemini-embedding-001` (the `google-genai` package, separate from your
+existing `google-generativeai` import - both coexist fine) at
+`output_dimensionality=768`, with the manual L2 normalization Google's
+docs require for any dimension other than the native 3072. This
+matches `discussions.embedding vector(768)`, the one vector column in
+your database that already has a real `hnsw` index behind it -
+`document_embeddings.embedding` is `vector(1536)` but unindexed, so
+768 was the better convention to extend, not 1536. Local fallback is
+`sentence-transformers/all-mpnet-base-v2`, also native 768-dim.
 
 ## Environment variables
 
@@ -56,7 +62,6 @@ SUPABASE_SERVICE_ROLE_KEY       # collection, enrichment, fusion, headlines, fee
 SUPABASE_ANON_KEY               # news_feed_api.py only
 CEKA_GEMINI_API_KEY             # or GEMINI_API_KEY / VITE_GEMINI_API_KEY - embeddings + generation
 # plus every provider key your existing multi_llm_orchestrator.py already reads
-# (ANTHROPIC_API_KEY, CEKA_GROQ_API_KEY, DEEPSEEK_API_KEY, CEREBRAS_API_KEY, etc.)
 
 PROXY_POOL_MODULE=               # optional, see above
 ENRICHMENT_MAX_SIGNALS_PER_RUN=100
@@ -64,7 +69,6 @@ FUSION_MAX_SIGNALS_PER_RUN=150
 HEADLINE_MAX_NIOS_PER_RUN=60
 FEED_SIZE=8
 FEED_MAX_PER_TOPIC=2
-FEED_REFRESH_MINUTES=10
 FEED_API_CORS_ORIGINS=https://civiceducationkenya.com
 ```
 
@@ -72,13 +76,13 @@ FEED_API_CORS_ORIGINS=https://civiceducationkenya.com
 
 ```bash
 pip install -r requirements.txt --break-system-packages
-psql "$SUPABASE_DB_URL" -f schema_news_intelligence.sql
-python news_sources.py          # seeds news_sources and writes news_sources.json
-python run_news_pipeline.py     # one full pass: collect -> enrich -> fuse -> headline -> synthesize feed
-uvicorn news_feed_api:app --host 0.0.0.0 --port 8000   # serve /feed and /nio/{id}
+psql "$SUPABASE_DB_URL" -f migration_v2_real_schema.sql
+python news_sources.py          # seeds scraper_sources, writes news_sources.json
+python run_news_pipeline.py     # one full pass: collect -> enrich -> fuse -> headline -> sync trending_cache
+uvicorn news_feed_api:app --host 0.0.0.0 --port 8000   # optional - see note in news_feed_api.py
 ```
 
-## Cron cadence (GitHub Actions, matching your existing pattern)
+## Cron cadence
 
 | Stage | Script | Suggested interval |
 |---|---|---|
@@ -86,17 +90,15 @@ uvicorn news_feed_api:app --host 0.0.0.0 --port 8000   # serve /feed and /nio/{i
 | Enrichment | `news_enrichment.py` | every 10-15 min |
 | Fusion | `news_fusion_relay.py` | every 10-15 min, after enrichment |
 | Headlines | `news_headline_engine.py` | every 15-20 min |
-| Feed synthesis | `news_feed_synthesis.py` | every 5-10 min |
+| Feed sync | `news_feed_synthesis.py` | every 5-10 min |
 
-Or point one cron at `run_news_pipeline.py` for a single combined run
-if independent cadences aren't worth the extra workflow files yet.
+Or point one cron at `run_news_pipeline.py` for a combined run.
 
-## What is deterministic vs. LLM-driven
+## Deterministic vs. LLM-driven
 
-Deterministic (no model call, no variance run to run): corroboration
-confidence (noisy-OR over distinct source credibility weights),
-velocity, importance, state transitions, headline candidate scoring,
-feed selection and per-topic capping.
+Deterministic: corroboration confidence (noisy-OR over distinct source
+credibility weights), velocity, importance, state transitions,
+headline candidate scoring, feed selection and per-topic capping.
 
 LLM-driven (via your existing `MultiLLMOrchestrator`, same provider
 cascade you already run for bills): story DNA / entity / claim
@@ -105,13 +107,15 @@ only), headline candidate generation, summary generation.
 
 ## Files
 
-- `schema_news_intelligence.sql` - additive schema, RLS, `public_nios` view
-- `news_sources.py` - tiered source registry (real domains, run to seed the table)
+- `migration_v2_real_schema.sql` - run this one
+- `schema_news_intelligence.sql` - superseded, do not run
+- `news_sources.py` - tiered source registry, seeds `scraper_sources`
 - `embedding_engine.py` - Gemini + local fallback, 768-dim
-- `news_collector.py` - Stage 1: RSS + direct HTML collection into `signals`
+- `news_collector.py` - Stage 1: RSS + direct HTML into `bill_news_mentions`
 - `news_enrichment.py` - Stage 2: story DNA / entities / claims / embeddings
 - `news_fusion_relay.py` - Stage 3-5: matching, corroboration, state machine, decay
 - `news_headline_engine.py` - Stage 6: canonical headline + summaries
-- `news_feed_synthesis.py` - Stage 7: ranks and writes `feed_snapshot`
-- `news_feed_api.py` - Stage 8: the two read endpoints the frontend calls
+- `news_feed_synthesis.py` - Stage 7: syncs top NIOs into `trending_cache`
+- `news_feed_api.py` - Stage 8: optional read API (frontend can query Supabase directly instead)
 - `run_news_pipeline.py` - single-cron entrypoint running all stages in order
+- `FRONTEND_INTEGRATION.md` - the (a) part of your question: concrete patch for `LegislativeTracker.tsx`, spec for the miniplayer hook
